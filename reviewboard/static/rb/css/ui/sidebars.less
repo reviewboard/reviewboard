@@ -65,12 +65,14 @@
         .rb-c-sidebar__nav-item,
         .rb-c-sidebar__nav-section-header {
           &:hover,
+          &[aria-current="page"],
           &.-is-active {
             border-top-right-radius: 0;
             border-bottom-right-radius: 0;
           }
 
           &:hover,
+          &[aria-current="page"],
           &.-is-active {
             /* Ensure the sidebar can overlay the border. */
             border-right: var(--ink-u-border-thin) transparent solid;
@@ -153,10 +155,10 @@
  *
  * Structure:
  *     <ul class="rb-c-sidebar__items">
- *      <li class="rb-c-sidebar__item">
- *       ...
- *      </li>
- *      ...
+ *      {
+ *       <li class="rb-c-sidebar__item">...</li>
+ *       <li class="rb-c-sidebar__section">...</li>
+ *      } [0+]
  *     </ul>
  */
 .rb-c-sidebar__items {
@@ -376,8 +378,21 @@
       display: list-item;
     });
   }
-}
 
+  /* Styling for subsections. */
+  & .rb-c-sidebar__section {
+    @_sidebars-vars: #rb-ns-ui.sidebars();
+
+    .rb-c-sidebar__items {
+      padding-left: @_sidebars-vars[@icon-max-size];
+    }
+
+    .rb-c-sidebar__section-header {
+      font-size: 100%;
+      text-transform: none;
+    }
+  }
+}
 
 /**
  * The header for a section.
@@ -453,6 +468,7 @@
   cursor: pointer;
 
   &:hover,
+  &[aria-current="page"],
   &.-is-active {
     @_border-radius: @_sidebars-vars[@active-border-radius];
 
@@ -463,6 +479,7 @@
     color: var(--ink-p-fg);
   }
 
+  &[aria-current="page"],
   &.-is-active {
     z-index: @z-index-deco;
   }

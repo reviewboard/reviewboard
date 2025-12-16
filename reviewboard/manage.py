@@ -63,14 +63,6 @@ def check_dependencies(settings):
                          're-run `./setup.py develop` to install all NodeJS '
                          'dependencies.')
 
-    for key in ('UGLIFYJS_BINARY', 'LESS_BINARY', 'BABEL_BINARY'):
-        path = settings.PIPELINE[key]
-
-        if not os.path.exists(path):
-            dependency_error('%s is missing. Please re-run `./setup.py '
-                             'develop` to install all NodeJS dependencies.'
-                             % os.path.abspath(path))
-
     # The following checks are non-fatal warnings, since these dependencies
     # are merely recommended, not required. These are primarily for SCM
     # support.

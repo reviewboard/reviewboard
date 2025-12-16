@@ -13,7 +13,8 @@ from django.utils.safestring import SafeString
 
 from reviewboard.actions.base import BaseAction
 from reviewboard.actions.errors import MissingActionRendererError
-from reviewboard.actions.renderers import ButtonActionRenderer
+from reviewboard.actions.renderers import (ButtonActionRenderer,
+                                           DefaultActionRenderer)
 from reviewboard.actions.tests.base import SpecialButtonActionRenderer
 from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.testing import TestCase
@@ -89,21 +90,28 @@ class BaseActionTests(TestCase):
         class MyAction(BaseAction):
             action_id = 'test-action'
             label = 'My Label'
+            default_renderer_cls = DefaultActionRenderer
+
+        action = MyAction()
 
         request = self.create_http_request()
         context = Context({
             'request': request,
         })
 
-        html = MyAction().render(request=request,
-                                 context=context)
+        html = action.render(
+            request=request,
+            context=context,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
             html,
             """
             <li class="rb-c-actions__action" role="presentation">
-             <a href="#" id="action-test-action" role="button">
+             <a href="#"
+                id="action-review-request-test-action"
+                role="button">
               My Label
              </a>
             </li>
@@ -116,13 +124,17 @@ class BaseActionTests(TestCase):
             default_renderer_cls = ButtonActionRenderer
             label = 'My Label'
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
         })
 
-        html = MyAction().render(request=request,
-                                 context=context)
+        html = action.render(
+            request=request,
+            context=context,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
@@ -131,7 +143,7 @@ class BaseActionTests(TestCase):
             <li class="rb-c-actions__action" role="presentation">
              <button aria-label="My Label"
                      class="ink-c-button"
-                     id="action-test-action"
+                     id="action-review-request-test-action"
                      type="button">
               <label class="ink-c-button__label">My Label</label>
              </button>
@@ -144,14 +156,18 @@ class BaseActionTests(TestCase):
             action_id = 'test-action'
             label = 'My Label'
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
         })
 
-        html = MyAction().render(request=request,
-                                 context=context,
-                                 renderer=ButtonActionRenderer)
+        html = action.render(
+            request=request,
+            context=context,
+            renderer=ButtonActionRenderer,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
@@ -160,7 +176,7 @@ class BaseActionTests(TestCase):
             <li class="rb-c-actions__action" role="presentation">
              <button aria-label="My Label"
                      class="ink-c-button"
-                     id="action-test-action"
+                     id="action-review-request-test-action"
                      type="button">
               <label class="ink-c-button__label">My Label</label>
              </button>
@@ -173,6 +189,8 @@ class BaseActionTests(TestCase):
             action_id = 'test-action'
             label = 'My Label'
             default_renderer_cls = None
+
+        action = MyAction()
 
         request = self.create_http_request()
         context = Context({
@@ -187,14 +205,16 @@ class BaseActionTests(TestCase):
         )
 
         with self.assertRaisesMessage(MissingActionRendererError, message):
-            MyAction().render(request=request,
-                              context=context)
+            action.render(request=request,
+                          context=context,
+                          placement=action.get_placement('review-request'))
 
     def test_render_with_should_render_false(self) -> None:
         """Testing BaseAction.render with should_render() returning False"""
         class MyAction(BaseAction):
             action_id = 'test-action'
             label = 'My Label'
+            default_renderer_cls = ButtonActionRenderer
 
             def should_render(
                 self,
@@ -214,8 +234,8 @@ class BaseActionTests(TestCase):
         self.assertIsInstance(html, SafeString)
         self.assertEqual(html, '')
 
-    def test_render_js_with_default_renderer(self) -> None:
-        """Testing BaseAction.render_js with default renderer"""
+    def test_render_model_js(self) -> None:
+        """Testing BaseAction.render_model_js"""
         class MyAction(BaseAction):
             action_id = 'test-action'
             label = 'My Label'
@@ -225,23 +245,49 @@ class BaseActionTests(TestCase):
             'request': request,
         })
 
-        js = MyAction().render_js(request=request,
-                                  context=context)
+        js = MyAction().render_model_js(request=request,
+                                        context=context)
+
+        self.assertIsInstance(js, SafeString)
+        self.assertHTMLEqual(
+            js,
+            """
+            page.addAction(new RB.Actions.Action(
+                {"id": "test-action",
+                 "visible": true,
+                 "label": "My Label",
+                 "url": "#"},
+                { parse: true }
+            ));
+            """)
+
+    def test_render_js_with_default_renderer(self) -> None:
+        """Testing BaseAction.render_js with default renderer"""
+        class MyAction(BaseAction):
+            action_id = 'test-action'
+            label = 'My Label'
+            default_renderer_cls = DefaultActionRenderer
+
+        action = MyAction()
+
+        request = self.create_http_request()
+        context = Context({
+            'request': request,
+        })
+
+        js = action.render_js(
+            request=request,
+            context=context,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(js, SafeString)
         self.assertHTMLEqual(
             js,
             """
             page.addActionView(new RB.Actions.ActionView({
-                el: $('#action-test-action'),
-                model: page.addAction(new RB.Actions.Action(
-                    {"id": "test-action",
-                     "visible": true,
-                     "domID": "action-test-action",
-                     "label": "My Label",
-                     "url": "#"},
-                    { parse: true }
-                ))
+                "attachmentPointID": "review-request",
+                el: $('#action-review-request-test-action'),
+                model: page.getAction("test-action"),
             }));
             """)
 
@@ -252,28 +298,26 @@ class BaseActionTests(TestCase):
             default_renderer_cls = ButtonActionRenderer
             label = 'My Label'
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
         })
 
-        js = MyAction().render_js(request=request,
-                                  context=context)
+        js = action.render_js(
+            request=request,
+            context=context,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(js, SafeString)
         self.assertHTMLEqual(
             js,
             """
-            page.addActionView(new RB.Actions.ActionView({
-                el: $('#action-test-action'),
-                model: page.addAction(new RB.Actions.Action(
-                    {"id": "test-action",
-                     "visible": true,
-                     "domID": "action-test-action",
-                     "label": "My Label",
-                     "url": "#"},
-                    { parse: true }
-                ))
+            page.addActionView(new RB.Actions.ButtonActionView({
+                "attachmentPointID": "review-request",
+                el: $('#action-review-request-test-action'),
+                model: page.getAction("test-action"),
             }));
             """)
 
@@ -283,31 +327,29 @@ class BaseActionTests(TestCase):
             action_id = 'test-action'
             label = 'My Label'
 
+        action = MyAction()
+
         request = self.create_http_request()
         context = Context({
             'request': request,
         })
 
-        js = MyAction().render_js(request=request,
-                                  context=context,
-                                  renderer=SpecialButtonActionRenderer)
+        js = action.render_js(
+            request=request,
+            context=context,
+            renderer=SpecialButtonActionRenderer,
+            placement=action.get_placement('review-request'))
 
         self.assertIsInstance(js, SafeString)
         self.assertHTMLEqual(
             js,
             """
             page.addActionView(new SpecialButtonActionView({
+                "attachmentPointID": "review-request",
                 "label": "~~My Label~~",
                 "specialKey": [123, 456],
-                el: $('#action-test-action'),
-                model: page.addAction(new RB.Actions.Action(
-                    {"id": "test-action",
-                     "visible": true,
-                     "domID": "action-test-action",
-                     "label": "My Label",
-                     "url": "#"},
-                    { parse: true }
-                ))
+                el: $('#action-review-request-test-action'),
+                model: page.getAction("test-action"),
             }));
             """)
 
@@ -317,6 +359,8 @@ class BaseActionTests(TestCase):
             action_id = 'test-action'
             label = 'My Label'
             default_renderer_cls = None
+
+        action = MyAction()
 
         request = self.create_http_request()
         context = Context({
@@ -331,14 +375,16 @@ class BaseActionTests(TestCase):
         )
 
         with self.assertRaisesMessage(MissingActionRendererError, message):
-            MyAction().render_js(request=request,
-                                 context=context)
+            action.render_js(request=request,
+                             context=context,
+                             placement=action.get_placement('review-request'))
 
     def test_render_js_with_should_render_false(self) -> None:
         """Testing BaseAction.render_js with should_render() returning False"""
         class MyAction(BaseAction):
             action_id = 'test-action'
             label = 'My Label'
+            default_renderer_cls = DefaultActionRenderer
 
             def should_render(
                 self,

@@ -364,7 +364,8 @@
    * This makes sure that items in the review menu are clickable across
    * their entire breadth.
    */
-  #action-review-menu {
+  #action-unified-banner-review-menu {
+    display: inline-block;
     position: relative;
 
     #ink-ns-ui.base.customize-component(
@@ -399,7 +400,7 @@
    * Move the menu up one so that the top-level menu item's border will
    * overlap, making it appear seamless.
    */
-  #action-review-menu,
+  #action-unified-banner-review-menu,
   &__mode-selector {
     #ink-ns-ui.base.customize-component(
       @name: ink-c-menu;
@@ -413,7 +414,7 @@
   }
 
   /* Set up layout for the top-level menu item. */
-  #action-review-menu > a,
+  #action-unified-banner-review-menu > a,
   &__mode-selector &__menu &__mode {
     border-right: 1px transparent solid;
     box-sizing: border-box;
@@ -425,24 +426,24 @@
   }
 
   /* Increase the top level menu item's font size to be more header-sized. */
-  #action-review-menu .rb-c-unified-banner__menu-label,
+  #action-unified-banner-review-menu .rb-c-unified-banner__menu-label,
   &__mode-selector .rb-c-actions__action-label {
     font-size: var(--ink-u-font-sm);
   }
 
   /* Ensure the labels have menu background/border styling when open. */
-  #action-review-menu.-is-menu-open > a,
+  #action-unified-banner-review-menu.-is-menu-open > a,
   &__mode-selector &__menu.-is-menu-open &__mode {
     background: var(--ink-c-menu-bg);
     border-right: var(--ink-c-menu-border);
   }
 
   /* Give the review menu a left border to match the right. */
-  #action-review-menu > a {
+  #action-unified-banner-review-menu > a {
     border-left: 1px transparent solid;
   }
 
-  #action-review-menu.-is-menu-open > a {
+  #action-unified-banner-review-menu.-is-menu-open > a {
     border-left: var(--ink-c-menu-border);
   }
 

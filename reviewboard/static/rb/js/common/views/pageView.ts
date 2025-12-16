@@ -92,7 +92,7 @@ export class PageView<
     _$pageSidebarPanes: JQuery = null;
 
     /** A list of all registered action views. */
-    _actionViews: ActionView[] = [];
+    _actionViews: Record<string, ActionView[]> = {};
 
     /**
      * All actions available to the page.
@@ -218,7 +218,11 @@ export class PageView<
                       this._onMobileModeChanged);
         this._onMobileModeChanged(this.inMobileMode);
 
-        this._actionViews.forEach(actionView => actionView.render());
+        for (const actionViews of Object.values(this._actionViews)) {
+            for (const actionView of actionViews) {
+                actionView.render();
+            }
+        }
 
         this.isPageRendered = true;
     }
@@ -371,7 +375,14 @@ export class PageView<
      *         The action instance.
      */
     addActionView(actionView: ActionView) {
-        this._actionViews.push(actionView);
+        const attachmentPointID = actionView.attachmentPointID;
+        const actionViews = this._actionViews;
+
+        if (!Object.hasOwn(actionViews, attachmentPointID)) {
+            actionViews[attachmentPointID] = [];
+        }
+
+        actionViews[attachmentPointID].push(actionView);
 
         if (this.isPageRendered) {
             actionView.render();
@@ -401,9 +412,19 @@ export class PageView<
     /**
      * Return the action view for the given action ID.
      *
+     * Version Changed:
+     *     7.1:
+     *     Added ``attachmentPointID``, which is now required.
+     *
      * Args:
      *     actionID (string):
      *         The ID of the action.
+     *
+     *     attachmentPointID (string):
+     *         The ID of the attachment point containing the action view.
+     *
+     *         Version Added:
+     *             7.1
      *
      * Returns:
      *     RB.ActionView:
@@ -411,10 +432,15 @@ export class PageView<
      */
     getActionView(
         actionID: string,
+        attachmentPointID: string,
     ): ActionView {
-        for (const view of this._actionViews) {
-            if (view.model.id === actionID) {
-                return view;
+        const actionViews = this._actionViews[attachmentPointID];
+
+        if (actionViews) {
+            for (const view of actionViews) {
+                if (view.model.id === actionID) {
+                    return view;
+                }
             }
         }
 
@@ -428,6 +454,9 @@ export class PageView<
      *     7.1
      *
      * Args:
+     *     attachmentPointID (string, optional):
+     *         The ID of the parent attachment point for the action views.
+     *
      *     filter (Object, optional):
      *         An optional mapping of attributes to filter for.
      *
@@ -436,9 +465,10 @@ export class PageView<
      *     The list of action views.
      */
     getActionViews(
+        attachmentPointID: string,
         filter?: Record<string, unknown>,
     ): ActionView[] {
-        let actionViews = this._actionViews;
+        let actionViews = this._actionViews[attachmentPointID] || [];
 
         if (filter && !_.isEmpty(filter)) {
             const matcher = _.matcher(filter);
@@ -447,7 +477,7 @@ export class PageView<
                                    view => matcher(view.model.attributes));
         }
 
-        return actionViews;
+        return actionViews || [];
     }
 
     /**

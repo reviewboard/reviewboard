@@ -43,16 +43,17 @@ suite('rb/admin/models/License', () => {
                         ['action', 'my-action'],
                         ['action_target', 'provider1:license1'],
                         ['csrfmiddlewaretoken', 'abc123'],
-                        ['arg1', 'value1'],
-                        ['arg2', 'value2'],
+                        ['action_data', '{"arg1":"value1","arg2":"value2"}'],
                     ]);
 
-                    return {
-                        json: async () => ({
-                            fields: 123,
-                        }),
-                        ok: true,
-                    };
+                    return new Response(
+                        '{"fields": 123}',
+                        {
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        }
+                    );
                 });
 
                 const rsp = await model.callAction({
@@ -79,12 +80,15 @@ suite('rb/admin/models/License', () => {
                         ['csrfmiddlewaretoken', 'abc123'],
                     ]);
 
-                    return {
-                        json: async () => ({
-                            error: 'Bad things happened!',
-                        }),
-                        ok: false,
-                    };
+                    return new Response(
+                        '{"error": "Bad things happened!"}',
+                        {
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            status: 400,
+                        }
+                    );
                 });
 
                 await expectAsync(model.callAction({
@@ -104,12 +108,14 @@ suite('rb/admin/models/License', () => {
                         ['csrfmiddlewaretoken', 'abc123'],
                     ]);
 
-                    return {
-                        json: async () => {
-                            throw new SyntaxError();
-                        },
-                        ok: true,
-                    };
+                    return new Response(
+                        'XXX',
+                        {
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        }
+                    );
                 });
 
                 await expectAsync(model.callAction({
@@ -129,10 +135,15 @@ suite('rb/admin/models/License', () => {
                         ['csrfmiddlewaretoken', 'abc123'],
                     ]);
 
-                    return {
-                        json: async () => ({}),
-                        ok: false,
-                    };
+                    return new Response(
+                        '{}',
+                        {
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            status: 400,
+                        }
+                    );
                 });
 
                 await expectAsync(model.callAction({
@@ -165,13 +176,14 @@ suite('rb/admin/models/License', () => {
                     expect(Object.hasOwn(options, 'credentials')).toBeFalse();
                     expect(Object.hasOwn(options, 'headers')).toBeFalse();
 
-                    return {
-                        json: async () => ({
-                            resultKey1: 'value1',
-                            resultKey2: 'value2',
-                        }),
-                        ok: true,
-                    };
+                    return new Response(
+                        '{"resultKey1": "value1", "resultKey2": "value2"}',
+                        {
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        }
+                    );
                 });
             });
 
@@ -238,13 +250,17 @@ suite('rb/admin/models/License', () => {
                         ['key2', 'value2'],
                     ]);
 
-                    return {
-                        json: async () => ({
+                    return new Response(
+                        JSON.stringify({
                             resultKey1: 'value1',
                             resultKey2: 'value2',
                         }),
-                        ok: true,
-                    };
+                        {
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                        }
+                    );
                 });
 
                 await model.checkForUpdates();
@@ -271,11 +287,15 @@ suite('rb/admin/models/License', () => {
                     {
                         action: 'process-license-update',
                         args: {
-                            check_request_data:
-                                '{"key1":"value1","key2":"value2"}',
-                            check_response_data:
-                                '{"resultKey1":"value1",' +
-                                '"resultKey2":"value2"}',
+                            check_request_data: {
+                                key1: 'value1',
+                                key2: 'value2',
+                            },
+                            check_response_data: {
+                                resultKey1: 'value1',
+                                resultKey2: 'value2',
+                            },
+                            session_token: null,
                         },
                     },
                 ]);
@@ -320,11 +340,15 @@ suite('rb/admin/models/License', () => {
                     {
                         action: 'process-license-update',
                         args: {
-                            check_request_data:
-                                '{"key1":"value1","key2":"value2"}',
-                            check_response_data:
-                                '{"resultKey1":"value1",' +
-                                '"resultKey2":"value2"}',
+                            check_request_data: {
+                                key1: 'value1',
+                                key2: 'value2',
+                            },
+                            check_response_data: {
+                                resultKey1: 'value1',
+                                resultKey2: 'value2',
+                            },
+                            session_token: null,
                         },
                     },
                 ]);
@@ -375,11 +399,15 @@ suite('rb/admin/models/License', () => {
                     {
                         action: 'process-license-update',
                         args: {
-                            check_request_data:
-                                '{"key1":"value1","key2":"value2"}',
-                            check_response_data:
-                                '{"resultKey1":"value1",' +
-                                '"resultKey2":"value2"}',
+                            check_request_data: {
+                                key1: 'value1',
+                                key2: 'value2',
+                            },
+                            check_response_data: {
+                                resultKey1: 'value1',
+                                resultKey2: 'value2',
+                            },
+                            session_token: null,
                         },
                     },
                 ]);
@@ -394,11 +422,12 @@ suite('rb/admin/models/License', () => {
                         ['key2', 'value2'],
                     ]);
 
-                    return {
-                        json: async () => ({}),
-                        ok: false,
-                        status: 403,
-                    };
+                    return new Response(
+                        '{}',
+                        {
+                            status: 403,
+                        }
+                    );
                 });
 
                 spyOn(model, 'callAction').and.returnValues(

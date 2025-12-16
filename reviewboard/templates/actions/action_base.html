@@ -1,28 +1,118 @@
+{% comment %}
+
+Base template for custom actions.
+
+The following blocks can be populated by child templates:
+
+``action_is_visible``:
+    Controls visibility of the action. Can contain ``true`` or any other
+    value for ``false``.
+
+    Defaults to the action's ``visible`` state.
+
+``action_has_container``:
+    Controls the presence of a default container element.
+
+    Defaults to ``true`` if it's a top-level action.
+
+``action_container_tag``:
+    The HTML tag for the container element.
+
+    Defaults to ``li``.
+
+``action_container_css_class``:
+    Any additional CSS classes for the container element.
+
+``action_attrs``:
+    DOM attributes suitable for the inner element.
+
+    Defaults to including an ID and visibility attributes if
+    ``action_has_container=False``.
+
+``action_container_attrs``:
+    DOM attributes suitable for the container element.
+
+    Defaults to including an ID and visibility attributes if
+    ``action_has_container=True``.
+
+``action_container_role``:
+    The role for the container element.
+
+    Defaults to ``presentation``.
+
+``action_container_start``:
+    The start of the container element.
+
+``action_container_end``:
+    The end of the container element.
+
+``action_content``:
+    The content of the action.
+
+{% endcomment %}
+
 {% load djblets_utils %}
 
 {% spaceless %}
-{%  definevar "visibility_attrs" spaceless %}
-{%   if not visible or has_parent %}hidden style="display: none;"{% endif %}
+{# Whether or not the action is visible (true or false). #}
+{%  definevar "action_is_visible" as_type=bool %}
+{%   block action_is_visible %}{{visible}}{% endblock %}
 {%  enddefinevar %}
 
+
+{# Whether or not the action has a container (true or false). #}
+{%  definevar "action_has_container" as_type=bool %}
+{%   block action_has_container %}{{is_toplevel}}{% endblock %}
+{%  enddefinevar %}
+
+
+{# Tag name for the container. #}
+{%  definevar "action_container_tag" strip %}
+{%   block action_container_tag %}li{% endblock %}
+{%  enddefinevar %}
+
+
+{# Extra CSS classes for the container. #}
+{%  definevar "action_container_css_class" strip %}
+{%   block action_container_css_class %}{% endblock %}
+{%  enddefinevar %}
+
+
+{# Attributes to set on the action. #}
 {%  definevar "action_attrs" spaceless %}
- id="{{action.get_dom_element_id}}"
+{%   block action_attrs %}
+ id="{{dom_element_id}}"
+{%    if not action_has_container %}
+ {% if not action_is_visible %}hidden style="display: none;"{% endif %}
+{%    endif %}
+{%   endblock action_attrs %}
 {%  enddefinevar %}
 
-{%  if has_parent %}
-{%   definevar "action_attrs" spaceless %}
- {{action_attrs}}
- {{visibility_attrs}}
-{%   enddefinevar %}
-{%  else %}
-<li class="rb-c-actions__action" {{visibility_attrs}}
-    role="{% block action_container_role %}presentation{% endblock %}"
-    {% block action_container_attrs %}{% endblock %}>
-{%  endif %}
 
-{%  block action_content %}{% endblock %}
+{# Attributes to set on the container. #}
+{%  definevar "action_container_attrs" spaceless %}
+{%   block action_container_attrs %}
+ class="rb-c-actions__action{% if action_container_css_class %} {{action_container_css_class}}{% endif %}"
+ role="{% block action_container_role %}presentation{% endblock %}"
+ {% if not action_is_visible %}hidden style="display: none;"{% endif %}
+{%   endblock action_container_attrs %}
+{%  enddefinevar %}
 
-{%  if not has_parent %}
-</li>
-{%  endif %}
+
+{# Main container and content area for the action. #}
+{%  block action_container %}
+{%   if action_has_container %}
+{%    block action_container_start %}
+<{{action_container_tag}} {{action_container_attrs}}>
+{%    endblock action_container_start %}
+{%   endif %}
+
+{%   block action_content %}{% endblock %}
+
+{%   if action_has_container %}
+{%    block action_container_end %}
+</{{action_container_tag}}>
+{%    endblock action_container_end %}
+{%   endif %}
+{%  endblock action_container %}
 {% endspaceless %}

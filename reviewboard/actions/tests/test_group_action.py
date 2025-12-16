@@ -9,6 +9,7 @@ from __future__ import annotations
 from django.template import Context
 from django.utils.safestring import SafeString
 
+from reviewboard.actions.renderers import DefaultActionGroupRenderer
 from reviewboard.actions.tests.base import (
     TestActionsRegistry,
     TestGroupAction,
@@ -88,12 +89,6 @@ class BaseGroupActionTests(TestCase):
             self.group_action.get_extra_context(request=request,
                                                 context=context),
             {
-                'children': [
-                    self.item1_action,
-                    self.item2_action,
-                    self.item3_action,
-                ],
-                'has_parent': False,
                 'id': 'group-action',
                 'label': 'Test Group',
                 'url': '#',
@@ -112,12 +107,13 @@ class BaseGroupActionTests(TestCase):
             self.group_action.get_js_model_data(context=context),
             {
                 'id': 'group-action',
-                'children': [
-                    'group-item-2-action',
-                    'group-item-1-action',
-                    'group-item-3-action',
-                ],
-                'domID': 'action-group-action',
+                'children': {
+                    'review-request': [
+                        'group-item-2-action',
+                        'group-item-1-action',
+                        'group-item-3-action',
+                    ],
+                },
                 'label': 'Test Group',
                 'url': '#',
                 'visible': True,
@@ -130,36 +126,35 @@ class BaseGroupActionTests(TestCase):
             'request': request,
         })
 
-        html = self.group_action.render(request=request,
-                                        context=context)
+        action = self.group_action
+
+        html = action.render(
+            request=request,
+            context=context,
+            fallback_renderer=DefaultActionGroupRenderer,
+            placement=action.get_placement('review-request'),
+        )
 
         self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
             html,
             """
             <li class="rb-c-actions__action"
-                id="action-group-action"
                 role="group">
-             <a id="action-group-item-1-action"
+             <a id="action-review-request-group-item-1-action"
                 role="button"
-                hidden
-                style="display: none;"
                 href="#">
-              None
+              Group Item 1
              </a>
-             <a id="action-group-item-2-action"
+             <a id="action-review-request-group-item-2-action"
                 role="button"
-                hidden
-                style="display: none;"
                 href="#">
-              None
+              Group Item 2
              </a>
-             <a id="action-group-item-3-action"
+             <a id="action-review-request-group-item-3-action"
                 role="button"
-                hidden
-                style="display: none;"
                 href="#">
-              None
+              Group Item 3
              </a>
             </li>
             """)
@@ -171,26 +166,22 @@ class BaseGroupActionTests(TestCase):
             'request': request,
         })
 
-        js = self.group_action.render_js(request=request,
-                                         context=context)
+        action = self.group_action
+
+        js = action.render_js(
+            request=request,
+            context=context,
+            fallback_renderer=DefaultActionGroupRenderer,
+            placement=action.get_placement('review-request'),
+        )
 
         self.assertIsInstance(js, SafeString)
         self.assertHTMLEqual(
             js,
             """
             page.addActionView(new RB.Actions.ActionView({
-                el: $('#action-group-action'),
-                model: page.addAction(new RB.Actions.GroupAction(
-                    {"id": "group-action",
-                     "visible": true,
-                     "domID": "action-group-action",
-                     "label": "Test Group",
-                     "url": "#",
-                     "children":
-                         ["group-item-2-action",
-                          "group-item-1-action",
-                          "group-item-3-action"]},
-                    { parse: true }
-                ))
+                "attachmentPointID": "review-request",
+                el: $('#action-review-request-group-action'),
+                model: page.getAction("group-action"),
             }));
             """)

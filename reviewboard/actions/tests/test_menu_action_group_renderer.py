@@ -25,11 +25,13 @@ class MenuActionGroupRendererTests(TestCase):
     def test_render(self) -> None:
         """Testing MenuActionGroupRenderer.render"""
         action = TestMenuAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = MenuActionGroupRenderer(action=action)
+        renderer = MenuActionGroupRenderer(action=action,
+                                           placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -43,16 +45,58 @@ class MenuActionGroupRendererTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action"
-                id="action-menu-action"
                 role="menuitem">
-             <a aria-label="Test Menu"
-                href="#"
-                role="presentation">
-              <label class="rb-c-actions__action-label">
+             <span id="action-review-request-menu-action"
+                   role="presentation">
+              <a aria-label="Test Menu"
+                 href="#"
+                 role="presentation">
                Test Menu
-              </label>
-              <span class="ink-i-dropdown"/>
-             </a>
+               <span class="ink-i-dropdown"/>
+              </a>
+              <div hidden style="display: none;"></div>
+             </span>
+            </li>
+            """)
+
+    def test_render_with_icon_only(self) -> None:
+        """Testing MenuActionGroupRenderer.render with icon only"""
+        class MyTestMenuAction(TestMenuAction):
+            icon_class = 'my-icon'
+            label = ''
+            verbose_label = 'My menu'
+
+        action = MyTestMenuAction()
+        placement = action.get_placement('review-request')
+
+        registry = TestActionsRegistry()
+        registry.register(action)
+
+        renderer = MenuActionGroupRenderer(action=action,
+                                           placement=placement)
+        request = self.create_http_request()
+        context = Context({
+            'request': request,
+        })
+
+        html = renderer.render(request=request,
+                               context=context)
+
+        self.assertIsInstance(html, SafeString)
+        self.assertHTMLEqual(
+            html,
+            """
+            <li class="rb-c-actions__action -is-icon"
+                role="menuitem">
+             <span id="action-review-request-menu-action"
+                   role="presentation">
+              <a aria-label="My menu"
+                 href="#"
+                 role="presentation">
+               <span class="my-icon"></span>
+              </a>
+              <div hidden style="display: none;"></div>
+             </span>
             </li>
             """)
 
@@ -68,10 +112,13 @@ class MenuActionGroupRendererTests(TestCase):
         with self.assertWarns(RemovedInReviewBoard90Warning):
             action = MyAction()
 
+        placement = action.get_placement('review-request')
+
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = MenuActionGroupRenderer(action=action)
+        renderer = MenuActionGroupRenderer(action=action,
+                                           placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -87,7 +134,7 @@ class MenuActionGroupRendererTests(TestCase):
             <li class="rb-c-actions__action" role="presentation">
              <button aria-label="Test Menu"
                      class="ink-c-button"
-                     id="action-menu-action"
+                     id="action-review-request-menu-action"
                      type="button">
               <label class="ink-c-button__label">
                Test Menu
@@ -99,11 +146,13 @@ class MenuActionGroupRendererTests(TestCase):
     def test_render_js(self) -> None:
         """Testing MenuActionGroupRenderer.render_js"""
         action = TestMenuAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = MenuActionGroupRenderer(action=action)
+        renderer = MenuActionGroupRenderer(action=action,
+                                           placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -117,15 +166,8 @@ class MenuActionGroupRendererTests(TestCase):
             js,
             """
             page.addActionView(new RB.Actions.MenuActionView({
-                el:  $('#action-menu-action'),
-                model: page.addAction(new RB.Actions.MenuAction(
-                    {"id": "menu-action",
-                     "visible": true,
-                     "domID": "action-menu-action",
-                     "label": "Test Menu",
-                     "url": "#",
-                     "children": []},
-                    { parse: true }
-                ))
+                "attachmentPointID": "review-request",
+                el:  $('#action-review-request-menu-action'),
+                model: page.getAction("menu-action"),
             }));
             """)

@@ -33,17 +33,8 @@
    * Version Added:
    *     7.1
    *
-   * Modifiers:
-   *     -is-quick-access:
-   *         Whether this is a Quick Access action.
-   *
-   *     -quick-access-enabled
-   *         Whether this Quick Access action is enabled for use.
-   *
    * Structure:
-   *     <li class="rb-c-actions__action
-   *                [-is-quick-access]
-   *                [-quick-access-enabled]">
+   *     <li class="rb-c-actions__action"
    *          role="<presentation|menuitem>"
    *          [hidden]
    *          [display="..."]>
@@ -51,8 +42,5 @@
    *     </li>
    */
   &__action {
-    &.-is-quick-access:not(.-quick-access-enabled) {
-      display: none !important;
-    }
   }
 }

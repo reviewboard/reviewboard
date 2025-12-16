@@ -25,11 +25,13 @@ class ButtonActionRendererTests(TestCase):
     def test_render(self) -> None:
         """Testing ButtonActionRenderer.render"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = ButtonActionRenderer(action=action)
+        renderer = ButtonActionRenderer(action=action,
+                                        placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -45,7 +47,7 @@ class ButtonActionRendererTests(TestCase):
             <li class="rb-c-actions__action" role="presentation">
              <button aria-label="Test Action 1"
                      class="ink-c-button"
-                     id="action-test"
+                     id="action-review-request-test"
                      type="button">
               <label class="ink-c-button__label">
                Test Action 1
@@ -64,10 +66,13 @@ class ButtonActionRendererTests(TestCase):
         with self.assertWarns(RemovedInReviewBoard90Warning):
             action = MyAction()
 
+        placement = action.get_placement('review-request')
+
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = ButtonActionRenderer(action=action)
+        renderer = ButtonActionRenderer(action=action,
+                                        placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -81,7 +86,7 @@ class ButtonActionRendererTests(TestCase):
             html,
             """
             <li class="rb-c-actions__action" role="presentation">
-             <a href="#" id="action-test" role="button">
+             <a href="#" id="action-review-request-test" role="button">
               Test Action 1
              </a>
             </li>
@@ -90,11 +95,13 @@ class ButtonActionRendererTests(TestCase):
     def test_render_js(self) -> None:
         """Testing ButtonActionRenderer.render_js"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = ButtonActionRenderer(action=action)
+        renderer = ButtonActionRenderer(action=action,
+                                        placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -107,15 +114,9 @@ class ButtonActionRendererTests(TestCase):
         self.assertHTMLEqual(
             js,
             """
-            page.addActionView(new RB.Actions.ActionView({
-                el: $('#action-test'),
-                model: page.addAction(new RB.Actions.Action(
-                    {"id": "test",
-                     "visible": true,
-                     "domID": "action-test",
-                     "label": "Test Action 1",
-                     "url": "#"},
-                    { parse: true }
-                ))
+            page.addActionView(new RB.Actions.ButtonActionView({
+                "attachmentPointID": "review-request",
+                el: $('#action-review-request-test'),
+                model: page.getAction("test"),
             }));
             """)

@@ -81,7 +81,8 @@ export default args => {
 
     if (input.includes('reviewboard/static/lib/js/3rdparty-base/')) {
         return thirdPartyBaseConfig;
-    } else if (input.includes('reviewboard/static/lib/')) {
+    } else if (input.includes('reviewboard/static/lib/') ||
+               input.includes('djblets/static/lib/')) {
         return makeThirdPartyConfig(input);
     } else {
         return rbConfig;

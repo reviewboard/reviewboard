@@ -24,7 +24,11 @@ class BaseActionRendererTests(TestCase):
 
     def test_get_js_view_data(self) -> None:
         """Testing BaseActionRenderer.get_js_view_data"""
-        renderer = BaseActionRenderer(action=TestAction())
+        action = TestAction()
+        placement = action.get_placement('review-request')
+
+        renderer = BaseActionRenderer(action=action,
+                                      placement=placement)
 
         self.assertEqual(renderer.get_js_view_data(context=Context()),
                          {})
@@ -32,28 +36,45 @@ class BaseActionRendererTests(TestCase):
     def test_get_extra_context(self) -> None:
         """Testing BaseActionRenderer.get_extra_context"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = BaseActionRenderer(action=action)
+        renderer = BaseActionRenderer(action=action,
+                                      placement=placement)
         request = self.create_http_request()
         context = Context()
 
         # This should just call out to the action's get_extra_context().
-        self.assertEqual(renderer.get_extra_context(request=request,
-                                                    context=context),
-                         action.get_extra_context(request=request,
-                                                  context=context))
+        self.assertEqual(
+            renderer.get_extra_context(request=request,
+                                       context=context),
+            {
+                'action': action,
+                'action_renderer': renderer,
+                'attachment_point_id': 'review-request',
+                'dom_element_id': 'action-review-request-test',
+                'has_parent': False,
+                'id': 'test',
+                'is_toplevel': True,
+                'label': 'Test Action 1',
+                'placement': placement,
+                'url': '#',
+                'verbose_label': None,
+                'visible': True,
+            })
 
     def test_render(self) -> None:
         """Testing BaseActionRenderer.render"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = BaseActionRenderer(action=action)
+        renderer = BaseActionRenderer(action=action,
+                                      placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -75,10 +96,13 @@ class BaseActionRendererTests(TestCase):
         with self.assertWarns(RemovedInReviewBoard90Warning):
             action = MyAction()
 
+        placement = action.get_placement('review-request')
+
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = BaseActionRenderer(action=action)
+        renderer = BaseActionRenderer(action=action,
+                                      placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -94,7 +118,7 @@ class BaseActionRendererTests(TestCase):
             <li class="rb-c-actions__action" role="presentation">
              <button aria-label="Test Action 1"
                      class="ink-c-button"
-                     id="action-test"
+                     id="action-review-request-test"
                      type="button">
               <label class="ink-c-button__label">
                Test Action 1
@@ -106,11 +130,13 @@ class BaseActionRendererTests(TestCase):
     def test_render_js(self) -> None:
         """Testing BaseActionRenderer.render_js"""
         action = TestAction()
+        placement = action.get_placement('review-request')
 
         registry = TestActionsRegistry()
         registry.register(action)
 
-        renderer = BaseActionRenderer(action=action)
+        renderer = BaseActionRenderer(action=action,
+                                      placement=placement)
         request = self.create_http_request()
         context = Context({
             'request': request,
@@ -124,14 +150,8 @@ class BaseActionRendererTests(TestCase):
             html,
             """
             page.addActionView(new RB.Actions.ActionView({
-                el: $('#action-test'),
-                model: page.addAction(new RB.Actions.Action(
-                    {"id": "test",
-                     "visible": true,
-                     "domID": "action-test",
-                     "label": "Test Action 1",
-                     "url": "#"},
-                    { parse: true }
-                ))
+                "attachmentPointID": "review-request",
+                el: $('#action-review-request-test'),
+                model: page.getAction("test"),
             }));
             """)

@@ -8,11 +8,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from reviewboard.actions import (AttachmentPoint,
+from reviewboard.actions import (ActionPlacement,
+                                 AttachmentPoint,
                                  BaseAction,
                                  BaseGroupAction,
                                  BaseMenuAction)
-from reviewboard.actions.registry import ActionsRegistry
+from reviewboard.actions.registry import (ActionAttachmentPointsRegistry,
+                                          ActionsRegistry)
 from reviewboard.actions.renderers import ButtonActionRenderer
 
 if TYPE_CHECKING:
@@ -20,6 +22,8 @@ if TYPE_CHECKING:
 
     from django.template import Context
     from typelets.django.json import SerializableDjangoJSONDict
+
+    from reviewboard.actions.base import ActionAttachmentPoint
 
 
 class TestAction(BaseAction):
@@ -41,7 +45,9 @@ class TestHeaderAction(BaseAction):
     """
 
     action_id = 'header-action'
-    attachment = AttachmentPoint.HEADER
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.HEADER),
+    ]
 
 
 class TestGroupAction(BaseGroupAction):
@@ -60,6 +66,37 @@ class TestGroupAction(BaseGroupAction):
     ]
 
 
+class TestGroupActionWithSubgroups(BaseGroupAction):
+    """Group action with subgroups for testing.
+
+    Version Added:
+        7.1
+    """
+
+    action_id = 'group-with-subgroups-action'
+    label = 'Test Group with Subgroups'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.HEADER),
+    ]
+
+
+class TestSubgroupAction(BaseGroupAction):
+    """Subgroup action for testing.
+
+    Version Added:
+        7.1
+    """
+
+    action_id = 'subgroup-action'
+    label = 'Subgroup'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.HEADER,
+                        parent_id=TestGroupActionWithSubgroups.action_id),
+    ]
+
+
 class TestGroupItemAction1(BaseAction):
     """Basic group item action for testing.
 
@@ -68,7 +105,14 @@ class TestGroupItemAction1(BaseAction):
     """
 
     action_id = 'group-item-1-action'
-    parent_id = 'group-action'
+    label = 'Group Item 1'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=TestGroupAction.action_id),
+        ActionPlacement(attachment=AttachmentPoint.HEADER,
+                        parent_id=TestGroupActionWithSubgroups.action_id),
+    ]
 
 
 class TestGroupItemAction2(BaseAction):
@@ -79,7 +123,14 @@ class TestGroupItemAction2(BaseAction):
     """
 
     action_id = 'group-item-2-action'
-    parent_id = 'group-action'
+    label = 'Group Item 2'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=TestGroupAction.action_id),
+        ActionPlacement(attachment=AttachmentPoint.HEADER,
+                        parent_id=TestSubgroupAction.action_id),
+    ]
 
 
 class TestGroupItemAction3(BaseAction):
@@ -90,7 +141,12 @@ class TestGroupItemAction3(BaseAction):
     """
 
     action_id = 'group-item-3-action'
-    parent_id = 'group-action'
+    label = 'Group Item 3'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=TestGroupAction.action_id),
+    ]
 
 
 class TestMenuAction(BaseMenuAction):
@@ -112,7 +168,11 @@ class TestMenuItemAction(BaseAction):
     """
 
     action_id = 'menu-item-action'
-    parent_id = 'menu-action'
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id='menu-action'),
+    ]
+
     label = 'Menu Item Action 1'
     icon_class = 'my-icon'
     verbose_label = 'Verbose Menu Item Action 1'
@@ -127,7 +187,10 @@ class TestNestedMenuAction(BaseMenuAction):
     """
 
     action_id = 'nested-menu-action'
-    parent_id = 'menu-action'
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id='menu-action'),
+    ]
 
 
 class TestNested2MenuAction(BaseMenuAction):
@@ -138,7 +201,10 @@ class TestNested2MenuAction(BaseMenuAction):
     """
 
     action_id = 'nested-2-menu-action'
-    parent_id = 'nested-menu-action'
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id='nested-menu-action'),
+    ]
 
 
 class TooDeeplyNestedAction(BaseAction):
@@ -149,7 +215,10 @@ class TooDeeplyNestedAction(BaseAction):
     """
 
     action_id = 'nested-3-action'
-    parent_id = 'nested-2-menu-action'
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id='nested-2-menu-action'),
+    ]
 
 
 class SpecialButtonActionRenderer(ButtonActionRenderer):
@@ -200,5 +269,22 @@ class TestActionsRegistry(ActionsRegistry):
         Yields:
             reviewboard.actions.base.BaseAction:
             Each action (but none, really).
+        """
+        yield from []
+
+
+class TestActionAttachmentPointsRegistry(ActionAttachmentPointsRegistry):
+    """Empty actions attachment points registry for testing purposes.
+
+    Version Added:
+        7.1
+    """
+
+    def get_defaults(self) -> Iterator[ActionAttachmentPoint]:
+        """Return an empty set of defaults.
+
+        Yields:
+            reviewboard.actions.base.ActionAttachmentPoint:
+            Each attachment point (but none, really).
         """
         yield from []

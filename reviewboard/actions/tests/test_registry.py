@@ -8,9 +8,8 @@ from __future__ import annotations
 
 from djblets.registries.errors import AlreadyRegisteredError
 
-from reviewboard.actions import (AttachmentPoint,
-                                 actions_registry)
-from reviewboard.actions.errors import DepthLimitExceededError
+from reviewboard.actions import AttachmentPoint
+from reviewboard.actions.base import ActionPlacement
 from reviewboard.actions.tests.base import (
     TestAction,
     TestActionsRegistry,
@@ -21,6 +20,7 @@ from reviewboard.actions.tests.base import (
     TestNestedMenuAction,
     TooDeeplyNestedAction,
 )
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.testing import TestCase
 
 
@@ -31,23 +31,9 @@ class ActionsRegistryTests(TestCase):
         6.0
     """
 
-    def setUp(self) -> None:
-        """Set up the test case."""
-        super().setUp()
-
-        self.test_action = TestAction()
-        self.test_header_action = TestHeaderAction()
-        self.test_menu_action = TestMenuAction()
-        self.test_menu_item_action = TestMenuItemAction()
-
-    def tearDown(self) -> None:
-        """Tear down the test case."""
-        super().tearDown()
-        actions_registry.reset()
-
     def test_register(self) -> None:
         """Testing ActionsRegistry.register"""
-        test_action = self.test_action
+        test_action = TestMenuAction()
 
         actions_registry = TestActionsRegistry()
         actions_registry.register(test_action)
@@ -59,13 +45,135 @@ class ActionsRegistryTests(TestCase):
             actions_registry._by_attachment_point,
             {
                 'review-request': {
-                    'test': test_action,
+                    'menu-action': (
+                        test_action,
+                        test_action.get_placement('review-request'),
+                    ),
                 },
             })
 
+        self.assertEqual(actions_registry._deferred_placements, {})
+
+    def test_register_child_of_missing_action(self) -> None:
+        """Testing ActionsRegistry.register of action with missing parent
+        actions
+        """
+        test_action = TestMenuItemAction()
+
+        actions_registry = TestActionsRegistry()
+        actions_registry.register(test_action)
+
+        with self.assertRaises(AlreadyRegisteredError):
+            actions_registry.register(test_action)
+
+        self.assertEqual(actions_registry._by_attachment_point, {})
+        self.assertEqual(
+            actions_registry._deferred_placements,
+            {
+                ('menu-action', 'review-request'): {
+                    'menu-item-action': test_action,
+                },
+            })
+
+    def test_register_child_of_missing_placement(self) -> None:
+        """Testing ActionsRegistry.register of action with one missing
+        placement
+        """
+        assert TestMenuItemAction.placements
+
+        class MyTestMenuItemAction(TestMenuItemAction):
+            placements = [
+                *TestMenuItemAction.placements,
+                ActionPlacement(attachment='header',
+                                parent_id='missing-parent'),
+            ]
+
+        test_menu_action = TestMenuAction()
+        test_menu_item_action = MyTestMenuItemAction()
+
+        actions_registry = TestActionsRegistry()
+        actions_registry.register(test_menu_action)
+        actions_registry.register(test_menu_item_action)
+
+        self.assertEqual(
+            actions_registry._by_attachment_point,
+            {
+                'review-request': {
+                    'menu-action': (
+                        test_menu_action,
+                        test_menu_action.get_placement('review-request'),
+                    ),
+                    'menu-item-action': (
+                        test_menu_item_action,
+                        test_menu_item_action.get_placement('review-request'),
+                    ),
+                },
+            })
+
+        self.assertEqual(
+            actions_registry._deferred_placements,
+            {
+                ('missing-parent', 'header'): {
+                    'menu-item-action': test_menu_item_action,
+                },
+            })
+
+    def test_register_with_previously_deferred(self) -> None:
+        """Testing ActionsRegistry.register of action previously unregistered
+        and deferred with children
+        """
+        test_menu_action = TestMenuAction()
+        test_menu_item_action = TestMenuItemAction()
+
+        actions_registry = TestActionsRegistry()
+        actions_registry.register(test_menu_action)
+        actions_registry.register(test_menu_item_action)
+
+        # Unregister the parent.
+        actions_registry.unregister(test_menu_action)
+
+        self.assertEqual(actions_registry._by_attachment_point, {})
+        self.assertEqual(
+            actions_registry._deferred_placements,
+            {
+                ('menu-action', 'review-request'): {
+                    'menu-item-action': test_menu_item_action,
+                },
+            })
+
+        # And re-register it.
+        actions_registry.register(test_menu_action)
+
+        test_menu_action_placement = \
+            test_menu_action.get_placement('review-request')
+        test_menu_item_action_placement = \
+            test_menu_item_action.get_placement('review-request')
+
+        self.assertIn(test_menu_item_action,
+                      test_menu_action_placement.child_actions)
+        self.assertIs(test_menu_item_action_placement.parent_action,
+                      test_menu_action)
+
+        self.assertEqual(
+            actions_registry._by_attachment_point,
+            {
+                'review-request': {
+                    'menu-action': (
+                        test_menu_action,
+                        test_menu_action_placement,
+                    ),
+                    'menu-item-action': (
+                        test_menu_item_action,
+                        test_menu_item_action_placement,
+                    ),
+                },
+            })
+
+        self.assertEqual(actions_registry._deferred_placements, {})
+
     def test_unregister(self) -> None:
         """Testing ActionsRegistry.unregister"""
-        test_action = self.test_action
+        test_action = TestAction()
 
         actions_registry = TestActionsRegistry()
         actions_registry.register(test_action)
@@ -74,20 +182,61 @@ class ActionsRegistryTests(TestCase):
             actions_registry._by_attachment_point,
             {
                 'review-request': {
-                    'test': test_action,
+                    'test': (
+                        test_action,
+                        test_action.get_placement('review-request'),
+                    ),
                 },
             })
+        self.assertEqual(actions_registry._deferred_placements, {})
 
         actions_registry.unregister(test_action)
 
         self.assertEqual(actions_registry._by_attachment_point, {})
+        self.assertEqual(actions_registry._deferred_placements, {})
+
+    def test_unregister_with_children(self) -> None:
+        """Testing ActionsRegistry.unregister of action with children"""
+        test_menu_action = TestMenuAction()
+        test_menu_item_action = TestMenuItemAction()
+
+        actions_registry = TestActionsRegistry()
+        actions_registry.register(test_menu_action)
+        actions_registry.register(test_menu_item_action)
+
+        self.assertEqual(
+            actions_registry._by_attachment_point,
+            {
+                'review-request': {
+                    'menu-action': (
+                        test_menu_action,
+                        test_menu_action.get_placement('review-request'),
+                    ),
+                    'menu-item-action': (
+                        test_menu_item_action,
+                        test_menu_item_action.get_placement('review-request'),
+                    ),
+                },
+            })
+        self.assertEqual(actions_registry._deferred_placements, {})
+
+        actions_registry.unregister(test_menu_action)
+
+        self.assertEqual(actions_registry._by_attachment_point, {})
+        self.assertEqual(
+            actions_registry._deferred_placements,
+            {
+                ('menu-action', 'review-request'): {
+                    'menu-item-action': test_menu_item_action,
+                },
+            })
 
     def test_get_for_attachment(self) -> None:
         """Testing ActionsRegistry.get_for_attachment"""
         actions_registry = TestActionsRegistry()
 
-        test_action = self.test_action
-        test_header_action = self.test_header_action
+        test_action = TestAction()
+        test_header_action = TestHeaderAction()
 
         actions_registry.register(test_action)
         actions_registry.register(test_header_action)
@@ -96,10 +245,16 @@ class ActionsRegistryTests(TestCase):
             actions_registry._by_attachment_point,
             {
                 'header': {
-                    'header-action': test_header_action,
+                    'header-action': (
+                        test_header_action,
+                        test_header_action.get_placement('header'),
+                    ),
                 },
                 'review-request': {
-                    'test': test_action,
+                    'test': (
+                        test_action,
+                        test_action.get_placement('review-request'),
+                    ),
                 },
             })
 
@@ -116,49 +271,62 @@ class ActionsRegistryTests(TestCase):
                 test_action,
             ])
 
-    def test_menu(self) -> None:
-        """Testing ActionsRegistry with menu actions"""
-        actions_registry.register(self.test_menu_action)
-        actions_registry.register(self.test_menu_item_action)
+    def test_deferred_placements(self) -> None:
+        """Testing ActionsRegistry.register with deferred placements"""
+        action = TestMenuItemAction()
 
-        self.assertIn(self.test_menu_item_action,
-                      self.test_menu_action.child_actions)
+        # Register the action with an unregistered parent.
+        actions_registry = TestActionsRegistry()
+        actions_registry.register(action)
 
-        actions_registry.unregister(self.test_menu_item_action)
-
-        self.assertNotIn(self.test_menu_item_action,
-                         self.test_menu_action.child_actions)
-
-    def test_deferred_registration(self) -> None:
-        """Testing ActionsRegistry.register with deferred child registration
-        """
-        actions_registry.register(self.test_menu_item_action)
-
-        self.assertIsNone(
-            actions_registry.get_action(self.test_menu_item_action.action_id))
-        self.assertIn(
-            self.test_menu_item_action,
-            actions_registry._deferred_registrations)
-
-        actions_registry.register(self.test_menu_action)
-
-        self.assertIn(self.test_menu_item_action,
-                      self.test_menu_action.child_actions)
-
+        self.assertIs(actions_registry.get_action(action.action_id), action)
         self.assertEqual(
-            actions_registry.get_action(self.test_menu_item_action.action_id),
-            self.test_menu_item_action)
-        self.assertEqual(actions_registry._deferred_registrations, [])
+            actions_registry._deferred_placements,
+            {
+                ('menu-action', 'review-request'): {
+                    'menu-item-action': action,
+                },
+            })
+
+        # Now register the missing action.
+        menu_action = TestMenuAction()
+        actions_registry.register(menu_action)
+
+        self.assertIn(
+            action,
+            menu_action.get_placement('review-request').child_actions)
+
+        message = (
+            'reviewboard.actions.base.BaseAction.child_actions() is '
+            'deprecated and support will be removed in Review Board 9.0. '
+            'Please use ActionPlacement.child_actions instead.'
+        )
+
+        with self.assertWarns(RemovedInReviewBoard90Warning, message):
+            self.assertIn(action, menu_action.child_actions)
+
+        self.assertIs(
+            actions_registry.get_action(menu_action.action_id),
+            menu_action)
+        self.assertEqual(actions_registry._deferred_placements, {})
 
     def test_too_deeply_nested(self) -> None:
         """Testing ActionsRegistry with actions that are too deeply nested"""
+        test_menu_action = TestMenuAction()
         nested_action = TestNestedMenuAction()
         nested2_action = TestNested2MenuAction()
         nested3_action = TooDeeplyNestedAction()
 
-        actions_registry.register(self.test_menu_action)
+        actions_registry = TestActionsRegistry()
+        actions_registry.register(test_menu_action)
         actions_registry.register(nested_action)
         actions_registry.register(nested2_action)
 
-        with self.assertRaises(DepthLimitExceededError):
+        with self.assertLogs() as cm:
             actions_registry.register(nested3_action)
+
+        self.assertEqual(cm.output, [
+            'ERROR:reviewboard.actions.registry:Action "nested-3-action" '
+            'exceeds the maximum depth limit of 2 for attachment point(s) '
+            '"review-request".',
+        ])

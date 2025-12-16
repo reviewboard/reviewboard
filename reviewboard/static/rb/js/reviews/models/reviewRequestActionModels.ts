@@ -9,7 +9,9 @@ import {
     spina,
 } from '@beanbag/spina';
 import {
-    type ButtonView,
+    type DialogView,
+    ButtonType,
+    DialogActionType,
     craft,
     paint,
 } from '@beanbag/ink';
@@ -245,17 +247,21 @@ export class CreateReviewAction extends Actions.Action {
 
     /**
      * Handle activation of the action.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
-        this.#pendingReview.save()
-            .then(() => {
-                const page = RB.PageManager.getPage();
+    async activate() {
+        const pendingReview = this.#pendingReview;
+        const page = RB.PageManager.getPage();
 
-                ReviewDialogView.create({
-                    review: this.#pendingReview,
-                    reviewRequestEditor: page.getReviewRequestEditorModel(),
-                });
-            });
+        await pendingReview.save();
+
+        ReviewDialogView.create({
+            review: pendingReview,
+            reviewRequestEditor: page.getReviewRequestEditorModel(),
+        });
     }
 }
 
@@ -301,8 +307,12 @@ export class EditReviewAction extends Actions.Action {
 
     /**
      * Handle activation of the action.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
+    async activate() {
         const page = RB.PageManager.getPage();
 
         ReviewDialogView.create({
@@ -325,8 +335,12 @@ export class EditReviewAction extends Actions.Action {
 export class AddGeneralCommentAction extends Actions.Action {
     /**
      * Handle the action activation.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
+    async activate() {
         RB.PageManager.getPage().addGeneralComment();
     }
 }
@@ -344,9 +358,13 @@ export class AddGeneralCommentAction extends Actions.Action {
 export class ShipItAction extends Actions.Action {
     /**
      * Handle the action activation.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
-        RB.PageManager.getPage().shipIt();
+    async activate() {
+        await RB.PageManager.getPage().shipIt();
     }
 }
 
@@ -363,15 +381,19 @@ export class ShipItAction extends Actions.Action {
 export class AddFileAction extends Actions.Action {
     /**
      * Handle the action activation.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
+    async activate() {
         const page = RB.PageManager.getPage();
         const reviewRequestEditorView = page.reviewRequestEditorView as
             ReviewRequestEditorView;
         const reviewRequestEditor = reviewRequestEditorView.model;
 
         if (reviewRequestEditor.hasUnviewedUserDraft) {
-            reviewRequestEditorView.promptToLoadUserDraft();
+            await reviewRequestEditorView.promptToLoadUserDraft();
         } else {
             const uploadDialog = new RB.UploadAttachmentView({
                 reviewRequestEditor: reviewRequestEditor,
@@ -394,8 +416,12 @@ export class AddFileAction extends Actions.Action {
 export class UpdateDiffAction extends Actions.Action {
     /**
      * Handle the action activation.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
+    async activate() {
         const page = RB.PageManager.getPage();
         const reviewRequestEditorView = page.reviewRequestEditorView as
             ReviewRequestEditorView;
@@ -403,34 +429,34 @@ export class UpdateDiffAction extends Actions.Action {
         const reviewRequest = reviewRequestEditor.get('reviewRequest');
 
         if (reviewRequestEditor.hasUnviewedUserDraft) {
-            reviewRequestEditorView.promptToLoadUserDraft();
+            await reviewRequestEditorView.promptToLoadUserDraft();
         } else if (reviewRequestEditor.get('commits').length > 0) {
-            const rbtoolsURL = 'https://www.reviewboard.org/docs/rbtools/latest/';
+            const rbtoolsURL =
+                'https://www.reviewboard.org/docs/rbtools/latest/';
 
-            const $dialog = $('<div>')
-                .append($('<p>')
-                    .html(_`
-                        This review request was created with
-                        <a href="${rbtoolsURL}">RBTools</a>,
-                        and is tracking commit history.
-                    `))
-                .append($('<p>')
-                    .html(_`
-                        To add a new diff revision, you will need to use
-                        <code>rbt post -u</code> instead of uploading a diff
-                        file.
-                    `))
-                .modalBox({
-                    buttons: [
-                        paint<HTMLButtonElement>`
-                            <Ink.Button>${_`Cancel`}</Ink.Button>
-                        `,
-                    ],
-                    title: _`Use RBTools to update the diff`,
-                })
-                .on('close', () => {
-                    $dialog.modalBox('destroy');
-                });
+            craft<DialogView>`
+                <Ink.Dialog title=${_`Use RBTools to update the diff`}>
+                 <Ink.Dialog.Body>
+                  <p>${paint([_`
+                   This review request was created with
+                   <a href="${rbtoolsURL}">RBTools</a>, and is tracking
+                   commit history.
+                  `])}</p>
+                  <p>${paint([_`
+                   To add a new diff revision, you will need to use
+                   <code>rbt post -u</code> instead of uploading a diff
+                   file.
+                  `])}</p>
+                 </>
+                 <Ink.Dialog.PrimaryActions>
+                  <Ink.DialogAction
+                    action=${DialogActionType.CLOSE}
+                    type=${ButtonType.PRIMARY}>
+                   ${_`Close`}
+                  </>
+                 </>
+                </>
+            `.openAndWait();
         } else {
             const updateDiffView = new RB.UpdateDiffView({
                 model: new RB.UploadDiffModel({

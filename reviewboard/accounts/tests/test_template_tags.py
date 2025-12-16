@@ -86,7 +86,7 @@ class JSUserSessionInfoTests(TestCase):
                 'fullName': 'Test User',
                 'mutedReviewRequestsURL':
                     '/api/users/test/muted-review-requests/',
-                'quickAccessActions': [],
+                'quickAccessActionIDs': [],
                 'readOnly': False,
                 'sessionURL': '/api/session/',
                 'timezoneOffset': expected_tz_offset,
@@ -154,7 +154,7 @@ class JSUserSessionInfoTests(TestCase):
                 'fullName': 'Test User',
                 'mutedReviewRequestsURL':
                     '/s/local-site-1/api/users/test/muted-review-requests/',
-                'quickAccessActions': [],
+                'quickAccessActionIDs': [],
                 'readOnly': False,
                 'sessionURL': '/s/local-site-1/api/session/',
                 'timezoneOffset': expected_tz_offset,
@@ -215,7 +215,7 @@ class JSUserSessionInfoTests(TestCase):
                     'fullName': 'Test User',
                     'mutedReviewRequestsURL':
                         '/api/users/test/muted-review-requests/',
-                    'quickAccessActions': [],
+                    'quickAccessActionIDs': [],
                     'readOnly': False,
                     'sessionURL': '/api/session/',
                     'timezoneOffset': '+0000',
@@ -254,7 +254,7 @@ class JSUserSessionInfoTests(TestCase):
                     'fullName': 'Test User',
                     'mutedReviewRequestsURL':
                         '/api/users/test/muted-review-requests/',
-                    'quickAccessActions': [],
+                    'quickAccessActionIDs': [],
                     'readOnly': False,
                     'sessionURL': '/api/session/',
                     'timezoneOffset': '+0000',

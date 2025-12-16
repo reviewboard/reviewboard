@@ -47,19 +47,21 @@ export class MenuActionView<
     protected onInitialRender() {
         const menuItems = new MenuItemsCollection();
         const page = RB.PageManager.getPage();
+        const attachmentPointID = this.attachmentPointID;
+        const children = this.model.get('children')[attachmentPointID] || [];
 
-        for (const childId of this.model.get('children')) {
+        for (const childId of children) {
             if (childId === '--') {
                 menuItems.add({
                     type: MenuItemType.SEPARATOR,
                 });
             } else {
-                const childActionView = page.getActionView(childId);
+                const childActionView = page.getActionView(childId,
+                                                           attachmentPointID);
 
                 if (childActionView) {
                     const childAction = childActionView.model;
                     const visible = childAction.get('visible');
-                    const domID = childAction.get('domID');
 
                     const onClick =
                         childActionView['activate']
@@ -69,7 +71,6 @@ export class MenuActionView<
                     if (childActionView.el.dataset.customRendered === 'true') {
                         menuItems.add({
                             childEl: childActionView.el,
-                            id: domID,
                             onClick: onClick,
                         });
 
@@ -100,7 +101,6 @@ export class MenuActionView<
 
                         const menuItem = menuItems.add({
                             iconName: childAction.get('iconClass'),
-                            id: domID,
                             label: childAction.get('label'),
                             onClick: onClick,
                             url: url,
@@ -129,7 +129,8 @@ export class MenuActionView<
                             });
                     }
                 } else {
-                    console.error('Unable to find action for %s', childId);
+                    console.error('Unable to find action view for %s',
+                                  childId);
                 }
             }
         }

@@ -9,10 +9,10 @@ from django.template import Context
 from django.utils.translation import gettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.actions import (AttachmentPoint,
+from reviewboard.actions import (ActionPlacement,
+                                 AttachmentPoint,
                                  BaseAction,
                                  BaseMenuAction,
-                                 QuickAccessActionMixin,
                                  actions_registry)
 from reviewboard.actions.renderers import (BaseActionRenderer,
                                            DetailedMenuActionGroupRenderer,
@@ -85,10 +85,14 @@ class CloseCompletedAction(BaseAction):
     """
 
     action_id = 'close-completed'
-    parent_id = CloseMenuAction.action_id
     label = _('Completed')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.CloseCompletedAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=CloseMenuAction.action_id),
+    ]
 
     def should_render(
         self,
@@ -125,10 +129,14 @@ class CloseDiscardedAction(BaseAction):
     """
 
     action_id = 'close-discarded'
-    parent_id = CloseMenuAction.action_id
     label = _('Discarded')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.CloseDiscardedAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=CloseMenuAction.action_id),
+    ]
 
 
 class DeleteAction(BaseAction):
@@ -139,10 +147,14 @@ class DeleteAction(BaseAction):
     """
 
     action_id = 'delete-review-request'
-    parent_id = CloseMenuAction.action_id
     label = _('Delete Permanently')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.DeleteAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=CloseMenuAction.action_id),
+    ]
 
     def should_render(
         self,
@@ -297,10 +309,13 @@ class ReviewMenuAction(BaseMenuAction):
 
     action_id = 'review-menu'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.UNIFIED_BANNER
     default_renderer_cls = ReviewMenuActionRenderer
     icon_class = 'rb-icon rb-icon-compose-review'
     label = _('Review')
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER),
+    ]
 
     def should_render(
         self,
@@ -337,9 +352,7 @@ class CreateReviewAction(BaseAction):
     """
 
     action_id = 'create-review'
-    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Create Review')
     verbose_label = _('Create a new review')
     description = [
@@ -350,6 +363,12 @@ class CreateReviewAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-create-review'
     js_model_class = 'RB.CreateReviewAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
+                        parent_id='review-menu'),
+        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
+    ]
 
     def should_render(
         self,
@@ -386,9 +405,7 @@ class EditReviewAction(BaseAction):
     """
 
     action_id = 'edit-review'
-    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Edit Review')
     verbose_label = _('Edit your review')
     description = [
@@ -396,6 +413,12 @@ class EditReviewAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-compose-review'
     js_model_class = 'RB.EditReviewAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
+                        parent_id='review-menu'),
+        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
+    ]
 
     def should_render(
         self,
@@ -432,9 +455,7 @@ class AddGeneralCommentAction(BaseAction):
     """
 
     action_id = 'add-general-comment'
-    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Add General Comment')
     verbose_label = _('Add a general comment')
     description = [
@@ -443,6 +464,12 @@ class AddGeneralCommentAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-edit'
     js_model_class = 'RB.AddGeneralCommentAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
+                        parent_id='review-menu'),
+        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
+    ]
 
     def should_render(
         self,
@@ -478,9 +505,7 @@ class ShipItAction(BaseAction):
     """
 
     action_id = 'ship-it'
-    parent_id: (str | None) = 'review-menu'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Ship It!')
     verbose_label = _('Ship it!')
     description = [
@@ -491,6 +516,12 @@ class ShipItAction(BaseAction):
     ]
     icon_class = 'rb-icon rb-icon-shipit'
     js_model_class = 'RB.ShipItAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
+                        parent_id='review-menu'),
+        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
+    ]
 
     def should_render(
         self,
@@ -523,60 +554,6 @@ class ShipItAction(BaseAction):
             (user.pk != review_request.submitter_id or
              bool(siteconfig.get('reviews_allow_self_shipit')))
         )
-
-
-class QuickAccessShipItAction(QuickAccessActionMixin, ShipItAction):
-    """A Quick Access button for the "Ship It" action.
-
-    When enabled, this action provides quick access to posting a Ship It
-    on a review request from the Quick Access hotbar.
-
-    Version Added:
-        7.1
-    """
-
-    action_id = 'quickaccess-ship-it'
-
-
-class QuickAccessCreateReviewAction(QuickAccessActionMixin,
-                                    CreateReviewAction):
-    """A Quick Access button for the "Create Review" action.
-
-    When enabled, this action provides quick access to creating a new, empty
-    review request from the Quick Access hotbar.
-
-    Version Added:
-        7.1
-    """
-
-    action_id = 'quickaccess-create-review'
-
-
-class QuickAccessEditReviewAction(QuickAccessActionMixin, EditReviewAction):
-    """A Quick Access button for the "Edit Review" action.
-
-    When enabled, this action provides quick access to editing an existing
-    review from the Quick Access hotbar.
-
-    Version Added:
-        7.1
-    """
-
-    action_id = 'quickaccess-edit-review'
-
-
-class QuickAccessAddGeneralCommentAction(QuickAccessActionMixin,
-                                         AddGeneralCommentAction):
-    """A Quick Access button for the "Add General Comment" action.
-
-    When enabled, this action provides quick access to adding a new General
-    Comment from the Quick Access hotbar.
-
-    Version Added:
-        7.1
-    """
-
-    action_id = 'quickaccess-add-general-comment'
 
 
 class LegacyAddGeneralCommentAction(BaseAction):
@@ -766,9 +743,13 @@ class UploadDiffAction(BaseAction):
     """
 
     action_id = 'upload-diff'
-    parent_id = UpdateMenuAction.action_id
     apply_to = all_review_request_url_names
     js_model_class = 'RB.UpdateDiffAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=UpdateMenuAction.action_id),
+    ]
 
     def get_label(
         self,
@@ -834,10 +815,14 @@ class UploadFileAction(BaseAction):
     """
 
     action_id = 'upload-file'
-    parent_id = UpdateMenuAction.action_id
     label = _('Add File')
     apply_to = all_review_request_url_names
     js_model_class = 'RB.AddFileAction'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                        parent_id=UpdateMenuAction.action_id),
+    ]
 
     def should_render(
         self,
@@ -894,9 +879,12 @@ class StarAction(BaseAction):
 
     action_id = 'star-review-request'
     apply_to = all_review_request_url_names
-    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     default_renderer_cls = StarActionRenderer
     label = ''
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT),
+    ]
 
     def should_render(
         self,
@@ -928,19 +916,6 @@ class StarAction(BaseAction):
                 super().should_render(context=context))
 
 
-class ArchiveMenuActionRenderer(MenuActionGroupRenderer):
-    """Action renderer for the archive menu.
-
-    This provides a custom template used to render the menu as an archive
-    icon, which can be pressed to archive the review request.
-
-    Version Added:
-        7.1
-    """
-
-    template_name = 'reviews/archive_menu_action.html'
-
-
 class ArchiveMenuAction(BaseMenuAction):
     """A menu for managing the visibility state of the review request.
 
@@ -949,10 +924,15 @@ class ArchiveMenuAction(BaseMenuAction):
     """
 
     action_id = 'archive-menu'
-    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
-    label = ''
-    default_renderer_cls = ArchiveMenuActionRenderer
+    default_renderer_cls = MenuActionGroupRenderer
     apply_to = all_review_request_url_names
+
+    icon_class = 'rb-icon rb-icon-archive-off'
+    verbose_label = _('Archive or Mute')
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT),
+    ]
 
     def should_render(
         self,
@@ -992,13 +972,14 @@ class ArchiveAction(BaseAction):
     """
 
     action_id = 'archive'
-    parent_id = ArchiveMenuAction.action_id
-    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
     js_model_class = 'RB.ArchiveAction'
-
-    # This is only shown on page load. It will be overridden at runtime.
     label = _('Toggle Archived')
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT,
+                        parent_id=ArchiveMenuAction.action_id),
+    ]
 
 
 class MuteAction(BaseAction):
@@ -1009,13 +990,14 @@ class MuteAction(BaseAction):
     """
 
     action_id = 'mute'
-    parent_id = ArchiveMenuAction.action_id
-    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
     js_model_class = 'RB.MuteAction'
-
-    # This is only shown on page load. It will be overridden at runtime.
     label = _('Toggle Muted')
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT,
+                        parent_id=ArchiveMenuAction.action_id),
+    ]
 
 
 class BaseReviewRequestAction(BaseAction):
@@ -1052,10 +1034,12 @@ class BaseReviewRequestAction(BaseAction):
         6.0:
         New code should be written using
         :py:class:`reviewboard.actions.base.BaseAction`. This class will be
-        removed in 7.0.
+        removed in 8.0.
     """
 
     apply_to = all_review_request_url_names
+
+    _ignore_action_deprecations = True
 
     def __init__(self) -> None:
         """Initialize this action.
@@ -1068,7 +1052,10 @@ class BaseReviewRequestAction(BaseAction):
             'reviewboard.actions.base.BaseAction')
 
         super().__init__()
-        self._parent = None
+
+        self.placements = [
+            ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST),
+        ]
 
     @property
     def max_depth(self) -> int:
@@ -1092,6 +1079,15 @@ class BaseReviewRequestAction(BaseAction):
         """Reset the max_depth of this action and all its ancestors to zero."""
         # The max depth is now calculated on the fly, so this is a no-op.
         pass
+
+    def get_dom_element_id(self) -> str:
+        """Return the ID used for the DOM element for this action.
+
+        Returns:
+            str:
+            The ID used for the element.
+        """
+        return f'action-{self.action_id}'
 
     def get_extra_context(
         self,
@@ -1159,8 +1155,10 @@ class BaseReviewRequestAction(BaseAction):
             DepthLimitExceededError:
                 The maximum depth limit is exceeded.
         """
-        if parent:
-            self.parent_id = parent.action_id
+        if parent is not None:
+            assert self.placements
+
+            self.placements[0].parent_id = parent.action_id
 
         actions_registry.register(self)
 
@@ -1186,10 +1184,12 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
         6.0:
         New code should be written using
         :py:class:`reviewboard.actions.base.BaseMenuAction`. This class will be
-        removed in 7.0.
+        removed in 8.0.
     """
 
     apply_to = all_review_request_url_names
+
+    _ignore_action_deprecations = True
 
     def __init__(
         self,
@@ -1211,7 +1211,20 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
         """
         super().__init__()
 
+        self.placements = [
+            ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST),
+        ]
+
         self._children = child_actions or []
+
+    def get_dom_element_id(self) -> str:
+        """Return the ID used for the DOM element for this action.
+
+        Returns:
+            str:
+            The ID used for the element.
+        """
+        return f'action-{self.action_id}'
 
     def copy_to_dict(
         self,
@@ -1301,13 +1314,18 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
             DepthLimitExceededError:
                 The maximum depth limit is exceeded.
         """
-        if parent:
-            self.parent_id = parent.action_id
+        action_id = self.action_id
+
+        if parent is not None:
+            assert self.placements
+            self.placements[0].parent_id = parent.action_id
 
         actions_registry.register(self)
 
         for child in self._children:
-            child.parent_id = self.action_id
+            assert child.placements
+
+            child.placements[0].parent_id = action_id
             child.register()
 
     def unregister(self) -> None:

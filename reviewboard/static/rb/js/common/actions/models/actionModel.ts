@@ -52,22 +52,6 @@ export interface ActionAttrs {
     isCustomRendered: boolean;
 
     /**
-     * Whether this is a Quick Access action.
-     *
-     * Version Added:
-     *     7.1
-     */
-    isQuickAccess: boolean;
-
-    /**
-     * Whether this Quick Access action is enabled.
-     *
-     * Version Added:
-     *     7.1
-     */
-    isQuickAccessEnabled: boolean;
-
-    /**
      * The label for the action.
      *
      * Version Added:
@@ -130,8 +114,6 @@ export class Action<
         domID: null,
         iconClass: null,
         isCustomRendered: false,
-        isQuickAccess: false,
-        isQuickAccessEnabled: false,
         label: null,
         url: null,
         verboseLabel: null,
@@ -147,8 +129,12 @@ export class Action<
      *
      * Version Added:
      *     7.1
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
+    async activate() {
         // This can be overridden by subclasses for actions.
     }
 }

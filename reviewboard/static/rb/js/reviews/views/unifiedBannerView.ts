@@ -549,7 +549,7 @@ export class UnifiedBannerView extends FloatingBannerView<
             `)
             .appendTo(this.#$draftActions);
 
-        this.#buildQuickAccessMenu();
+        this.#setupQuickAccess();
 
         const reviewRequestEditor = model.get('reviewRequestEditor');
         const reviewRequest = model.get('reviewRequest');
@@ -748,12 +748,12 @@ export class UnifiedBannerView extends FloatingBannerView<
     }
 
     /**
-     * Build and populate the menu for the Quick Access options.
+     * Build and populate the Quick Access bar and configuration menu.
      *
      * Version Added:
      *     7.1
      */
-    #buildQuickAccessMenu() {
+    #setupQuickAccess() {
         const parentEl = this.$('.rb-c-unified-banner__edit-quick-access')[0];
 
         if (!parentEl) {
@@ -782,25 +782,37 @@ export class UnifiedBannerView extends FloatingBannerView<
          */
         let optionsDirty = false;
         const pageView = RB.PageManager.getPage();
-        const actionViews = pageView.getActionViews({
-            isQuickAccess: true,
-        });
+        const actionViews = pageView.getActionViews('quick-access');
 
         const menuItemsByActionID: Record<string, MenuItem> = {};
+        const enabledQuickAccessIDs = new Set(
+            UserSession.instance.get('quickAccessActionIDs') || []);
 
         menuLabelView.menuItems.add(actionViews.map(actionView => {
             const action = actionView.model;
 
+            /* Build the menu item. */
             const menuItem = new MenuItem({
-                checked: action.get('isQuickAccessEnabled'),
+                checked: enabledQuickAccessIDs.has(action.id),
                 label: action.get('label'),
                 type: MenuItemType.CHECKBOX_ITEM,
             });
 
-            menuItem.on('change:checked', () => {
-                action.set('isQuickAccessEnabled', menuItem.get('checked'));
+            /* Connect events for the quick access area. */
+            function onQuickAccessEnabledChanged() {
+                if (menuItem.get('checked')) {
+                    actionView.show();
+                } else {
+                    actionView.hide();
+                }
+            }
+
+            this.listenTo(menuItem, 'change:checked', () => {
+                onQuickAccessEnabledChanged();
                 optionsDirty = true;
             });
+
+            onQuickAccessEnabledChanged();
 
             menuItemsByActionID[action.id] = menuItem;
 
@@ -819,15 +831,15 @@ export class UnifiedBannerView extends FloatingBannerView<
 
                 for (const actionView of actionViews) {
                     const actionID = actionView.model.id;
-                    const action = menuItemsByActionID[actionID];
+                    const menuItem = menuItemsByActionID[actionID];
 
-                    if (action.get('checked')) {
+                    if (menuItem.get('checked')) {
                         newActionIDs.push(actionID);
                     }
                 }
 
-                session.set('quickAccessActions', newActionIDs);
-                await session.storeSettings(['quickAccessActions']);
+                session.set('quickAccessActionIDs', newActionIDs);
+                await session.storeSettings(['quickAccessActionIDs']);
 
                 optionsDirty = false;
             }

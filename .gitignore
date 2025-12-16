@@ -54,8 +54,10 @@ reviewboard/scmtools/testdata/hg_repo/.hg/wcache/
 reviewboard/scmtools/testdata/p4_repo/server.locks/
 reviewboard/scmtools/testdata/p4_repo/db.topology
 reviewboard/scmtools/testdata/p4_repo/journal
+storybook-static
 
 # Only ignore the top-level node_modules, so that if one is created somewhere
 # else in the tree (which may interfere with builds in strange ways), it'll
 # be easier to spot.
 /node_modules
+/reviewboard/node_modules

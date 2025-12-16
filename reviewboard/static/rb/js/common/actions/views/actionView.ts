@@ -4,6 +4,23 @@ import { type Action } from '../models/actionModel';
 
 
 /**
+ * Options passed to an ActionView.
+ *
+ * Version Added:
+ *     7.1
+ */
+export interface ActionViewOptions {
+    /**
+     * The action attachment point for this view.
+     *
+     * Version Added:
+     *     7.1
+     */
+    attachmentPointID: string;
+}
+
+
+/**
  * Base view for actions.
  *
  * Version Added:
@@ -12,17 +29,49 @@ import { type Action } from '../models/actionModel';
 @spina
 export class ActionView<
     TModel extends Action = Action,
-    TElement extends HTMLDivElement = HTMLDivElement,
-    TExtraViewOptions extends object = object
-> extends BaseView<TModel, TElement, TExtraViewOptions> {
+    TElement extends HTMLElement = HTMLDivElement,
+    TOptions extends ActionViewOptions = ActionViewOptions
+> extends BaseView<TModel, TElement, TOptions> {
     static modelEvents = {
-        'change:isQuickAccessEnabled': '_onQuickAccessEnabledChanged',
-        'change:visible': '_onModelVisibleChanged',
+        'change:visible': '_onVisibleChanged',
     };
 
     /**********************
      * Instance variables *
      **********************/
+
+    /**
+     * The action attachment point for this view.
+     *
+     * Version Added:
+     *     7.1
+     */
+    attachmentPointID: string;
+
+    /**
+     * Whether this action view is locally visible.
+     *
+     * This controls whether this action view is visible, separately from
+     * the action model's ``visible`` state. The action will be visible only
+     * if locally visible and if the action has ``visible=true``.
+     *
+     * Version Added:
+     *     7.1
+     */
+    #locallyVisible = true;
+
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (AttachmentViewOptions):
+     *         The options passed to the view.
+     */
+    initialize(
+        options: TOptions,
+    ) {
+        this.attachmentPointID = options.attachmentPointID;
+    }
 
     /**
      * The element used to manage the action's visibility.
@@ -36,7 +85,8 @@ export class ActionView<
      * Show the action.
      *
      * This will show the action parent container (if available) or this
-     * view's element (if contained in another parent).
+     * view's element (if contained in another parent) when the action's
+     * ``visible`` attribute is ``true``.
      *
      * Version Added:
      *     7.1
@@ -46,7 +96,8 @@ export class ActionView<
      *     This view, for chaining.
      */
     show(): this {
-        this.model.set('visible', true);
+        this.#locallyVisible = true;
+        this._onVisibleChanged();
 
         return this;
     }
@@ -55,7 +106,8 @@ export class ActionView<
      * Hide the action.
      *
      * This will hide the action parent container (if available) or this
-     * view's element (if contained in another parent).
+     * view's element (if contained in another parent) regardless of the
+     * action's ``visible`` attribute.
      *
      * Version Added:
      *     7.1
@@ -65,7 +117,8 @@ export class ActionView<
      *     This view, for chaining.
      */
     hide(): this {
-        this.model.set('visible', false);
+        this.#locallyVisible = false;
+        this._onVisibleChanged();
 
         return this;
     }
@@ -78,29 +131,23 @@ export class ActionView<
      *
      * Version Added:
      *     7.1
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the activation.
      */
-    activate() {
-        this.model.activate();
+    async activate() {
+        await this.model.activate();
     }
 
     /**
      * Handle the initial render of the view.
      *
-     * If this is a Quick Access action, the view will be given CSS classes
-     * to manage its visibility state separate from the action's standard
-     * visibility state.
-     *
      * Version Added:
      *     7.1
      */
     protected onInitialRender() {
-        if (this.model.get('isQuickAccess')) {
-            this.#getVisibilityEl().classList.add('-is-quick-access');
-
-            this._onQuickAccessEnabledChanged();
-        }
-
-        this._onModelVisibleChanged();
+        this._onVisibleChanged();
     }
 
     /**
@@ -112,9 +159,9 @@ export class ActionView<
      * Version Added:
      *     7.1
      */
-    private _onModelVisibleChanged() {
+    private _onVisibleChanged() {
         const visibilityEl = this.#getVisibilityEl();
-        const visible = this.model.get('visible');
+        const visible = this.#locallyVisible && this.model.get('visible');
 
         /*
          * The visibility state has changed. Show/hide and update the
@@ -127,21 +174,6 @@ export class ActionView<
             $(visibilityEl).hide();
             visibilityEl.hidden = true;
         }
-    }
-
-    /**
-     * Handle changes to the Quick Access enabled state.
-     *
-     * This will toggle a CSS class on or off to enable or disable its
-     * visibility, separate from the action's standard visibility state.
-     *
-     * Version Added:
-     *     7.1
-     */
-    private _onQuickAccessEnabledChanged() {
-        this.#getVisibilityEl().classList.toggle(
-            '-quick-access-enabled',
-            this.model.get('isQuickAccessEnabled'));
     }
 
     /**

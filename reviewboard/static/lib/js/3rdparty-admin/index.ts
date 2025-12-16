@@ -1,9 +1,6 @@
-import 'core-js/stable';
-import jQuery from 'jquery';
+import Masonry from 'masonry-layout';
 
 
 /* Export what's needed to the global namespace. */
 const _global = typeof globalThis !== 'undefined' ? globalThis : self;
-
-_global.$ = jQuery
-_global.jQuery = jQuery
+_global.Masonry = Masonry;

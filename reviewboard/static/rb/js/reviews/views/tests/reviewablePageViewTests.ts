@@ -183,7 +183,11 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
                 expect(dialogEl).not.toBeNull();
 
-                $(`#confirm-ship-it-button-${cid}`).click();
+                const confirmEl = document.getElementById(
+                    `confirm-ship-it-dialog-${cid}__confirm-action`);
+                expect(confirmEl).not.toBeNull();
+
+                confirmEl.click();
             });
 
             it('Confirmed with Do Not Ask Again', done => {
@@ -208,12 +212,17 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
                 expect(dialogEl).not.toBeNull();
 
-                const checkboxEl = document.getElementById(
-                    `confirm-ship-it-do-not-ask-${cid}`
-                ) as HTMLInputElement;
+                const checkboxEl = dialogEl.querySelector<HTMLInputElement>(
+                    '.ink-c-dialog__suppress');
+                expect(checkboxEl).not.toBeNull();
+
                 checkboxEl.checked = true;
 
-                $(`#confirm-ship-it-button-${cid}`).click();
+                const confirmEl = document.getElementById(
+                    `confirm-ship-it-dialog-${cid}__confirm-action`);
+                expect(confirmEl).not.toBeNull();
+
+                confirmEl.click();
             });
 
             it('Without confirmation dialog', done => {
@@ -243,7 +252,11 @@ suite('rb/pages/views/ReviewablePageView', function() {
 
                 expect(dialogEl).not.toBeNull();
 
-                $(`#cancel-ship-it-button-${cid}`).click();
+                const cancelEl = document.getElementById(
+                    `confirm-ship-it-dialog-${cid}__cancel-action`);
+                expect(cancelEl).not.toBeNull();
+
+                cancelEl.click();
 
                 expect(page.markShipIt).not.toHaveBeenCalled();
                 expect(RB.navigateTo).not.toHaveBeenCalled();

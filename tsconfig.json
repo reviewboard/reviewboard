@@ -3,7 +3,7 @@
     "compilerOptions": {
         "baseUrl": "./",
         "paths": {
-            "backbone": ["node_modules/@beanbag/spina/lib/@types/backbone"],
+            "backbone": ["node_modules/@beanbag/djblets/static/lib/js/@types/backbone"],
             "djblets/*": ["node_modules/@beanbag/djblets/static/djblets/js/*"],
             "reviewboard/*": ["reviewboard/static/rb/js/*"]
         },
