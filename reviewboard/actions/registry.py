@@ -55,7 +55,12 @@ class ActionAttachmentPointsRegistry(Registry[ActionAttachmentPoint]):
             reviewboard.actions.base.BaseAction:
             The built-in attachment points.
         """
-        yield from [
+        from reviewboard.admin.actions import (
+            get_default_admin_attachment_points,
+        )
+
+        yield from get_default_admin_attachment_points()
+        yield from (
             ActionAttachmentPoint(AttachmentPoint.NON_UI),
             ActionAttachmentPoint(AttachmentPoint.HEADER),
             ActionAttachmentPoint(AttachmentPoint.REVIEW_REQUEST_LEFT),
@@ -65,7 +70,7 @@ class ActionAttachmentPointsRegistry(Registry[ActionAttachmentPoint]):
                 AttachmentPoint.QUICK_ACCESS,
                 default_action_renderer_cls=ButtonActionRenderer,
             ),
-        ]
+        )
 
     def get_attachment_point(
         self,
@@ -162,6 +167,7 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
             SupportAction,
             SupportMenuAction,
         )
+        from reviewboard.admin.actions import get_default_admin_actions
         from reviewboard.reviews.actions import (
             AddGeneralCommentAction,
             ArchiveAction,
@@ -233,6 +239,8 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
             AddGeneralCommentAction(),
             ShipItAction(),
         )
+
+        yield from get_default_admin_actions()
 
     def on_reset(self) -> None:
         """Handle cleanup after resetting the registry.

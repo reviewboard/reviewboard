@@ -75,6 +75,7 @@ Administration and Server
    :toctree: python
 
    reviewboard.admin
+   reviewboard.admin.actions
    reviewboard.admin.admin_sites
    reviewboard.admin.cache_stats
    reviewboard.admin.checks
