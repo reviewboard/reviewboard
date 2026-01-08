@@ -1,3 +1,7 @@
+"""Tags for administrative functions."""
+
+from __future__ import annotations
+
 import re
 
 from django import template
@@ -5,87 +9,14 @@ from django.contrib import messages
 from django.contrib.admin.templatetags.admin_urls import (
     add_preserved_filters,
     admin_urlquote)
-from django.contrib.auth.models import User
-from django.template.context import RequestContext
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from djblets.util.templatetags.djblets_js import json_dumps_items
 
-from reviewboard import get_version_string
 from reviewboard.admin.forms.change_form import ChangeFormFieldset
-from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.notifications.models import WebHookTarget
-from reviewboard.oauth.models import Application
-from reviewboard.reviews.models import DefaultReviewer, Group
-from reviewboard.scmtools.models import Repository
-from reviewboard.site.urlresolvers import local_site_reverse
 
 
 register = template.Library()
-
-
-@register.inclusion_tag('admin/subnav_item.html', takes_context=True)
-def admin_subnav(context, url_name, name, icon=""):
-    """Return an <li> containing a link to the desired setting tab."""
-    request = context.get('request')
-    url = local_site_reverse(url_name, request=request)
-
-    return RequestContext(
-        request, {
-            'url': url,
-            'name': name,
-            'current': request is not None and url == request.path,
-            'icon': icon,
-        })
-
-
-@register.inclusion_tag('admin/sidebar.html', takes_context=True)
-def admin_sidebar(context):
-    """Render the admin sidebar.
-
-    This includes the configuration links and setting indicators.
-    """
-    request = context.get('request')
-
-    request_context = {
-        'count_users': User.objects.count(),
-        'count_review_groups': Group.objects.count(),
-        'count_default_reviewers': DefaultReviewer.objects.count(),
-        'count_oauth_applications': Application.objects.count(),
-        'count_repository': Repository.objects.accessible(
-            request.user, visible_only=False).count(),
-        'count_webhooks': WebHookTarget.objects.count(),
-        'count_hosting_accounts': HostingServiceAccount.objects.count(),
-        'version': get_version_string(),
-    }
-
-    # We're precomputing URLs in here, rather than computing them in the
-    # template, because we need to always ensure that reverse() will be
-    # searching all available URL patterns and not just the ones bound to
-    # request.current_app.
-    #
-    # current_app gets set by AdminSite views, and if we're in an extension's
-    # AdminSite view, we'll fail to resolve these URLs from within the
-    # template. We don't have that problem if calling reverse() ourselves.
-    request_context.update({
-        'url_%s' % url_name: reverse('admin:%s' % url_name)
-        for url_name in ('auth_user_add',
-                         'auth_user_changelist',
-                         'hostingsvcs_hostingserviceaccount_add',
-                         'hostingsvcs_hostingserviceaccount_changelist',
-                         'notifications_webhooktarget_add',
-                         'notifications_webhooktarget_changelist',
-                         'oauth_application_add',
-                         'oauth_application_changelist',
-                         'reviews_defaultreviewer_add',
-                         'reviews_defaultreviewer_changelist',
-                         'reviews_group_add',
-                         'reviews_group_changelist',
-                         'scmtools_repository_add',
-                         'scmtools_repository_changelist')
-    })
-
-    return RequestContext(request, request_context)
 
 
 @register.simple_tag

@@ -1,0 +1,16 @@
+{% extends "actions/sidebar_group_action.html" %}
+{% load djblets_extensions %}
+
+
+{% block action_container_css_class %}
+ {{block.super}}
+ {% if add_item_urls %} -has-icons{% endif %}
+{% endblock %}
+
+
+{% block action_sidebar_items %}
+{{block.super}}
+{%  if action.sidebar_hook_point %}
+{%   template_hook_point action.sidebar_hook_point %}
+{%  endif %}
+{% endblock action_sidebar_items %}

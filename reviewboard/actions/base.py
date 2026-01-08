@@ -54,6 +54,12 @@ class AttachmentPoint:
     #: bar.
     NON_UI = 'non-ui'
 
+    #: Administration navigation.
+    #:
+    #: Version Added:
+    #:     7.1
+    ADMIN_NAV = 'admin-nav'
+
     #: Attachment for actions in the page header.
     HEADER = 'header'
 
@@ -1103,7 +1109,15 @@ class BaseAction:
             A dictionary of attributes to pass to the model instance.
         """
         icon_class = self.icon_class
-        url = self.get_url(context=context)
+
+        try:
+            url = self.get_url(context=context)
+        except Exception as e:
+            logger.exception('Unexpected error retrieving URL for action '
+                             '"%s": %s',
+                             self.action_id, e)
+            url = None
+
         visible = self.get_visible(context=context)
 
         data: SerializableDjangoJSONDict = {

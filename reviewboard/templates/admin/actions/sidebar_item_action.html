@@ -1,0 +1,15 @@
+{% extends "actions/sidebar_item_action.html" %}
+{% load djblets_utils %}
+
+
+{% block action_sidebar_item_content %}
+{%  if add_item_url %}
+<a class="rb-c-sidebar__icon rb-icon rb-icon-admin-add"
+   href="{{add_item_url}}"
+   title="{{add_item_title}}"></a>
+{%  endif %}
+{{block.super}}
+{%  if item_count is not None %}
+<span class="rb-c-sidebar__item-value">{{item_count}}</span>
+{%  endif %}
+{% endblock action_sidebar_item_content %}
