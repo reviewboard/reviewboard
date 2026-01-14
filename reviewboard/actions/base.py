@@ -94,7 +94,7 @@ class ActionAttachmentPoint:
     correctly.
 
     An attachment point can be registered in a central registry so that it
-    can be referred to by name. It may also be unregisterd and passed directly
+    can be referred to by name. It may also be unregistered and passed directly
     to any templates that want to render the actions.
 
     To include an attachment point on a page, use the
@@ -470,7 +470,8 @@ class ActionAttachmentPoint:
                 continue
 
             # Render any children using the item renderer as the default.
-            if (child_actions := placement.child_actions):
+            if (action.should_render(context=context) and
+                (child_actions := placement.child_actions)):
                 if (renderer is not None and
                     issubclass(renderer, BaseActionGroupRenderer)):
                     child_default_item_renderer_cls = \
@@ -529,7 +530,7 @@ class ActionPlacement:
     #: By default, actions inherit their default renderer from a previous
     #: group or attachment point.
     #:
-    #: Default renderes can always be overridden when rendering the action.
+    #: Default renderers can always be overridden when rendering the action.
     default_renderer_cls: type[BaseActionRenderer] | None
 
     #: The DOM element ID for this element on the page.
@@ -1146,7 +1147,7 @@ class BaseAction:
         self,
         *,
         context: Context,
-    ) -> dict:
+    ) -> SerializableDjangoJSONDict:
         """Return data to be passed to the JavaScript view.
 
         Deprecated:
@@ -1409,7 +1410,7 @@ class BaseAction:
 
                 return render_to_string(
                     template_name=self.js_template_name,
-                    context=cast(dict, context.flatten()),
+                    context=cast(dict[str, Any], context.flatten()),
                     request=request)
             except Exception as e:
                 logger.exception('Error rendering JavaScript for action model '
@@ -1520,9 +1521,6 @@ class BaseAction:
                 f'An invalid renderer class was provided ({renderer_cls!r}).'
             )
 
-        if not self.should_render(context=context):
-            return mark_safe('')
-
         return (
             renderer_cls(action=self,
                          placement=placement)
@@ -1558,7 +1556,7 @@ class BaseGroupAction(BaseAction):
         self,
         *,
         context: Context,
-    ) -> dict:
+    ) -> SerializableDjangoJSONDict:
         """Return data to be passed to the JavaScript model.
 
         Args:
