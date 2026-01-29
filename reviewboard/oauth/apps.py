@@ -1,5 +1,7 @@
 """The app definition for reviewboard.oauth."""
 
+from __future__ import annotations
+
 from django.apps import AppConfig
 
 

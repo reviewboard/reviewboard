@@ -1,5 +1,7 @@
 """Error definitions for the reviews app."""
 
+from __future__ import annotations
+
 from reviewboard.actions.errors import DepthLimitExceededError
 
 

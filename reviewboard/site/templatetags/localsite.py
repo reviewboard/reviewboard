@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django import template
 from django.core.exceptions import ViewDoesNotExist
 from django.template.defaulttags import url as django_url

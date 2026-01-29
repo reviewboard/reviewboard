@@ -22,6 +22,8 @@ Version Changed:
     The contents of this module were split into sub-modules.
 """
 
+from __future__ import annotations
+
 from reviewboard.accounts.backends.ad import ActiveDirectoryBackend
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.backends.http_digest import HTTPDigestBackend

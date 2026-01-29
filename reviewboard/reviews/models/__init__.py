@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.reviews.models.base_comment import BaseComment
 from reviewboard.reviews.models.default_reviewer import DefaultReviewer
 from reviewboard.reviews.models.diff_comment import Comment

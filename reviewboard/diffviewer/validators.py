@@ -1,5 +1,7 @@
 """Validators for diffviewer components."""
 
+from __future__ import annotations
+
 import re
 
 from django.core.validators import RegexValidator

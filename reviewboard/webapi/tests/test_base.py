@@ -1,5 +1,7 @@
 """Generic unit tests for Web API resources"""
 
+from __future__ import annotations
+
 import json
 
 from django.urls import clear_url_caches, include, path, re_path

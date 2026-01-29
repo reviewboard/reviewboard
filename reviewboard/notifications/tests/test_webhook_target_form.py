@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.notifications.forms.WebHookTargetForm."""
 
+from __future__ import annotations
+
 from reviewboard.notifications.forms import WebHookTargetForm
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.site.models import LocalSite

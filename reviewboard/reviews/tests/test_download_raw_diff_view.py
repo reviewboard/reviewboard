@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.reviews.views.DownloadRawDiffView."""
 
+from __future__ import annotations
+
 from reviewboard.testing import TestCase
 
 

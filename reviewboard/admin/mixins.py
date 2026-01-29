@@ -1,5 +1,7 @@
 """View mixins provided by the admin app."""
 
+from __future__ import annotations
+
 from django.utils.decorators import method_decorator
 
 from reviewboard.admin.decorators import check_read_only

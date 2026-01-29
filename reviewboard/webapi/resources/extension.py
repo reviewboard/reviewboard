@@ -1,5 +1,7 @@
 """Review Board's extension resource."""
 
+from __future__ import annotations
+
 from djblets.extensions.resources import (
     ExtensionResource as DjbletsExtensionResource)
 from djblets.util.decorators import augment_method_from

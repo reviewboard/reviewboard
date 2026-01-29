@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 SEQUENCE = [
     'change_descriptions',
     'last_review_timestamp',

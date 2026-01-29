@@ -4,6 +4,8 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from django.db.models.signals import m2m_changed
 from djblets.webapi.oauth2_scopes import enable_web_api_scopes

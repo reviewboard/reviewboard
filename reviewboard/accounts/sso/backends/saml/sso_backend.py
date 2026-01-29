@@ -4,6 +4,8 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
 from importlib import import_module
 
 from django.urls import path, reverse

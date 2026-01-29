@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.avatars.registry import (
     AvatarServiceRegistry as DjbletsAvatarServiceRegistry)
 from djblets.avatars.services import (GravatarService,

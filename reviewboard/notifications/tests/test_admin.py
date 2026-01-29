@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.notifications.models"""
 
+from __future__ import annotations
+
 from django.urls import reverse
 
 from reviewboard.notifications.models import WebHookTarget

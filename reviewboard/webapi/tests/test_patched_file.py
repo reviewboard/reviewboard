@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.webapi.errors import DOES_NOT_EXIST
 
 from reviewboard.diffviewer.models import FileDiff

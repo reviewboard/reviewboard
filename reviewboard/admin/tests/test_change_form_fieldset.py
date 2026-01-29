@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.admin.forms.change_form.ChangeFormFieldset."""
 
+from __future__ import annotations
+
 from django.contrib.admin.helpers import AdminForm
 from django.contrib.auth.models import User
 

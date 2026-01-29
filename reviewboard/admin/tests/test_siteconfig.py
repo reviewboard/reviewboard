@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.admin.siteconfig."""
 
+from __future__ import annotations
+
 import os
 
 from django.conf import settings

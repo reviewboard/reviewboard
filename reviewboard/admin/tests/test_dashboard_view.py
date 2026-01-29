@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.admin.views.dashboard."""
 
+from __future__ import annotations
+
 from kgb import SpyAgency
 
 from reviewboard.admin.views import logger

@@ -1,5 +1,7 @@
 """Django model administration for OAuth2 applications."""
 
+from __future__ import annotations
+
 import importlib
 
 from django.contrib.admin.options import IS_POPUP_VAR

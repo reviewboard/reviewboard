@@ -1,5 +1,7 @@
 """Django AdminSite customization for Review Board."""
 
+from __future__ import annotations
+
 from django.contrib import admin
 from django.contrib.admin.forms import AdminAuthenticationForm
 from django.contrib.admin.sites import (AdminSite as DjangoAdminSite,

@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.admin.form_widgets.RelatedRepositoryWidget."""
 
+from __future__ import annotations
+
 from django import forms
 
 from reviewboard.admin.form_widgets import RelatedRepositoryWidget

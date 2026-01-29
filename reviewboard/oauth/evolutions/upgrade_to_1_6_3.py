@@ -4,6 +4,8 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
 from django.db import models
 from django.utils import timezone
 from django_evolution.mutations import AddField, ChangeField

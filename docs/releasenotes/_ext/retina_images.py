@@ -4,6 +4,9 @@ This extension goes through all the images Sphinx will provide in _images and
 checks if Retina versions are available. If there are any, they will be copied
 as well.
 """
+
+from __future__ import annotations
+
 import os
 
 

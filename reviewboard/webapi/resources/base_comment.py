@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
 from djblets.webapi.errors import DOES_NOT_EXIST, WebAPIError

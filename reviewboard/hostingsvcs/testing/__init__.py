@@ -8,6 +8,8 @@ This provides convenience imports for hosting service testing support:
    ~reviewboard.hostingsvcs.testing.testcases.HostingServiceTestCase
 """
 
+from __future__ import annotations
+
 from reviewboard.hostingsvcs.testing.testcases import HostingServiceTestCase
 
 

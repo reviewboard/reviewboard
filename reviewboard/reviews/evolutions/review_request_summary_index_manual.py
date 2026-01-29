@@ -30,6 +30,8 @@ Version Added:
     2.0.11
 """
 
+from __future__ import annotations
+
 from django.conf import settings
 from django_evolution.mutations import ChangeField, SQLMutation
 

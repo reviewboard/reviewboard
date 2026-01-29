@@ -4,6 +4,8 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from django.db.models import Q
 from djblets.util.decorators import augment_method_from

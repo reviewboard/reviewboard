@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 from django.core.management.base import BaseCommand

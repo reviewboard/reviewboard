@@ -4,6 +4,8 @@ Version Added:
     5.0.1
 """
 
+from __future__ import annotations
+
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.github import GitHub
 from reviewboard.hostingsvcs.models import HostingServiceAccount

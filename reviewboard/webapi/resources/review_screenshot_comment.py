@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.core.exceptions import ObjectDoesNotExist
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,

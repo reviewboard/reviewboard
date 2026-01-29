@@ -1,5 +1,7 @@
 """Top-level signals for initialization, upgrades, and settings changes."""
 
+from __future__ import annotations
+
 from django.dispatch import Signal
 
 

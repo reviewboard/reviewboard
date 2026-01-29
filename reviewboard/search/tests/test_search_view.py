@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.search.views.RBSearchView."""
 
+from __future__ import annotations
+
 from urllib.parse import urlencode
 
 from django.urls import reverse

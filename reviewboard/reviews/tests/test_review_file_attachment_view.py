@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.reviews.views.ReviewFileAttachmentView."""
 
+from __future__ import annotations
+
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 

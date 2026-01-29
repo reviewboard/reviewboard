@@ -4,6 +4,8 @@ This builds upon the :py:mod:`djblets.webapi.errors` module, which contains
 API errors provided by Djblets.
 """
 
+from __future__ import annotations
+
 from djblets.webapi.errors import WebAPIError
 
 

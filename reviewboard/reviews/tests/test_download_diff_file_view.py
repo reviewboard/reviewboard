@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.reviews.views.DownloadDiffFileView."""
 
+from __future__ import annotations
+
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.site.urlresolvers import local_site_reverse

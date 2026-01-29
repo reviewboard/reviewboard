@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.webapi.fields import IntFieldType, DictFieldType, StringFieldType
 
 from reviewboard.attachments.models import FileAttachment

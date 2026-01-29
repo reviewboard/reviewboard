@@ -1,5 +1,7 @@
 """Form-related classes for the administration Change Form pages."""
 
+from __future__ import annotations
+
 import itertools
 
 from django import forms

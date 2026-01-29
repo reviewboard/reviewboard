@@ -7,6 +7,8 @@ Version Added:
     5.0.5
 """
 
+from __future__ import annotations
+
 
 def setup(app):
     app.add_crossref_type(directivename='rb-management-command',

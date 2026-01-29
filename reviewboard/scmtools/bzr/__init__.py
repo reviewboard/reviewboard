@@ -1,5 +1,7 @@
 """Repository support for Bazaar."""
 
+from __future__ import annotations
+
 import os
 import urllib.parse
 from datetime import timezone

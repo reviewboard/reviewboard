@@ -4,6 +4,8 @@ Version Added:
     1.6.19
 """
 
+from __future__ import annotations
+
 from django_evolution.mutations import ChangeField
 
 

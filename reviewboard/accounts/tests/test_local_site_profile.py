@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.accounts.models.LocalSiteProfile."""
 
+from __future__ import annotations
+
 import kgb
 from django.contrib.auth.models import User
 

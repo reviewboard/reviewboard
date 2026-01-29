@@ -4,6 +4,8 @@ Version Added:
     5.0.5
 """
 
+from __future__ import annotations
+
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.admin.forms.auth_settings import \

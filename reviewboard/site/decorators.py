@@ -1,5 +1,7 @@
 """Decorators for checking Local Site access."""
 
+from __future__ import annotations
+
 from django.http import HttpResponseRedirect, Http404
 from django.shortcuts import render
 from django.urls import reverse

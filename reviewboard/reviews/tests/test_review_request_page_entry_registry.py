@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.registries.errors import AlreadyRegisteredError
 
 from reviewboard.reviews.detail import (BaseReviewRequestPageEntry,

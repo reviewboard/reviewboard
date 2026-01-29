@@ -4,6 +4,8 @@ These have moved to :py:mod:`reviewboard.reviews.actions`. The imports here
 are for legacy compatibility, and will be removed in Review Board 8.0.
 """
 
+from __future__ import annotations
+
 from reviewboard.reviews.actions import (
     CloseMenuAction,
     CloseCompletedAction as SubmitAction,

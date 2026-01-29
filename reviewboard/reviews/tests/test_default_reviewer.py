@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.reviews.models import DefaultReviewer
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase

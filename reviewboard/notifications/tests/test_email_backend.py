@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.notifications.email.backend."""
 
+from __future__ import annotations
+
 from smtplib import SMTP, SMTPDataError
 
 import kgb

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import bz2
 
 from reviewboard.diffviewer.models import RawFileDiffData

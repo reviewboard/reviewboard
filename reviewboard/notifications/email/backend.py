@@ -4,6 +4,8 @@ Version Added:
     4.0.4
 """
 
+from __future__ import annotations
+
 import re
 import smtplib
 from typing import Optional, Tuple, Type, Union, TYPE_CHECKING

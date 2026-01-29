@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 SECRET_KEY = 'HASJFDYWQ98r6y2hesakjfhakjfy87eyr1hakjwfa'

@@ -1,5 +1,7 @@
 """Condition choices and operators for repositories and SCMTools."""
 
+from __future__ import annotations
+
 from django.utils.translation import gettext_lazy as _
 from djblets.conditions.choices import (BaseConditionModelMultipleChoice,
                                         BaseConditionChoice,

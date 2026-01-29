@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.accounts.backends import get_enabled_auth_backends
 
 

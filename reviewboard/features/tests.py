@@ -1,5 +1,7 @@
 """Tests for Review Board features."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import AnonymousUser, User
 from django.test.client import RequestFactory
 from djblets.features import Feature, get_features_registry

@@ -4,6 +4,8 @@ Version Added:
     6.0
 """
 
+from __future__ import annotations
+
 from typing import List, TYPE_CHECKING
 
 from django.contrib.auth.models import User

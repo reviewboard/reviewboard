@@ -1,5 +1,7 @@
 """Root view for reviews."""
 
+from __future__ import annotations
+
 from django.views.generic.base import RedirectView
 
 from reviewboard.accounts.mixins import (CheckLoginRequiredViewMixin,

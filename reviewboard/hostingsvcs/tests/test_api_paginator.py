@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.utils.paginator import (APIPaginator,

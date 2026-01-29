@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.extensions.hooks.SCMToolHook."""
 
+from __future__ import annotations
+
 from reviewboard.extensions.hooks import SCMToolHook
 from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 from reviewboard.scmtools import scmtools_registry

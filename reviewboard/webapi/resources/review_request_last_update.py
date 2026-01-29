@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseNotModified
 from django.utils.translation import gettext as _

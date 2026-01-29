@@ -1,5 +1,7 @@
 """View for rendering the review request infobox."""
 
+from __future__ import annotations
+
 from typing import Any, Dict
 
 from django.utils.html import format_html

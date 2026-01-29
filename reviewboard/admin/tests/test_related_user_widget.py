@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.admin.form_widgets.RelatedUserWidget."""
 
+from __future__ import annotations
+
 from django import forms
 from django.contrib.auth.models import User
 

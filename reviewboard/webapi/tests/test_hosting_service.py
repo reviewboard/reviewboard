@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase

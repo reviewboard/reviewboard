@@ -1,5 +1,7 @@
 """Tests for reviewboard.diffviewer.managers.DiffCommitManager."""
 
+from __future__ import annotations
+
 import kgb
 from dateutil.parser import parse as parse_date
 from django.db import IntegrityError

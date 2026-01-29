@@ -1,5 +1,7 @@
 """URLs for integration listing and configuration."""
 
+from __future__ import annotations
+
 from djblets.integrations.urls import build_integration_urlpatterns
 
 from reviewboard.integrations.views import (AdminIntegrationConfigFormView,

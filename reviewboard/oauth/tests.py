@@ -1,5 +1,7 @@
 """Tests for OAuth2 Applications."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ValidationError
 from django.forms.models import model_to_dict

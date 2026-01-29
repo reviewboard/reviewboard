@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
 from reviewboard.testing import TestCase
 

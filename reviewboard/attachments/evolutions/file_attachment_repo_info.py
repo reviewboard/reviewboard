@@ -11,6 +11,8 @@ Version Added:
     1.7.14
 """
 
+from __future__ import annotations
+
 from django_evolution.mutations import AddField
 from django.db import models
 

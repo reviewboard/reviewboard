@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.reviews.admin."""
 
+from __future__ import annotations
+
 from django.urls import reverse
 
 from reviewboard.reviews.models import DefaultReviewer

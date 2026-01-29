@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.testing import TestCase
 

@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.admin.forms.SearchSettingsForm."""
 
+from __future__ import annotations
+
 import shutil
 import tempfile
 

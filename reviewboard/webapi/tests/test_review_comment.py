@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from djblets.features.testing import override_feature_check
 from djblets.webapi.errors import INVALID_FORM_DATA, PERMISSION_DENIED

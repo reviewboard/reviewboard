@@ -1,5 +1,7 @@
 """Unit tests for the DiffCommitResource."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from djblets.features.testing import override_feature_checks
 from djblets.testing.decorators import add_fixtures

@@ -1,5 +1,7 @@
 """Management command to manage the search index."""
 
+from __future__ import annotations
+
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 from django.utils.translation import gettext as _

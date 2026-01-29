@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from djblets.util.decorators import augment_method_from

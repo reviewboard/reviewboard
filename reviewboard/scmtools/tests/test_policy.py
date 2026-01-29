@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 from django.contrib.auth.models import AnonymousUser, User

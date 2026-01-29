@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.util.decorators import augment_method_from
 
 from reviewboard.accounts.models import ReviewRequestVisit

@@ -5,6 +5,8 @@ This module provides handy imports for extension testing classes:
 * :py:class:`~reviewboard.extensions.testing.testcases.ExtensionTestCase`
 """
 
+from __future__ import annotations
+
 from reviewboard.extensions.testing.testcases import ExtensionTestCase
 
 

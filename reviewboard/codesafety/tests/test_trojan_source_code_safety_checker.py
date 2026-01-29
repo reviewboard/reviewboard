@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.codesafety.checkers.trojan_source."""
 
+from __future__ import annotations
+
 from django.utils.safestring import SafeString
 
 from reviewboard.codesafety._unicode_confusables import (

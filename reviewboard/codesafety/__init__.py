@@ -7,6 +7,8 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
 from djblets.registries.importer import lazy_import_registry
 
 

@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.accounts.forms.pages.AccountSettingsForm."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from django.views.generic.base import View
 from djblets.testing.decorators import add_fixtures

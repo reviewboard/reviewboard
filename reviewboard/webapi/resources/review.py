@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_response_errors
 from djblets.webapi.errors import INVALID_FORM_DATA

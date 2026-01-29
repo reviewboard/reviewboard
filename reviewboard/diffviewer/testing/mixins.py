@@ -4,6 +4,8 @@ Version Added:
     4.0.6
 """
 
+from __future__ import annotations
+
 
 class DiffParserTestingMixin(object):
     """Testing utilities for diff parsers.

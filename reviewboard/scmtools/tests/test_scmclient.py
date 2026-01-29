@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.scmtools.core.SCMClient."""
 
+from __future__ import annotations
+
 from urllib.error import HTTPError
 from urllib.request import urlopen
 

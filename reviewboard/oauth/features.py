@@ -1,5 +1,7 @@
 """Feature definitions for OAuth2 integration."""
 
+from __future__ import annotations
+
 from django.utils.translation import gettext_lazy as _
 from djblets.features.feature import Feature, FeatureLevel
 

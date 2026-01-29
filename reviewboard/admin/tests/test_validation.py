@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.admin.validation."""
 
+from __future__ import annotations
+
 from django.forms import ValidationError
 
 from reviewboard.admin.validation import validate_bug_tracker

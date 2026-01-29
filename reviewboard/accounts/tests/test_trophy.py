@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.accounts.models.Trophy."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 
 from reviewboard.accounts.models import Trophy

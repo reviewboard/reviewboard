@@ -1,5 +1,7 @@
 """Unit tests for RootDiffCommentResource."""
 
+from __future__ import annotations
+
 from datetime import timedelta
 from django.utils import timezone
 from djblets.testing.decorators import add_fixtures

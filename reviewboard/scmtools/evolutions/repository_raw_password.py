@@ -4,6 +4,8 @@ Version Added:
     2.0.9
 """
 
+from __future__ import annotations
+
 from django_evolution.mutations import RenameField
 
 

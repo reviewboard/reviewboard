@@ -4,6 +4,8 @@ Version Added:
     6.0
 """
 
+from __future__ import annotations
+
 from django_evolution.mutations import AddField
 from djblets.db.fields import JSONField
 

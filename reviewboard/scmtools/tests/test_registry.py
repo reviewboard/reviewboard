@@ -1,5 +1,7 @@
 """Unit tests for the SCMTools registry."""
 
+from __future__ import annotations
+
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
 from djblets.testing.decorators import add_fixtures
 

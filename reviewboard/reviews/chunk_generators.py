@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.utils.html import strip_tags
 
 from reviewboard.diffviewer.chunk_generator import RawDiffChunkGenerator

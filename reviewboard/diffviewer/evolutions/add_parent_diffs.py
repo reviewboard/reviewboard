@@ -7,6 +7,8 @@ Version Added:
     1.0
 """
 
+from __future__ import annotations
+
 from django_evolution.mutations import AddField, RenameField
 from djblets.db.evolution import FakeChangeFieldType
 from djblets.db.fields import Base64Field

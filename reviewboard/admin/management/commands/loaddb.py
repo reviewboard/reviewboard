@@ -1,5 +1,7 @@
 """Management command to load data into the database."""
 
+from __future__ import annotations
+
 import textwrap
 import sys
 

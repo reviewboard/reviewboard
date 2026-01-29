@@ -9,6 +9,8 @@ Version Added:
     2.5
 """
 
+from __future__ import annotations
+
 from django_evolution.mutations import AddField, RenameField
 from django.db import models
 from djblets.db.fields import JSONField

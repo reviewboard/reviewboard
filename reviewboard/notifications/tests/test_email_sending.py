@@ -1,6 +1,8 @@
 # coding: utf-8
 """Unit tests for sending e-mails."""
 
+from __future__ import annotations
+
 import datetime
 
 import kgb

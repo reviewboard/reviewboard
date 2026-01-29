@@ -1,5 +1,7 @@
 """Model re-exports for reviewboard.diffviewer.*."""
 
+from __future__ import annotations
+
 from reviewboard.diffviewer.models.diffcommit import DiffCommit
 from reviewboard.diffviewer.models.diffset import DiffSet
 from reviewboard.diffviewer.models.diffset_history import DiffSetHistory

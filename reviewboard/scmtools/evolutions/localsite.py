@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django_evolution.mutations import AddField
 from django.db import models
 

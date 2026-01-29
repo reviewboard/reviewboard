@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.extensions.hooks.FileDiffACLHook."""
 
+from __future__ import annotations
+
 import kgb
 from djblets.features.testing import override_feature_check
 

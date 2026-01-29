@@ -1,5 +1,7 @@
 """Views for e-mail previews."""
 
+from __future__ import annotations
+
 from typing import Any, Dict, Optional
 
 from django.http import HttpRequest

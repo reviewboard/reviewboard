@@ -1,5 +1,7 @@
 """OAuth-specific form widgets."""
 
+from __future__ import annotations
+
 from django.forms import widgets
 from django.template.loader import render_to_string
 

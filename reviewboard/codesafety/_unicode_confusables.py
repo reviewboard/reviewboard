@@ -4,6 +4,8 @@
 #
 # To update this file, run ./contrib/internal/build-confusables.py
 
+from __future__ import annotations
+
 from typing import Dict, Optional, Tuple
 
 from typing_extensions import TypeAlias

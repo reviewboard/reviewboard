@@ -1,5 +1,7 @@
 """Unit tests for LDAPBackend."""
 
+from __future__ import annotations
+
 import kgb
 import ldap
 from django.conf import settings

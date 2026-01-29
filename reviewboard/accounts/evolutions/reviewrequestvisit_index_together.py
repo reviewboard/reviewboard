@@ -1,5 +1,7 @@
 """Move from Meta.index_together to Meta.indexes for ReviewRequestVisit."""
 
+from __future__ import annotations
+
 from django_evolution.mutations import ChangeMeta
 
 

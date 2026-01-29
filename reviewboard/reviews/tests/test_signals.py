@@ -1,5 +1,7 @@
 """Tests for reviewboard.review.signals."""
 
+from __future__ import annotations
+
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 

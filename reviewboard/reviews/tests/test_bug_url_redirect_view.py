@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.reviews.views.BugURLRedirectView."""
 
+from __future__ import annotations
+
 from django.http import HttpResponseNotFound
 from django.urls import reverse
 

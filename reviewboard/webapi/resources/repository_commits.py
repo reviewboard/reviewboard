@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.core.exceptions import ObjectDoesNotExist
 from djblets.webapi.decorators import (webapi_response_errors,
                                        webapi_request_fields)

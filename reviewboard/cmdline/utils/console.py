@@ -1,5 +1,7 @@
 """Console functionality for command line tools."""
 
+from __future__ import annotations
+
 import codecs
 import getpass
 import shutil

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)

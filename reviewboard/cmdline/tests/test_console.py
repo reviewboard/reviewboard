@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.cmdline.utils.console."""
 
+from __future__ import annotations
+
 import io
 import math
 import shutil

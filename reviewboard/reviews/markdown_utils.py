@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pymdownx.emoji
 from bleach.sanitizer import Cleaner
 from django.conf import settings

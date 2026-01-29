@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from djblets.webapi.testing.decorators import webapi_test_template
 

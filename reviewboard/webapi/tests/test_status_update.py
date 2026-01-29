@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.features.testing import override_feature_checks
 from djblets.webapi.errors import DOES_NOT_EXIST, INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template

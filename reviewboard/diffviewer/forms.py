@@ -1,5 +1,7 @@
 """Forms for uploading diffs."""
 
+from __future__ import annotations
+
 from functools import partial
 
 from dateutil.parser import isoparse

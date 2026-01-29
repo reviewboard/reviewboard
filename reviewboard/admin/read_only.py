@@ -1,5 +1,7 @@
 """Utility methods for read-only mode."""
 
+from __future__ import annotations
+
 from djblets.siteconfig.models import SiteConfiguration
 
 

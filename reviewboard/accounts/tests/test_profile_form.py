@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.accounts.forms.pages.ProfileForm."""
 
+from __future__ import annotations
+
 from django.contrib import messages
 from django.contrib.auth.models import User
 from django.test.client import RequestFactory

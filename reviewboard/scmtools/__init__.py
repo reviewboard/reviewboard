@@ -1,5 +1,7 @@
 """Module for interacting with different source code management tools."""
 
+from __future__ import annotations
+
 from djblets.registries.importer import lazy_import_registry
 
 from reviewboard.signals import initializing

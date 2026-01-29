@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.reviews.views.RootView."""
 
+from __future__ import annotations
+
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.site.urlresolvers import local_site_reverse

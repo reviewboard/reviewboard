@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.avatars import avatar_services

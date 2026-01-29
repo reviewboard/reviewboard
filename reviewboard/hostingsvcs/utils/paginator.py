@@ -4,6 +4,8 @@ This is pending deprecation. Consumers should update their imports to use
 the classes in :py:mod:`reviewboard.hostingsvcs.base.paginator`.
 """
 
+from __future__ import annotations
+
 from reviewboard.hostingsvcs.base.paginator import (APIPaginator,
                                                     BasePaginator,
                                                     InvalidPageError,

@@ -1,5 +1,7 @@
 """Base class for screenshot comment resources."""
 
+from __future__ import annotations
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.utils.timesince import timesince

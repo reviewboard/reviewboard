@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.admin.form_widgets.LexersMappingWidget."""
 
+from __future__ import annotations
+
 from django import forms
 from django.utils.html import escape, format_html
 from pygments.lexers import get_all_lexers

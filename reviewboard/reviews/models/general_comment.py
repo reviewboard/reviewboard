@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.reviews.models.base_comment import BaseComment
 
 from django.utils.translation import gettext_lazy as _

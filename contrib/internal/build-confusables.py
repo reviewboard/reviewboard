@@ -405,6 +405,8 @@ def build_confusables_file() -> None:
         fp.write('# To update this file, run '
                  './contrib/internal/build-confusables.py\n')
         fp.write('\n')
+        fp.write('from __future__ import annotations\n')
+        fp.write('\n')
         fp.write('from typing import Dict, Optional, Tuple\n')
         fp.write('\n')
         fp.write('from typing_extensions import TypeAlias\n')

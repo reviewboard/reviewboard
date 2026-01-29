@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django import forms
 from djblets.auth.forms import RegistrationForm as DjbletsRegistrationForm
 from djblets.recaptcha.mixins import RecaptchaFormMixin

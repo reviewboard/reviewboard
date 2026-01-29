@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.site.context_processors."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import Permission
 from djblets.testing.decorators import add_fixtures
 

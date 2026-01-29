@@ -24,6 +24,8 @@
 # SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #
 
+from __future__ import annotations
+
 from django.urls import include, path
 from django.views.generic import RedirectView
 

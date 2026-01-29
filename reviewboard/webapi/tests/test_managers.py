@@ -4,6 +4,8 @@ Version Added:
     5.0.5
 """
 
+from __future__ import annotations
+
 import datetime
 from typing import Optional
 

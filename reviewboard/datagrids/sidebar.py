@@ -1,5 +1,7 @@
 """Sidebar item management for datagrids."""
 
+from __future__ import annotations
+
 from urllib.parse import urlencode
 
 from django.template.loader import render_to_string

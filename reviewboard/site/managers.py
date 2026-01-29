@@ -4,6 +4,8 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
 from uuid import uuid4
 
 from django.core.cache import cache

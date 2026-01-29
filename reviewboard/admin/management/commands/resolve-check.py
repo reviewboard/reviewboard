@@ -1,5 +1,7 @@
 """Management command to manually update the state of an update check."""
 
+from __future__ import annotations
+
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.translation import gettext as _
 from djblets.siteconfig.models import SiteConfiguration

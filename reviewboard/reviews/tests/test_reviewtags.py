@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from django.template import Context, RequestContext, Template
 from django.test import RequestFactory

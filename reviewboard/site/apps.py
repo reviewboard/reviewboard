@@ -1,5 +1,7 @@
 """Django app information for reviewboard.site."""
 
+from __future__ import annotations
+
 from django.apps import AppConfig
 
 

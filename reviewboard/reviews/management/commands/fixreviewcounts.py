@@ -1,5 +1,7 @@
 """Management command to reset review request counters on accounts."""
 
+from __future__ import annotations
+
 from django.core.management.base import BaseCommand
 from django.utils.translation import gettext as _
 

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.db.query import LocalDataQuerySet
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import webapi_request_fields

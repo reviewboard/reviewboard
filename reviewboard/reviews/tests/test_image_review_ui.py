@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.reviews.ui.image.ImageReviewUI."""
 
+from __future__ import annotations
+
 from djblets.util.templatetags.djblets_images import crop_image
 
 from reviewboard.admin.server import build_server_url

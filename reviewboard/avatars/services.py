@@ -1,5 +1,7 @@
 """Review Board-specific specializations of avatar services."""
 
+from __future__ import annotations
+
 from urllib.parse import urlparse
 
 from djblets.avatars.services import \

@@ -1,5 +1,7 @@
 """The Review Board e-mail message class and methods for generating e-mails."""
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Dict, List, Optional
 

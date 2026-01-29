@@ -4,6 +4,8 @@ Version Added:
     6.0
 """
 
+from __future__ import annotations
+
 import json
 import logging
 from enum import Enum

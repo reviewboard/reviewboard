@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.urls import include, path, re_path
 
 from reviewboard.datagrids import views

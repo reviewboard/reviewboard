@@ -1,6 +1,8 @@
 """Unit tests for reviewboard.codesafety.checkers.base.BaseCodeSafetyChecker.
 """
 
+from __future__ import annotations
+
 import kgb
 from django.template.loader import render_to_string
 from django.utils.translation import gettext_lazy

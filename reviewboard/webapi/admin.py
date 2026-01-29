@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.webapi.models import WebAPIToken
 

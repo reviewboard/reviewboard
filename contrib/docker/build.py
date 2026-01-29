@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 """Builds a Docker image for the current version of Review Board."""
 
+from __future__ import annotations
+
 import argparse
 import os
 import subprocess

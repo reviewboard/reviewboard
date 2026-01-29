@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 from djblets.util.decorators import augment_method_from

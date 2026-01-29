@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.accounts.templatetags.accounts."""
 
+from __future__ import annotations
+
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 

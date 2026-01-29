@@ -1,5 +1,7 @@
 """Condition choices and operators for review requests and related objects."""
 
+from __future__ import annotations
+
 from itertools import chain
 
 from django.contrib.auth.models import User

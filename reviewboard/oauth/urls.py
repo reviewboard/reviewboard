@@ -1,5 +1,7 @@
 """OAuth2-related URLs."""
 
+from __future__ import annotations
+
 from django.urls import path
 from oauth2_provider import views as oauth2_provider_views
 

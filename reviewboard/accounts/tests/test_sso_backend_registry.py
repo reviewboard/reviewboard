@@ -1,5 +1,7 @@
 """Unit tests for the SSO backend registry."""
 
+from __future__ import annotations
+
 from django.http import HttpResponse
 from django.urls import NoReverseMatch, path, reverse
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError

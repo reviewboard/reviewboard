@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.site.mixins.CheckLocalSiteAccessViewMixin."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseRedirect
 from django.views.generic.base import View

@@ -1,5 +1,7 @@
 """Administration form for avatar settings."""
 
+from __future__ import annotations
+
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext, gettext_lazy as _

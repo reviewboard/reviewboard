@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.diffviewer.parser."""
 
+from __future__ import annotations
+
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin

@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.site.models.LocalSite."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 
 from reviewboard.site.models import LocalSite

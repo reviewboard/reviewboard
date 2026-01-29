@@ -1,5 +1,7 @@
 """Unit tests for ActiveDirectoryBackend."""
 
+from __future__ import annotations
+
 import dns
 import kgb
 import ldap

@@ -1,5 +1,7 @@
 """Resources representing commits on a multi-commit review request draft."""
 
+from __future__ import annotations
+
 import logging
 
 from djblets.util.decorators import augment_method_from

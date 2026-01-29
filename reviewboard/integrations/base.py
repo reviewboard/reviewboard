@@ -5,6 +5,8 @@ Review Board (:py:func:`get_integration_manager`) and a base class for defining
 integrations (:py:class:`Integration`).
 """
 
+from __future__ import annotations
+
 from djblets.integrations.integration import Integration as DjbletsIntegration
 from djblets.integrations.manager import IntegrationManager
 

@@ -1,5 +1,7 @@
 """Unit tests for NISBackend."""
 
+from __future__ import annotations
+
 from unittest import SkipTest
 
 import kgb

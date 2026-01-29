@@ -1,5 +1,7 @@
 """Review Board feature checkers."""
 
+from __future__ import annotations
+
 from django.conf import settings
 
 from djblets.features.checkers import SiteConfigFeatureChecker

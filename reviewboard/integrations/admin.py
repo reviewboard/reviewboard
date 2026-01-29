@@ -1,5 +1,7 @@
 """Administration UI support for integration configurations."""
 
+from __future__ import annotations
+
 from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.integrations.models import IntegrationConfig
 

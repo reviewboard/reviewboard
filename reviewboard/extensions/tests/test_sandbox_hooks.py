@@ -1,5 +1,7 @@
 """Unit tests for extension hook sandboxing."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from django.template import Context, Template
 from django.test.client import RequestFactory

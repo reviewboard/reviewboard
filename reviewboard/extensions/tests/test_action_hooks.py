@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.extensions.hooks.ActionHook and subclasses."""
 
+from __future__ import annotations
+
 from typing import Any, Dict, Type
 
 from django.template import Context, Template

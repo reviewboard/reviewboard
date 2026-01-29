@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.diffviewer.models.filediff."""
 
+from __future__ import annotations
+
 from itertools import chain
 
 from reviewboard.diffviewer.models import DiffSet, FileDiff

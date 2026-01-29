@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from django.test.client import RequestFactory
 from djblets.conditions import ConditionSet, Condition

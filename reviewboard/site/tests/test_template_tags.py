@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.site.templatetags.local_site."""
 
+from __future__ import annotations
+
 from django.template import Context, Template
 
 from reviewboard.testing.testcase import TestCase

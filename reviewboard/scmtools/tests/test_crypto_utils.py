@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.scmtools.crypto_utils."""
 
+from __future__ import annotations
+
 from django.test.utils import override_settings
 
 from reviewboard.scmtools.crypto_utils import (aes_decrypt,

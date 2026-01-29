@@ -4,6 +4,8 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
 import logging
 
 from django.utils.decorators import method_decorator

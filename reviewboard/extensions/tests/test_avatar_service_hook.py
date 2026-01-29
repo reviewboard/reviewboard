@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.extensions.hooks.AvatarServiceHook."""
 
+from __future__ import annotations
+
 from djblets.avatars.tests import DummyAvatarService
 
 from reviewboard.avatars import avatar_services

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.core import mail
 
 from reviewboard.reviews.models import Review

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.registries.mixins import ExceptionFreeGetterMixin
 from djblets.registries.registry import (
     EntryPointRegistry as DjbletsEntryPointRegistry,

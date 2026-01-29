@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 def has_module(module_name, members=[]):
     """Return whether or not a given module can be imported."""
     try:

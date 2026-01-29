@@ -1,5 +1,7 @@
 """Administration form for file attachment storage settings."""
 
+from __future__ import annotations
+
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from djblets.siteconfig.forms import SiteSettingsForm

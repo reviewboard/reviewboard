@@ -1,5 +1,7 @@
 """Review Board's Administration UI."""
 
+from __future__ import annotations
+
 from django.dispatch import receiver
 from django.utils.functional import SimpleLazyObject
 

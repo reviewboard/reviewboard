@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 

@@ -1,5 +1,7 @@
 """Main application views for Review Board."""
 
+from __future__ import annotations
+
 from reviewboard.reviews.views.attachments import (
     DownloadFileAttachmentView,
     ReviewFileAttachmentView,

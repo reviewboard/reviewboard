@@ -1,5 +1,7 @@
 """View for the New Review Request page."""
 
+from __future__ import annotations
+
 import logging
 from typing import Any, Dict
 

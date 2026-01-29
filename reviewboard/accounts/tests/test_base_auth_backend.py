@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.accounts.backends.BaseAuthBackend."""
 
+from __future__ import annotations
+
 import re
 
 from reviewboard.accounts.backends import INVALID_USERNAME_CHAR_REGEX

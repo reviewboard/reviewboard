@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.reviews.models import GeneralComment
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase

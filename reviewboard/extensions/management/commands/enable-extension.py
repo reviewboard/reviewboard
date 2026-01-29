@@ -1,5 +1,7 @@
 """Management command for enabling an extension."""
 
+from __future__ import annotations
+
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.translation import gettext as _
 from djblets.extensions.errors import (EnablingExtensionError,

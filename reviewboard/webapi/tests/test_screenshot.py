@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.webapi.errors import PERMISSION_DENIED
 
 from reviewboard.webapi.resources import resources

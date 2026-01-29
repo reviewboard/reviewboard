@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import kgb
 
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory, FileDiff

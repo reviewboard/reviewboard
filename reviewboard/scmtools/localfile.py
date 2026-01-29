@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.scmtools.core import FileNotFoundError, SCMTool, HEAD
 
 

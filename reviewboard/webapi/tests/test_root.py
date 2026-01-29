@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures
 

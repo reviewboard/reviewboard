@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 
 from django.contrib.auth.models import User

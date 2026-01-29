@@ -1,5 +1,7 @@
 """Tests for top level Review Board modules."""
 
+from __future__ import annotations
+
 import os
 
 from djblets.staticbundles import (

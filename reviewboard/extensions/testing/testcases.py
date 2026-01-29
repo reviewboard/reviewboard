@@ -1,5 +1,7 @@
 """Base test case support for extension unit tests."""
 
+from __future__ import annotations
+
 from djblets.extensions.testing import ExtensionTestCaseMixin
 
 from reviewboard.extensions.base import get_extension_manager

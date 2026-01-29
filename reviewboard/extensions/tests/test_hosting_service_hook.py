@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.extensions.hooks.HostingServiceHook."""
 
+from __future__ import annotations
+
 from reviewboard.extensions.hooks import HostingServiceHook
 from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 from reviewboard.hostingsvcs.base import (BaseHostingService,

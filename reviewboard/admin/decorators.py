@@ -1,5 +1,7 @@
 """Review Board admin panel-specific decorators"""
 
+from __future__ import annotations
+
 from functools import wraps
 
 from django.contrib.auth.decorators import login_required

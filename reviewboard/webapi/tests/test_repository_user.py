@@ -4,6 +4,8 @@ Version Added:
     4.0.11
 """
 
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED

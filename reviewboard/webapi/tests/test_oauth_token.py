@@ -1,5 +1,7 @@
 """Tests for the OAuthTokenResource."""
 
+from __future__ import annotations
+
 from djblets.db.query import get_object_or_none
 from djblets.features.testing import override_feature_check
 from djblets.testing.decorators import add_fixtures

@@ -3,3 +3,5 @@
 Version Added:
     5.0
 """
+
+from __future__ import annotations

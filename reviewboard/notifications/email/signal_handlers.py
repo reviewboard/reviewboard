@@ -1,5 +1,7 @@
 """E-mail notification callbacks."""
 
+from __future__ import annotations
+
 from typing import Union
 
 from django.contrib.auth.models import User

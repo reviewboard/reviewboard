@@ -1,5 +1,7 @@
 """The signal processor for Review Board search."""
 
+from __future__ import annotations
+
 import logging
 import threading
 from functools import partial

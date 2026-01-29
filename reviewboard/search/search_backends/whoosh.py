@@ -1,5 +1,7 @@
 """A backend for the Whoosh search engine."""
 
+from __future__ import annotations
+
 import os
 
 from django import forms

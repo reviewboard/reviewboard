@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.diffviewer.templatetags.difftags."""
 
+from __future__ import annotations
+
 from django.utils.safestring import SafeText
 from djblets.siteconfig.models import SiteConfiguration
 

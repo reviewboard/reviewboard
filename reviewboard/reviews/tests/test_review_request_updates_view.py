@@ -1,6 +1,8 @@
 # coding: utf-8
 """Unit tests for ReviewRequestUpdatesView."""
 
+from __future__ import annotations
+
 import json
 import struct
 from datetime import datetime, timedelta, timezone

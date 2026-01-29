@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.accounts.middleware.UpdateLastLoginMiddleware."""
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
 
 from django.contrib.auth.models import User

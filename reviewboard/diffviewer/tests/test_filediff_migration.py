@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.db.fields import Base64DecodedValue
 
 from reviewboard.diffviewer.models import (DiffSet, FileDiff,

@@ -1,5 +1,7 @@
 """Administration form for general Review Board settings."""
 
+from __future__ import annotations
+
 from collections import OrderedDict
 from urllib.parse import urlparse
 

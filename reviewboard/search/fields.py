@@ -1,5 +1,7 @@
 """Custom search index fields."""
 
+from __future__ import annotations
+
 from haystack import indexes
 
 

@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+
 SEQUENCE = [
     'add_parent_diffs',
     'filediff_filenames_1024_chars',

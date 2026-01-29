@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.accounts.views.edit_oauth_app."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 from django.urls import reverse
 

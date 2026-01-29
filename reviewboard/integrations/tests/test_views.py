@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.test import RequestFactory
 
 from reviewboard.integrations.base import Integration, get_integration_manager

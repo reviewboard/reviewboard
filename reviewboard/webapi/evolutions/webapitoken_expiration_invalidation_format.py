@@ -8,6 +8,8 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
 from django_evolution.mutations import AddField, ChangeField
 from django.db import models
 

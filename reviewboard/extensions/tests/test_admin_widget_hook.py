@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.extensions.hooks.AdminWidgetHook."""
 
+from __future__ import annotations
+
 from reviewboard.admin.widgets import (BaseAdminWidget,
                                        admin_widgets_registry)
 from reviewboard.extensions.hooks import AdminWidgetHook

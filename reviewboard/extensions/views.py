@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import djblets.extensions.views as djblets_ext_views
 from django.views.decorators.csrf import csrf_protect
 

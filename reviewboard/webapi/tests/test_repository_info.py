@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import repository_info_item_mimetype

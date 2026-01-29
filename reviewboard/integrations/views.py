@@ -1,5 +1,7 @@
 """Views for listing and configuring integrations."""
 
+from __future__ import annotations
+
 from djblets.integrations.views import (BaseAdminIntegrationConfigFormView,
                                         BaseAdminIntegrationListView)
 

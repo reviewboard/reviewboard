@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.utils.html import escape
 from djblets.markdown import markdown_escape, markdown_unescape
 from djblets.webapi.resources.mixins.forms import (

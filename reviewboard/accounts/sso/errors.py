@@ -4,6 +4,8 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
 
 class InvalidUsernameError(ValueError):
     """Error for when a username is invalid.

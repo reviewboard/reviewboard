@@ -1,5 +1,7 @@
 """Middleware for account-related functionality."""
 
+from __future__ import annotations
+
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from django.conf import settings

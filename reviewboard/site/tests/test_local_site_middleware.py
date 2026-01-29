@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.site.middleware.LocalSiteMiddleware."""
 
+from __future__ import annotations
+
 from django.http import HttpRequest, HttpResponse
 
 from reviewboard.site.middleware import LocalSiteMiddleware

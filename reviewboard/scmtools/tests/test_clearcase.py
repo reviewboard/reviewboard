@@ -1,5 +1,7 @@
 """Unit tests for ClearCase support."""
 
+from __future__ import annotations
+
 from django.test.utils import override_settings
 
 from reviewboard.scmtools import clearcase

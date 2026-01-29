@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.site.urlresolvers."""
 
+from __future__ import annotations
+
 from django.http import HttpRequest
 
 from reviewboard.site.urlresolvers import local_site_reverse

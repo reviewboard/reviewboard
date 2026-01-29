@@ -1,5 +1,7 @@
 """Administration form for e-mail settings."""
 
+from __future__ import annotations
+
 import logging
 
 from django import forms

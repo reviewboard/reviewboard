@@ -1,5 +1,7 @@
 """Database models for integration configuration storage."""
 
+from __future__ import annotations
+
 import logging
 
 from django.db import models

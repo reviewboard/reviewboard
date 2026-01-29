@@ -1,5 +1,7 @@
 """URLs for the accounts app."""
 
+from __future__ import annotations
+
 from django.conf import settings
 from django.urls import include, path, re_path
 from django.contrib.auth import views as auth_views

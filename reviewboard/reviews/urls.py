@@ -1,5 +1,7 @@
 """URLs for the reviews app."""
 
+from __future__ import annotations
+
 from django.conf import settings
 from django.urls import include, path, re_path
 

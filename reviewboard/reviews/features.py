@@ -1,5 +1,7 @@
 """Feature definitions for reviews."""
 
+from __future__ import annotations
+
 from django.utils.translation import gettext_lazy as _
 from djblets.features import Feature, FeatureLevel
 

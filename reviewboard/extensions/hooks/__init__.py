@@ -1,5 +1,7 @@
 """Extension hooks for Review Board."""
 
+from __future__ import annotations
+
 from djblets.extensions.hooks import (DataGridColumnsHook,
                                       ExtensionHook,
                                       SignalHook,

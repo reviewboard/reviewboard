@@ -15,6 +15,8 @@ Version Added:
     6.0
 """
 
+from __future__ import annotations
+
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService

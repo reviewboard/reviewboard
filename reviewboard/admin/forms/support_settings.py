@@ -1,5 +1,7 @@
 """Administration form for support settings."""
 
+from __future__ import annotations
+
 from django import forms
 from django.utils.translation import gettext_lazy as _
 from djblets.forms.widgets import CopyableTextInput

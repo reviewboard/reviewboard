@@ -7,6 +7,8 @@ Note that the aggregated profiles must be read with pstats.Stats, not
 hotshot.stats (the formats are incompatible)
 """
 
+from __future__ import annotations
+
 import os
 import pstats
 import sys

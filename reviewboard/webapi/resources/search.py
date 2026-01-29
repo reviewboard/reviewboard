@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.db.models.query import Q
 from djblets.webapi.decorators import webapi_request_fields
 from djblets.webapi.fields import (BooleanFieldType,

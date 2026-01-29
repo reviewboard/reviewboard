@@ -1,5 +1,7 @@
 """Root resource for the Review Board API."""
 
+from __future__ import annotations
+
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.resources.root import RootResource as DjbletsRootResource
 

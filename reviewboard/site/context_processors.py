@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from django.contrib.auth.context_processors import PermLookupDict, PermWrapper
 
 from reviewboard.site.models import LocalSite

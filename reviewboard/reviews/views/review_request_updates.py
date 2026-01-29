@@ -1,5 +1,7 @@
 """View for sending data for updating the review request page."""
 
+from __future__ import annotations
+
 import io
 import json
 import logging

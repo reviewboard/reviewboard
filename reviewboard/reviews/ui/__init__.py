@@ -3,6 +3,8 @@
 Review UIs allow specialized review experiences for different file types.
 """
 
+from __future__ import annotations
+
 from djblets.registries.importer import lazy_import_registry
 
 

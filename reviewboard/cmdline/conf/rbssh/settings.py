@@ -4,6 +4,8 @@
 # the list of installed apps in order to load in the bare minimum settings
 # needed for rbssh.
 
+from __future__ import annotations
+
 from reviewboard.settings import *  # noqa
 
 

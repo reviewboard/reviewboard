@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from djblets.webapi.errors import DUPLICATE_ITEM
 
 from reviewboard.attachments.models import FileAttachment

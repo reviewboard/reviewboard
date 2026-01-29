@@ -7,6 +7,8 @@ Version Added:
     1.7
 """
 
+from __future__ import annotations
+
 from django_evolution.mutations import AddField, RenameField
 from django.db import models
 

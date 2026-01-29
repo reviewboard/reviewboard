@@ -1,5 +1,7 @@
 """Tests for OAuth2 authentication with the web API."""
 
+from __future__ import annotations
+
 from datetime import timedelta
 
 from django.contrib.auth.models import User

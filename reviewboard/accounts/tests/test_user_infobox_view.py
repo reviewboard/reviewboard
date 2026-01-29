@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.accounts.views.UserInfoboxView."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import User
 
 from reviewboard.site.urlresolvers import local_site_reverse

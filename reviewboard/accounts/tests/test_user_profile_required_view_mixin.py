@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.accounts.mixins.UserProfileRequiredViewMixin."""
 
+from __future__ import annotations
+
 from django.contrib.auth.models import AnonymousUser, User
 from django.http import HttpResponse
 from django.test.client import RequestFactory

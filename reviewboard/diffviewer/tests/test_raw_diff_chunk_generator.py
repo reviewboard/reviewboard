@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from reviewboard.diffviewer.chunk_generator import RawDiffChunkGenerator
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.testing import TestCase
