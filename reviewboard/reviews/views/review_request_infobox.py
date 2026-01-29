@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, TYPE_CHECKING
 
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
@@ -12,6 +12,9 @@ from reviewboard.diffviewer.models import DiffSet
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
@@ -31,7 +34,7 @@ class ReviewRequestInfoboxView(ReviewRequestViewMixin, TemplateView):
     def get_context_data(
         self,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Handle HTTP GET requests for this view.
 
         Args:

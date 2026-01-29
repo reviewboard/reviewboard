@@ -108,7 +108,7 @@ class ImageReviewUI(ReviewUI[
             SerializedCommentBlocks:
             The serialized comment data.
         """
-        result: SerializedCommentBlocks[SerializedRegionComment] = {}
+        result: dict[str, list[SerializedRegionComment]] = {}
 
         for comment in self.flat_serialized_comments(comments):
             try:

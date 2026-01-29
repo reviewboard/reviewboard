@@ -111,7 +111,7 @@ class DiffReviewUI(ReviewUI[FileDiff, Comment, SerializedDiffComment]):
             SerializedCommentBlocks:
             The serialized comments.
         """
-        result: SerializedCommentBlocks[SerializedDiffComment] = {}
+        result: dict[str, list[SerializedDiffComment]] = {}
 
         for comment in self.flat_serialized_comments(comments):
             key = f'{comment["line"]}-{comment["num_lines"]}'

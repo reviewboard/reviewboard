@@ -13,7 +13,8 @@ import json
 import logging
 import ssl
 from collections import OrderedDict
-from typing import Any, Dict, TypedDict, TYPE_CHECKING, Union
+from collections.abc import Mapping
+from typing import Any, TypedDict, TYPE_CHECKING, Union
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from urllib.request import (
     Request as BaseURLRequest,
@@ -68,29 +69,29 @@ class UploadedFileInfo(TypedDict):
 #:
 #: Version Added:
 #:     6.0
-FormFields: TypeAlias = Dict[Union[bytes, str],
-                             Union[bytes, str]]
+FormFields: TypeAlias = Mapping[Union[bytes, str],
+                                Union[bytes, str]]
 
 
 #: Type for a mapping of HTTP headers for a request or response.
 #:
 #: Version Added:
 #:     6.0
-HTTPHeaders: TypeAlias = Dict[str, str]
+HTTPHeaders: TypeAlias = dict[str, str]
 
 
 #: Query arguments for a HTTP request.
 #:
 #: Version Added:
 #:     6.0
-QueryArgs: TypeAlias = Dict[str, Any]
+QueryArgs: TypeAlias = Mapping[str, Any]
 
 
 #: Form field data to set when performing a POST or PUT.
 #:
 #: Version Added:
 #:     6.0
-UploadedFiles: TypeAlias = Dict[Union[bytes, str], UploadedFileInfo]
+UploadedFiles: TypeAlias = Mapping[Union[bytes, str], UploadedFileInfo]
 
 
 def _build_ssl_context_from_ssl_cert(

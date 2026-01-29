@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any, Optional, TYPE_CHECKING
 
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -15,6 +15,9 @@ from reviewboard.notifications.email.message import (
 from reviewboard.notifications.email.views import BasePreviewEmailView
 from reviewboard.reviews.models import Review
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class PreviewBatchEmailView(ReviewRequestViewMixin,
@@ -51,7 +54,7 @@ class PreviewBatchEmailView(ReviewRequestViewMixin,
         request: HttpRequest,
         *args,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Return data used for the e-mail builder.
 
         The data returned will be passed to :py:attr:`build_email` to handle
@@ -128,7 +131,7 @@ class PreviewReviewRequestEmailView(ReviewRequestViewMixin,
         changedesc_id: Optional[int] = None,
         *args,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Return data used for the e-mail builder.
 
         The data returned will be passed to :py:attr:`build_email` to handle
@@ -194,7 +197,7 @@ class PreviewReviewEmailView(ReviewRequestViewMixin, BasePreviewEmailView):
         review_id: int,
         *args,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Return data used for the e-mail builder.
 
         The data returned will be passed to :py:attr:`build_email` to handle
@@ -252,7 +255,7 @@ class PreviewReplyEmailView(ReviewRequestViewMixin, BasePreviewEmailView):
         reply_id: int,
         *args,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Return data used for the e-mail builder.
 
         The data returned will be passed to :py:attr:`build_email` to handle

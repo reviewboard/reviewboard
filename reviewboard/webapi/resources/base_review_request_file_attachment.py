@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, Set, TYPE_CHECKING, Union
+from typing import Any, Optional, Set, TYPE_CHECKING, Union
 
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
@@ -31,6 +31,8 @@ from reviewboard.webapi.resources.base_file_attachment import \
     BaseFileAttachmentResource
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from reviewboard.reviews.models import ReviewRequestDraft
 
 
@@ -230,7 +232,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
     def create(
         self,
         request: HttpRequest,
-        extra_fields: Dict[str, Any] = {},
+        extra_fields: Mapping[str, Any] = {},
         *args,
         **kwargs,
     ) -> Union[tuple, WebAPIError]:
@@ -323,7 +325,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         caption: Optional[str] = None,
         thumbnail: Optional[bytes] = None,
         pending_deletion: Optional[bool] = None,
-        extra_fields: Dict[str, Any] = {},
+        extra_fields: Mapping[str, Any] = {},
         *args,
         **kwargs,
     ) -> Union[tuple, WebAPIError]:

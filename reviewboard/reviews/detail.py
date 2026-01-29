@@ -7,8 +7,8 @@ import logging
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from itertools import chain
-from typing import (Any, ClassVar, Final, Iterable, Iterator, Mapping,
-                    Optional, Sequence, TYPE_CHECKING, Type, TypeVar, Union)
+from typing import (Any, ClassVar, Final, Iterable, Iterator, Optional,
+                    Sequence, TYPE_CHECKING, Type, TypeVar, Union)
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Model, Q
@@ -38,6 +38,8 @@ from reviewboard.reviews.models import (BaseComment,
                                         StatusUpdate)
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from django.http import HttpRequest
     from django.template.context import Context
     from django.utils.safestring import SafeString

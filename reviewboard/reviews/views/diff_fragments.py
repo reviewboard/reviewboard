@@ -6,7 +6,7 @@ import io
 import logging
 import os
 import struct
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple
+from typing import Any, List, Optional, TYPE_CHECKING, Tuple
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -79,13 +79,13 @@ class CommentFragment(TypedDict):
     #:
     #: Type:
     #:     list
-    chunks: List[Dict]
+    chunks: List[dict]
 
 
 def build_diff_comment_fragments(
     *,
     comments: List[Comment],
-    context: Dict[str, Any],
+    context: dict[str, Any],
     comment_template_name: str = 'reviews/diff_comment_fragment.html',
     error_template_name: str = 'diffviewer/diff_fragment_error.html',
     lines_of_context: Optional[List[int]] = None,
@@ -799,7 +799,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
     def get_context_data(
         self,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """"Return context for rendering the view.
 
         Args:
@@ -817,8 +817,8 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
     def _get_download_links(
         self,
         renderer: DiffRenderer,
-        diff_file: Dict[str, Any],
-    ) -> Dict[str, Optional[str]]:
+        diff_file: Mapping[str, Any],
+    ) -> dict[str, Optional[str]]:
         """Return links for downloading the files used for the diff.
 
         Args:

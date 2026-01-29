@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Dict, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ObjectDoesNotExist
@@ -21,6 +21,8 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
+    from typelets.json import JSONDict
+
     from reviewboard.attachments.models import FileAttachment
     from reviewboard.changedescs.models import ChangeDescription
     from reviewboard.integrations.base import Integration
@@ -1847,7 +1849,7 @@ class StatusUpdateManager(Manager):
         description: Optional[str] = None,
         state: Optional[str] = None,
         can_retry: bool = False,
-        extra_data: Dict = {},
+        extra_data: JSONDict = {},
         starting_description: str = 'starting...',
         waiting_description: str = 'waiting to run.',
         **kwargs,

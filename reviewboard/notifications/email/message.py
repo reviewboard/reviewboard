@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -629,7 +629,7 @@ def prepare_batch_review_request_mail(
             comment_template_name=(
                 'notifications/email_diff_comment_fragment.html'))[1]
 
-    extra_context: Dict[str, Any] = {
+    extra_context: dict[str, Any] = {
         'review_request_changed': review_request_changed,
         'reviews': reviews,
         'review_replies': review_replies,

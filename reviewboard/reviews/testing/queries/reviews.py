@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Sequence, Set, TYPE_CHECKING, Union
+from typing import Optional, Sequence, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
@@ -143,8 +143,8 @@ def get_reviews_accessible_q(
     # 2. Access control filter queries
     init_q: Q
     access_q: Q
-    tables: Set[str] = {'reviews_review'}
-    join_types: Dict[str, str] = {}
+    tables: set[str] = {'reviews_review'}
+    join_types: dict[str, str] = {}
 
     # Stage 1: Initial filtering Q-expression.
     if status:
@@ -297,8 +297,8 @@ def get_reviews_from_user_q(
         list of dict:
         The list of expected queries.
     """
-    extra_tables: Set[str] = set()
-    extra_join_types: Dict[str, str] = {}
+    extra_tables: set[str] = set()
+    extra_join_types: dict[str, str] = {}
 
     if isinstance(from_user, User):
         extra_query = Q(user=from_user)

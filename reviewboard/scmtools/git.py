@@ -8,7 +8,7 @@ import os
 import platform
 import re
 import stat
-from typing import Any, Dict, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from urllib.parse import (quote as urlquote,
                           urlparse,
                           urlsplit as urlsplit,
@@ -56,7 +56,7 @@ class GitRepositoryForm(StandardSCMToolRepositoryForm):
         6.0
     """
 
-    def clean(self) -> Dict[str, Any]:
+    def clean(self) -> dict[str, Any]:
         """Perform validation on the form.
 
         Returns:

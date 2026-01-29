@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import timedelta
-from typing import (Any, Dict, Iterator, List, Optional, Sequence,
-                    TYPE_CHECKING, Tuple, Union, cast)
+from typing import (Any, Iterator, List, Optional, Sequence, TYPE_CHECKING,
+                    Tuple, Union, cast)
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -48,7 +48,7 @@ else:
 #:
 #: Version Added:
 #:     5.0.7
-APIRequestData: TypeAlias = Union[bytes, Dict[str, Any]]
+APIRequestData: TypeAlias = Union[bytes, dict[str, Any]]
 
 
 class AuthenticateSetupState(TypedDict):
@@ -110,7 +110,7 @@ class BasicTestSetupState(TypedDict):
     #:
     #: These are local to the unit test, and can be used however the test
     #: suite requires.
-    test_objects: Dict[str, Any]
+    test_objects: dict[str, Any]
 
     #: The URL to the API resource.
     url: str
@@ -209,7 +209,7 @@ class BasicTestsMetaclass(type):
         cls,
         name: str,
         bases: Tuple[type, ...],
-        d: Dict[str, Any],
+        d: dict[str, Any],
     ) -> BasicTestsMetaclass:
         """Return a new testcase class with built-in test methods.
 
@@ -431,7 +431,7 @@ class BasicTestsMixin(_MixinsParentClass):
         owner: Optional[User] = None,
         with_local_site: bool = False,
         **auth_kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Set up common state for a test.
 
         This performs some built-in setup for all HTTP method tests. It's

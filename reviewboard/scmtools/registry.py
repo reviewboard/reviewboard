@@ -8,8 +8,7 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
-from typing import (Dict, Iterator, List, Optional, TYPE_CHECKING, Tuple,
-                    Type, cast)
+from typing import Iterator, List, Optional, TYPE_CHECKING, Tuple, Type, cast
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -101,8 +100,8 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
         # management command.
         tools = list(Tool.objects.all())
         new_tools: List[Tool] = []
-        registered_by_class: Dict[str, Tool] = {}
-        registered_by_name: Dict[str, Tool] = {}
+        registered_by_class: dict[str, Tool] = {}
+        registered_by_name: dict[str, Tool] = {}
 
         for tool in tools:
             registered_by_name[tool.name] = tool

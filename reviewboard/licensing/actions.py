@@ -6,7 +6,8 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Mapping, Protocol, TYPE_CHECKING
+from collections.abc import Mapping
+from typing import Protocol, TYPE_CHECKING
 
 from djblets.util.typing import JSONValue
 from typing_extensions import TypedDict

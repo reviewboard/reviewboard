@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional, Set, TYPE_CHECKING, Union, cast
+from typing import Any, Optional, Set, TYPE_CHECKING, Union, cast
 
 from django.conf import settings
 from django.contrib.auth import hashers
@@ -217,7 +217,7 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
         if obj is not None:
             # We know now that this is a LocalSite, due to the assertion
             # above.
-            local_site_perm_cache: Dict[str, Set[str]]
+            local_site_perm_cache: dict[str, Set[str]]
 
             try:
                 local_site_perm_cache = getattr(user, '_local_site_perm_cache')
@@ -295,7 +295,7 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
             return False
 
         if obj is not None:
-            local_site_admin_for: Dict[str, bool]
+            local_site_admin_for: dict[str, bool]
 
             try:
                 local_site_admin_for = getattr(user, '_local_site_admin_for')

@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set, TYPE_CHECKING
+from typing import Any, List, Optional, Set, TYPE_CHECKING
 
 import kgb
 from django_assert_queries.testing import assert_queries
@@ -37,6 +37,8 @@ from reviewboard.site.testing.queries import \
 from reviewboard.testing.queries.http import get_http_request_start_equeries
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from django_assert_queries.query_comparator import ExpectedQueries
 
     from reviewboard.testing.queries.base import ExpectedQResult
@@ -1643,7 +1645,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         profile: Profile,
         review_request_pks: List[int],
         rows_q_result: ExpectedQResult,
-        extra: Dict[str, Any] = {},
+        extra: Mapping[str, Any] = {},
         load_state_equeries: ExpectedQueries = [],
         sidebar_equeries: ExpectedQueries = [],
         local_site: Optional[LocalSite] = None,
@@ -1949,7 +1951,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         include_new_review_count: bool = False,
         include_mycomments: bool = False,
         include_publicreviewcount: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Return data for the extra queries for the datagrid querysets.
 
         Args:
@@ -1972,7 +1974,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         """
         user_id = user.pk
 
-        extra: Dict[str, Any] = {
+        extra: dict[str, Any] = {
             'draft_summary': ("""
                 SELECT reviews_reviewrequestdraft.summary
                   FROM reviews_reviewrequestdraft

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 import logging
-from typing import (Any, Dict, Iterator, List, Optional, Sequence, Set,
+from typing import (Any, Iterator, List, Optional, Sequence, Set,
                     TYPE_CHECKING, Tuple)
 
 import dns.resolver
@@ -43,7 +43,7 @@ _DomainControllers: TypeAlias = List[Tuple[str, str]]
 #:
 #: Version Added:
 #:     6.0
-_SearchResults: TypeAlias = List[Tuple[str, Dict[str, Any]]]
+_SearchResults: TypeAlias = List[Tuple[str, dict[str, Any]]]
 
 
 class ActiveDirectoryBackend(BaseAuthBackend):

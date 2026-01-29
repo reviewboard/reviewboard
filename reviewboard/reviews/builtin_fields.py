@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 import uuid
 from itertools import chain
-from typing import (Any, Generic, Iterable, Mapping, Optional, Sequence,
-                    TYPE_CHECKING, cast)
+from typing import (Any, Generic, Iterable, Optional, Sequence, TYPE_CHECKING,
+                    cast)
 
 from django.db import models
 from django.template.loader import get_template, render_to_string
@@ -32,6 +32,8 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from django.utils.safestring import SafeString
     from djblets.webapi.responses import WebAPIResponsePayload
 

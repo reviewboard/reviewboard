@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 import logging
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING, cast
+from typing import List, Optional, Tuple, TYPE_CHECKING, cast
 
 from django.db.models import Q
 from django.utils.translation import gettext
@@ -36,8 +36,8 @@ if TYPE_CHECKING:
     from reviewboard.reviews.ui.base import SerializedCommentBlocks
     from reviewboard.reviews.ui.diff import SerializedDiffComment
 
-    CommentsDict: TypeAlias = Dict[Tuple[int, Optional[int], Optional[int]],
-                                   List[Comment]]
+    CommentsDict: TypeAlias = dict[tuple[int, Optional[int], Optional[int]],
+                                   list[Comment]]
 
 
 logger = logging.getLogger(__name__)

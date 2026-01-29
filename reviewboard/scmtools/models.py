@@ -6,8 +6,8 @@ import logging
 import uuid
 from importlib import import_module
 from time import time
-from typing import (Any, ClassVar, Final, Mapping, Optional, Sequence,
-                    TYPE_CHECKING, Union, cast)
+from typing import (Any, ClassVar, Final, Optional, Sequence, TYPE_CHECKING,
+                    Union, cast)
 from urllib.parse import quote
 
 from django.contrib.auth.models import User
@@ -38,6 +38,8 @@ from reviewboard.scmtools.signals import (checked_file_exists,
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from django.contrib.auth.models import AnonymousUser
     from django.http import HttpRequest
     from typelets.funcs import KwargsDict

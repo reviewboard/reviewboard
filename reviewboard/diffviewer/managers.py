@@ -7,7 +7,7 @@ import gc
 import hashlib
 import logging
 from functools import partial
-from typing import Mapping, Sequence, TYPE_CHECKING
+from typing import Sequence, TYPE_CHECKING
 
 from django.conf import settings
 from django.db import models, reset_queries, connection, connections
@@ -21,6 +21,8 @@ from reviewboard.diffviewer.diffutils import check_diff_size
 from reviewboard.diffviewer.filediff_creator import create_filediffs
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from reviewboard.diffviewer.models.diffcommit import DiffCommit
 
 

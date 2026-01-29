@@ -6,8 +6,8 @@ import base64
 import logging
 import os
 import subprocess
-from typing import (Any, ClassVar, Dict, List, Mapping, Optional, Sequence,
-                    TYPE_CHECKING, Type, Tuple, Union, cast)
+from typing import (Any, ClassVar, List, Optional, Sequence, TYPE_CHECKING,
+                    Type, Tuple, Union, cast)
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
@@ -28,6 +28,8 @@ from reviewboard.ssh import utils as sshutils
 from reviewboard.ssh.errors import SSHAuthenticationError
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
     from django.http import HttpRequest
     from django.utils.functional import _StrOrPromise
@@ -669,7 +671,7 @@ class _SCMToolIDProperty(str):
         3.0.16
     """
 
-    _scmtool_ids_by_class_names: Dict[str, str] = {}
+    _scmtool_ids_by_class_names: dict[str, str] = {}
 
     def __get__(
         self,
@@ -860,7 +862,7 @@ class SCMTool:
     #:
     #: This allows the form fields to have custom help text for the SCMTool,
     #: providing better guidance for configuration.
-    field_help_text: Dict[str, _StrOrPromise] = {
+    field_help_text: dict[str, _StrOrPromise] = {
         'path': _('The path to the repository. This will generally be the URL '
                   'you would use to check out the repository.'),
     }
@@ -878,7 +880,7 @@ class SCMTool:
     #: The list of executables shouldn't contain a file extensions (e.g.,
     #: ``.exe``), as Review Board will automatically attempt to use the
     #: right extension for the platform.
-    dependencies: Dict[str, List[str]] = {
+    dependencies: dict[str, List[str]] = {
         'executables': [],
         'modules': [],
     }
@@ -1170,7 +1172,7 @@ class SCMTool:
         """
         raise NotImplementedError
 
-    def get_repository_info(self) -> Dict[str, Any]:
+    def get_repository_info(self) -> Mapping[str, Any]:
         """Return information on the repository.
 
         The information will vary based on the repository. This data will be
@@ -1392,7 +1394,7 @@ class SCMTool:
         cls,
         command: List[str],
         local_site_name: Optional[str] = None,
-        env: Dict[str, str] = {},
+        env: Mapping[str, str] = {},
         **kwargs,
     ) -> subprocess.Popen:
         """Launch an application and return its output.

@@ -8,8 +8,7 @@ import re
 import weakref
 from enum import IntEnum
 from importlib import import_module
-from typing import (Any, Dict, Final, Mapping, Optional, Sequence,
-                    TYPE_CHECKING, Union, cast)
+from typing import Any, Final, Optional, Sequence, TYPE_CHECKING, Union, cast
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -40,6 +39,8 @@ from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
 from reviewboard.ssh import utils as sshutils
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from reviewboard.diffviewer.parser import ParsedDiffFile
     from reviewboard.scmtools.core import RevisionID
     from reviewboard.scmtools.models import Repository
@@ -663,7 +664,7 @@ class SVNTool(SCMTool):
             return False, 0, False
 
         saved_cert = repository.extra_data.get('cert', {})
-        cert = cast(Dict[str, Any], trust_data.copy())
+        cert = cast(dict[str, Any], trust_data.copy())
         del cert['failures']
 
         return saved_cert == cert, trust_data['failures'], False
@@ -673,7 +674,7 @@ class SVNTool(SCMTool):
         client: Client,
         e: Exception,
         path: str,
-        cert_data: dict[str, Any],
+        cert_data: Mapping[str, Any],
     ) -> None:
         """Handle a SSL certificate failure.
 

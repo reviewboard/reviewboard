@@ -13,7 +13,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Dict, List, Set, TYPE_CHECKING, Tuple, Type
+from typing import List, Set, TYPE_CHECKING, Tuple, Type
 
 from django.db import DatabaseError
 from typing_extensions import TypedDict
@@ -64,7 +64,7 @@ class UpgradeState(TypedDict, total=False):
     #:
     #: Type:
     #:     dict
-    scmtool_id_data: Dict[str, List[int]]
+    scmtool_id_data: dict[str, List[int]]
 
     #: A mapping of legacy Tool PKs to modern SCMTool IDs.
     #:
@@ -72,7 +72,7 @@ class UpgradeState(TypedDict, total=False):
     #:
     #: Type:
     #:     dict
-    tool_pk_to_scmtool_id: Dict[int, str]
+    tool_pk_to_scmtool_id: dict[int, str]
 
     #: A set of IntegrationConfig PKs with conditions to update for SCMTools.
     #:
@@ -367,7 +367,7 @@ def pre_upgrade_store_scmtool_data(
 
         upgrade_state['needs_scmtool_id_migration'] = True
 
-        scmtool_id_data: Dict[str, List[int]] = {}
+        scmtool_id_data: dict[str, List[int]] = {}
         missing_tools: List[Tuple[str, Exception]] = []
 
         for tool in tools:

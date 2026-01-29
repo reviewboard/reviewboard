@@ -9,7 +9,8 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Mapping, TYPE_CHECKING
+from collections.abc import Mapping
+from typing import Any, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.utils.translation import gettext_lazy as _
@@ -93,7 +94,7 @@ class HostingServicePlan(TypedDict):
 #:
 #: Version Added:
 #:     6.0
-HostingServiceCredentials: TypeAlias = Dict[str, Any]
+HostingServiceCredentials: TypeAlias = dict[str, Any]
 
 
 #: Information on fields in a repository.
@@ -103,7 +104,7 @@ HostingServiceCredentials: TypeAlias = Dict[str, Any]
 #:
 #: Version Added:
 #:     6.0
-RepositoryFields: TypeAlias = Dict[str, Any]
+RepositoryFields: TypeAlias = dict[str, Any]
 
 
 #: A mapping of SCMTool IDs to repository fields.

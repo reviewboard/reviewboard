@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod, abstractproperty
 from contextlib import contextmanager
-from typing import (Any, Callable, Dict, Iterator, Optional, Sequence,
-                    TYPE_CHECKING, Tuple)
+from collections.abc import Mapping
+from typing import Any, Callable, Iterator, Optional, Sequence, TYPE_CHECKING, Tuple
 from urllib.parse import quote
 
 from django.utils.translation import gettext as _
@@ -516,7 +516,7 @@ class Client(ABC):
         self,
         path: str,
         on_failure: Optional[AcceptCertificateFunc] = None,
-    ) -> Dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Attempt to accept a SSL certificate.
 
         If the repository uses SSL, this method is used to determine whether
@@ -548,7 +548,7 @@ class Client(ABC):
 #: Version Added:
 #:     6.0
 AcceptCertificateFunc: TypeAlias = Callable[
-    [Client, Exception, str, Dict[str, Any]],
+    [Client, Exception, str, Mapping[str, Any]],
     None,
 ]
 

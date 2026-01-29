@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, List, Optional, TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -438,7 +438,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             The list of expected queries.
         """
         user_pk = user.pk
-        extra: Dict[str, Any] = {
+        extra: dict[str, Any] = {
             'new_review_count': (f"""
                 SELECT COUNT(*)
                   FROM reviews_review, accounts_reviewrequestvisit

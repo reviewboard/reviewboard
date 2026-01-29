@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, TYPE_CHECKING
+from typing import Any, List, Optional, Sequence, TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -456,7 +456,7 @@ class SubmitterViewTests(BaseViewTestCase):
         else:
             local_site_q = Q()
 
-        extra: Dict[str, Any] = {
+        extra: dict[str, Any] = {
             'new_review_count': ("""
                 SELECT COUNT(*)
                   FROM reviews_review, accounts_reviewrequestvisit
@@ -701,7 +701,7 @@ class SubmitterViewTests(BaseViewTestCase):
         else:
             local_site_q = Q()
 
-        extra: Dict[str, Any] = {}
+        extra: dict[str, Any] = {}
 
         groups_q_result = get_review_groups_accessible_q(
             user=user,

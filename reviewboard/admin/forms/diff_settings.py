@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, Dict, List, cast
+from typing import Any, List, cast
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
@@ -162,7 +162,7 @@ class DiffSettingsForm(SiteSettingsForm):
         # any and all registered code safety checkers, but that will require
         # additional support in the checkers.
         code_safety_config = cast(
-            Dict[str, Dict[str, Any]],
+            dict[str, dict[str, Any]],
             self.get_key_value('code_safety_checkers'))
         trojan_source_config = code_safety_config.get(
             TrojanSourceCodeSafetyChecker.checker_id, {})
@@ -186,7 +186,7 @@ class DiffSettingsForm(SiteSettingsForm):
         """
         # Store the settings for the Trojan Code checker.
         code_safety_config = cast(
-            Dict[str, Any],
+            dict[str, Any],
             self.get_key_value('code_safety_checkers'))
         code_safety_config[TrojanSourceCodeSafetyChecker.checker_id] = {
             key: self.cleaned_data[f'trojan_source_{key}']

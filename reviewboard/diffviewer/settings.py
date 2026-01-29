@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, fields as dataclass_fields
 from hashlib import sha256
-from typing import Any, ClassVar, Dict, List, Optional, TYPE_CHECKING, cast
+from typing import Any, ClassVar, List, Optional, TYPE_CHECKING, cast
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -234,7 +234,7 @@ class DiffSettings:
 
         return cls(
             code_safety_configs=cast(
-                Dict[str, Dict[str, Any]],
+                dict[str, dict[str, Any]],
                 siteconfig.get('code_safety_checkers',
                                layers=config_layers)
             ),
@@ -243,7 +243,7 @@ class DiffSettings:
                 siteconfig.get('diffviewer_context_num_lines',
                                layers=config_layers)),
             custom_pygments_lexers=cast(
-                Dict[str, str],
+                dict[str, str],
                 siteconfig.get('diffviewer_custom_pygments_lexers',
                                layers=config_layers)),
             include_space_patterns=cast(

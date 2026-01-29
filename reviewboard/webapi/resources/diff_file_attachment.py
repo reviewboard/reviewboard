@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING, Union
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -33,6 +33,8 @@ from reviewboard.webapi.resources.base_review_request_file_attachment import \
     BaseReviewRequestFileAttachmentResource
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from django.http import HttpRequest
 
 
@@ -191,7 +193,7 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
         request: HttpRequest,
         filediff: Optional[int] = None,
         source_file: Optional[bool] = None,
-        extra_fields: Dict[str, Any] = {},
+        extra_fields: Mapping[str, Any] = {},
         *args,
         **kwargs,
     ) -> Union[tuple, WebAPIError]:

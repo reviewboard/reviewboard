@@ -19,7 +19,7 @@ from datetime import datetime
 from importlib import import_module
 from pprint import pformat
 from random import choice as random_choice
-from typing import Dict, List, Optional
+from typing import List, Optional, TYPE_CHECKING
 from urllib.request import urlopen
 
 import importlib_resources
@@ -41,6 +41,9 @@ from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
 from reviewboard.upgrade import (UpgradeState,
                                  run_post_upgrade_tasks,
                                  run_pre_upgrade_tasks)
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 # Ignore the PendingDeprecationWarnings that we'll get from Django.
@@ -1299,7 +1302,7 @@ class Site(object):
         args: List[str] = [],
         *,
         capture_output: bool = False,
-        env: Dict[str, str] = {},
+        env: Mapping[str, str] = {},
         stdin: Optional[bytes] = None,
     ) -> None:
         """Run the correct version of Python.

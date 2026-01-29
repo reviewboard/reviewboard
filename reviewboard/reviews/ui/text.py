@@ -310,7 +310,7 @@ class TextBasedReviewUI(ReviewUI[
             SerializedCommentBlocks:
             The serialized comments.
         """
-        result: SerializedCommentBlocks[SerializedTextComment] = {}
+        result: dict[str, list[SerializedTextComment]] = {}
 
         for comment in self.flat_serialized_comments(comments):
             try:

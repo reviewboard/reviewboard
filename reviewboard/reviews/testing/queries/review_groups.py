@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Dict, Set, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
@@ -82,8 +82,8 @@ def get_review_groups_accessible_q(
         dict:
         The expected Q results.
     """
-    tables: Set[str] = {'reviews_group'}
-    join_types: Dict[str, str] = {}
+    tables: set[str] = {'reviews_group'}
+    join_types: dict[str, str] = {}
 
     if user.is_superuser:
         if visible_only:

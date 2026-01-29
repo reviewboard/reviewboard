@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Iterable, Optional, TYPE_CHECKING
+from typing import Any, Iterable, Optional, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.template.loader import render_to_string
@@ -240,7 +240,7 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
         self,
         name: str,
         value: Any,
-        attrs: Optional[Dict[str, Any]] = None,
+        attrs: Optional[dict[str, Any]] = None,
         renderer: Optional[BaseRenderer] = None,
     ) -> SafeString:
         """Render the widget.
@@ -297,7 +297,7 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
             for repo in existing_repos
         ]
 
-        js_view_data: Dict[str, Any] = {
+        js_view_data: dict[str, Any] = {
             'initialOptions': repo_data,
             'multivalued': self.multivalued,
             'showInvisible': self.show_invisible,
@@ -414,7 +414,7 @@ class RelatedGroupWidget(RelatedObjectWidget):
         self,
         name: str,
         value: Any,
-        attrs: Optional[Dict[str, Any]] = None,
+        attrs: Optional[dict[str, Any]] = None,
         renderer: Optional[BaseRenderer] = None,
     ) -> SafeString:
         """Render the widget.
@@ -474,7 +474,7 @@ class RelatedGroupWidget(RelatedObjectWidget):
 
             group_data.append(data)
 
-        js_view_data: Dict[str, Any] = {
+        js_view_data: dict[str, Any] = {
             'initialOptions': group_data,
             'inviteOnly': self.invite_only,
             'multivalued': self.multivalued,
