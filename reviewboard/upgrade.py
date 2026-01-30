@@ -13,7 +13,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Set, TYPE_CHECKING, Tuple, Type
+from typing import Set, TYPE_CHECKING, Type
 
 from django.db import DatabaseError
 from typing_extensions import TypedDict

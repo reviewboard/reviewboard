@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, Optional, TYPE_CHECKING, Tuple
+from typing import Any, Optional, TYPE_CHECKING
 
 from django.conf import settings
 from django.http import HttpRequest
@@ -150,7 +150,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
 
     def track_review_request_visit(
         self,
-    ) -> Tuple[Optional[ReviewRequestVisit], Optional[datetime]]:
+    ) -> tuple[Optional[ReviewRequestVisit], Optional[datetime]]:
         """Track a visit to the review request.
 
         If the user is authenticated, their visit to this page will be

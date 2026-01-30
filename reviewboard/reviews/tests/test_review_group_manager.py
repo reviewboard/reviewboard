@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Optional, TYPE_CHECKING, Tuple, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
@@ -41,7 +41,7 @@ class AccessibleTestsMixin(_MixinParent):
         with_local_sites: bool = False,
         with_member: bool = False,
         group_kwargs: KwargsDict = {},
-    ) -> Tuple[Sequence[Group], Optional[LocalSite]]:
+    ) -> tuple[Sequence[Group], Optional[LocalSite]]:
         """Create test review group data for accessibility checks.
 
         This will create review groups on the global site and, optionally,

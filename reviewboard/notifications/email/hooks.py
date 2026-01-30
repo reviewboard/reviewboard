@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.dispatch import Signal
 
@@ -75,7 +75,7 @@ def filter_email_recipients_from_hooks(
     cc_field: RecipientList,
     signal: Signal,
     **kwargs,
-) -> Tuple[RecipientList, RecipientList]:
+) -> tuple[RecipientList, RecipientList]:
     """Filter the e-mail recipients through configured e-mail hooks.
 
     Args:

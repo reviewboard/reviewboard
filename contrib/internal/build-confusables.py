@@ -20,7 +20,7 @@ from __future__ import annotations
 import os
 import re
 import sys
-from typing import Any, Iterator, Optional, Tuple
+from typing import Any, Iterator, Optional
 from urllib.request import urlopen
 
 if sys.version_info[:2] >= (3, 9):
@@ -33,7 +33,7 @@ else:
 from typing_extensions import TypeAlias
 
 
-ConfusableEntry: TypeAlias = Tuple[int, str, str]
+ConfusableEntry: TypeAlias = tuple[int, str, str]
 
 
 CATEGORIES_URL = 'ftp://ftp.unicode.org/Public/UNIDATA/Scripts.txt'
@@ -74,7 +74,7 @@ aliases: dict[str, list[str]] = {}
 
 def _make_codepoints_key_path(
     codepoint: int,
-) -> Tuple[int, int, int, int]:
+) -> tuple[int, int, int, int]:
     """Return a key path used for a Unicode codepoint.
 
     Args:
@@ -95,7 +95,7 @@ def _make_codepoints_key_path(
 
 def get_alias(
     codepoint: int,
-) -> Tuple[Optional[str], Optional[str]]:
+) -> tuple[Optional[str], Optional[str]]:
     """Return the category alias for a codepoint.
 
     Version Changed:
@@ -185,7 +185,7 @@ def build_categories() -> None:
         r'\s*; (?P<alias>\w+) # (?P<category>[\w]+)',
         re.UNICODE)
 
-    aliases: list[Tuple[str, str]] = []
+    aliases: list[tuple[str, str]] = []
     alias_id_map: dict[str, int] = {}
 
     categories: list[str] = []
@@ -215,8 +215,8 @@ def build_categories() -> None:
         codepoint_through = int(codepoint_through_s, 16)
 
         # Split into subtables. Key off from some prefix.
-        prev_key: Optional[Tuple[int, int, int, int]] = None
-        cur_range: Optional[Tuple[int, int, int, int]] = None
+        prev_key: Optional[tuple[int, int, int, int]] = None
+        cur_range: Optional[tuple[int, int, int, int]] = None
 
         # We need a quick way to look up Unicode codepoints, but it's too
         # expensive to maintain a mapping of every codepoint. So, instead
@@ -409,13 +409,13 @@ def build_confusables_file() -> None:
         fp.write('from __future__ import annotations\n')
         fp.write('\n')
         fp.write('from collections.abc import Mapping\n')
-        fp.write('from typing import Optional, Tuple\n')
+        fp.write('from typing import Optional\n')
         fp.write('\n')
         fp.write('from typing_extensions import TypeAlias\n')
         fp.write('\n')
         fp.write('\n')
         fp.write('ConfusablesMapValue: TypeAlias ='
-                 ' Tuple[str, Optional[int]]\n')
+                 ' tuple[str, Optional[int]]\n')
         fp.write('ConfusablesMap: TypeAlias ='
                  ' Mapping[str, ConfusablesMapValue]\n')
         fp.write('\n')
@@ -441,7 +441,7 @@ def build_confusables_file() -> None:
 
         fp.write('}\n')
         fp.write('\n')
-        fp.write('CONFUSABLES_ID_TO_ALIAS_MAP: Tuple[str, ...] = (\n')
+        fp.write('CONFUSABLES_ID_TO_ALIAS_MAP: tuple[str, ...] = (\n')
 
         for alias_name in found_aliases_map.keys():
             fp.write('    %r,\n' % alias_name)

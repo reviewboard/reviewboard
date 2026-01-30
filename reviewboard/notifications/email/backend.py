@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 import smtplib
-from typing import Optional, Tuple, Type, Union, TYPE_CHECKING
+from typing import Optional, Type, Union, TYPE_CHECKING
 
 from django.core.mail.backends import smtp
 from django.core.mail.message import EmailMessage
@@ -33,7 +33,7 @@ class SMTPConnectionMixin(ConnectionParent):
             details string.
     """
 
-    rb_last_reply: Optional[Tuple[int, bytes]]
+    rb_last_reply: Optional[tuple[int, bytes]]
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the mixin.
@@ -49,7 +49,7 @@ class SMTPConnectionMixin(ConnectionParent):
 
         super().__init__(*args, **kwargs)
 
-    def data(self, *args, **kwargs) -> Tuple[int, bytes]:
+    def data(self, *args, **kwargs) -> tuple[int, bytes]:
         """Send message data over SMTP.
 
         This will use the backend to send the data, and then store the
@@ -66,7 +66,7 @@ class SMTPConnectionMixin(ConnectionParent):
             tuple:
             The reply object. See :py:attr:`rb_last_reply`.
         """
-        reply: Tuple[int, bytes] = super().data(*args, **kwargs)
+        reply: tuple[int, bytes] = super().data(*args, **kwargs)
 
         self.rb_last_reply = reply
 

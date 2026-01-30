@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Optional, TYPE_CHECKING, Tuple, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
@@ -42,7 +42,7 @@ class AccessibleTestsMixin(_MixinParent):
         with_member: bool = False,
         with_member_by_group: bool = False,
         group_kwargs: KwargsDict = {},
-    ) -> Tuple[Sequence[Repository], Optional[LocalSite]]:
+    ) -> tuple[Sequence[Repository], Optional[LocalSite]]:
         """Create test repository data for accessibility checks.
 
         This will create repositories on the global site and, optionally,

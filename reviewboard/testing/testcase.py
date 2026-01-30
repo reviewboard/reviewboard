@@ -7,8 +7,7 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from typing import (Any, Callable, Optional, TYPE_CHECKING, Tuple, Type,
-                    Union)
+from typing import Any, Callable, Optional, TYPE_CHECKING, Type, Union
 from uuid import uuid4
 
 import kgb
@@ -493,7 +492,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         username: str = 'test-user',
         password: str = '',
         email: str = 'test@example.com',
-        perms: Optional[Sequence[Tuple[str, str]]] = None,
+        perms: Optional[Sequence[tuple[str, str]]] = None,
         **kwargs,
     ) -> User:
         """Create a User for testing.

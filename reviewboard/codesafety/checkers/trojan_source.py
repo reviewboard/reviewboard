@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import unicodedata
 from itertools import chain
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.utils.html import format_html
 from django.utils.safestring import SafeString, mark_safe
@@ -28,8 +28,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-_UnicodeRange: TypeAlias = Tuple[int, int]
-_UnicodeRanges: TypeAlias = Tuple[_UnicodeRange, ...]
+_UnicodeRange: TypeAlias = tuple[int, int]
+_UnicodeRanges: TypeAlias = tuple[_UnicodeRange, ...]
 
 
 #: Zero-width Unicode characters.

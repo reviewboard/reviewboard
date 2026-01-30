@@ -7,12 +7,12 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Optional, Tuple
+from typing import Optional
 
 from typing_extensions import TypeAlias
 
 
-ConfusablesMapValue: TypeAlias = Tuple[str, Optional[int]]
+ConfusablesMapValue: TypeAlias = tuple[str, Optional[int]]
 ConfusablesMap: TypeAlias = Mapping[str, ConfusablesMapValue]
 
 
@@ -1615,7 +1615,7 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     '🯹': ('9', None),  # 1FBF9; COMMON
 }
 
-CONFUSABLES_ID_TO_ALIAS_MAP: Tuple[str, ...] = (
+CONFUSABLES_ID_TO_ALIAS_MAP: tuple[str, ...] = (
     'Greek',
     'Cyrillic',
     'Armenian',

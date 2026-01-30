@@ -6,8 +6,7 @@ import base64
 import logging
 import os
 import subprocess
-from typing import (Any, ClassVar,  Optional, TYPE_CHECKING, Type, Tuple,
-                    Union, cast)
+from typing import Any, ClassVar,  Optional, TYPE_CHECKING, Type, Union, cast
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
@@ -480,7 +479,7 @@ class Commit:
         return ('<Commit %r (author=%s; date=%s; parent=%r)>'
                 % (self.id, self.author_name, self.date, self.parent))
 
-    def split_message(self) -> Tuple[str, str]:
+    def split_message(self) -> tuple[str, str]:
         """Return a split version of the commit message.
 
         This will separate the commit message into a summary and body, if
@@ -1082,7 +1081,7 @@ class SCMTool:
         moved: bool = False,
         copied: bool = False,
         **kwargs,
-    ) -> Tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, Union[bytes, Revision]]:
         """Return a parsed filename and revision as represented in a diff.
 
         A diff may use strings like ``(working copy)`` as a revision. This
@@ -1559,7 +1558,7 @@ class SCMTool:
         cls,
         path: str,
         username: str,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Return the username and hostname from the given repository path.
 
         This is used to separate out a username and a hostname from a path,

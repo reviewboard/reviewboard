@@ -7,7 +7,6 @@ from typing import (Callable,
                     Collection,
                     Optional,
                     Set,
-                    Tuple,
                     Union,
                     TYPE_CHECKING)
 
@@ -39,7 +38,7 @@ def build_recipients(
     review_request: ReviewRequest,
     extra_recipients: Optional[RecipientList] = None,
     limit_recipients_to: Optional[RecipientList] = None,
-) -> Tuple[RecipientList, RecipientList]:
+) -> tuple[RecipientList, RecipientList]:
     """Build the recipient sets for an e-mail.
 
     By default, the user sending the e-mail, the review request submitter (if
@@ -311,7 +310,7 @@ def recipients_to_addresses(
 def send_email(
     email_builder: Callable,
     **kwargs,
-) -> Tuple[Optional[EmailMessage], bool]:
+) -> tuple[Optional[EmailMessage], bool]:
     """Attempt to send an e-mail, logging any exceptions that occur.
 
     Args:

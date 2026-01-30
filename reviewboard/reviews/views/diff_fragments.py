@@ -6,7 +6,7 @@ import io
 import logging
 import os
 import struct
-from typing import Any, Optional, TYPE_CHECKING, Tuple
+from typing import Any, Optional, TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.sites.models import Site

@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod, abstractproperty
 from contextlib import contextmanager
 from collections.abc import Mapping
-from typing import Any, Callable, Iterator, Optional, TYPE_CHECKING, Tuple
+from typing import Any, Callable, Iterator, Optional, TYPE_CHECKING
 from urllib.parse import quote
 
 from django.utils.translation import gettext as _
@@ -561,5 +561,5 @@ AcceptCertificateFunc: TypeAlias = Callable[
 #:     6.0
 SSLServerTrustPromptFunc: TypeAlias = Callable[
     [RawSSLTrustDict],
-    Tuple[bool, int, bool],
+    tuple[bool, int, bool],
 ]

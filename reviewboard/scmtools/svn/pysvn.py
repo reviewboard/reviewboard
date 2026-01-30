@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Any, Iterator, Optional, TYPE_CHECKING, Tuple
+from typing import Any, Iterator, Optional, TYPE_CHECKING
 
 try:
     import pysvn
@@ -165,7 +165,7 @@ class Client(base.Client):
         self,
         path: str,
         revision: RevisionID = HEAD,
-    ) -> Iterator[Tuple[str, str]]:
+    ) -> Iterator[tuple[str, str]]:
         """Perform an operation on a given path.
 
         This will normalize the provided path and revision and then call the

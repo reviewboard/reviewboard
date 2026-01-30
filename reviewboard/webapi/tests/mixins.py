@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import timedelta
-from typing import Any, Iterator, Optional, TYPE_CHECKING, Tuple, Union, cast
+from typing import Any, Iterator, Optional, TYPE_CHECKING, Union, cast
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -123,7 +123,7 @@ class BasicTestSetupState(TypedDict):
     with_local_site: bool
 
     #: Custom positional arguments to pass to response-checking functions.
-    check_result_args: NotRequired[Tuple[Any, ...]]
+    check_result_args: NotRequired[tuple[Any, ...]]
 
     #: Custom keyword arguments to pass to response-checking functions.
     check_result_kwargs: NotRequired[KwargsDict]
@@ -209,7 +209,7 @@ class BasicTestsMetaclass(type):
     def __new__(
         cls,
         name: str,
-        bases: Tuple[type, ...],
+        bases: tuple[type, ...],
         d: dict[str, Any],
     ) -> BasicTestsMetaclass:
         """Return a new testcase class with built-in test methods.
@@ -228,7 +228,7 @@ class BasicTestsMetaclass(type):
             type:
             The resulting class.
         """
-        mixins: Tuple[type, ...]
+        mixins: tuple[type, ...]
 
         test_local_sites = d.get('test_local_sites', True)
         test_api_token_access = d.get('test_api_token_access', True)
@@ -672,7 +672,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         user: User,
         with_local_site: bool,
         local_site_name: Optional[str],
-    ) -> Tuple[str, Tuple[Any, ...]]:
+    ) -> tuple[str, tuple[Any, ...]]:
         """Set up a basic HTTP DELETE unit test.
 
         Subclasses must override this to create an object that should be
@@ -1258,7 +1258,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         user: User,
         with_local_site: bool,
         local_site_name: Optional[str],
-    ) -> Tuple[str, str, Any]:
+    ) -> tuple[str, str, Any]:
         """Set up a basic HTTP GET unit test.
 
         Subclasses must override this to create an object that should be
@@ -1808,7 +1808,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         with_local_site: bool,
         local_site_name: Optional[str],
         populate_items: bool,
-    ) -> Tuple[str, str, Sequence[str]]:
+    ) -> tuple[str, str, Sequence[str]]:
         """Set up a basic HTTP GET unit test.
 
         Subclasses must override this to create objects that should be
@@ -2351,7 +2351,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
         with_local_site: bool,
         local_site_name: Optional[str],
         post_valid_data: bool,
-    ) -> Tuple[str, str, APIRequestData, Tuple[Any, ...]]:
+    ) -> tuple[str, str, APIRequestData, tuple[Any, ...]]:
         """Set up a basic HTTP POST unit test.
 
         Subclasses must override this to create objects that should be
@@ -3018,7 +3018,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
         with_local_site: bool,
         local_site_name: Optional[str],
         put_valid_data: bool,
-    ) -> Tuple[str, str, APIRequestData, Any, Tuple[Any, ...]]:
+    ) -> tuple[str, str, APIRequestData, Any, tuple[Any, ...]]:
         """Set up a basic HTTP PUT unit test.
 
         Subclasses must override this to create objects that should be
@@ -3684,7 +3684,7 @@ class BaseReviewRequestChildMixin(_MixinsParentClass):
     def setup_review_request_child_test(
         self,
         review_request: ReviewRequest,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Set up a basic HTTP GET test for review request resource children.
 
         Subclasses must override this to create objects nested within a

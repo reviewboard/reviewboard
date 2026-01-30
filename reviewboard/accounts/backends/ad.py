@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 import logging
-from typing import Any, Iterator, Optional, Set, TYPE_CHECKING, Tuple
+from typing import Any, Iterator, Optional, Set, TYPE_CHECKING
 
 import dns.resolver
 from django.conf import settings
@@ -362,7 +362,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
         self,
         user_domain: str,
         request: Optional[HttpRequest] = None,
-    ) -> Iterator[Tuple[str, LDAPObject]]:
+    ) -> Iterator[tuple[str, LDAPObject]]:
         """Return all LDAP connections used for Active Directory.
 
         This returns an iterable of connections to the LDAP servers specified
