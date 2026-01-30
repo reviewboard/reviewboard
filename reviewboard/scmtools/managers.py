@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING, Union
 
 import importlib_metadata
 from django.db.models import Manager, Q
@@ -308,7 +308,7 @@ class RepositoryManager(Manager['Repository']):
     def get_best_match(
         self,
         repo_identifier: str,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> Repository:
         """Return a repository best matching the provided identifier.
 
@@ -429,7 +429,7 @@ class RepositoryManager(Manager['Repository']):
     def can_create(
         self,
         user: Union[AnonymousUser, User],
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> bool:
         """Return whether a user can add a repository.
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import os
 import unittest
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import kgb
 from djblets.testing.decorators import add_fixtures
@@ -698,10 +698,10 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
             url: str,
             path: str,
             revision: RevisionID,
-            mime_type: Optional[str],
+            mime_type: str | None,
             *args,
             **kwargs,
-        ) -> Optional[bytes]:
+        ) -> bytes | None:
             if url.startswith('http://hg.example.com/raw-file/'):
                 return b'result payload'
 
@@ -730,10 +730,10 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
             url: str,
             path: str,
             revision: RevisionID,
-            mime_type: Optional[str],
+            mime_type: str | None,
             *args,
             **kwargs,
-        ) -> Optional[bytes]:
+        ) -> bytes | None:
             if url.startswith('http://hg.example.com/raw/'):
                 return b'result payload'
 
@@ -762,10 +762,10 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
             url: str,
             path: str,
             revision: RevisionID,
-            mime_type: Optional[str],
+            mime_type: str | None,
             *args,
             **kwargs,
-        ) -> Optional[bytes]:
+        ) -> bytes | None:
             if url.startswith('http://hg.example.com/hg-history/'):
                 return b'result payload'
 
@@ -823,10 +823,10 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
             url: str,
             path: str,
             revision: RevisionID,
-            mime_type: Optional[str],
+            mime_type: str | None,
             *args,
             **kwargs,
-        ) -> Optional[bytes]:
+        ) -> bytes | None:
             self.assertEqual(url, 'http://hg.example.com/json-branches')
             self.assertEqual(mime_type, 'application/json')
             self.assertEqual(path, '')
@@ -878,10 +878,10 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
             url: str,
             path: str,
             revision: RevisionID,
-            mime_type: Optional[str],
+            mime_type: str | None,
             *args,
             **kwargs,
-        ) -> Optional[bytes]:
+        ) -> bytes | None:
             raise FileNotFoundError(path, revision)
 
         self.spy_on(self.hgweb_client.get_file_http,
@@ -897,10 +897,10 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
             url: str,
             path: str,
             revision: RevisionID,
-            mime_type: Optional[str],
+            mime_type: str | None,
             *args,
             **kwargs,
-        ) -> Optional[bytes]:
+        ) -> bytes | None:
             if url.startswith('http://hg.example.com/raw-rev/'):
                 self.assertEqual(
                     url,
@@ -952,10 +952,10 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
             url: str,
             path: str,
             revision: RevisionID,
-            mime_type: Optional[str],
+            mime_type: str | None,
             *args,
             **kwargs,
-        ) -> Optional[bytes]:
+        ) -> bytes | None:
             self.assertEqual(
                 url,
                 'http://hg.example.com/json-log/?rev=branch(.)')
@@ -1015,10 +1015,10 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
             url: str,
             path: str,
             revision: RevisionID,
-            mime_type: Optional[str],
+            mime_type: str | None,
             *args,
             **kwargs,
-        ) -> Optional[bytes]:
+        ) -> bytes | None:
             self.assertEqual(
                 url,
                 'http://hg.example.com/json-log/?rev=branch(my-branch)')
@@ -1078,10 +1078,10 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
             url: str,
             path: str,
             revision: RevisionID,
-            mime_type: Optional[str],
+            mime_type: str | None,
             *args,
             **kwargs,
-        ) -> Optional[bytes]:
+        ) -> bytes | None:
             self.assertEqual(
                 url,
                 'http://hg.example.com/json-log/'
@@ -1146,10 +1146,10 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
             url: str,
             path: str,
             revision: RevisionID,
-            mime_type: Optional[str],
+            mime_type: str | None,
             *args,
             **kwargs,
-        ) -> Optional[bytes]:
+        ) -> bytes | None:
             self.assertEqual(url,
                              'http://hg.example.com/json-log/?rev=branch(.)')
             self.assertEqual(mime_type, 'application/json')

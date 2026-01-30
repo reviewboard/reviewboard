@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import sys
 from itertools import chain
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
@@ -760,15 +760,18 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
     #:
     #: Type
     #:     reviewboard.scmtools.certs.Certificate
-    cert: Optional[LegacyCertificate]
+    cert: LegacyCertificate | None
 
     #: A certificate verification exception generated during validation.
     #:
     #: Type:
     #:     reviewboard.certs.errors.CertificateVerificationError or
     #:     reviewboard.scmtools.errors.UnverifiedCertificateError
-    certerror: Optional[Union[CertificateVerificationError,
-                              LegacyUnverifiedCertificateError]]
+    certerror: (
+        CertificateVerificationError |
+        LegacyUnverifiedCertificateError |
+        None
+    )
 
     def __init__(self, data=None, *args, **kwargs):
         """Initialize the repository configuration form.

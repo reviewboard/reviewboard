@@ -6,7 +6,7 @@ import base64
 import logging
 import os
 import subprocess
-from typing import Any, ClassVar, Optional, TYPE_CHECKING, Union, cast
+from typing import Any, ClassVar, TYPE_CHECKING, Union, cast
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
@@ -49,21 +49,21 @@ logger = logging.getLogger(__name__)
 #:
 #: Version Added:
 #:     6.0
-_BytesProperty: TypeAlias = TypedProperty[Optional[bytes], Optional[bytes]]
+_BytesProperty: TypeAlias = TypedProperty[bytes | None, bytes | None]
 
 
 #: An alias for a TypedProperty taking an int value or None.
 #:
 #: Version Added:
 #:     6.0
-_IntProperty: TypeAlias = TypedProperty[Optional[int], Optional[int]]
+_IntProperty: TypeAlias = TypedProperty[int | None, int | None]
 
 
 #: An alias for a TypedProperty taking a str value or None.
 #:
 #: Version Added:
 #:     6.0
-_StrProperty: TypeAlias = TypedProperty[Optional[str], Optional[str]]
+_StrProperty: TypeAlias = TypedProperty[str | None, str | None]
 
 
 #: An alias for a TypedProperty taking a str value.
@@ -300,7 +300,7 @@ class Branch:
     def __init__(
         self,
         id: str,
-        name: Optional[str] = None,
+        name: (str | None) = None,
         commit: str = '',
         default: bool = False,
     ) -> None:
@@ -410,7 +410,7 @@ class Commit:
         date: str = '',
         message: str = '',
         parent: str = '',
-        diff: Optional[bytes] = None,
+        diff: (bytes | None) = None,
     ) -> None:
         """Initialize the commit.
 
@@ -532,7 +532,7 @@ class FileLookupContext:
     #:
     #: This may be ``None``. The contents and interpretation are dependent on
     #: the of the repository.
-    base_commit_id: Optional[str]
+    base_commit_id: str | None
 
     #: Metadata stored about the parsed commit from the diff.
     #:
@@ -561,18 +561,18 @@ class FileLookupContext:
     #: The HTTP request from the client that triggered the file lookup.
     #:
     #: This may be ``None``.
-    request: Optional[HttpRequest]
+    request: HttpRequest | None
 
     #: The user triggering the repository lookup.
     #:
     #: This is **not** the user that's communicating with the repository.
-    user: Optional[Union[AbstractBaseUser, AnonymousUser]]
+    user: AbstractBaseUser | AnonymousUser | None
 
     def __init__(
         self,
-        request: Optional[HttpRequest] = None,
-        user: Optional[Union[AbstractBaseUser, AnonymousUser]] = None,
-        base_commit_id: Optional[str] = None,
+        request: (HttpRequest | None) = None,
+        user: (AbstractBaseUser | AnonymousUser | None) = None,
+        base_commit_id: (str | None) = None,
         diff_extra_data: JSONDict = {},
         commit_extra_data: JSONDict = {},
         file_extra_data: JSONDict = {},
@@ -676,7 +676,7 @@ class _SCMToolIDProperty(str):
         self,
         owner_self,
         owner_cls,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return the ID for the SCMTool.
 
         Args:
@@ -741,7 +741,7 @@ class SCMTool:
     #:
     #: Users will see this when they go to select a repository type. Some
     #: examples would be "Subversion" or "Perforce".
-    name: Optional[str] = None
+    name: (str | None) = None
 
     #: The name used for SCMTool registration and lookup.
     #:
@@ -752,8 +752,8 @@ class SCMTool:
     #:
     #: Version Added:
     #:     6.0.3
-    lookup_name: ClassVar[Optional[str]] = \
-        cast(Optional[str], classproperty(lambda _cls: _cls.name))
+    lookup_name: ClassVar[str | None] = \
+        cast(str | None, classproperty(lambda _cls: _cls.name))
 
     #: The class name for the tool.
     #:
@@ -762,7 +762,7 @@ class SCMTool:
     #:
     #: Version Added:
     #:     5.0
-    class_name: ClassVar[Optional[str]] = None
+    class_name: ClassVar[str | None] = None
 
     #: Whether or not the SCMTool supports review requests with history.
     supports_history: bool = False
@@ -891,7 +891,7 @@ class SCMTool:
     #:
     #: Version Added:
     #:     3.0.16
-    auth_form: Optional[type[BaseSCMToolAuthForm]] = None
+    auth_form: (type[BaseSCMToolAuthForm] | None) = None
 
     #: A custom form used to collect repository details.
     #:
@@ -901,7 +901,7 @@ class SCMTool:
     #:
     #: Version Added:
     #:     3.0.16
-    repository_form: Optional[type[BaseSCMToolRepositoryForm]] = None
+    repository_form: (type[BaseSCMToolRepositoryForm] | None) = None
 
     ######################
     # Instance variables #
@@ -930,8 +930,8 @@ class SCMTool:
         self,
         path: str,
         revision: RevisionID = HEAD,
-        base_commit_id: Optional[str] = None,
-        context: Optional[FileLookupContext] = None,
+        base_commit_id: (str | None) = None,
+        context: (FileLookupContext | None) = None,
         **kwargs,
     ) -> bytes:
         """Return the contents of a file from a repository.
@@ -1005,8 +1005,8 @@ class SCMTool:
         self,
         path: str,
         revision: RevisionID = HEAD,
-        base_commit_id: Optional[str] = None,
-        context: Optional[FileLookupContext] = None,
+        base_commit_id: (str | None) = None,
+        context: (FileLookupContext | None) = None,
         **kwargs,
     ) -> bool:
         """Return whether a particular file exists in a repository.
@@ -1223,8 +1223,8 @@ class SCMTool:
 
     def get_commits(
         self,
-        branch: Optional[str] = None,
-        start: Optional[str] = None,
+        branch: (str | None) = None,
+        start: (str | None) = None,
     ) -> Sequence[Commit]:
         """Return a list of commits backward in history from a given point.
 
@@ -1323,7 +1323,7 @@ class SCMTool:
     def normalize_path_for_display(
         self,
         filename: str,
-        extra_data: Optional[JSONDict] = None,
+        extra_data: (JSONDict | None) = None,
         **kwargs,
     ) -> str:
         """Normalize a path from a diff for display to the user.
@@ -1392,7 +1392,7 @@ class SCMTool:
     def popen(
         cls,
         command: Sequence[str],
-        local_site_name: Optional[str] = None,
+        local_site_name: (str | None) = None,
         env: Mapping[str, str] = {},
         **kwargs,
     ) -> subprocess.Popen:
@@ -1456,10 +1456,10 @@ class SCMTool:
     def check_repository(
         cls,
         path: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        local_site_name: Optional[str] = None,
-        local_site: Optional[LocalSite] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        local_site_name: (str | None) = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
     ) -> None:
         """Check a repository configuration for validity.
@@ -1658,10 +1658,10 @@ class SCMTool:
     def accept_certificate(
         cls,
         path: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        local_site_name: Optional[str] = None,
-        certificate: Optional[Certificate] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        local_site_name: (str | None) = None,
+        certificate: (Certificate | None) = None,
     ) -> Mapping[str, Any]:
         """Accept the HTTPS certificate for the given repository path.
 
@@ -1725,13 +1725,13 @@ class SCMClient:
     local_site: LocalSite | None
 
     #: The password used for communicating with the repository.
-    password: Optional[str]
+    password: str | None
 
     #: The repository path.
     path: str
 
     #: The username used for communicating with the repository.
-    username: Optional[str]
+    username: str | None
 
     def __init__(
         self,
@@ -1774,8 +1774,8 @@ class SCMClient:
         url: str,
         path: str,
         revision: RevisionID,
-        mime_type: Optional[str] = None,
-    ) -> Optional[bytes]:
+        mime_type: (str | None) = None,
+    ) -> bytes | None:
         """Return the contents of a file from an HTTP(S) URL.
 
         This is a convenience for looking up the contents of files that are

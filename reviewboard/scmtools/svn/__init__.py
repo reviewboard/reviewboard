@@ -8,7 +8,7 @@ import re
 import weakref
 from enum import IntEnum
 from importlib import import_module
-from typing import Any, Final, Optional, TYPE_CHECKING, Union, cast
+from typing import Any, Final, TYPE_CHECKING, Union, cast
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -56,7 +56,7 @@ logger = logging.getLogger(__name__)
 
 
 # These will be set later in recompute_svn_backend().
-_SVNClientBackend: Optional[type[Client]] = None
+_SVNClientBackend: (type[Client] | None) = None
 has_svn_backend: bool = False
 
 
@@ -71,9 +71,9 @@ sshutils.register_rbssh('SVN_SSH')
 
 
 # Compiled regexes for parsing diffs.
-_revision_re: Optional[re.Pattern] = None
-_working_copy_re: Optional[re.Pattern] = None
-_binary_revision_re: Optional[re.Pattern] = None
+_revision_re: (re.Pattern | None) = None
+_working_copy_re: (re.Pattern | None) = None
+_binary_revision_re: (re.Pattern | None) = None
 
 
 class SVNCertificateFailures(IntEnum):
@@ -354,8 +354,8 @@ class SVNTool(SCMTool):
 
     def get_commits(
         self,
-        branch: Optional[str] = None,
-        start: Optional[str] = None,
+        branch: (str | None) = None,
+        start: (str | None) = None,
     ) -> Sequence[Commit]:
         """Return a list of commits backward in history from a given point.
 
@@ -628,7 +628,7 @@ class SVNTool(SCMTool):
     def _ssl_server_trust_prompt(
         cls,
         trust_data: RawSSLTrustDict,
-        repository: Optional[Repository],
+        repository: Repository | None,
     ) -> tuple[bool, int, bool]:
         """Callback for SSL cert verification.
 
@@ -752,9 +752,9 @@ class SVNTool(SCMTool):
     def check_repository(
         cls,
         path: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        local_site_name: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        local_site_name: (str | None) = None,
         *args,
         **kwargs,
     ) -> None:
@@ -834,10 +834,10 @@ class SVNTool(SCMTool):
     def accept_certificate(
         cls,
         path: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        local_site_name: Optional[str] = None,
-        certificate: Optional[Certificate] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        local_site_name: (str | None) = None,
+        certificate: (Certificate | None) = None,
     ) -> Mapping[str, Any]:
         """Accept the HTTPS certificate for the given repository path.
 
@@ -877,9 +877,9 @@ class SVNTool(SCMTool):
         cls,
         *,
         repo_path: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        local_site_name: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        local_site_name: (str | None) = None,
     ) -> Client:
         """Return a new Subversion client.
 
@@ -1229,8 +1229,8 @@ class SVNDiffParser(DiffParser):
 
     def parse_diff_revision(
         self,
-        filename: Optional[bytes],
-        revision: Optional[bytes],
+        filename: bytes | None,
+        revision: bytes | None,
     ) -> tuple[bytes, Union[bytes, Revision]]:
         """Parse and return a filename and revision from the diff.
 

@@ -6,7 +6,7 @@ import logging
 import uuid
 from importlib import import_module
 from time import time
-from typing import Any, ClassVar, Final, Optional, TYPE_CHECKING, Union, cast
+from typing import Any, ClassVar, Final, TYPE_CHECKING, Union, cast
 from urllib.parse import quote
 
 from django.contrib.auth.models import User
@@ -299,7 +299,7 @@ class Repository(models.Model):
     _scmtool_class: type[SCMTool]
 
     @property
-    def password(self) -> Optional[str]:
+    def password(self) -> str | None:
         """The password for the repository.
 
         If a password is stored and encrypted, it will be decrypted and
@@ -308,7 +308,7 @@ class Repository(models.Model):
         If the stored password is in plain-text, then it will be encrypted,
         stored in the database, and returned.
         """
-        password: Optional[str] = self.encrypted_password
+        password: (str | None) = self.encrypted_password
 
         # NOTE: Due to a bug in 2.0.9, it was possible to get a string of
         #       "\tNone", indicating no password. We have to check for this.
@@ -336,7 +336,7 @@ class Repository(models.Model):
     @password.setter
     def password(
         self,
-        value: Optional[str],
+        value: str | None,
     ) -> None:
         """Set the password for the repository.
 
@@ -357,7 +357,7 @@ class Repository(models.Model):
         self.encrypted_password = value
 
     @property
-    def scmtool_class(self) -> Optional[type[SCMTool]]:
+    def scmtool_class(self) -> type[SCMTool] | None:
         """The SCMTool subclass used for this repository.
 
         Type:
@@ -405,7 +405,7 @@ class Repository(models.Model):
             % (scmtool_id or self.tool.name))
 
     @cached_property
-    def hosting_service(self) -> Optional[BaseHostingService]:
+    def hosting_service(self) -> BaseHostingService | None:
         """The hosting service providing this repository.
 
         This will be ``None`` if this is a standalone repository.
@@ -427,7 +427,7 @@ class Repository(models.Model):
         return None
 
     @cached_property
-    def bug_tracker_service(self) -> Optional[BaseHostingService]:
+    def bug_tracker_service(self) -> BaseHostingService | None:
         """The selected bug tracker service for the repository.
 
         This will be ``None`` if this repository is not associated with a bug
@@ -641,9 +641,9 @@ class Repository(models.Model):
         *,
         path: str,
         revision: str,
-        base_commit_id: Optional[str] = None,
-        request: Optional[HttpRequest] = None,
-        context: Optional[FileLookupContext] = None,
+        base_commit_id: (str | None) = None,
+        request: (HttpRequest | None) = None,
+        context: (FileLookupContext | None) = None,
     ) -> bytes:
         """Return a file from the repository.
 
@@ -738,9 +738,9 @@ class Repository(models.Model):
         *,
         path: str,
         revision: str,
-        base_commit_id: Optional[str] = None,
-        request: Optional[HttpRequest] = None,
-        context: Optional[FileLookupContext] = None,
+        base_commit_id: (str | None) = None,
+        request: (HttpRequest | None) = None,
+        context: (FileLookupContext | None) = None,
     ) -> bool:
         """Return whether or not a file exists in the repository.
 
@@ -893,8 +893,8 @@ class Repository(models.Model):
     def get_commits(
         self,
         *,
-        branch: Optional[str] = None,
-        start: Optional[str] = None,
+        branch: (str | None) = None,
+        start: (str | None) = None,
     ) -> Sequence[Commit]:
         """Return a list of commits.
 
@@ -1209,7 +1209,7 @@ class Repository(models.Model):
         *,
         path: str,
         revision: str,
-        base_commit_id: Optional[str],
+        base_commit_id: str | None,
     ) -> str:
         """Return a cache key for fetched files.
 
@@ -1241,7 +1241,7 @@ class Repository(models.Model):
         *,
         path: str,
         revision: str,
-        base_commit_id: Optional[str],
+        base_commit_id: str | None,
     ) -> str:
         """Makes a cache key for file existence checks.
 
