@@ -6,7 +6,7 @@ from collections import OrderedDict
 import logging
 import os
 import subprocess
-from typing import ClassVar, Final, Optional, TYPE_CHECKING
+from typing import ClassVar, Final, TYPE_CHECKING
 
 import docutils.core
 import mimeparse
@@ -501,9 +501,9 @@ class MimetypeHandler(object):
     def get_raw_thumbnail_image_url(
         self,
         *,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-    ) -> Optional[str]:
+        width: (int | None) = None,
+        height: (int | None) = None,
+    ) -> str | None:
         """Return the URL to a thumbnail of a given size.
 
         For mimetype handlers that support image-based thumbnails, this will
@@ -549,10 +549,10 @@ class MimetypeHandler(object):
     def generate_thumbnail_image(
         self,
         *,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
+        width: (int | None) = None,
+        height: (int | None) = None,
         create_if_missing: bool = True,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate a thumbnail of a given size.
 
         For mimetype handlers that support image-based thumbnails, this must
@@ -645,10 +645,10 @@ class ImageMimetype(MimetypeHandler):
     def generate_thumbnail_image(
         self,
         *,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
+        width: (int | None) = None,
+        height: (int | None) = None,
         create_if_missing: bool = True,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate a thumbnail of a given size.
 
         For mimetype handlers that support image-based thumbnails, this must
@@ -715,7 +715,7 @@ class ImageMimetype(MimetypeHandler):
                 # There's no image to delete.
                 continue
 
-            filename: Optional[str] = None
+            filename: (str | None) = None
 
             if url.startswith(site_media_url):
                 filename = url[len(site_media_url):]

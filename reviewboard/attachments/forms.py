@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
 from django import forms
@@ -84,7 +84,7 @@ class UploadFileForm(forms.Form):
     def create(
         self,
         *,
-        filediff: Optional[FileDiff] = None,
+        filediff: (FileDiff | None) = None,
         from_modified: bool = True,
     ) -> FileAttachment:
         """Create a FileAttachment based on this form.

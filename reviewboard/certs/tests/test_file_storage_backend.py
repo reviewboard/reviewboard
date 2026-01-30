@@ -10,7 +10,7 @@ import json
 import os
 import shutil
 import tempfile
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 import kgb
@@ -73,9 +73,7 @@ class FileStoredDataTestCase(CertificateTestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         """Tear down class-wide state for the test case."""
-        # Note that we're ignoring the None because we're just in cleanup
-        # phase, and don't want to have to mark storage as Optional[...].
-        cls.storage = None  # type: ignore
+        del cls.storage
 
         super().tearDownClass()
 
@@ -4800,7 +4798,7 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
 
     def _create_backend(
         self,
-        storage_path: Optional[str] = None,
+        storage_path: (str | None) = None,
     ) -> FileCertificateStorageBackend:
         """Return a new storage backend.
 

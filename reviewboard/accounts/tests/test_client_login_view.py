@@ -7,7 +7,6 @@ Version Added:
 from __future__ import annotations
 
 import datetime
-from typing import Optional
 from urllib.parse import quote
 
 import kgb
@@ -314,10 +313,10 @@ class ClientLoginViewTests(kgb.SpyAgency, TestCase):
         client_name: str,
         client_url: str,
         username: str,
-        check_payload_token: Optional[bool] = False,
-        error: Optional[str] = '',
-        redirect_to: Optional[str] = '',
-        token_expires: Optional[datetime.datetime] = None,
+        check_payload_token: (bool | None) = False,
+        error: (str | None) = '',
+        redirect_to: (str | None) = '',
+        token_expires: (datetime.datetime | None) = None,
     ) -> None:
         """Assert that the context and JS view data matches the given values.
 

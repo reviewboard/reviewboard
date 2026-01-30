@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Manager, Q
@@ -103,7 +103,7 @@ class FileAttachmentManager(Manager):
         self,
         filediff: FileDiff,
         modified: bool = True,
-    ) -> Optional[FileAttachment]:
+    ) -> FileAttachment | None:
         """Return the FileAttachment matching a FileDiff.
 
         The FileAttachment associated with the path, revision and repository

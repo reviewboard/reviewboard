@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import os
 import socket
-from typing import Optional
 from urllib.parse import urljoin
 
 from django.conf import settings
@@ -17,7 +16,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 
 #: A cached path containing the site's data directory.
-_data_dir: Optional[str] = None
+_data_dir: (str | None) = None
 
 
 def get_server_url(local_site_name=None, local_site=None, request=None):

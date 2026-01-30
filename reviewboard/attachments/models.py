@@ -6,7 +6,7 @@ import logging
 import os
 from collections.abc import Sequence
 from inspect import signature
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -300,7 +300,7 @@ class FileAttachment(models.Model):
 
                 return draft.review_request
 
-    def get_local_site(self) -> Optional[LocalSite]:
+    def get_local_site(self) -> LocalSite | None:
         """Return the local site for this attachment.
 
         Version Added:
@@ -322,7 +322,7 @@ class FileAttachment(models.Model):
 
         return self._comments
 
-    def get_raw_download_url(self) -> Optional[str]:
+    def get_raw_download_url(self) -> str | None:
         """Return the absolute URL to download this file.
 
         The URL will be determined by the storage backend. It may be
@@ -351,9 +351,9 @@ class FileAttachment(models.Model):
     def get_raw_thumbnail_image_url(
         self,
         *,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-    ) -> Optional[str]:
+        width: (int | None) = None,
+        height: (int | None) = None,
+    ) -> str | None:
         """Return the absolute URL for an image thumbnail for this file.
 
         The URL will be determined by the storage backend. It may be
@@ -373,7 +373,7 @@ class FileAttachment(models.Model):
             This will be ``None`` if there's no file backing for any reason,
             or if the attachment doesn't support image thumbnails.
         """
-        url: Optional[str] = None
+        url: (str | None) = None
         mimetype_handler = self.mimetype_handler
 
         if mimetype_handler:
@@ -390,7 +390,7 @@ class FileAttachment(models.Model):
 
         return build_server_url(url)
 
-    def get_absolute_url(self) -> Optional[str]:
+    def get_absolute_url(self) -> str | None:
         """Return the absolute URL for accessing the file.
 
         This will return the correct URL for either user-uploaded or

@@ -7,7 +7,7 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, TYPE_CHECKING, cast
+from typing import Any, TYPE_CHECKING, cast
 
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
@@ -650,7 +650,7 @@ class BaseAction:
     #:
     #: Type:
     #:     list of str
-    apply_to: Optional[Sequence[str]] = None
+    apply_to: (Sequence[str] | None) = None
 
     #: The attachment point for the action.
     #:
@@ -695,7 +695,7 @@ class BaseAction:
     #:
     #: Type:
     #:     str
-    icon_class: Optional[str] = None
+    icon_class: (str | None) = None
 
     #: The class to instantiate for the JavaScript model.
     #:
@@ -757,7 +757,7 @@ class BaseAction:
     #:
     #: Type:
     #:     str
-    url_name: Optional[str] = None
+    url_name: (str | None) = None
 
     #: The user-visible verbose label.
     #:

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import ClassVar, Iterator, Optional, TYPE_CHECKING
+from typing import ClassVar, Iterator, TYPE_CHECKING
 
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
@@ -53,7 +53,7 @@ class UserBadge:
     #: as custom colors.
     #:
     #: Multiple CSS classes can be provided by separating them with spaces.
-    css_class: Optional[str] = None
+    css_class: (str | None) = None
 
     def render_to_string(self) -> SafeString:
         """Render the badge to an HTML string.
@@ -111,8 +111,8 @@ class BaseUserDetailsProvider:
         self,
         user: User,
         *,
-        local_site: Optional[LocalSite],
-        request: Optional[HttpRequest] = None,
+        local_site: LocalSite | None,
+        request: (HttpRequest | None) = None,
     ) -> Iterator[UserBadge]:
         """Return a list of badges to display for a user.
 
@@ -151,7 +151,7 @@ class UserDetailsProviderRegistry(OrderedRegistry[BaseUserDetailsProvider]):
     def get_user_details_provider(
         self,
         provider_id: str,
-    ) -> Optional[BaseUserDetailsProvider]:
+    ) -> BaseUserDetailsProvider | None:
         """Return the user details provider for a given ID.
 
         Args:

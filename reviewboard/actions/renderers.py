@@ -7,7 +7,7 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import Literal, Optional, TYPE_CHECKING, Union, cast
+from typing import Literal, TYPE_CHECKING, Union, cast
 
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
@@ -38,10 +38,11 @@ logger = logging.getLogger(__name__)
 #:
 #: Version Added:
 #:     8.0
-ActionSubgroupRendererType: TypeAlias = Optional[Union[
-    type['BaseActionGroupRenderer'],
-    Literal['self'],
-]]
+ActionSubgroupRendererType: TypeAlias = (
+    type['BaseActionGroupRenderer'] |
+    Literal['self'] |
+    None
+)
 
 
 class BaseActionRenderer:

@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import Group, Permission, User
 from django.db.models import Q
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 def get_user_by_pk_equeries(
     *,
     user: User,
-    note: Optional[str] = None,
+    note: (str | None) = None,
 ) -> ExpectedQueries:
     """Return expected queries for fetching a user by ID.
 
@@ -54,7 +54,7 @@ def get_user_local_site_profile_equeries(
     *,
     user: User,
     profile: Profile,
-    local_site: Optional[LocalSite] = None,
+    local_site: (LocalSite | None) = None,
 ) -> ExpectedQueries:
     """Return expected queries for accessing a user's LocalSiteProfile.
 

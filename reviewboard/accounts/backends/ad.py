@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 import logging
-from typing import Any, Iterator, Optional, TYPE_CHECKING
+from typing import Any, Iterator, TYPE_CHECKING
 
 import dns.resolver
 from django.conf import settings
@@ -144,7 +144,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
 
     def get_ldap_search_root(
         self,
-        user_domain: Optional[str] = None,
+        user_domain: (str | None) = None,
     ) -> str:
         """Return the search root(s) for users in the LDAP server.
 
@@ -185,7 +185,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
         self,
         con: LDAPObject,
         filterstr: str,
-        user_domain: Optional[str] = None,
+        user_domain: (str | None) = None,
     ) -> _SearchResults:
         """Search the given LDAP server based on the provided filter.
 
@@ -218,7 +218,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
 
     def find_domain_controllers_from_dns(
         self,
-        user_domain: Optional[str] = None,
+        user_domain: (str | None) = None,
     ) -> _DomainControllers:
         """Find and return the active domain controllers using DNS.
 
@@ -282,7 +282,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
         self,
         con: LDAPObject,
         search_results: _SearchResults,
-        seen: Optional[set[str]] = None,
+        seen: (set[str] | None) = None,
         depth: int = 0,
     ) -> set[str]:
         """Return the LDAP groups for the given users.
@@ -361,7 +361,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
     def get_ldap_connections(
         self,
         user_domain: str,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
     ) -> Iterator[tuple[str, LDAPObject]]:
         """Return all LDAP connections used for Active Directory.
 
@@ -429,12 +429,12 @@ class ActiveDirectoryBackend(BaseAuthBackend):
 
     def authenticate(
         self,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
         *,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
         **kwargs,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Authenticate a user against Active Directory.
 
         This will attempt to authenticate the user against Active Directory.
@@ -572,9 +572,9 @@ class ActiveDirectoryBackend(BaseAuthBackend):
     def get_or_create_user(
         self,
         username: str,
-        request: Optional[HttpRequest] = None,
-        ad_user_data: Optional[_SearchResults] = None,
-    ) -> Optional[User]:
+        request: (HttpRequest | None) = None,
+        ad_user_data: (_SearchResults | None) = None,
+    ) -> User | None:
         """Return an existing user or create one if it doesn't exist.
 
         This does not authenticate the user.

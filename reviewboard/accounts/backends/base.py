@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from djblets.db.query import get_object_or_none
@@ -22,7 +22,7 @@ class BaseAuthBackend:
     #:
     #: Type:
     #:     str
-    backend_id: Optional[str] = None
+    backend_id: (str | None) = None
 
     #: The display name for the authentication backend.
     #:
@@ -30,7 +30,7 @@ class BaseAuthBackend:
     #:
     #: Type:
     #:     str
-    name: Optional[StrOrPromise] = None
+    name: (StrOrPromise | None) = None
 
     #: The form class used for authentication settings.
     #:
@@ -39,7 +39,7 @@ class BaseAuthBackend:
     #:
     #: Type:
     #:     type
-    settings_form: Optional[type[SiteSettingsForm]] = None
+    settings_form: (type[SiteSettingsForm] | None) = None
 
     #: Whether this backend supports registering new users.
     #:
@@ -69,7 +69,7 @@ class BaseAuthBackend:
     #:
     #: Type:
     #:     str
-    login_instructions: Optional[StrOrPromise] = None
+    login_instructions: (StrOrPromise | None) = None
 
     #: A regex for matching invalid characters in usernames.
     #:
@@ -79,9 +79,9 @@ class BaseAuthBackend:
 
     def authenticate(
         self,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
         **credentials,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Authenticate a user.
 
         This will authenticate a user identified by the provided credentials.
@@ -116,8 +116,8 @@ class BaseAuthBackend:
     def get_or_create_user(
         self,
         username: str,
-        request: Optional[HttpRequest] = None,
-    ) -> Optional[User]:
+        request: (HttpRequest | None) = None,
+    ) -> User | None:
         """Return an existing user or create one if it doesn't exist.
 
         This does not authenticate the user.
@@ -144,7 +144,7 @@ class BaseAuthBackend:
     def get_user(
         self,
         user_id: Union[int, str],
-    ) -> Optional[User]:
+    ) -> User | None:
         """Return an existing user given a numeric user ID.
 
         Args:
@@ -227,7 +227,7 @@ class BaseAuthBackend:
     def populate_users(
         self,
         query: str,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
         **kwargs,
     ) -> None:
         """Populate users from the backend into the database based on a query.
@@ -271,9 +271,9 @@ class BaseAuthBackend:
     def build_search_users_query(
         self,
         query: str,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
         **kwargs,
-    ) -> Optional[Q]:
+    ) -> Q | None:
         """Build a query for searching users in the database.
 
         This allows backends to construct specialized search queries (

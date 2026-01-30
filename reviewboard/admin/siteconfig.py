@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from typing import Optional, cast
+from typing import cast
 
 from django.conf import settings, global_settings
 from django.core.exceptions import ImproperlyConfigured
@@ -212,7 +212,7 @@ logger = logging.getLogger(__name__)
 
 def load_site_config(
     full_reload: bool = False,
-) -> Optional[SiteConfiguration]:
+) -> SiteConfiguration | None:
     """Load stored site configuration settings.
 
     This populates the Django settings object with any keys that need to be

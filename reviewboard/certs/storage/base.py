@@ -52,7 +52,7 @@ class BaseStoredData(ABC):
     #:
     #: This should be considered an opaque value outside of the storage
     #: backend.
-    storage_id: str
+    storage_id: str | None
 
     def __init__(
         self,

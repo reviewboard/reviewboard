@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.core.exceptions import MultipleObjectsReturned
 from django.db.models import Manager
@@ -82,7 +82,7 @@ class LocalSiteProfileManager(Manager['LocalSiteProfile']):
         self,
         user: User,
         profile: Profile,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
     ) -> LocalSiteProfile:
         """Fix the case where we end up with duplicate Local Site profiles.
 
