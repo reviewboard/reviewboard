@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Count, Q
@@ -62,10 +62,10 @@ def get_webapi_token_equeries(
 def get_webapi_request_start_equeries(
     *,
     user: Union[AnonymousUser, User],
-    local_site: Optional[LocalSite] = None,
-    webapi_token: Optional[WebAPIToken] = None,
-    oauth2_access_token: Optional[AccessToken] = None,
-    oauth2_application: Optional[Application] = None,
+    local_site: (LocalSite | None) = None,
+    webapi_token: (WebAPIToken | None) = None,
+    oauth2_access_token: (AccessToken | None) = None,
+    oauth2_application: (Application | None) = None,
 ) -> ExpectedQueries:
     """Return expected queries for the start of an API HTTP request.
 

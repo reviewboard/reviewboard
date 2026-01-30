@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING, Union
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -191,8 +191,8 @@ class DiffFileAttachmentResource(BaseReviewRequestFileAttachmentResource):
     def create(
         self,
         request: HttpRequest,
-        filediff: Optional[int] = None,
-        source_file: Optional[bool] = None,
+        filediff: (int | None) = None,
+        source_file: (bool | None) = None,
         extra_fields: Mapping[str, Any] = {},
         *args,
         **kwargs,

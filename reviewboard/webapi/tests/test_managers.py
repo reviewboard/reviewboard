@@ -7,7 +7,6 @@ Version Added:
 from __future__ import annotations
 
 import datetime
-from typing import Optional
 
 import kgb
 from django.contrib.auth.models import User
@@ -273,7 +272,7 @@ class WebAPITokenManagerTests(kgb.SpyAgency, TestCase):
         self,
         token: WebAPIToken,
         client_name: str,
-        expires: Optional[datetime.datetime],
+        expires: datetime.datetime | None,
         note: str,
         user: User,
     ) -> None:

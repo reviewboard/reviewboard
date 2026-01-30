@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from typing import Optional
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.utils.translation import gettext as _
@@ -248,7 +247,7 @@ class APITokenResource(WebAPIResource):
         obj: WebAPIToken,
         *args,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Serialize the ``expires`` field.
 
         Version Added:
@@ -278,7 +277,7 @@ class APITokenResource(WebAPIResource):
         obj: WebAPIToken,
         *args,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Serialize the ``invalid_date`` field.
 
         Version Added:
@@ -335,7 +334,7 @@ class APITokenResource(WebAPIResource):
         obj: WebAPIToken,
         *args,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Serialize the ``last_used`` field.
 
         Version Added:

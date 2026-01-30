@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING, Union
 
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
@@ -96,7 +96,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             prefetch_related.append('inactive_review_request')
 
         if review_request.is_mutable_by(request.user):
-            draft: Optional[ReviewRequestDraft] = None
+            draft: (ReviewRequestDraft | None) = None
 
             try:
                 draft = resources.review_request_draft.get_object(
@@ -322,9 +322,9 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
     def update(
         self,
         request: HttpRequest,
-        caption: Optional[str] = None,
-        thumbnail: Optional[bytes] = None,
-        pending_deletion: Optional[bool] = None,
+        caption: (str | None) = None,
+        thumbnail: (bytes | None) = None,
+        pending_deletion: (bool | None) = None,
         extra_fields: Mapping[str, Any] = {},
         *args,
         **kwargs,

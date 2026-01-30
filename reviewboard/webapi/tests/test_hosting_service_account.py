@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from email.message import Message
 from http import HTTPStatus
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from urllib.error import HTTPError
 
 import kgb
@@ -103,7 +103,7 @@ class ResourceListTests(kgb.SpyAgency,
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
         populate_items: bool,
     ) -> tuple[str, str, list[HostingServiceAccount]]:
         """Set up a basic HTTP GET test.
@@ -205,7 +205,7 @@ class ResourceListTests(kgb.SpyAgency,
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
         post_valid_data: bool,
     ) -> tuple[str, str, JSONDict, Sequence[Any]]:
         """Set up a basic HTTP POST test.
@@ -442,7 +442,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
     ) -> tuple[str, str, HostingServiceAccount]:
         """Set up a basic HTTP GET test.
 

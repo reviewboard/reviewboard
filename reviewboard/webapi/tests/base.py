@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -59,7 +59,7 @@ class BaseWebAPITestCase(WebAPITestCaseMixin, EmailTestHelper, TestCase):
     #:
     #: Type:
     #:     django.contrib.auth.models.User
-    user: Optional[User]
+    user: User | None
 
     #: Site configuration settings saved prior to the test.
     #:
@@ -181,7 +181,7 @@ class BaseWebAPITestCase(WebAPITestCaseMixin, EmailTestHelper, TestCase):
             django.contrib.auth.models.User:
             The logged-in user.
         """
-        user: Optional[User] = None
+        user: (User | None) = None
         username: str
 
         if local_site:

@@ -7,7 +7,7 @@ Version Added:
 from __future__ import annotations
 
 import datetime
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from django.db.models import F
 from django.utils import timezone
@@ -34,7 +34,7 @@ class WebAPITokenManager(DjbletsWebAPITokenManager):
         self,
         user: Union[AbstractBaseUser, AnonymousUser],
         client_name: str,
-        expires: Unsettable[Optional[datetime.datetime]] = UNSET,
+        expires: (Unsettable[datetime.datetime | None]) = UNSET,
     ) -> tuple[WebAPIToken, bool]:
         """Get a user's API token for authenticating a client to Review Board.
 
