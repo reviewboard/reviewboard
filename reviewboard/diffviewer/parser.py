@@ -7,7 +7,7 @@ import logging
 import re
 import weakref
 from copy import deepcopy
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from django.utils.translation import gettext as _
 from djblets.util.properties import TypedProperty
@@ -37,22 +37,22 @@ logger = logging.getLogger(__name__)
 #:
 #: Version Added:
 #:     6.0
-_BytesProperty: TypeAlias = TypedProperty[Optional[bytes], Optional[bytes]]
+_BytesProperty: TypeAlias = TypedProperty[bytes | None, bytes | None]
 
 #: An alias for a TypedProperty taking a bytes value, Revision, or None.
 #:
 #: Version Added:
 #:     6.0
 _RevisionProperty: TypeAlias = TypedProperty[
-    Optional[Union[bytes, Revision]],
-    Optional[Union[bytes, Revision]]
+    bytes | Revision | None,
+    bytes | Revision | None
 ]
 
 #: An alias for a TypedProperty taking a str value or None.
 #:
 #: Version Added:
 #:     6.0
-_StrProperty: TypeAlias = TypedProperty[Optional[str], Optional[str]]
+_StrProperty: TypeAlias = TypedProperty[str | None, str | None]
 
 
 class ParsedDiff:
@@ -224,7 +224,7 @@ class ParsedDiffChange:
         parsed_diff.changes.append(self)
 
     @property
-    def parent_parsed_diff(self) -> Optional[ParsedDiff]:
+    def parent_parsed_diff(self) -> ParsedDiff | None:
         """The parent diff object.
 
         Type:
@@ -383,20 +383,20 @@ class ParsedDiffFile:
     skip: bool
 
     #: The finalized diff data.
-    _data: Optional[bytes]
+    _data: bytes | None
 
     #: The buffer of data to write before finalizing.
     _data_io: io.BytesIO
 
     #: A weak reference to the parent ParsedDiffChange.
-    _parent: Optional[weakref.ref[ParsedDiffChange]]
+    _parent: weakref.ref[ParsedDiffChange] | None
 
     @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def __init__(
         self,
         *,
-        parser: Optional[BaseDiffParser] = None,
-        parsed_diff_change: Optional[ParsedDiffChange] = None,
+        parser: (BaseDiffParser | None) = None,
+        parsed_diff_change: (ParsedDiffChange | None) = None,
         **kwargs,
     ) -> None:
         """Initialize the parsed file information.
@@ -462,7 +462,7 @@ class ParsedDiffFile:
         self._data = None
 
     @property
-    def parent_parsed_diff_change(self) -> Optional[ParsedDiffChange]:
+    def parent_parsed_diff_change(self) -> ParsedDiffChange | None:
         """The parent change object.
 
         Version Added:
@@ -745,7 +745,7 @@ class DiffParser(BaseDiffParser):
     ######################
 
     #: The ID of the commit this change is based on.
-    base_commit_id: Optional[str]
+    base_commit_id: str | None
 
     #: The list of resulting parsed diff files from this parser.
     files: list[ParsedDiffFile]
@@ -754,7 +754,7 @@ class DiffParser(BaseDiffParser):
     lines: list[bytes]
 
     #: The new commit ID, if available.
-    new_commit_id: Optional[str]
+    new_commit_id: str | None
 
     #: The parsed diff object.
     parsed_diff: ParsedDiff
@@ -869,7 +869,7 @@ class DiffParser(BaseDiffParser):
         """
         preamble: io.BytesIO = io.BytesIO()
         self.files = []
-        parsed_file: Optional[ParsedDiffFile] = None
+        parsed_file: (ParsedDiffFile | None) = None
         i: int = 0
 
         # Go through each line in the diff, looking for diff headers.
@@ -948,7 +948,7 @@ class DiffParser(BaseDiffParser):
     def parse_change_header(
         self,
         linenum: int,
-    ) -> tuple[int, Optional[ParsedDiffFile]]:
+    ) -> tuple[int, ParsedDiffFile | None]:
         """Parse a header before a change to a file.
 
         This will attempt to parse the following information, starting at the
@@ -992,7 +992,7 @@ class DiffParser(BaseDiffParser):
                 a corrupted diff, or an error in the parsing implementation.
                 Details are in the error message.
         """
-        parsed_file: Optional[ParsedDiffFile] = \
+        parsed_file: (ParsedDiffFile | None) = \
             ParsedDiffFile(parsed_diff_change=self.parsed_diff_change)
         assert parsed_file is not None
 
@@ -1566,8 +1566,8 @@ class DiffXParser(BaseDiffParser):
                 if parsed_diff_file.is_symlink:
                     symlink_target = file_meta.get('symlink target')
 
-                    old_symlink_target: Optional[str]
-                    new_symlink_target: Optional[str]
+                    old_symlink_target: str | None
+                    new_symlink_target: str | None
 
                     if isinstance(symlink_target, dict):
                         old_symlink_target = symlink_target.get('old')
@@ -1583,8 +1583,8 @@ class DiffXParser(BaseDiffParser):
                         new_symlink_target = None
 
                     if old_symlink_target or new_symlink_target:
-                        old_symlink_target_bytes: Optional[bytes]
-                        new_symlink_target_bytes: Optional[bytes]
+                        old_symlink_target_bytes: bytes | None
+                        new_symlink_target_bytes: bytes | None
 
                         if old_symlink_target:
                             old_symlink_target_bytes = \

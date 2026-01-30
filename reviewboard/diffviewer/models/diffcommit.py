@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from dateutil.tz import tzoffset
 from django.db import models
@@ -214,7 +214,7 @@ class DiffCommit(models.Model):
         return summary
 
     @cached_property
-    def commit_message_body(self) -> Optional[str]:
+    def commit_message_body(self) -> str | None:
         """The body of a commit message.
 
         This will contain the content following a commit summary, if any.
@@ -225,7 +225,7 @@ class DiffCommit(models.Model):
         Type:
             str
         """
-        body: Optional[str] = None
+        body: (str | None) = None
         message = self.commit_message
 
         if message:

@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -82,7 +82,7 @@ class GroupListViewTests(BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -129,7 +129,7 @@ class GroupListViewTests(BaseViewTestCase):
         *,
         user: User,
         profile: Profile,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         local_sites_in_db: bool = False,
         review_groups: Sequence[Group],
     ) -> ExpectedQueries:

@@ -20,7 +20,7 @@ from __future__ import annotations
 import os
 import re
 import sys
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator
 from urllib.request import urlopen
 
 if sys.version_info[:2] >= (3, 9):
@@ -95,7 +95,7 @@ def _make_codepoints_key_path(
 
 def get_alias(
     codepoint: int,
-) -> tuple[Optional[str], Optional[str]]:
+) -> tuple[str | None, str | None]:
     """Return the category alias for a codepoint.
 
     Version Changed:
@@ -215,8 +215,8 @@ def build_categories() -> None:
         codepoint_through = int(codepoint_through_s, 16)
 
         # Split into subtables. Key off from some prefix.
-        prev_key: Optional[tuple[int, int, int, int]] = None
-        cur_range: Optional[tuple[int, int, int, int]] = None
+        prev_key: (tuple[int, int, int, int] | None) = None
+        cur_range: (tuple[int, int, int, int] | None) = None
 
         # We need a quick way to look up Unicode codepoints, but it's too
         # expensive to maintain a mapping of every codepoint. So, instead
@@ -409,20 +409,19 @@ def build_confusables_file() -> None:
         fp.write('from __future__ import annotations\n')
         fp.write('\n')
         fp.write('from collections.abc import Mapping\n')
-        fp.write('from typing import Optional\n')
         fp.write('\n')
         fp.write('from typing_extensions import TypeAlias\n')
         fp.write('\n')
         fp.write('\n')
         fp.write('ConfusablesMapValue: TypeAlias ='
-                 ' tuple[str, Optional[int]]\n')
+                 ' tuple[str, int | None]\n')
         fp.write('ConfusablesMap: TypeAlias ='
                  ' Mapping[str, ConfusablesMapValue]\n')
         fp.write('\n')
         fp.write('\n')
         fp.write('COMMON_CONFUSABLES_MAP: ConfusablesMap = {\n')
 
-        alias_index: Optional[int]
+        alias_index: int | None
 
         for codepoint, confusable_char, confused_with_char in confusables:
             alias_id, alias_name = get_alias(codepoint)

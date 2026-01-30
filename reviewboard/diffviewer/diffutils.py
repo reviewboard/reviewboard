@@ -12,8 +12,7 @@ import subprocess
 import tempfile
 from collections.abc import Sequence
 from difflib import SequenceMatcher
-from typing import (Any, AnyStr, Callable, Iterator, Optional,
-                    TYPE_CHECKING, TypeVar)
+from typing import Any, AnyStr, Callable, Iterator, TYPE_CHECKING, TypeVar
 
 from django.core.files.base import ContentFile, File
 from django.utils.encoding import force_str
@@ -75,7 +74,7 @@ _T = TypeVar('_T')
 #:
 #: Version Added:
 #:     9.0
-DiffRegions: TypeAlias = Optional[Sequence[tuple[int, int]]]
+DiffRegions: TypeAlias = Sequence[tuple[int, int]] | None
 
 
 class DiffFileExtraContext(TypedDict):
@@ -97,7 +96,7 @@ class SerializedDiffFile(TypedDict):
     """
 
     #: The FileDiff for the base of a commit range diff.
-    base_filediff: Optional[FileDiff]
+    base_filediff: FileDiff | None
 
     #: Whether the file is binary.
     binary: bool
@@ -139,7 +138,7 @@ class SerializedDiffFile(TypedDict):
     index: int
 
     #: The interdiff FileDiff to use.
-    interfilediff: Optional[FileDiff]
+    interfilediff: FileDiff | None
 
     #: Whether the file should be rendered as a new file.
     is_new_file: bool
@@ -356,7 +355,7 @@ def patch(
     diff: bytes,
     orig_file: bytes,
     filename: str,
-    request: Optional[HttpRequest] = None,
+    request: (HttpRequest | None) = None,
     *,
     workaround_errors: bool = True,
 ) -> bytes:
@@ -1149,15 +1148,15 @@ def get_filediffs_match(filediff1, filediff2):
 def get_diff_files(
     *,
     diffset: DiffSet,
-    filediff: Optional[FileDiff] = None,
-    interdiffset: Optional[DiffSet] = None,
-    interfilediff: Optional[FileDiff] = None,
-    base_filediff: Optional[FileDiff] = None,
-    request: Optional[HttpRequest] = None,
-    filename_patterns: Optional[list[str]] = None,
-    base_commit: Optional[DiffCommit] = None,
-    tip_commit: Optional[DiffCommit] = None,
-    diff_settings: Optional[DiffSettings] = None,
+    filediff: (FileDiff | None) = None,
+    interdiffset: (DiffSet | None) = None,
+    interfilediff: (FileDiff | None) = None,
+    base_filediff: (FileDiff | None) = None,
+    request: (HttpRequest | None) = None,
+    filename_patterns: (list[str] | None) = None,
+    base_commit: (DiffCommit | None) = None,
+    tip_commit: (DiffCommit | None) = None,
+    diff_settings: (DiffSettings | None) = None,
 ) -> list[SerializedDiffFile]:
     """Return a list of files that will be displayed in a diff.
 
@@ -1627,13 +1626,13 @@ def populate_diff_chunks(
 def get_file_from_filediff(
     context: dict[str, Any],
     filediff: FileDiff,
-    interfilediff: Optional[FileDiff],
+    interfilediff: FileDiff | None,
     *,
     diff_settings: DiffSettings,
-    base_filediff: Optional[FileDiff] = None,
-    base_commit: Optional[DiffCommit] = None,
-    tip_commit: Optional[DiffCommit] = None,
-) -> Optional[dict[str, Any]]:
+    base_filediff: (FileDiff | None) = None,
+    base_commit: (DiffCommit | None) = None,
+    tip_commit: (DiffCommit | None) = None,
+) -> dict[str, Any] | None:
     """Return the files that corresponds to the filediff/interfilediff.
 
     This is primarily intended for use with templates. It takes a template
@@ -1758,12 +1757,12 @@ def get_file_from_filediff(
 def get_last_line_number_in_diff(
     context: dict[str, Any],
     filediff: FileDiff,
-    interfilediff: Optional[FileDiff],
+    interfilediff: FileDiff | None,
     *,
     diff_settings: DiffSettings,
-    base_filediff: Optional[FileDiff] = None,
-    base_commit: Optional[DiffCommit] = None,
-    tip_commit: Optional[DiffCommit] = None,
+    base_filediff: (FileDiff | None) = None,
+    base_commit: (DiffCommit | None) = None,
+    tip_commit: (DiffCommit | None) = None,
 ) -> int:
     """Return the last virtual line number in the filediff/interfilediff.
 
@@ -1945,13 +1944,13 @@ def _get_last_header_in_chunks_before_line(chunks, target_line):
 def get_last_header_before_line(
     context: dict[str, Any],
     filediff: FileDiff,
-    interfilediff: Optional[FileDiff],
+    interfilediff: FileDiff | None,
     target_line: int,
     *,
     diff_settings: DiffSettings,
-    base_filediff: Optional[FileDiff] = None,
-    base_commit: Optional[DiffCommit] = None,
-    tip_commit: Optional[DiffCommit] = None,
+    base_filediff: (FileDiff | None) = None,
+    base_commit: (DiffCommit | None) = None,
+    tip_commit: (DiffCommit | None) = None,
 ) -> dict:
     """Return the last header that occurs before the given line.
 
@@ -2043,14 +2042,14 @@ def get_last_header_before_line(
 def get_file_chunks_in_range(
     context: dict[str, Any],
     filediff: FileDiff,
-    interfilediff: Optional[FileDiff],
+    interfilediff: FileDiff | None,
     first_line: int,
     num_lines: int,
     *,
     diff_settings: DiffSettings,
-    base_filediff: Optional[FileDiff] = None,
-    base_commit: Optional[DiffCommit] = None,
-    tip_commit: Optional[DiffCommit] = None,
+    base_filediff: (FileDiff | None) = None,
+    base_commit: (DiffCommit | None) = None,
+    tip_commit: (DiffCommit | None) = None,
 ) -> Iterator[dict[str, Any]]:
     """Generate the chunks within a range of lines in the specified filediff.
 
@@ -2282,7 +2281,7 @@ def get_line_changed_regions(
 
 def get_sorted_filediffs(
     filediffs: Sequence[_T],
-    key: Optional[Callable[[_T], FileDiff]] = None,
+    key: (Callable[[_T], FileDiff] | None) = None,
 ) -> Sequence[_T]:
     """Sorts a list of filediffs or filediff-wrapping objects.
 

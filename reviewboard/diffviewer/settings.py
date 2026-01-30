@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, fields as dataclass_fields
 from hashlib import sha256
-from typing import Any, ClassVar, Optional, TYPE_CHECKING, cast
+from typing import Any, ClassVar, TYPE_CHECKING, cast
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -224,7 +224,7 @@ class DiffSettings:
             assert syntax_highlighting is not None
 
         tab_size = cast(
-            Optional[int],
+            int | None,
             siteconfig.get('diffviewer_default_tab_size',
                            layers=config_layers))
 

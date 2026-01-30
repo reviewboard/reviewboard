@@ -19,7 +19,7 @@ from datetime import datetime
 from importlib import import_module
 from pprint import pformat
 from random import choice as random_choice
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from urllib.request import urlopen
 
 import importlib_resources
@@ -76,7 +76,7 @@ is_virtualenv: bool = (
 #:
 #: Type:
 #:     reviewboard.cmdline.utils.console.Console
-console: Optional[Console] = None
+console: (Console | None) = None
 
 
 SUPPORT_URL = 'https://www.reviewboard.org/support/'
@@ -1073,8 +1073,8 @@ class Site(object):
 
         # Check for a Review Board 5.0.6+ block of custom settings, used to
         # allow some degree of user customization.
-        begin_custom_settings_i: Optional[int] = None
-        end_custom_settings_i: Optional[int] = None
+        begin_custom_settings_i: (int | None) = None
+        end_custom_settings_i: (int | None) = None
 
         for i, line in enumerate(lines):
             if (begin_custom_settings_i is None and
@@ -1303,7 +1303,7 @@ class Site(object):
         *,
         capture_output: bool = False,
         env: Mapping[str, str] = {},
-        stdin: Optional[bytes] = None,
+        stdin: (bytes | None) = None,
     ) -> None:
         """Run the correct version of Python.
 
@@ -1355,7 +1355,7 @@ class Site(object):
         source_path: str,
         dest_path: str,
         replace: bool = True,
-        use_symlink: Optional[bool] = None,
+        use_symlink: (bool | None) = None,
     ) -> None:
         """Mirror files from one location to another.
 

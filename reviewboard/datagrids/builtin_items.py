@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterator, Optional, TYPE_CHECKING
+from typing import Iterator, TYPE_CHECKING
 
 from django.utils.translation import gettext_lazy as _
 
@@ -143,7 +143,7 @@ class IncomingSection(BaseSidebarSection):
         self,
         groups: Sequence[Group],
         view_id: str,
-        icon_name: Optional[str] = None,
+        icon_name: (str | None) = None,
     ) -> Iterator[SidebarNavItem]:
         """Add groups to the sidebar.
 
@@ -239,7 +239,7 @@ class UserGroupsItem(BaseSidebarSection):
 def _get_groups(
     *,
     queryset: QuerySet[Group],
-    local_site: Optional[LocalSite],
+    local_site: LocalSite | None,
 ) -> Sequence[Group]:
     """Return review groups for usage in a datagrid sidebar.
 
