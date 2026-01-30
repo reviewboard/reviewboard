@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404
@@ -112,7 +111,7 @@ class DownloadRawDiffView(ReviewRequestViewMixin, View):
     def get(
         self,
         request: HttpRequest,
-        revision: Optional[int] = None,
+        revision: (int | None) = None,
         *args,
         **kwargs,
     ) -> HttpResponse:

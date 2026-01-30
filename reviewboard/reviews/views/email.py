@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from django.http import HttpRequest
 from django.shortcuts import get_object_or_404
@@ -128,7 +128,7 @@ class PreviewReviewRequestEmailView(ReviewRequestViewMixin,
     def get_email_data(
         self,
         request: HttpRequest,
-        changedesc_id: Optional[int] = None,
+        changedesc_id: (int | None) = None,
         *args,
         **kwargs,
     ) -> Mapping[str, Any]:

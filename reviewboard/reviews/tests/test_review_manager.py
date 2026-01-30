@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
@@ -467,7 +467,7 @@ class ReviewManagerTests(TestCase):
         user = User.objects.get(username='doc')
         superuser = User.objects.get(username='admin')
 
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -657,7 +657,7 @@ class ReviewManagerTests(TestCase):
         user = User.objects.get(username='doc')
         superuser = User.objects.get(username='admin')
 
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -809,7 +809,7 @@ class ReviewManagerTests(TestCase):
         user = User.objects.get(username='doc')
         superuser = User.objects.get(username='admin')
 
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -949,7 +949,7 @@ class ReviewManagerTests(TestCase):
         user = User.objects.get(username='doc')
         superuser = User.objects.get(username='admin')
 
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -1070,7 +1070,7 @@ class ReviewManagerTests(TestCase):
         """
         user = User.objects.get(username='doc')
 
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -1129,7 +1129,7 @@ class ReviewManagerTests(TestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -1162,7 +1162,7 @@ class ReviewManagerTests(TestCase):
         self,
         *,
         user: AnonymousUser,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
         has_local_sites_in_db: bool,
         expected_reviews: Sequence[Review],
     ) -> None:
@@ -1205,7 +1205,7 @@ class ReviewManagerTests(TestCase):
         self,
         *,
         user: User,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
         local_sites_in_db: bool,
         expected_reviews: Sequence[Review],
         accessible_repository_ids: Sequence[int] = [],
@@ -1269,7 +1269,7 @@ class ReviewManagerTests(TestCase):
         self,
         *,
         user: User,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
         local_sites_in_db: bool,
         expected_reviews: Sequence[Review],
         accessible_kwargs: KwargsDict = {},
@@ -1321,7 +1321,7 @@ class ReviewManagerTests(TestCase):
         self,
         *,
         user: User,
-        local_site: Optional[LocalSite] = None,
+        local_site: LocalSite | None = None,
     ) -> None:
         """Prime the caches before checking for queries.
 

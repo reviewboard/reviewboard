@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from django.db.models import Q
 from django.http import Http404, HttpRequest, HttpResponse
@@ -69,7 +69,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
         #:
         #: Type:
         #:     datetime.datetime
-        timestamp: Optional[datetime]
+        timestamp: datetime | None
 
         #: Extra info to format into the ``text`` string.
         #:
@@ -83,7 +83,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
         review_request_id: int,
         *args,
         **kwargs,
-    ) -> Optional[HttpResponse]:
+    ) -> HttpResponse | None:
         """Look up objects and permissions before dispatching the request.
 
         This will first look up the review request, returning an error page
@@ -143,7 +143,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
     def get_review_request(
         self,
         review_request_id: int,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> ReviewRequest:
         """Return the review request for the given display ID.
 
@@ -176,8 +176,8 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
 
     def get_diff(
         self,
-        revision: Optional[int] = None,
-        draft: Optional[ReviewRequestDraft] = None,
+        revision: (int | None) = None,
+        draft: (ReviewRequestDraft | None) = None,
     ) -> DiffSet:
         """Return a diff on the review request matching the given criteria.
 
@@ -226,7 +226,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
     def get_social_page_image_url(
         self,
         file_attachments: FileAttachmentSequence,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return the URL to an image used for social media sharing.
 
         This will look for the first attachment in a list of attachments that

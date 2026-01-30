@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
@@ -32,9 +32,9 @@ if TYPE_CHECKING:
         local_site: NotRequired[AnyOrAllLocalSites]
         has_local_sites_in_db: NotRequired[bool]
         filter_private: NotRequired[bool]
-        status: NotRequired[Optional[str]]
-        public: NotRequired[Optional[bool]]
-        base_reply_to: NotRequired[Optional[Review]]
+        status: NotRequired[str | None]
+        public: NotRequired[bool | None]
+        base_reply_to: NotRequired[Review | None]
         extra_query: NotRequired[Q]
         accessible_repository_ids: NotRequired[Sequence[int]]
         accessible_review_group_ids: NotRequired[Sequence[int]]
@@ -52,9 +52,9 @@ def get_reviews_accessible_q(
     local_site: AnyOrAllLocalSites = None,
     has_local_sites_in_db: bool = False,
     filter_private: bool = False,
-    status: Optional[str] = None,
-    public: Optional[bool] = None,
-    base_reply_to: Optional[Review] = None,
+    status: (str | None) = None,
+    public: (bool | None) = None,
+    base_reply_to: (Review | None) = None,
     extra_query: Q = Q(),
     accessible_repository_ids: Sequence[int] = [],
     accessible_review_group_ids: Sequence[int] = [],

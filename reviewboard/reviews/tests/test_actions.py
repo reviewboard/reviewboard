@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.template import Context
@@ -302,7 +302,7 @@ class AddGeneralCommentActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
 
     def _create_request_context(
         self,
-        user: Optional[User] = None,
+        user: (User | None) = None,
         url_name: str = 'review-request-detail',
         *args,
         **kwargs,
@@ -358,7 +358,7 @@ class LegacyAddGeneralCommentActionTests(ReadOnlyActionTestsMixin,
 
     def _create_request_context(
         self,
-        user: Optional[User] = None,
+        user: (User | None) = None,
         url_name: str = 'review-request-detail',
         *args,
         **kwargs,
@@ -418,7 +418,7 @@ class CloseMenuActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
         can_change_status: bool = True,
         public: bool = True,
         status: str = ReviewRequest.PENDING_REVIEW,
-        user: Optional[User] = None,
+        user: (User | None) = None,
     ) -> Context:
         """Create and return objects for use in the request context.
 
@@ -528,7 +528,7 @@ class DeleteActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
 
     def _create_request_context(
         self,
-        user: Optional[User] = None,
+        user: (User | None) = None,
         url_name: str = 'review-request-detail',
         delete_reviewrequest: bool = True,
         *args,
@@ -591,7 +591,7 @@ class DownloadDiffActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
 
     def _create_request_context(
         self,
-        review_request: Optional[ReviewRequest] = None,
+        review_request: (ReviewRequest | None) = None,
         url_name: str = 'view-diff',
         with_local_site: bool = False,
         *args,
@@ -772,7 +772,7 @@ class EditReviewActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
     def _create_request_context(
         self,
         url_name: str = 'review-request-detail',
-        user: Optional[User] = None,
+        user: (User | None) = None,
         *args,
         **kwargs,
     ) -> Context:
@@ -824,7 +824,7 @@ class LegacyEditReviewActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
     def _create_request_context(
         self,
         url_name: str = 'review-request-detail',
-        user: Optional[User] = None,
+        user: (User | None) = None,
         *args,
         **kwargs,
     ) -> Context:
@@ -893,7 +893,7 @@ class ShipItActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
     def _create_request_context(
         self,
         url_name: str = 'review-request-detail',
-        user: Optional[User] = None,
+        user: (User | None) = None,
         *args,
         **kwargs,
     ) -> Context:
@@ -961,7 +961,7 @@ class LegacyShipItActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
     def _create_request_context(
         self,
         url_name: str = 'review-request-detail',
-        user: Optional[User] = None,
+        user: (User | None) = None,
         *args,
         **kwargs,
     ) -> Context:
@@ -1014,7 +1014,7 @@ class CloseCompletedActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
         self,
         url_name: str = 'review-request-detail',
         public: bool = True,
-        user: Optional[User] = None,
+        user: (User | None) = None,
         *args,
         **kwargs,
     ) -> Context:
@@ -1075,7 +1075,7 @@ class UpdateMenuActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
         url_name: str = 'review-request-detail',
         public: bool = True,
         status: str = ReviewRequest.PENDING_REVIEW,
-        user: Optional[User] = None,
+        user: (User | None) = None,
         can_edit_reviewrequest: bool = True,
         *args,
         **kwargs,
@@ -1173,7 +1173,7 @@ class UploadDiffActionTests(ReadOnlyActionTestsMixin, ActionsTestCase):
         url_name: str = 'review-request-detail',
         can_edit_reviewrequest: bool = True,
         create_repository: bool = True,
-        user: Optional[User] = None,
+        user: (User | None) = None,
         *args,
         **kwargs,
     ) -> Context:

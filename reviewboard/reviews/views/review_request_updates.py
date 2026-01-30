@@ -7,7 +7,6 @@ import json
 import logging
 import struct
 from datetime import timezone
-from typing import Optional
 
 import dateutil.parser
 from django.conf import settings
@@ -78,7 +77,7 @@ class ReviewRequestUpdatesView(ReviewRequestViewMixin, ETagViewMixin,
         request: HttpRequest,
         *args,
         **kwargs
-    ) -> Optional[HttpResponse]:
+    ) -> HttpResponse | None:
         """Look up and validate state before dispatching the request.
 
         This looks up information based on the request before performing any

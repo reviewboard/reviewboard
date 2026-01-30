@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone as tz
-from typing import Callable, Optional, TYPE_CHECKING
+from typing import Callable, TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -80,7 +80,7 @@ class ReviewRequestPageDataTests(TestCase):
     diffsets: list[DiffSet]
 
     #: The test draft created.
-    draft: Optional[ReviewRequestDraft]
+    draft: ReviewRequestDraft | None
 
     #: The test file attachment comments created.
     #:
@@ -1705,9 +1705,9 @@ class ReviewRequestPageDataTests(TestCase):
 
     def _build_data(
         self,
-        entry_classes: Optional[
-            Sequence[type[BaseReviewRequestPageEntry]]
-        ] = None,
+        entry_classes: (
+            Sequence[type[BaseReviewRequestPageEntry]] | None
+        ) = None,
     ) -> ReviewRequestPageData:
         """Build the data to test against.
 
@@ -1733,9 +1733,9 @@ class ReviewRequestPageDataTests(TestCase):
         self,
         *,
         expected_queries: Callable[[], Sequence[ExpectedQuery]],
-        entry_classes: Optional[
-            Sequence[type[BaseReviewRequestPageEntry]]
-        ] = None,
+        entry_classes: (
+            Sequence[type[BaseReviewRequestPageEntry]] | None
+        ) = None,
         expect_changedescs: bool = False,
         expect_diffs: bool = False,
         expect_draft: bool = False,
@@ -1825,9 +1825,9 @@ class ReviewRequestPageDataTests(TestCase):
         self,
         *,
         expected_queries: Callable[[], Sequence[ExpectedQuery]],
-        entry_classes: Optional[
-            Sequence[type[BaseReviewRequestPageEntry]]
-        ] = None,
+        entry_classes: (
+            Sequence[type[BaseReviewRequestPageEntry]] | None
+        ) = None,
         expect_comments: bool = False,
         expect_draft: bool = False,
         expect_file_attachments: bool = False,
