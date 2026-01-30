@@ -13,8 +13,8 @@ from django.db.models import Q
 from django_assert_queries.testing import assert_queries
 
 from reviewboard.accounts.models import Profile
-from reviewboard.reviews.models import Group
 from reviewboard.accounts.search_indexes import UserIndex
+from reviewboard.reviews.models import Group
 from reviewboard.search.testing import search_enabled
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase

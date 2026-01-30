@@ -6,7 +6,7 @@ import logging
 import os
 from collections.abc import Sequence
 from inspect import signature
-from typing import ClassVar
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -15,7 +15,6 @@ from django.db.models import Max
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField, RelationCounterField
 from djblets.util.decorators import cached_property
-from typing_extensions import TypeAlias
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.managers import FileAttachmentManager
@@ -26,6 +25,9 @@ from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from typing import ClassVar, TypeAlias
 
 
 logger = logging.getLogger(__name__)

@@ -6,9 +6,8 @@ Version Added:
 
 from __future__ import annotations
 
-from reviewboard.testing import TestCase
-
 from reviewboard.accounts.sso.backends.saml.settings import get_saml2_settings
+from reviewboard.testing import TestCase
 
 
 class SAMLSettingsTests(TestCase):

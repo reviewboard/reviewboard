@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import itertools
 import logging
-from typing import Any, Iterator, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import dns.resolver
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.encoding import force_str
 from django.utils.translation import gettext_lazy as _
-from typing_extensions import TypeAlias
 
 try:
     import ldap
@@ -24,7 +23,8 @@ from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import ActiveDirectorySettingsForm
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
+    from typing import TypeAlias
 
     from django.http import HttpRequest
     from ldap.ldapobject import LDAPObject

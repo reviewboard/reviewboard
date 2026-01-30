@@ -7,11 +7,11 @@ Version Added:
 from __future__ import annotations
 
 import datetime
+from typing import TYPE_CHECKING
 from urllib.parse import quote
 
 import kgb
 from django.contrib.auth.models import User
-from django.template import Context
 from django.utils import timezone
 from django.utils.html import escape
 from djblets.siteconfig.models import SiteConfiguration
@@ -20,6 +20,9 @@ from djblets.webapi.errors import WebAPITokenGenerationError
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 from reviewboard.webapi.models import WebAPIToken
+
+if TYPE_CHECKING:
+    from django.template import Context
 
 
 class ClientLoginViewTests(kgb.SpyAgency, TestCase):

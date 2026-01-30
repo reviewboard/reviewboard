@@ -15,13 +15,14 @@ from djblets.pagestate.state import PageState
 from housekeeping import func_deprecated
 from typing_extensions import final
 
-from reviewboard.actions.errors import (ActionError,
-                                        MissingActionRendererError)
-from reviewboard.actions.renderers import (BaseActionGroupRenderer,
-                                           BaseActionRenderer,
-                                           DefaultActionGroupRenderer,
-                                           DefaultActionRenderer,
-                                           MenuActionGroupRenderer)
+from reviewboard.actions.errors import ActionError, MissingActionRendererError
+from reviewboard.actions.renderers import (
+    BaseActionGroupRenderer,
+    BaseActionRenderer,
+    DefaultActionGroupRenderer,
+    DefaultActionRenderer,
+    MenuActionGroupRenderer,
+)
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.site.urlresolvers import local_site_reverse
 

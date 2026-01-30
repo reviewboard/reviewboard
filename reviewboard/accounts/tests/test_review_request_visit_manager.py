@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Q
+from django_assert_queries.testing import assert_queries
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.testing import TestCase

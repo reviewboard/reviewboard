@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import textwrap
 import sys
+import textwrap
 
 from django.core.management.base import BaseCommand
 

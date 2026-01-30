@@ -3,8 +3,8 @@ from __future__ import annotations
 import datetime
 import time
 
-from django.core.cache import cache
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db.models.aggregates import Count
 from django.db.models.signals import post_save, post_delete
 from django.template.loader import render_to_string

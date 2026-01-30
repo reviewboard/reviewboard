@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from django.conf import settings
-from django.urls import include, path, re_path
 from django.contrib.auth import views as auth_views
+from django.urls import include, path, re_path
 from djblets.urls.resolvers import DynamicURLResolver
 
+from reviewboard.accounts import views as accounts_views
 from reviewboard.accounts.forms.auth import AuthenticationForm
 from reviewboard.accounts.views import LoginView
-from reviewboard.accounts import views as accounts_views
 
 
 sso_dynamic_urls = DynamicURLResolver()

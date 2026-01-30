@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Iterable, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
+from django.forms.widgets import MultiWidget, Select, TextInput
 from django.template.loader import render_to_string
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
-from django.forms.widgets import MultiWidget, Select, TextInput
 from djblets.forms.widgets import (
-    RelatedObjectWidget as DjbletsRelatedObjectWidget)
+    RelatedObjectWidget as DjbletsRelatedObjectWidget,
+)
 from pygments.lexers import get_all_lexers
 
 from reviewboard.avatars import avatar_services
@@ -19,6 +20,9 @@ from reviewboard.reviews.models import Group
 from reviewboard.scmtools.models import Repository
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from typing import Any
+
     from django.forms.renderers import BaseRenderer
     from django.utils.safestring import SafeString
 

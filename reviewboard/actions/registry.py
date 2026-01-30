@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Iterator
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -25,6 +25,9 @@ from reviewboard.actions.base import (ActionAttachmentPoint,
 from reviewboard.actions.renderers import ButtonActionRenderer
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.registries.registry import OrderedRegistry, Registry
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 logger = logging.getLogger(__name__)
@@ -152,13 +155,13 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
             AccountMenuAction,
             AdminAction,
             DocumentationAction,
-            FollowFacebookAction,
             FollowBlueSkyAction,
+            FollowFacebookAction,
             FollowLinkedInAction,
             FollowMastodonAction,
             FollowMenuAction,
-            FollowRedditAction,
             FollowNewsAction,
+            FollowRedditAction,
             FollowTwitterAction,
             FollowYouTubeAction,
             LoginAction,
@@ -172,9 +175,9 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
             AddGeneralCommentAction,
             ArchiveAction,
             ArchiveMenuAction,
-            CloseMenuAction,
             CloseCompletedAction,
             CloseDiscardedAction,
+            CloseMenuAction,
             CreateReviewAction,
             DeleteAction,
             DownloadDiffAction,

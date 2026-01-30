@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
 import logging
 import os
 import subprocess
-from typing import ClassVar, Final, TYPE_CHECKING
+from collections import OrderedDict
+from typing import TYPE_CHECKING
 
 import docutils.core
 import mimeparse
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.templatetags.static import static
-from django.utils.html import format_html, format_html_join
 from django.utils.encoding import force_str, smart_str
+from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from djblets.cache.backend import cache_memoize
@@ -21,13 +21,14 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import is_exe_in_path
 from djblets.util.templatetags.djblets_images import thumbnail
 from pygments import highlight
-from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
-                             TextLexer)
+from pygments.lexers import ClassNotFound, TextLexer, guess_lexer_for_filename
 
 from reviewboard.reviews.markdown_utils import render_markdown
 from reviewboard.webapi.server_info import get_capabilities
 
 if TYPE_CHECKING:
+    from typing import ClassVar, Final
+
     from django.core.files import File
 
 

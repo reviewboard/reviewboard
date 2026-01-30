@@ -6,9 +6,9 @@ from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 import kgb
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
+from django_assert_queries.testing import assert_queries
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import Profile

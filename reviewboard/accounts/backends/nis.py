@@ -4,19 +4,20 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
-from types import ModuleType
 from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from typing_extensions import TypeAlias
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import NISSettingsForm
 
 if TYPE_CHECKING:
+    from types import ModuleType
+    from typing import TypeAlias
+
     from django.http import HttpRequest
 
 

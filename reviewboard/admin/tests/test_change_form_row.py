@@ -5,8 +5,7 @@ from __future__ import annotations
 from django.contrib.auth.models import User
 
 from reviewboard.admin import admin_site
-from reviewboard.admin.forms.change_form import (ChangeFormField,
-                                                 ChangeFormRow)
+from reviewboard.admin.forms.change_form import ChangeFormField, ChangeFormRow
 from reviewboard.testing.testcase import TestCase
 
 

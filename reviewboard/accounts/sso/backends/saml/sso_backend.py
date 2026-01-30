@@ -9,7 +9,7 @@ from __future__ import annotations
 from importlib import import_module
 
 from django.urls import path, reverse
-from django.utils.translation import gettext_lazy as _, gettext
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import cached_property
 
@@ -23,13 +23,15 @@ from reviewboard.accounts.sso.backends.saml.settings import (
     SAMLBinding,
     SAMLDigestAlgorithm,
     SAMLNameIDFormat,
-    SAMLSignatureAlgorithm,)
+    SAMLSignatureAlgorithm,
+)
 from reviewboard.accounts.sso.backends.saml.views import (
     SAMLACSView,
     SAMLLinkUserView,
     SAMLLoginView,
     SAMLMetadataView,
-    SAMLSLSView)
+    SAMLSLSView,
+)
 
 
 class SAMLSSOBackend(BaseSSOBackend):

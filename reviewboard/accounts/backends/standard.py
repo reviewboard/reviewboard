@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 
 from django.conf import settings
 from django.contrib.auth import hashers
@@ -18,6 +18,8 @@ from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
     from django.db.models import Model
     from django.http import HttpRequest

@@ -13,11 +13,7 @@ from reviewboard.accounts.trophies import trophies_registry
 if TYPE_CHECKING:
     from django.contrib.auth.models import User
 
-    from reviewboard.accounts.models import (
-        LocalSiteProfile,
-        Profile,
-        ReviewRequestVisit,
-    )
+    from reviewboard.accounts.models import LocalSiteProfile, Profile
     from reviewboard.site.models import LocalSite
 
 

@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.db.models import Model, QuerySet
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.urls import reverse
@@ -36,6 +35,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from typing import Any, ClassVar, Final
 
+    from django.db.models import Model, QuerySet
     from django.http.request import HttpRequest
     from django.template import Context
     from typelets.django.strings import StrOrPromise

@@ -12,7 +12,7 @@ from django.contrib.auth.views import (
     LoginView as DjangoLoginView,
     LogoutView,
     logout_then_login as auth_logout_then_login)
-from django.forms.forms import ErrorDict
+from django.forms.utils import ErrorDict
 from django.http import (Http404,
                          HttpRequest,
                          HttpResponse,
