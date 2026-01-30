@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any, Callable, Literal, Optional, TYPE_CHECKING, Type
+from typing import Any, Callable, Literal, Optional, TYPE_CHECKING
 
 import kgb
 
@@ -36,7 +36,7 @@ class SSLTestsMixin(MixinParent):
         *,
         url: str,
         spy_func: Callable,
-        spy_owner: Optional[Type] = None,
+        spy_owner: Optional[type[Any]] = None,
         method: Literal['post', 'get', 'delete', 'put'] = 'post',
         data: Mapping[str, Any] = {},
     ) -> None:

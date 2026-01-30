@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
-from typing import Iterator, Optional, TYPE_CHECKING, Type, cast
+from typing import Iterator, Optional, TYPE_CHECKING, cast
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -23,13 +23,13 @@ if TYPE_CHECKING:
     from importlib_metadata import EntryPoint
     from typing_extensions import TypeAlias
 
-    _ConflictingTools: TypeAlias = list[tuple[Type[SCMTool], Tool]]
+    _ConflictingTools: TypeAlias = list[tuple[type[SCMTool], Tool]]
 
 
 logger = logging.getLogger(__name__)
 
 
-class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
+class SCMToolRegistry(EntryPointRegistry[type[SCMTool]]):
     """A registry for managing SCMTools.
 
     Version Added:
@@ -159,7 +159,7 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
         if new_tools:
             Tool.objects.bulk_create(new_tools)
 
-    def get_defaults(self) -> Iterator[Type[SCMTool]]:
+    def get_defaults(self) -> Iterator[type[SCMTool]]:
         """Yield the built-in SCMTools.
 
         Yields:
@@ -184,7 +184,7 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
     def process_value_from_entry_point(
         self,
         entry_point: EntryPoint,
-    ) -> Type[SCMTool]:
+    ) -> type[SCMTool]:
         """Load the class from the entry point.
 
         The ``scmtool_id`` attribute will be set on the class from the entry
@@ -198,13 +198,13 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
             type:
             The :py:class:`~reviewboard.scmtools.core.SCMTool` subclass.
         """
-        cls = cast(Type[SCMTool], entry_point.load())
+        cls = cast(type[SCMTool], entry_point.load())
         cls.scmtool_id = entry_point.name
         return cls
 
     def on_item_registering(
         self,
-        scmtool_class: Type[SCMTool],
+        scmtool_class: type[SCMTool],
     ) -> None:
         """Prepare a SCMTool class for registration.
 
@@ -225,7 +225,7 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
 
     def on_item_registered(
         self,
-        scmtool_class: Type[SCMTool],
+        scmtool_class: type[SCMTool],
     ) -> None:
         """Handle database registration after an SCMTool is registered.
 
@@ -252,7 +252,7 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
     def get_by_id(
         self,
         scmtool_id: str,
-    ) -> Optional[Type[SCMTool]]:
+    ) -> Optional[type[SCMTool]]:
         """Return the SCMTool with the given ID.
 
         Args:
@@ -268,7 +268,7 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
     def get_by_name(
         self,
         name: str,
-    ) -> Optional[Type[SCMTool]]:
+    ) -> Optional[type[SCMTool]]:
         """Return the SCMTool with the given lookup name.
 
         Args:
@@ -284,7 +284,7 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
     def get_by_class_name(
         self,
         class_name: str,
-    ) -> Optional[Type[SCMTool]]:
+    ) -> Optional[type[SCMTool]]:
         """Return the SCMTool with the given class name.
 
         Args:

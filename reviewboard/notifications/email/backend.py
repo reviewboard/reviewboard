@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 import smtplib
-from typing import Optional, Type, Union, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 
 from django.core.mail.backends import smtp
 from django.core.mail.message import EmailMessage
@@ -125,8 +125,8 @@ class EmailBackend(smtp.EmailBackend):
         self._ses_region = None
 
     @property
-    def connection_class(self) -> Union[Type[SMTPSSLConnection],
-                                        Type[SMTPConnection]]:
+    def connection_class(self) -> Union[type[SMTPSSLConnection],
+                                        type[SMTPConnection]]:
         """The SMTP connection class to use for communication.
 
         This will be a version with last-response tracking enabled.

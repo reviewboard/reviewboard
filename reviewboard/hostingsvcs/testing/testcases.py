@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import json
 from contextlib import contextmanager
-from typing import (Any, Generic, Type, TypeVar, TypedDict, TYPE_CHECKING, cast,
+from typing import (Any, Generic, TypeVar, TypedDict, TYPE_CHECKING, cast,
                     overload)
 from urllib.error import HTTPError
 from urllib.parse import urlparse
@@ -319,7 +319,7 @@ class HostingServiceTestCase(kgb.SpyAgency,
 
         assert cls.service_name is not None
         cls.service_class = cast(
-            Type[_THostingService],
+            type[_THostingService],
             hosting_service_registry.get_hosting_service(cls.service_name))
 
     def setUp(self) -> None:

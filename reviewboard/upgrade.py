@@ -13,7 +13,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Set, TYPE_CHECKING, Type
+from typing import Set, TYPE_CHECKING
 
 from django.db import DatabaseError
 from typing_extensions import TypedDict
@@ -85,7 +85,7 @@ class UpgradeState(TypedDict, total=False):
 
 def _had_model(
     upgrade_state: UpgradeState,
-    model_cls: Type[Model],
+    model_cls: type[Model],
 ) -> bool:
     """Return whether a model was installed in the pre-upgrade database.
 

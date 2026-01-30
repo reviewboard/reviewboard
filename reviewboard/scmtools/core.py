@@ -6,7 +6,7 @@ import base64
 import logging
 import os
 import subprocess
-from typing import Any, ClassVar,  Optional, TYPE_CHECKING, Type, Union, cast
+from typing import Any, ClassVar, Optional, TYPE_CHECKING, Union, cast
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
@@ -891,7 +891,7 @@ class SCMTool:
     #:
     #: Version Added:
     #:     3.0.16
-    auth_form: Optional[Type[BaseSCMToolAuthForm]] = None
+    auth_form: Optional[type[BaseSCMToolAuthForm]] = None
 
     #: A custom form used to collect repository details.
     #:
@@ -901,7 +901,7 @@ class SCMTool:
     #:
     #: Version Added:
     #:     3.0.16
-    repository_form: Optional[Type[BaseSCMToolRepositoryForm]] = None
+    repository_form: Optional[type[BaseSCMToolRepositoryForm]] = None
 
     ######################
     # Instance variables #

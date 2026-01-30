@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from itertools import chain
 from typing import (Any, ClassVar, Final, Iterable, Iterator, Optional,
-                    Sequence, TYPE_CHECKING, Type, TypeVar, Union)
+                    Sequence, TYPE_CHECKING, TypeVar, Union)
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Model, Q
@@ -2404,7 +2404,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
 
 
 class ReviewRequestPageEntryRegistry(
-    OrderedRegistry[Type[BaseReviewRequestPageEntry]]):
+    OrderedRegistry[type[BaseReviewRequestPageEntry]]):
     """A registry for types of entries on the review request page."""
 
     lookup_attrs = ['entry_type_id']

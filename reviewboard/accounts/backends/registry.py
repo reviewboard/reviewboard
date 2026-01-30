@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
-from typing import Iterable, Optional, TYPE_CHECKING, Type, cast
+from typing import Iterable, Optional, TYPE_CHECKING, cast
 
 from django.conf import settings
 from django.contrib.auth import get_backends
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 #:
 #: Version Added:
 #:     6.0
-_BaseAuthBackendClass: TypeAlias = Type[BaseAuthBackend]
+_BaseAuthBackendClass: TypeAlias = type[BaseAuthBackend]
 
 
 logger = logging.getLogger(__name__)

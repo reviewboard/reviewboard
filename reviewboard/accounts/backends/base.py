@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Optional, TYPE_CHECKING, Type, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from djblets.db.query import get_object_or_none
@@ -39,7 +39,7 @@ class BaseAuthBackend:
     #:
     #: Type:
     #:     type
-    settings_form: Optional[Type[SiteSettingsForm]] = None
+    settings_form: Optional[type[SiteSettingsForm]] = None
 
     #: Whether this backend supports registering new users.
     #:

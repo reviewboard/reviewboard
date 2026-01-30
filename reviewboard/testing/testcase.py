@@ -7,7 +7,7 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Optional, TYPE_CHECKING, Type, Union
+from typing import Any, Callable, Optional, TYPE_CHECKING, Union
 from uuid import uuid4
 
 import kgb
@@ -704,7 +704,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     @contextmanager
     def assert_warns(
         self,
-        cls: Type[DeprecationWarning] = DeprecationWarning,
+        cls: type[DeprecationWarning] = DeprecationWarning,
         message: Optional[str] = None,
     ) -> Iterator[None]:
         """A context manager for asserting code generates a warning.

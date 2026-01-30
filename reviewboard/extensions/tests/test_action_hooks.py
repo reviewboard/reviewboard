@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING, Type
+from typing import Any, TYPE_CHECKING
 
 from django.template import Context, Template
 
@@ -354,7 +354,7 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
     def _test_base_review_request_action_hook(
         self,
         url_name: str,
-        hook_cls: Type[ActionHook],
+        hook_cls: type[ActionHook],
         should_render: bool,
     ) -> None:
         """Test if the action hook renders or not at the given URL.
@@ -409,7 +409,7 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
     def _test_review_request_dropdown_action_hook(
         self,
         url_name: str,
-        hook_cls: Type[ActionHook],
+        hook_cls: type[ActionHook],
     ) -> None:
         """Test if the dropdown action hook renders or not at the given URL.
 

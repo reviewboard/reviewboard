@@ -8,8 +8,6 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Type
-
 from djblets.conditions.choices import BaseConditionChoice
 from djblets.extensions.hooks import (BaseRegistryMultiItemHook,
                                       ExtensionHookPoint)
@@ -18,7 +16,7 @@ from reviewboard.reviews.conditions import review_request_condition_choices
 
 
 class ReviewRequestConditionChoicesHook(
-    BaseRegistryMultiItemHook[Type[BaseConditionChoice]],
+    BaseRegistryMultiItemHook[type[BaseConditionChoice]],
     metaclass=ExtensionHookPoint,
 ):
     """Hook to add custom condition choices for review requests.
