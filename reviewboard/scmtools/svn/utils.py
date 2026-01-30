@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import re
-from typing import List
 
 
 AUTHOR_KEYWORDS = [b'author', b'lastchangedby']
@@ -97,7 +96,7 @@ def collapse_svn_keywords(
         'keyword_str must be a byte string, not %s' % type(keyword_str))
 
     # Get any aliased keywords
-    keywords: List[bytes] = [
+    keywords: list[bytes] = [
         re.escape(keyword)
         for name in re.split(br'\W+', keyword_str)
         for keyword in keyword_aliases.get(name.lower(), [])

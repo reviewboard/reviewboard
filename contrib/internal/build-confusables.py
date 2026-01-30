@@ -20,7 +20,7 @@ from __future__ import annotations
 import os
 import re
 import sys
-from typing import Any, Iterator, List, Optional, Tuple
+from typing import Any, Iterator, Optional, Tuple
 from urllib.request import urlopen
 
 if sys.version_info[:2] >= (3, 9):
@@ -69,7 +69,7 @@ dest_filename = os.path.abspath(os.path.join(
 
 
 categories_data: dict[str, Any] = {}
-aliases: dict[str, List[str]] = {}
+aliases: dict[str, list[str]] = {}
 
 
 def _make_codepoints_key_path(
@@ -185,10 +185,10 @@ def build_categories() -> None:
         r'\s*; (?P<alias>\w+) # (?P<category>[\w]+)',
         re.UNICODE)
 
-    aliases: List[Tuple[str, str]] = []
+    aliases: list[Tuple[str, str]] = []
     alias_id_map: dict[str, int] = {}
 
-    categories: List[str] = []
+    categories: list[str] = []
     category_id_map: dict[str, int] = {}
 
     codepoint_ranges: \
@@ -302,7 +302,7 @@ def build_categories() -> None:
     })
 
 
-def update_confusables() -> List[ConfusableEntry]:
+def update_confusables() -> list[ConfusableEntry]:
     """Download and build data on Unicode confusables/homoglyphs.
 
     This will download the Unicode confusables dataset and parse it. It will
@@ -330,7 +330,7 @@ def update_confusables() -> List[ConfusableEntry]:
         r'(?P<confused_with_cp>[0-9A-F ]+) ;.*',
         re.UNICODE)
 
-    confusables: List[ConfusableEntry] = []
+    confusables: list[ConfusableEntry] = []
 
     for info in _load_data(CONFUSABLES_URL, LINE_RE):
         # Parse and check the character that another may be confused with.

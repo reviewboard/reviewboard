@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Set, TYPE_CHECKING
+from typing import Any, Optional, Set, TYPE_CHECKING
 
 import kgb
 from django_assert_queries.testing import assert_queries
@@ -37,7 +37,7 @@ from reviewboard.site.testing.queries import \
 from reviewboard.testing.queries.http import get_http_request_start_equeries
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
     from django_assert_queries.query_comparator import ExpectedQueries
 
@@ -314,7 +314,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         grumpy = User.objects.get(username='grumpy')
 
-        review_request_pks: List[int] = []
+        review_request_pks: list[int] = []
 
         for i in range(10):
             if i < 5:
@@ -407,7 +407,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         profile.starred_groups.clear()
 
-        review_request_pks: List[int] = []
+        review_request_pks: list[int] = []
 
         for i in range(10):
             review_request = self.create_review_request(
@@ -495,7 +495,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         profile = user.get_profile()
         profile.starred_groups.clear()
 
-        review_request_pks: List[int] = []
+        review_request_pks: list[int] = []
 
         for i in range(10):
             if i < 5:
@@ -591,7 +591,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
 
         grumpy = User.objects.get(username='grumpy')
 
-        review_request_pks: List[int] = []
+        review_request_pks: list[int] = []
 
         for i in range(10):
             if i < 5:
@@ -686,7 +686,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         group = self.create_review_group(local_site=local_site)
         group.users.add(user)
 
-        review_request_pks: List[int] = []
+        review_request_pks: list[int] = []
 
         for i in range(15):
             review_request = self.create_review_request(
@@ -790,7 +790,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             name='test-group',
             local_site=local_site)
 
-        review_request_pks: List[int] = []
+        review_request_pks: list[int] = []
 
         for i in range(15):
             review_request = self.create_review_request(
@@ -1081,7 +1081,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         review_requests = []
         diffset_histories = []
 
-        review_request_pks: List[int] = []
+        review_request_pks: list[int] = []
 
         for i in range(10):
             review_request = self.create_review_request(
@@ -1643,7 +1643,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         *,
         user: User,
         profile: Profile,
-        review_request_pks: List[int],
+        review_request_pks: Sequence[int],
         rows_q_result: ExpectedQResult,
         extra: Mapping[str, Any] = {},
         load_state_equeries: ExpectedQueries = [],

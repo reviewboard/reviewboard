@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import OuterRef, Q, Value
@@ -21,6 +21,8 @@ from reviewboard.scmtools.testing.queries import \
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django_assert_queries.query_comparator import ExpectedQueries
     from typing_extensions import NotRequired, TypedDict, Unpack
 

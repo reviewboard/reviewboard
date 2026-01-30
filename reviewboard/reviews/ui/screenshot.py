@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from reviewboard.reviews.models import (
     Screenshot,
@@ -12,6 +12,8 @@ from reviewboard.reviews.ui.base import ReviewUI, SerializedCommentBlocks
 from reviewboard.reviews.ui.image import SerializedRegionComment
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from typelets.json import JSONDict
 
     from reviewboard.reviews.models import ReviewRequestDraft

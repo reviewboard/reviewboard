@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
@@ -27,6 +27,8 @@ from reviewboard.webapi.errors import (BAD_HOST_KEY,
 from reviewboard.webapi.resources import resources
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.db.models import QuerySet
     from django.http import HttpRequest
     from djblets.webapi.responses import WebAPIResponseLinks

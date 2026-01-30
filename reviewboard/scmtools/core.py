@@ -6,8 +6,8 @@ import base64
 import logging
 import os
 import subprocess
-from typing import (Any, ClassVar, List, Optional, Sequence, TYPE_CHECKING,
-                    Type, Tuple, Union, cast)
+from typing import (Any, ClassVar,  Optional, TYPE_CHECKING, Type, Tuple,
+                    Union, cast)
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
@@ -28,7 +28,7 @@ from reviewboard.ssh import utils as sshutils
 from reviewboard.ssh.errors import SSHAuthenticationError
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
     from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
     from django.http import HttpRequest
@@ -98,7 +98,7 @@ class ChangeSet:
     #:
     #: Type:
     #:     list of str
-    bugs_closed: List[str]
+    bugs_closed: list[str]
 
     #: The changeset number/ID.
     #:
@@ -124,7 +124,7 @@ class ChangeSet:
     #:
     #: Type:
     #:     list of str
-    files: List[str]
+    files: list[str]
 
     #: Whether or not the change is pending (not yet committed).
     #:
@@ -880,7 +880,7 @@ class SCMTool:
     #: The list of executables shouldn't contain a file extensions (e.g.,
     #: ``.exe``), as Review Board will automatically attempt to use the
     #: right extension for the platform.
-    dependencies: dict[str, List[str]] = {
+    dependencies: dict[str, list[str]] = {
         'executables': [],
         'modules': [],
     }
@@ -1392,7 +1392,7 @@ class SCMTool:
     @classmethod
     def popen(
         cls,
-        command: List[str],
+        command: Sequence[str],
         local_site_name: Optional[str] = None,
         env: Mapping[str, str] = {},
         **kwargs,

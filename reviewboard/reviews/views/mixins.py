@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, List, Optional, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 from django.db.models import Q
 from django.http import Http404, HttpRequest, HttpResponse
@@ -24,6 +24,7 @@ from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from datetime import datetime
 
     from reviewboard.attachments.models import FileAttachmentSequence
@@ -253,7 +254,7 @@ class ReviewRequestViewMixin(CheckRequestMethodViewMixin,
         self,
         review_request_details: BaseReviewRequestDetails,
         close_info: ReviewRequestCloseInfo,
-        extra_info: List[ReviewRequestViewMixin.StatusExtraInfo] = [],
+        extra_info: Sequence[ReviewRequestViewMixin.StatusExtraInfo] = [],
     ) -> SafeString:
         """Return HTML describing the current status of a review request.
 

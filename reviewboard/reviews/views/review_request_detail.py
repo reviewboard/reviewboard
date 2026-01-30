@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timezone
-from typing import Any, List, Optional, TYPE_CHECKING, Tuple
+from typing import Any, Optional, TYPE_CHECKING, Tuple
 
 from django.conf import settings
 from django.http import HttpRequest
@@ -23,6 +23,8 @@ from reviewboard.reviews.models.review_request import FileAttachmentState
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from reviewboard.attachments.models import FileAttachment
 
 
@@ -256,7 +258,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
 
         file_attachments = \
             get_latest_file_attachments(data.active_file_attachments)
-        all_file_attachments: List[FileAttachment] = data.all_file_attachments
+        all_file_attachments: Sequence[FileAttachment] = data.all_file_attachments
         attachments_length_before = len(file_attachments)
 
         # Add the file attachments that are pending deletion so that

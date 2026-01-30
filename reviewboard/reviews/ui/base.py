@@ -7,8 +7,8 @@ import logging
 import os
 from collections.abc import Mapping
 from inspect import signature
-from typing import (Any, ClassVar, Generic, Iterator, List, Optional, Sequence,
-                    TYPE_CHECKING, TypeVar)
+from typing import (Any, ClassVar, Generic, Iterator, Optional, TYPE_CHECKING,
+                    TypeVar)
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -38,6 +38,8 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.http import HttpRequest
     from django.utils.safestring import SafeString
     from typelets.json import JSONDict
@@ -143,7 +145,7 @@ SerializedCommentType = TypeVar('SerializedCommentType',
 #:
 #: Version Added:
 #:     7.0
-SerializedCommentBlocks: TypeAlias = Mapping[str, List[SerializedCommentType]]
+SerializedCommentBlocks: TypeAlias = Mapping[str, list[SerializedCommentType]]
 
 
 class ReviewUI(Generic[

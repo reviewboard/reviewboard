@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone as tz
-from typing import Callable, Optional, Sequence, TYPE_CHECKING
+from typing import Callable, Optional, TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -34,6 +34,8 @@ from reviewboard.reviews.models import (BaseComment,
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django_assert_queries.query_comparator import ExpectedQuery
 
     from reviewboard.reviews.models import (Comment,

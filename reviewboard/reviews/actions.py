@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, List, Optional, TYPE_CHECKING, Union
+from typing import Iterable, Optional, TYPE_CHECKING, Union
 
 from django.http import HttpRequest
 from django.template import Context
@@ -1203,7 +1203,7 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
 
     def __init__(
         self,
-        child_actions: Optional[List[BaseReviewRequestAction]] = None,
+        child_actions: Optional[list[BaseReviewRequestAction]] = None,
     ) -> None:
         """Initialize this menu action.
 
@@ -1353,7 +1353,7 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
 
 
 def register_actions(
-    actions: List[Union[BaseReviewRequestAction, BaseReviewRequestMenuAction]],
+    actions: list[Union[BaseReviewRequestAction, BaseReviewRequestMenuAction]],
     parent_id: Optional[str] = None,
 ) -> None:
     """Register the given actions as children of the corresponding parent.

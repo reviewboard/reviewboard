@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Sequence
 from itertools import chain
-from typing import (Any, Generic, Iterable, Optional, Sequence, TYPE_CHECKING,
-                    cast)
+from typing import Any, Generic, Iterable, Optional, TYPE_CHECKING, cast
 
 from django.db import models
 from django.template.loader import get_template, render_to_string

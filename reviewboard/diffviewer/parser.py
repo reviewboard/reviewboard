@@ -7,7 +7,7 @@ import logging
 import re
 import weakref
 from copy import deepcopy
-from typing import Optional, Sequence, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django.utils.translation import gettext as _
 from djblets.util.properties import TypedProperty
@@ -21,6 +21,8 @@ from reviewboard.diffviewer.errors import DiffParserError
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision, UNKNOWN
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from pydiffx import BaseDiffXSection
     from typelets.json import JSONDict
 

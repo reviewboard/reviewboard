@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import (Callable,
                     Collection,
-                    List,
                     Optional,
                     Set,
                     Tuple,
@@ -23,6 +22,8 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.models import Group, ReviewRequest
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from reviewboard.notifications.email.message import EmailMessage
 
 
@@ -210,7 +211,7 @@ def build_recipients(
 def get_email_addresses_for_group(
     group: Group,
     review_request_id: Optional[int] = None,
-) -> List[str]:
+) -> Sequence[str]:
     """Build a list of e-mail addresses for the group.
 
     Args:
@@ -226,7 +227,7 @@ def get_email_addresses_for_group(
         A list of properly formatted e-mail addresses for all users in the
         review group.
     """
-    addresses: List[str] = []
+    addresses: list[str] = []
 
     if group.mailing_list:
         if ',' not in group.mailing_list:

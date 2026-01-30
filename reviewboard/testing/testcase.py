@@ -7,7 +7,7 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from typing import (Any, Callable, List, Optional, TYPE_CHECKING, Tuple, Type,
+from typing import (Any, Callable, Optional, TYPE_CHECKING, Tuple, Type,
                     Union)
 from uuid import uuid4
 
@@ -1784,7 +1784,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         target_people: Optional[Sequence[User]] = None,
         target_groups: Optional[Sequence[Group]] = None,
         **kwargs,
-    ) -> List[ReviewRequest]:
+    ) -> list[ReviewRequest]:
         """Batch-create multiple ReviewRequests for testing.
 
         This will execute the minimum number of SQL statements needed to
@@ -1923,7 +1923,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         # Create the DiffSetHistories, one per ReviewRequest.
         next_diffset_history_id = DiffSetHistory.objects.count() + 1
 
-        diffset_histories: List[DiffSetHistory] = [
+        diffset_histories: list[DiffSetHistory] = [
             DiffSetHistory(id=next_diffset_history_id + i)
             for i in range(count)
         ]
@@ -1934,8 +1934,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if start_id is None:
             start_id = ReviewRequest.objects.count() + 1
 
-        review_requests: List[ReviewRequest] = []
-        review_request_ids: List[int] = []
+        review_requests: list[ReviewRequest] = []
+        review_request_ids: list[int] = []
 
         for i in range(count):
             if start_local_id is None:

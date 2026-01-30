@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.core import mail
@@ -18,8 +18,9 @@ from reviewboard.notifications.email.utils import get_email_addresses_for_group
 from reviewboard.reviews.models import Group
 from reviewboard.testing import TestCase
 
-
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     class HelperBase(TestCase):
         pass
 else:
@@ -82,8 +83,8 @@ class EmailTestHelper(HelperBase):
 
     def assertValidRecipients(
         self,
-        user_list: List[str],
-        group_list: List[str] = [],
+        user_list: Sequence[str],
+        group_list: Sequence[str] = [],
     ) -> None:
         """Assert that the e-mail recipient list is as expected.
 

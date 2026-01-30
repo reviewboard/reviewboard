@@ -8,7 +8,7 @@ import re
 import weakref
 from enum import IntEnum
 from importlib import import_module
-from typing import Any, Final, Optional, Sequence, TYPE_CHECKING, Union, cast
+from typing import Any, Final, Optional, TYPE_CHECKING, Union, cast
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -39,7 +39,7 @@ from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
 from reviewboard.ssh import utils as sshutils
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
     from reviewboard.diffviewer.parser import ParsedDiffFile
     from reviewboard.scmtools.core import RevisionID

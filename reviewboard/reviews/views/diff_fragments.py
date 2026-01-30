@@ -6,7 +6,7 @@ import io
 import logging
 import os
 import struct
-from typing import Any, List, Optional, TYPE_CHECKING, Tuple
+from typing import Any, Optional, TYPE_CHECKING, Tuple
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -43,7 +43,7 @@ from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
     from reviewboard.diffviewer.diffutils import SerializedDiffFile
     from reviewboard.diffviewer.models import DiffCommit
@@ -79,19 +79,19 @@ class CommentFragment(TypedDict):
     #:
     #: Type:
     #:     list
-    chunks: List[dict]
+    chunks: Sequence[dict]
 
 
 def build_diff_comment_fragments(
     *,
-    comments: List[Comment],
+    comments: Sequence[Comment],
     context: dict[str, Any],
     comment_template_name: str = 'reviews/diff_comment_fragment.html',
     error_template_name: str = 'diffviewer/diff_fragment_error.html',
-    lines_of_context: Optional[List[int]] = None,
+    lines_of_context: Optional[Sequence[int]] = None,
     show_controls: bool = False,
     request: Optional[HttpRequest] = None,
-) -> Tuple[bool, List[CommentFragment]]:
+) -> tuple[bool, list[CommentFragment]]:
     """Construct and return the comment fragment data.
 
     Args:

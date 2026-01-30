@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterator, Optional, Sequence, TYPE_CHECKING
+from typing import Iterator, Optional, TYPE_CHECKING
 
 from django.utils.translation import gettext_lazy as _
 
@@ -11,6 +11,8 @@ from reviewboard.datagrids.sidebar import (BaseSidebarItem,
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.db.models import QuerySet
 
     from reviewboard.reviews.models import Group

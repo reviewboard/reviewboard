@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import List, Optional, Sequence, TYPE_CHECKING, Tuple, Union
+from typing import Optional, TYPE_CHECKING, Tuple, Union
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
@@ -17,6 +17,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from typelets.funcs import KwargsDict
 
     from reviewboard.site.models import AnyOrAllLocalSites
@@ -70,8 +71,8 @@ class AccessibleTestsMixin(_MixinParent):
                     The first Local Site created, or ``None`` if not creating
                     Local Sites.
         """
-        groups_by_site: dict[Optional[LocalSite], List[Group]] = {}
-        local_sites: List[Optional[LocalSite]] = []
+        groups_by_site: dict[Optional[LocalSite], list[Group]] = {}
+        local_sites: list[Optional[LocalSite]] = []
         local_site_kwargs: KwargsDict = {}
         group_i = 1
 

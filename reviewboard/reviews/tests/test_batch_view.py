@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import List, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import kgb
 from django_assert_queries.testing import assert_queries
@@ -34,6 +34,8 @@ from reviewboard.webapi.testing.queries import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django_assert_queries.query_comparator import ExpectedQueries
 
 
@@ -1234,7 +1236,7 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
     def _get_review_request_list_queries(
         self,
         user: User,
-        review_requests: List[ReviewRequest],
+        review_requests: Sequence[ReviewRequest],
         has_local_sites_in_db: bool = False,
     ) -> ExpectedQueries:
         """Return queries for the initial review requests list fetch.
@@ -1272,7 +1274,7 @@ class BatchOperationViewTests(kgb.SpyAgency, EmailTestHelper, TestCase):
         profile: Profile,
         site_profile: LocalSiteProfile,
         review_request: ReviewRequest,
-    ) -> List[dict]:
+    ) -> Sequence[dict]:
         """Return queries associated with closing a review request.
 
         Args:

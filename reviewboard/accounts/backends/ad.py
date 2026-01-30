@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import itertools
 import logging
-from typing import (Any, Iterator, List, Optional, Sequence, Set,
-                    TYPE_CHECKING, Tuple)
+from typing import Any, Iterator, Optional, Set, TYPE_CHECKING, Tuple
 
 import dns.resolver
 from django.conf import settings
@@ -25,6 +24,8 @@ from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import ActiveDirectorySettingsForm
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.http import HttpRequest
     from ldap.ldapobject import LDAPObject
 
@@ -36,14 +37,14 @@ logger = logging.getLogger(__name__)
 #:
 #: Version Added:
 #:     6.0
-_DomainControllers: TypeAlias = List[Tuple[str, str]]
+_DomainControllers: TypeAlias = list[tuple[str, str]]
 
 
 #: Type alias for a list of LDAP search results.
 #:
 #: Version Added:
 #:     6.0
-_SearchResults: TypeAlias = List[Tuple[str, dict[str, Any]]]
+_SearchResults: TypeAlias = list[tuple[str, dict[str, Any]]]
 
 
 class ActiveDirectoryBackend(BaseAuthBackend):
@@ -164,7 +165,7 @@ class ActiveDirectoryBackend(BaseAuthBackend):
         if getattr(settings, 'AD_SEARCH_ROOT', None):
             return settings.AD_SEARCH_ROOT
 
-        dn: List[Sequence[Tuple[str, str, int]]] = []
+        dn: list[Sequence[tuple[str, str, int]]] = []
 
         if settings.AD_OU_NAME:
             dn.append([('ou', settings.AD_OU_NAME, 0)])

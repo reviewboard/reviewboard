@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Any, List, cast
+from typing import Any, cast
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
@@ -176,7 +176,7 @@ class DiffSettingsForm(SiteSettingsForm):
 
         # Load the "Show all whitespace for" setting.
         self.fields['include_space_patterns'].initial = ', '.join(
-            cast(List[str],
+            cast(list[str],
                  self.get_key_value('diffviewer_include_space_patterns')))
 
     def save(self) -> None:

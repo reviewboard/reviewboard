@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 import logging
-from typing import List, Optional, Tuple, TYPE_CHECKING, cast
+from typing import Optional, TYPE_CHECKING, cast
 
 from django.db.models import Q
 from django.utils.translation import gettext

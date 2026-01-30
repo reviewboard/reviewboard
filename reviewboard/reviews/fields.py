@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import logging
 from html import unescape
-from typing import (Any, Iterable, Iterator, Generic, Optional, Sequence,
-                    Type, TYPE_CHECKING, Union)
+from collections.abc import Sequence
+from typing import (Any, Iterable, Iterator, Generic, Optional, Type,
+                    TYPE_CHECKING, Union)
 
 from django.template.loader import render_to_string
 from django.utils.functional import cached_property

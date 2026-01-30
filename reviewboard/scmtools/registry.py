@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
-from typing import Iterator, List, Optional, TYPE_CHECKING, Tuple, Type, cast
+from typing import Iterator, Optional, TYPE_CHECKING, Tuple, Type, cast
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
     from importlib_metadata import EntryPoint
     from typing_extensions import TypeAlias
 
-    _ConflictingTools: TypeAlias = List[Tuple[Type[SCMTool], Tool]]
+    _ConflictingTools: TypeAlias = list[tuple[Type[SCMTool], Tool]]
 
 
 logger = logging.getLogger(__name__)
@@ -99,7 +99,7 @@ class SCMToolRegistry(EntryPointRegistry[Type[SCMTool]]):
         # table, create those now. This obsoletes the old registerscmtools
         # management command.
         tools = list(Tool.objects.all())
-        new_tools: List[Tool] = []
+        new_tools: list[Tool] = []
         registered_by_class: dict[str, Tool] = {}
         registered_by_name: dict[str, Tool] = {}
 

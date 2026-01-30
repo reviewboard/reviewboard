@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Any, Iterator, Optional, Sequence, TYPE_CHECKING, Tuple
+from typing import Any, Iterator, Optional, TYPE_CHECKING, Tuple
 
 try:
     import pysvn
@@ -33,7 +33,7 @@ from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
 
     from reviewboard.scmtools.core import RevisionID
     from reviewboard.scmtools.svn.base import (AcceptCertificateFunc,

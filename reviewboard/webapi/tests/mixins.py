@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import timedelta
-from typing import (Any, Iterator, List, Optional, Sequence, TYPE_CHECKING,
-                    Tuple, Union, cast)
+from typing import Any, Iterator, Optional, TYPE_CHECKING, Tuple, Union, cast
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -30,6 +29,8 @@ from reviewboard.webapi.testing.queries import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from djblets.features.testing import FeatureStates
     from djblets.testing.testcases import ExpectedQueries
     from typelets.json import JSONDict
@@ -628,7 +629,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
     #:
     #: Type:
     #:     list of str
-    basic_delete_fixtures: List[str] = []
+    basic_delete_fixtures: Sequence[str] = []
 
     #: Whether to log in as an administrator for basic HTTP DELETE tests.
     #:
@@ -1205,7 +1206,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
     #:
     #: Type:
     #:     list of str
-    basic_get_fixtures: List[str] = []
+    basic_get_fixtures: Sequence[str] = []
 
     #: Whether the results from the resource are JSON payloads.
     #:
@@ -1760,7 +1761,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
     #:
     #: Type:
     #:     list of str
-    basic_get_fixtures: List[str] = []
+    basic_get_fixtures: Sequence[str] = []
 
     #: Whether to log in as an administrator for basic HTTP GET list tests.
     #:
@@ -2292,7 +2293,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
     #:
     #: Type:
     #:     list of str
-    basic_post_fixtures: List[str] = []
+    basic_post_fixtures: Sequence[str] = []
 
     #: Whether to log in as an administrator for basic HTTP POST tests.
     #:
@@ -2964,7 +2965,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
     #:
     #: Type:
     #:     list of str
-    basic_put_fixtures: List[str] = []
+    basic_put_fixtures: Sequence[str] = []
 
     #: Whether to log in as an administrator for basic HTTP PUT tests.
     #:

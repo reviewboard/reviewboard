@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
@@ -22,6 +22,8 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from typelets.funcs import KwargsDict
 
 
@@ -1162,7 +1164,7 @@ class ReviewManagerTests(TestCase):
         user: AnonymousUser,
         local_site: Optional[LocalSite],
         has_local_sites_in_db: bool,
-        expected_reviews: List[Review],
+        expected_reviews: Sequence[Review],
     ) -> None:
         """Check the accessible queries for a standard user.
 
@@ -1205,7 +1207,7 @@ class ReviewManagerTests(TestCase):
         user: User,
         local_site: Optional[LocalSite],
         local_sites_in_db: bool,
-        expected_reviews: List[Review],
+        expected_reviews: Sequence[Review],
         accessible_repository_ids: Sequence[int] = [],
         accessible_review_group_ids: Sequence[int] = [],
         accessible_kwargs: KwargsDict = {},
@@ -1269,7 +1271,7 @@ class ReviewManagerTests(TestCase):
         user: User,
         local_site: Optional[LocalSite],
         local_sites_in_db: bool,
-        expected_reviews: List[Review],
+        expected_reviews: Sequence[Review],
         accessible_kwargs: KwargsDict = {},
     ) -> None:
         """Check the accessible queries for a superuser.
