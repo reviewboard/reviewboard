@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Set, TYPE_CHECKING, Union, cast
+from typing import Any, Optional, TYPE_CHECKING, Union, cast
 
 from django.conf import settings
 from django.contrib.auth import hashers
@@ -169,7 +169,7 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
         self,
         user: Union[AbstractBaseUser, AnonymousUser],
         obj: Optional[Model] = None,
-    ) -> Set[str]:
+    ) -> set[str]:
         """Return a list of all permissions for a user.
 
         If a LocalSite instance is passed as ``obj``, then the permissions
@@ -217,7 +217,7 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
         if obj is not None:
             # We know now that this is a LocalSite, due to the assertion
             # above.
-            local_site_perm_cache: dict[str, Set[str]]
+            local_site_perm_cache: dict[str, set[str]]
 
             try:
                 local_site_perm_cache = getattr(user, '_local_site_perm_cache')
@@ -226,7 +226,7 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
                 setattr(user, '_local_site_perm_cache', local_site_perm_cache)
 
             if obj.pk not in local_site_perm_cache:
-                perm_cache: Set[str] = set()
+                perm_cache: set[str] = set()
 
                 try:
                     site_profile = user.get_site_profile(

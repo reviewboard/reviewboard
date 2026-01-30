@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any, Optional, Set, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 import kgb
 from django_assert_queries.testing import assert_queries
@@ -1653,7 +1653,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         include_archived: bool = False,
         include_star_column: bool = False,
         include_to_me_column: bool = False,
-        column_data_select_related: Set[str] = set(),
+        column_data_select_related: set[str] = set(),
     ) -> ExpectedQueries:
         """Return expected queries for viewing the datagrid.
 

@@ -13,7 +13,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Set, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.db import DatabaseError
 from typing_extensions import TypedDict
@@ -48,7 +48,7 @@ class UpgradeState(TypedDict, total=False):
     #:
     #: Type:
     #:     set
-    tables: Set[str]
+    tables: set[str]
 
     #: Whether SCMTool IDs need to be migrated.
     #:
@@ -80,7 +80,7 @@ class UpgradeState(TypedDict, total=False):
     #:
     #: Type:
     #:     set
-    conditions_for_scmtool_migration: Set[int]
+    conditions_for_scmtool_migration: set[int]
 
 
 def _had_model(
@@ -500,8 +500,8 @@ def pre_upgrade_store_condition_tool_info(
     from reviewboard.scmtools.models import Tool
 
     # This was a Review Board 3.0+ installation.
-    tool_pks: Set[int] = set()
-    affected_configs: Set[int] = set()
+    tool_pks: set[int] = set()
+    affected_configs: set[int] = set()
 
     configs = IntegrationConfig.objects.only('pk', 'settings')
 

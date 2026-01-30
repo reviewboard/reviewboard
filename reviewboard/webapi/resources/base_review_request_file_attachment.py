@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Set, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING, Union
 
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
@@ -422,7 +422,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
                     },
                 }
 
-            update_ids: Set[Any] = {file.pk}
+            update_ids: set[Any] = {file.pk}
 
             if file.attachment_history_id is not None:
                 # Undo the pending deletion for all revisions of the file.
@@ -479,7 +479,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         else:
             # Put the file attachment and all of its revisions in a pending
             # deletion state.
-            update_ids: Set[Any] = {file_attachment.pk}
+            update_ids: set[Any] = {file_attachment.pk}
             attachment_history_id = file_attachment.attachment_history_id
 
             if file_attachment.attachment_history_id is not None:

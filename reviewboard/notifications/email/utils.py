@@ -6,7 +6,6 @@ import logging
 from typing import (Callable,
                     Collection,
                     Optional,
-                    Set,
                     Union,
                     TYPE_CHECKING)
 
@@ -75,8 +74,8 @@ def build_recipients(
         :py:class:`Users <django.contrib.auth.models.User>` and
         :py:class:`Groups <reviewboard.reviews.models.Group>`.
     """
-    recipients: Set[Recipient] = set()
-    to_field: Set[Recipient] = set()
+    recipients: set[Recipient] = set()
+    to_field: set[Recipient] = set()
 
     local_site = review_request.local_site_id
     submitter = review_request.submitter
@@ -277,7 +276,7 @@ def get_email_addresses_for_group(
 def recipients_to_addresses(
     recipients: RecipientList,
     review_request_id: Optional[int] = None,
-) -> Set[str]:
+) -> set[str]:
     """Return the set of e-mail addresses for the recipients.
 
     Args:

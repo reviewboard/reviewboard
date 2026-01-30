@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 import logging
-from typing import Any, Iterator, Optional, Set, TYPE_CHECKING
+from typing import Any, Iterator, Optional, TYPE_CHECKING
 
 import dns.resolver
 from django.conf import settings
@@ -282,9 +282,9 @@ class ActiveDirectoryBackend(BaseAuthBackend):
         self,
         con: LDAPObject,
         search_results: _SearchResults,
-        seen: Optional[Set[str]] = None,
+        seen: Optional[set[str]] = None,
         depth: int = 0,
-    ) -> Set[str]:
+    ) -> set[str]:
         """Return the LDAP groups for the given users.
 
         This iterates over the users specified in ``search_results`` and
