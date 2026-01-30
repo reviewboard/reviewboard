@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import timedelta
-from typing import Any, Iterator, TYPE_CHECKING, Union, cast
+from typing import Any, Iterator, TYPE_CHECKING, cast
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -49,7 +49,7 @@ else:
 #:
 #: Version Added:
 #:     5.0.7
-APIRequestData: TypeAlias = Union[bytes, dict[str, Any]]
+APIRequestData: TypeAlias = bytes | dict[str, Any]
 
 
 class AuthenticateSetupState(TypedDict):

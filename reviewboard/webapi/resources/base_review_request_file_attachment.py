@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 
 from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db.models import Q
@@ -235,7 +235,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         extra_fields: Mapping[str, Any] = {},
         *args,
         **kwargs,
-    ) -> Union[tuple, WebAPIError]:
+    ) -> tuple | WebAPIError:
         """Creates a new file from a file attachment.
 
         This accepts any file type and associates it with a draft of a
@@ -328,7 +328,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         extra_fields: Mapping[str, Any] = {},
         *args,
         **kwargs,
-    ) -> Union[tuple, WebAPIError]:
+    ) -> tuple | WebAPIError:
         """Updates the file's data.
 
         This allows updating the file in a draft. Currently, only the caption,
@@ -453,7 +453,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         request: HttpRequest,
         *args,
         **kwargs
-    ) -> Union[tuple, WebAPIError]:
+    ) -> tuple | WebAPIError:
         try:
             review_request = \
                 resources.review_request.get_object(request, *args, **kwargs)

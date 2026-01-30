@@ -14,7 +14,7 @@ import logging
 import ssl
 from collections import OrderedDict
 from collections.abc import Mapping
-from typing import Any, TypedDict, TYPE_CHECKING, Union
+from typing import Any, TypedDict, TYPE_CHECKING
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from urllib.request import (
     Request as BaseURLRequest,
@@ -69,8 +69,7 @@ class UploadedFileInfo(TypedDict):
 #:
 #: Version Added:
 #:     6.0
-FormFields: TypeAlias = Mapping[Union[bytes, str],
-                                Union[bytes, str]]
+FormFields: TypeAlias = Mapping[bytes | str, bytes | str]
 
 
 #: Type for a mapping of HTTP headers for a request or response.
@@ -91,7 +90,7 @@ QueryArgs: TypeAlias = Mapping[str, Any]
 #:
 #: Version Added:
 #:     6.0
-UploadedFiles: TypeAlias = Mapping[Union[bytes, str], UploadedFileInfo]
+UploadedFiles: TypeAlias = Mapping[bytes | str, UploadedFileInfo]
 
 
 def _build_ssl_context_from_ssl_cert(

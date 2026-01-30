@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, ClassVar, TYPE_CHECKING, Union
+from typing import Any, ClassVar, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -79,7 +79,7 @@ class LastActivityInfo(TypedDict):
     timestamp: datetime
 
     #: The most recently updated thing that caused the activity update.
-    updated_object: Union[DiffSet, Review, ReviewRequest]
+    updated_object: DiffSet | Review | ReviewRequest
 
 
 class ReviewRequestCloseInfo(TypedDict):

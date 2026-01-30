@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 
 import importlib_metadata
 from django.db.models import Manager, Q
@@ -182,7 +182,7 @@ class RepositoryManager(Manager['Repository']):
     @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def accessible(
         self,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         *,
         visible_only: bool = True,
         local_site: AnyOrAllLocalSites = None,
@@ -428,7 +428,7 @@ class RepositoryManager(Manager['Repository']):
 
     def can_create(
         self,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         local_site: (LocalSite | None) = None,
     ) -> bool:
         """Return whether a user can add a repository.

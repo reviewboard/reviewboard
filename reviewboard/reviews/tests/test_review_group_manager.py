@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
@@ -37,7 +37,7 @@ class AccessibleTestsMixin(_MixinParent):
     def _create_accessible_review_group_data(
         self,
         *,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         with_local_sites: bool = False,
         with_member: bool = False,
         group_kwargs: KwargsDict = {},
@@ -491,7 +491,7 @@ class AccessibleTests(AccessibleTestsMixin, TestCase):
         self,
         *,
         groups: Sequence[Group],
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         visible_only: bool,
         local_site: AnyOrAllLocalSites = None,
         has_view_invite_only_groups_perm: bool = False,
@@ -918,7 +918,7 @@ class AccessibleIDsTests(AccessibleTestsMixin, TestCase):
         self,
         *,
         groups: Sequence[Group],
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         visible_only: bool,
         local_site: AnyOrAllLocalSites = None,
         has_view_invite_only_groups_perm: bool = False,

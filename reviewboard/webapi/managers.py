@@ -7,7 +7,7 @@ Version Added:
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.db.models import F
 from django.utils import timezone
@@ -32,7 +32,7 @@ class WebAPITokenManager(DjbletsWebAPITokenManager):
 
     def get_or_create_client_token(
         self,
-        user: Union[AbstractBaseUser, AnonymousUser],
+        user: AbstractBaseUser | AnonymousUser,
         client_name: str,
         expires: (Unsettable[datetime.datetime | None]) = UNSET,
     ) -> tuple[WebAPIToken, bool]:

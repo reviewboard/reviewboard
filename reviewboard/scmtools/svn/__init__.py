@@ -8,7 +8,7 @@ import re
 import weakref
 from enum import IntEnum
 from importlib import import_module
-from typing import Any, Final, TYPE_CHECKING, Union, cast
+from typing import Any, Final, TYPE_CHECKING, cast
 from urllib.parse import urlparse
 
 from django.conf import settings
@@ -493,7 +493,7 @@ class SVNTool(SCMTool):
         revision: bytes,
         *args,
         **kwargs,
-    ) -> tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, bytes | Revision]:
         """Parse and return a filename and revision from a diff.
 
         Args:
@@ -596,7 +596,7 @@ class SVNTool(SCMTool):
         self,
         *,
         data: SVNLogEntry,
-        parent: Union[bytes, str] = '',
+        parent: (bytes | str) = '',
     ) -> Commit:
         """Return a Commit object from the provided data.
 
@@ -1202,7 +1202,7 @@ class SVNDiffParser(DiffParser):
         self,
         s: bytes,
         linenum: int,
-    ) -> tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, bytes | Revision]:
         """Parse a filename header in the diff.
 
         Args:
@@ -1231,7 +1231,7 @@ class SVNDiffParser(DiffParser):
         self,
         filename: bytes | None,
         revision: bytes | None,
-    ) -> tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, bytes | Revision]:
         """Parse and return a filename and revision from the diff.
 
         Args:
@@ -1292,7 +1292,7 @@ class SVNDiffParser(DiffParser):
         # group(3) holds the revision string in braces, like '(revision 4)'
         # group(4) only matches the revision number, which might by None when
         # 'nonexistent' is given as the revision string
-        norm_revision: Union[bytes, Revision, None] = m.group(4)
+        norm_revision: (bytes | Revision | None) = m.group(4)
 
         if norm_revision in (None, b'0'):
             norm_revision = PRE_CREATION

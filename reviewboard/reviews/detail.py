@@ -8,7 +8,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from itertools import chain
 from typing import (Any, ClassVar, Final, Iterable, Iterator, Sequence,
-                    TYPE_CHECKING, TypeVar, Union)
+                    TYPE_CHECKING, TypeVar)
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Model, Q
@@ -1153,7 +1153,7 @@ class BaseReviewRequestPageEntry:
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.
@@ -1913,7 +1913,7 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.
@@ -2077,7 +2077,7 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.
@@ -2316,7 +2316,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.

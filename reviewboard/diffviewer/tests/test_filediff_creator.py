@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import unittest
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 import kgb
 from django.utils.timezone import now
@@ -241,7 +241,7 @@ class FileDiffCreatorTests(kgb.SpyAgency, TestCase):
             revision: bytes,
             *args,
             **kwargs,
-        ) -> tuple[bytes, Union[Revision, bytes]]:
+        ) -> tuple[bytes, Revision | bytes]:
             return (filename, Revision(revision.decode('utf-8')))
 
         # Make sure we run this test with a Revision as a result.

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from html import unescape
 from collections.abc import Sequence
-from typing import Any, Iterable, Iterator, Generic, TYPE_CHECKING, Union
+from typing import Any, Iterable, Iterator, Generic, TYPE_CHECKING
 
 from django.template.loader import render_to_string
 from django.utils.functional import cached_property
@@ -568,7 +568,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     def serialize_change_entry(
         self,
         changedesc: ChangeDescription,
-    ) -> Union[WebAPIResponsePayload, Sequence[WebAPIResponsePayload]]:
+    ) -> WebAPIResponsePayload | Sequence[WebAPIResponsePayload]:
         """Serialize a change entry for public consumption.
 
         This will output a version of the change entry for use in the API.
@@ -594,7 +594,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     def serialize_change_entry_for_model_list(
         self,
         field_info: Any,
-    ) -> Union[WebAPIResponsePayload, Sequence[WebAPIResponsePayload]]:
+    ) -> WebAPIResponsePayload | Sequence[WebAPIResponsePayload]:
         """Return the change entry for a list of models.
 
         Args:
@@ -634,7 +634,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     def serialize_change_entry_for_singleton(
         self,
         field_info: Any,
-    ) -> Union[WebAPIResponsePayload, Sequence[WebAPIResponsePayload]]:
+    ) -> WebAPIResponsePayload | Sequence[WebAPIResponsePayload]:
         """Return the change entry for a singleton.
 
         Singleton fields (e.g., summaries) are stored in
@@ -660,7 +660,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     def serialize_change_entry_for_list(
         self,
         field_info: Any,
-    ) -> Union[WebAPIResponsePayload, Sequence[WebAPIResponsePayload]]:
+    ) -> WebAPIResponsePayload | Sequence[WebAPIResponsePayload]:
         """Return the change entry for a list of plain data.
 
         Args:
@@ -2229,7 +2229,7 @@ def unregister_review_request_fieldset(
 
 
 def _legacy_mark_safe(
-    s: Union[str, SafeString],
+    s: str | SafeString,
     obj: object,
     func_name: str,
 ) -> SafeString:

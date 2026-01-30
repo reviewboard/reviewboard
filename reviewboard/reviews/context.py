@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 
 from django.utils.translation import gettext as _
 from django.template.defaultfilters import truncatechars
@@ -108,7 +108,7 @@ class ReviewRequestContext(TypedDict):
     #:
     #: Version Added:
     #:     7.0.2
-    review_request_details: Union[ReviewRequest, ReviewRequestDraft]
+    review_request_details: ReviewRequest | ReviewRequestDraft
 
     #: The most recent review request visit info, if available.
     review_request_visit: NotRequired[ReviewRequestVisit]

@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from typing import Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 from urllib.parse import quote as urllib_quote, urlparse
 
 from django.utils.encoding import force_str
@@ -143,10 +143,10 @@ class HgTool(SCMTool):
     def parse_diff_revision(
         self,
         filename: bytes,
-        revision: Union[Revision, bytes],
+        revision: Revision | bytes,
         *args,
         **kwargs,
-    ) -> tuple[bytes, Union[Revision, bytes]]:
+    ) -> tuple[bytes, Revision | bytes]:
         """Parse and return a filename and revision from a diff.
 
         Args:

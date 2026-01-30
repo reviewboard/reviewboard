@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpRequest
@@ -145,7 +145,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
         extra_fields: Mapping[str, Any] = {},
         *args,
         **kwargs,
-    ) -> Union[tuple, WebAPIError]:
+    ) -> tuple | WebAPIError:
         """Creates a new file attachment that is owned by the user.
 
         This accepts any file type and associates it with the user. Optionally,
@@ -228,7 +228,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
         extra_fields: Mapping[str, Any] = {},
         *args,
         **kwargs,
-    ) -> Union[tuple, WebAPIError]:
+    ) -> tuple | WebAPIError:
         """Updates the file attachment's data.
 
         This allows updating information on the file attachment. It also allows

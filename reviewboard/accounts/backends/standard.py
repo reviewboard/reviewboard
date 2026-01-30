@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, TYPE_CHECKING, Union, cast
+from typing import Any, TYPE_CHECKING, cast
 
 from django.conf import settings
 from django.contrib.auth import hashers
@@ -167,7 +167,7 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
 
     def get_all_permissions(
         self,
-        user: Union[AbstractBaseUser, AnonymousUser],
+        user: AbstractBaseUser | AnonymousUser,
         obj: (Model | None) = None,
     ) -> set[str]:
         """Return a list of all permissions for a user.
@@ -252,7 +252,7 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
 
     def has_perm(
         self,
-        user: Union[AbstractBaseUser, AnonymousUser],
+        user: AbstractBaseUser | AnonymousUser,
         perm: str,
         obj: Any = None,
     ) -> bool:

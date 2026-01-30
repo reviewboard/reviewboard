@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
@@ -918,7 +918,7 @@ class UsersDataGridTests(BaseViewTestCase):
     def _build_datagrid_equeries(
         self,
         *,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         user_pks: Sequence[int],
         profile: (Profile | None) = None,
         local_site: (LocalSite | None) = None,

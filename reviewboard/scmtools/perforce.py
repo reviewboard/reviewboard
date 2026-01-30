@@ -14,7 +14,7 @@ import subprocess
 import tempfile
 import time
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.utils.encoding import force_str
@@ -903,10 +903,10 @@ class PerforceTool(SCMTool):
     def parse_diff_revision(
         self,
         filename: bytes,
-        revision: Union[bytes, Revision],
+        revision: bytes | Revision,
         *args,
         **kwargs,
-    ) -> tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, bytes | Revision]:
         """Parse and return a filename and revision from a diff.
 
         This will separate out the filename from the revision (separated by
@@ -1276,7 +1276,7 @@ class PerforceDiffParser(DiffParser):
         self,
         s: bytes,
         linenum: int,
-    ) -> tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, bytes | Revision]:
         """Parse a filename header in the diff.
 
         Args:
@@ -1304,7 +1304,7 @@ class PerforceDiffParser(DiffParser):
         self,
         filename: bytes,
         revision: bytes,
-    ) -> tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, bytes | Revision]:
         """Parse a revision from the diff.
 
         Args:

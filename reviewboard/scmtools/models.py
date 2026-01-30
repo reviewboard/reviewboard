@@ -6,7 +6,7 @@ import logging
 import uuid
 from importlib import import_module
 from time import time
-from typing import Any, ClassVar, Final, TYPE_CHECKING, Union, cast
+from typing import Any, ClassVar, Final, TYPE_CHECKING, cast
 from urllib.parse import quote
 
 from django.contrib.auth.models import User
@@ -1057,7 +1057,7 @@ class Repository(models.Model):
 
     def is_accessible_by(
         self,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
     ) -> bool:
         """Return whether or not the user has access to the repository.
 
@@ -1086,7 +1086,7 @@ class Repository(models.Model):
 
     def is_mutable_by(
         self,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
     ) -> bool:
         """Return whether or not the user can modify or delete the repository.
 

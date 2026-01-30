@@ -7,7 +7,7 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, TYPE_CHECKING, Union
+from typing import Any, Callable, TYPE_CHECKING
 from uuid import uuid4
 
 import kgb
@@ -1124,7 +1124,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         self,
         review_request: ReviewRequest,
         attachment_history: (FileAttachmentHistory | None) = None,
-        draft: Union[ReviewRequestDraft, bool] = False,
+        draft: (ReviewRequestDraft | bool) = False,
         active: bool = True,
         has_file: bool = True,
         with_history: bool = True,
@@ -2060,7 +2060,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         self,
         review_request: ReviewRequest,
         visibility: str,
-        user: Union[str, User] = 'doc',
+        user: (str | User) = 'doc',
         timestamp: (datetime | None) = None,
         **kwargs,
     ) -> ReviewRequestVisit:
@@ -2247,7 +2247,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_reply(
         self,
         review: Review,
-        user: Union[str, User] = 'grumpy',
+        user: (str | User) = 'grumpy',
         body_top: (str | None) = 'Test Body Top',
         timestamp: (datetime | None) = None,
         publish: bool = False,
@@ -2668,7 +2668,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_status_update(
         self,
         review_request: ReviewRequest,
-        user: Union[str, User] = 'dopey',
+        user: (str | User) = 'dopey',
         service_id: str = 'service',
         summary: str = 'Status Update',
         state: str = StatusUpdate.PENDING,

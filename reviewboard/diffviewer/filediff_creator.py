@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from copy import deepcopy
-from typing import Iterator, Protocol, TYPE_CHECKING, Union
+from typing import Iterator, Protocol, TYPE_CHECKING
 
 from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext as _

@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from reviewboard.testing.queries.base import ExpectedQResult
 
     class _AccessibleKwargs(TypedDict):
-        user: Union[AnonymousUser, User]
+        user: AnonymousUser | User
         local_site: NotRequired[AnyOrAllLocalSites]
         has_local_sites_in_db: NotRequired[bool]
         filter_private: NotRequired[bool]
@@ -48,7 +48,7 @@ if TYPE_CHECKING:
 
 def get_reviews_accessible_q(
     *,
-    user: Union[AnonymousUser, User],
+    user: AnonymousUser | User,
     local_site: AnyOrAllLocalSites = None,
     has_local_sites_in_db: bool = False,
     filter_private: bool = False,
@@ -275,7 +275,7 @@ def get_reviews_accessible_q(
 
 def get_reviews_from_user_q(
     *,
-    from_user: Union[str, User],
+    from_user: str | User,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQResult:
     """Return a Q expression for accessible reviews from a user.
@@ -370,7 +370,7 @@ def get_reviews_accessible_equeries(
 
 def get_reviews_from_user_equeries(
     *,
-    from_user: Union[str, User],
+    from_user: str | User,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQueries:
     """Return queries for accessible reviews from a user.

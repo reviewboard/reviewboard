@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Union
-
 from django.contrib.auth.models import User
 from django.http import HttpRequest
 from django.utils import timezone
@@ -23,7 +21,7 @@ from reviewboard.webapi.models import WebAPIToken
 
 
 def _update_email_info(
-    obj: Union[Review, ReviewRequest],
+    obj: Review | ReviewRequest,
     message_id: str,
 ) -> None:
     """Update the e-mail message information on the object.

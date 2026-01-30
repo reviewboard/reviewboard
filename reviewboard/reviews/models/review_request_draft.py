@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -151,7 +151,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
     def is_accessible_by(
         self,
-        user: Union[AbstractBaseUser, AnonymousUser],
+        user: AbstractBaseUser | AnonymousUser,
     ) -> bool:
         """Return whether or not the user can access this draft.
 
@@ -167,7 +167,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
     def is_mutable_by(
         self,
-        user: Union[AbstractBaseUser, AnonymousUser],
+        user: AbstractBaseUser | AnonymousUser,
     ) -> bool:
         """Return whether or not the user can modify this draft.
 

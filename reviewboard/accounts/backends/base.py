@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from djblets.db.query import get_object_or_none
@@ -143,7 +143,7 @@ class BaseAuthBackend:
 
     def get_user(
         self,
-        user_id: Union[int, str],
+        user_id: int | str,
     ) -> User | None:
         """Return an existing user given a numeric user ID.
 

@@ -7,7 +7,7 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import Literal, TYPE_CHECKING, Union, cast
+from typing import Literal, TYPE_CHECKING, cast
 
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe

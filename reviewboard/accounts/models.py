@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, ClassVar, Literal, TYPE_CHECKING, Union, overload
+from typing import Any, ClassVar, Literal, TYPE_CHECKING, overload
 from uuid import uuid4
 
 from django.contrib.auth.models import AnonymousUser, User as DjangoUser
@@ -55,7 +55,7 @@ logger = logging.getLogger(__name__)
 #:
 #: Version Added:
 #:     8.0
-StarrableObject: TypeAlias = Union[Group, ReviewRequest]
+StarrableObject: TypeAlias = Group | ReviewRequest
 
 
 class UserLocalSiteStats(TypedDict):
@@ -1473,8 +1473,11 @@ class _ReviewBoardUser(BaseUser):
         cached_only: bool = False,
         create_if_missing: bool = True,
         return_is_new: bool = False,
-    ) -> Union[Profile | None,
-               tuple[Profile | None, bool]]:
+    ) -> (
+        Profile |
+        tuple[Profile | None, bool] |
+        None
+    ):
         """Return the profile for the User.
 
         The profile will be cached, preventing queries for future lookups.
@@ -1498,7 +1501,7 @@ class _ReviewBoardUser(BaseUser):
             create_if_missing (bool, optional):
                 Whether to create a site profile if one doesn't already exist.
 
-            return_is_new (bool, optional);
+            return_is_new (bool, optional):
                 If ``True``, the result of the call will be a tuple containing
                 the profile and a boolean indicating if the profile was
                 newly-created.
@@ -1624,8 +1627,11 @@ class _ReviewBoardUser(BaseUser):
         cached_only: bool = False,
         create_if_missing: bool = True,
         return_is_new: bool = False,
-    ) -> Union[LocalSiteProfile | None,
-               tuple[LocalSiteProfile | None, bool]]:
+    ) -> (
+        LocalSiteProfile |
+        tuple[LocalSiteProfile | None, bool] |
+        None
+    ):
         """Return the LocalSiteProfile for a given LocalSite for the User.
 
         The site profile will be cached, preventing queries for future lookups.
@@ -1660,7 +1666,7 @@ class _ReviewBoardUser(BaseUser):
             create_if_missing (bool, optional):
                 Whether to create a site profile if one doesn't already exist.
 
-            return_is_new (bool, optional);
+            return_is_new (bool, optional):
                 If ``True``, the result of the call will be a tuple containing
                 the profile and a boolean indicating if the profile was
                 newly-created.

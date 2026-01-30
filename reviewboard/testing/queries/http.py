@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import AnonymousUser, User
 
@@ -49,7 +49,7 @@ def get_http_request_user_equeries(
 
 def get_http_request_start_equeries(
     *,
-    user: Union[AnonymousUser, User],
+    user: AnonymousUser | User,
     local_site: (LocalSite | None) = None,
     checks_local_site_access: bool = True,
 ) -> ExpectedQueries:

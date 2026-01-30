@@ -6,7 +6,7 @@ import base64
 import logging
 import os
 import subprocess
-from typing import Any, ClassVar, TYPE_CHECKING, Union, cast
+from typing import Any, ClassVar, TYPE_CHECKING, cast
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import Request as URLRequest, urlopen
@@ -656,7 +656,7 @@ PRE_CREATION = Revision('PRE-CREATION')
 #:
 #: Version Added:
 #:     5.0.5
-RevisionID: TypeAlias = Union[Revision, str]
+RevisionID: TypeAlias = Revision | str
 
 
 class _SCMToolIDProperty(str):
@@ -1081,7 +1081,7 @@ class SCMTool:
         moved: bool = False,
         copied: bool = False,
         **kwargs,
-    ) -> tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, bytes | Revision]:
         """Return a parsed filename and revision as represented in a diff.
 
         A diff may use strings like ``(working copy)`` as a revision. This

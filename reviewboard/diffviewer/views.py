@@ -7,7 +7,7 @@ import os
 import re
 import traceback
 from io import BytesIO
-from typing import Any, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 from zipfile import ZipFile
 
 from django.conf import settings
@@ -242,7 +242,7 @@ class DiffViewerView(TemplateView):
         self,
         request: HttpRequest,
         diffset: DiffSet,
-        interdiffset: DiffSet | None = None,
+        interdiffset: (DiffSet | None) = None,
         *args,
         **kwargs,
     ) -> HttpResponse:

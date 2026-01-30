@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import (Callable,
                     Collection,
-                    Union,
                     TYPE_CHECKING)
 
 from django.contrib.auth.models import User
@@ -27,7 +26,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-Recipient: TypeAlias = Union[User, Group]
+Recipient: TypeAlias = User | Group
 RecipientList: TypeAlias = Collection[Recipient]
 
 

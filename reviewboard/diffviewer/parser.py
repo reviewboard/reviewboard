@@ -7,7 +7,7 @@ import logging
 import re
 import weakref
 from copy import deepcopy
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.utils.translation import gettext as _
 from djblets.util.properties import TypedProperty
@@ -645,7 +645,7 @@ class BaseDiffParser:
 
     def raw_diff(
         self,
-        diffset_or_commit: Union[DiffCommit, DiffSet],
+        diffset_or_commit: DiffCommit | DiffSet,
     ) -> bytes:
         """Return a raw diff as a string.
 
@@ -1302,7 +1302,7 @@ class DiffParser(BaseDiffParser):
 
     def raw_diff(
         self,
-        diffset_or_commit: Union[DiffCommit, DiffSet],
+        diffset_or_commit: DiffCommit | DiffSet,
     ) -> bytes:
         """Return a raw diff as a string.
 
@@ -1645,7 +1645,7 @@ class DiffXParser(BaseDiffParser):
 
     def raw_diff(
         self,
-        diffset_or_commit: Union[DiffCommit, DiffSet],
+        diffset_or_commit: DiffCommit | DiffSet,
     ) -> bytes:
         """Return a raw diff as a string.
 

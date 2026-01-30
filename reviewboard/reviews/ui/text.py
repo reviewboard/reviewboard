@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from typing import Any, Iterator, TYPE_CHECKING, Union, cast
+from typing import Any, Iterator, TYPE_CHECKING, cast
 
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
@@ -482,8 +482,8 @@ class TextBasedReviewUI(ReviewUI[
     def _get_diff_chunk_generator(
         self,
         chunk_generator_cls: type[RawDiffChunkGenerator],
-        orig: Union[bytes, list[bytes]],
-        modified: Union[bytes, list[bytes]],
+        orig: bytes | list[bytes],
+        modified: bytes | list[bytes],
     ) -> RawDiffChunkGenerator:
         """Return a chunk generator showing a diff for the text.
 

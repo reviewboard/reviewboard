@@ -9,7 +9,7 @@ Version Added:
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Any, Callable, Generic, TYPE_CHECKING, TypeVar, Union
+from typing import Any, Callable, Generic, TYPE_CHECKING, TypeVar
 
 from housekeeping import deprecate_non_keyword_only_args
 from typing_extensions import NotRequired, TypeAlias, TypedDict
