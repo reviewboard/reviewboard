@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.core.exceptions import ObjectDoesNotExist
@@ -1135,10 +1135,10 @@ class ReviewRequestManager(Manager['ReviewRequest']):
 
     def _query(
         self,
-        user: Optional[User] = None,
-        status: Optional[str] = 'P',
+        user: (User | None) = None,
+        status: (str | None) = 'P',
         with_counts: bool = False,
-        extra_query: Optional[Q] = None,
+        extra_query: (Q | None) = None,
         local_site: AnyOrAllLocalSites = None,
         filter_private: bool = False,
         show_inactive: bool = False,
@@ -1463,11 +1463,11 @@ class ReviewManager(Manager['Review']):
     def accessible(
         self,
         user: User,
-        extra_query: Optional[Q] = None,
-        local_site: Optional[LocalSite] = None,
-        public: Optional[bool] = None,
-        base_reply_to: Optional[Union[Review, _ReviewANY]] = None,
-        distinct: Optional[bool] = False,
+        extra_query: (Q | None) = None,
+        local_site: (LocalSite | None) = None,
+        public: (bool | None) = None,
+        base_reply_to: (Review | _ReviewANY | None) = None,
+        distinct: (bool | None) = False,
     ) -> QuerySet:
         """Return a queryset for reviews accessible by the given user.
 
@@ -1686,14 +1686,14 @@ class ReviewManager(Manager['Review']):
 
     def _query(
         self,
-        user: Optional[User] = None,
-        public: Optional[bool] = None,
-        status: Optional[str] = 'P',
-        extra_query: Optional[Q] = None,
-        local_site: Optional[LocalSite] = None,
-        filter_private: Optional[bool] = False,
-        base_reply_to: Union[Review, _ReviewANY, None] = None,
-        distinct: Optional[bool] = False):
+        user: (User | None) = None,
+        public: (bool | None) = None,
+        status: (str | None) = 'P',
+        extra_query: (Q | None) = None,
+        local_site: (LocalSite | None) = None,
+        filter_private: (bool | None) = False,
+        base_reply_to: (Review | _ReviewANY | None) = None,
+        distinct: (bool | None) = False):
         """Do a query for reviews.
 
         Version Changed:
@@ -1843,11 +1843,11 @@ class StatusUpdateManager(Manager):
         config: IntegrationConfig,
         user: User,
         review_request: ReviewRequest,
-        change_description: Optional[ChangeDescription] = None,
-        service_id: Optional[str] = None,
-        summary: Optional[str] = None,
-        description: Optional[str] = None,
-        state: Optional[str] = None,
+        change_description: (ChangeDescription | None) = None,
+        service_id: (str | None) = None,
+        summary: (str | None) = None,
+        description: (str | None) = None,
+        state: (str | None) = None,
         can_retry: bool = False,
         extra_data: JSONDict = {},
         starting_description: str = 'starting...',

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING, Union
 
 from django.utils.translation import gettext as _
 from django.template.defaultfilters import truncatechars
@@ -84,13 +84,13 @@ class ReviewRequestContext(TypedDict):
     #:
     #: Version Added:
     #:     7.0.2
-    close_timestamp: Optional[datetime]
+    close_timestamp: datetime | None
 
     #: The current draft, if present.
     #:
     #: Version Added:
     #:     7.0.2
-    draft: Optional[ReviewRequestDraft]
+    draft: ReviewRequestDraft | None
 
     #: Whether to force viewing a draft owned by another user.
     #:
@@ -117,7 +117,7 @@ class ReviewRequestContext(TypedDict):
     status_mutable_by_user: bool
 
     #: The SCMTool for the current review request, if it has a diff.
-    scmtool: Optional[Tool]
+    scmtool: Tool | None
 
     #: Global setting for whether to send e-mails for publish actions.
     send_email: bool
@@ -126,7 +126,7 @@ class ReviewRequestContext(TypedDict):
     social_page_description: str
 
     #: The image URL to use for social media links.
-    social_page_image_url: Optional[str]
+    social_page_image_url: str | None
 
     #: The title text to use for social media links.
     social_page_title: str
@@ -155,14 +155,14 @@ def make_review_request_context(
     *,
     request: HttpRequest,
     review_request: ReviewRequest,
-    extra_context: Optional[dict[str, Any]] = None,
+    extra_context: (dict[str, Any] | None) = None,
     is_diff_view: bool = False,
-    social_page_image_url: Optional[str] = None,
+    social_page_image_url: (str | None) = None,
     social_page_title: str = '',
-    review_request_details: Optional[
-        Union[ReviewRequest, ReviewRequestDraft]] = None,
-    close_info: Optional[ReviewRequestCloseInfo] = None,
-    draft: Optional[ReviewRequestDraft] = None,
+    review_request_details: (
+        ReviewRequest | ReviewRequestDraft | None) = None,
+    close_info: (ReviewRequestCloseInfo | None) = None,
+    draft: (ReviewRequestDraft | None) = None,
     force_view_user_draft: bool = False,
 ) -> ReviewRequestContext:
     """Return a dictionary for template contexts used for review requests.
@@ -364,7 +364,7 @@ def should_view_draft(
     *,
     request: HttpRequest,
     review_request: ReviewRequest,
-    draft: Optional[ReviewRequestDraft],
+    draft: ReviewRequestDraft | None,
 ) -> bool:
     """Return whether the requesting user should view the draft.
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import ClassVar, Optional, TYPE_CHECKING
+from typing import ClassVar, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -366,7 +366,7 @@ class Review(models.Model):
     def can_publish(
         self,
         review_request_will_publish: bool = False,
-    ) -> tuple[bool, Optional[str]]:
+    ) -> tuple[bool, str | None]:
         """Check if this review can be published.
 
         Args:
@@ -432,10 +432,10 @@ class Review(models.Model):
 
     def publish(
         self,
-        user: Optional[User] = None,
+        user: (User | None) = None,
         trivial: bool = False,
         to_owner_only: bool = False,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
         review_request_will_publish: bool = False,
         *args,
         **kwargs,

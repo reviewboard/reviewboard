@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, ClassVar, Optional, TYPE_CHECKING, Union
+from typing import Any, ClassVar, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -73,7 +73,7 @@ class LastActivityInfo(TypedDict):
     #: The change description corresponding to the last activity.
     #:
     #: This may or may not be present depending on the type of activity.
-    changedesc: Optional[ChangeDescription]
+    changedesc: ChangeDescription | None
 
     #: The timestamp of the last activity.
     timestamp: datetime
@@ -105,7 +105,7 @@ class ReviewRequestCloseInfo(TypedDict):
     #:
     #: Type:
     #:     datetime.datetime
-    timestamp: Optional[datetime]
+    timestamp: datetime | None
 
 
 class ReviewRequestFileAttachmentsData(TypedDict):
@@ -178,7 +178,7 @@ class FileAttachmentState(Enum):
 
 def fetch_issue_counts(
     review_request: ReviewRequest,
-    extra_query: Optional[Q] = None,
+    extra_query: (Q | None) = None,
 ) -> dict[str, int]:
     """Fetch all issue counts for a review request.
 
@@ -250,7 +250,7 @@ def fetch_issue_counts(
 
 def _initialize_issue_counts(
     review_request: ReviewRequest,
-) -> Optional[int]:
+) -> int | None:
     """Initialize the issue counter fields for a review request.
 
     This will fetch all the issue counts and populate the counter fields.
@@ -485,7 +485,7 @@ class ReviewRequest(BaseReviewRequestDetails):
     #: extension authors. Please us :py:meth:`get_draft` directly.
     #:
     #: Note that this draft may not be accessible by the given user.
-    _draft: Optional[ReviewRequestDraft]
+    _draft: ReviewRequestDraft | None
 
     #: The cached latest diffset for the review request.
     #:
@@ -494,11 +494,11 @@ class ReviewRequest(BaseReviewRequestDetails):
     #:
     #: Version Added:
     #:     8.0
-    _latest_diffset: Optional[DiffSet]
+    _latest_diffset: DiffSet | None
 
     @staticmethod
     def status_to_string(
-        status: Optional[str],
+        status: str | None,
     ) -> str:
         """Return a string representation of a review request status.
 
@@ -529,7 +529,7 @@ class ReviewRequest(BaseReviewRequestDetails):
     @staticmethod
     def string_to_status(
         status: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return a review request status from an API string.
 
         Args:
@@ -556,7 +556,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         else:
             raise ValueError('Invalid status string "%s"' % status)
 
-    def get_commit(self) -> Optional[str]:
+    def get_commit(self) -> str | None:
         """Return the commit ID for the review request.
 
         Returns:
@@ -792,8 +792,8 @@ class ReviewRequest(BaseReviewRequestDetails):
     def is_accessible_by(
         self,
         user: User,
-        local_site: Optional[LocalSite] = None,
-        request: Optional[HttpRequest] = None,
+        local_site: (LocalSite | None) = None,
+        request: (HttpRequest | None) = None,
         silent: bool = False,
     ) -> bool:
         """Return whether or not the user can read this review request.
@@ -960,8 +960,8 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     def get_draft(
         self,
-        user: Optional[Union[AbstractBaseUser, AnonymousUser]] = None,
-    ) -> Optional[ReviewRequestDraft]:
+        user: (AbstractBaseUser | AnonymousUser | None) = None,
+    ) -> ReviewRequestDraft | None:
         """Return the draft of the review request.
 
         If a user is specified, then the draft will be returned only if it is
@@ -987,7 +987,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             reviewboard.reviews.models.review_request_draft.ReviewRequestDraft:
             The draft of the review request or None.
         """
-        draft: Optional[ReviewRequestDraft] = None
+        draft: (ReviewRequestDraft | None) = None
 
         if user is None or user.is_authenticated:
             try:
@@ -1020,7 +1020,7 @@ class ReviewRequest(BaseReviewRequestDetails):
     def get_pending_review(
         self,
         user: User,
-    ) -> Optional[Review]:
+    ) -> Review | None:
         """Return the pending review owned by the specified user, if any.
 
         This will return an actual review, not a reply to a review.
@@ -1039,8 +1039,8 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     def get_last_activity_info(
         self,
-        diffsets: Optional[list[DiffSet]] = None,
-        reviews: Optional[list[Review]] = None,
+        diffsets: (list[DiffSet] | None) = None,
+        reviews: (list[Review] | None) = None,
     ) -> LastActivityInfo:
         """Return the last public activity information on the review request.
 
@@ -1120,8 +1120,8 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     def changeset_is_pending(
         self,
-        commit_id: Optional[str],
-    ) -> tuple[bool, Optional[str]]:
+        commit_id: str | None,
+    ) -> tuple[bool, str | None]:
         """Return whether the associated changeset is pending commit.
 
         For repositories that support it, this will return whether the
@@ -1249,8 +1249,8 @@ class ReviewRequest(BaseReviewRequestDetails):
         else:
             # If we've prefetched anything, we can hopefully skip a new
             # query.
-            diffsets_result: Optional[list[DiffSet]] = None
-            diffset_history: Optional[DiffSetHistory] = \
+            diffsets_result: (list[DiffSet] | None) = None
+            diffset_history: (DiffSetHistory | None) = \
                 self._state.fields_cache.get('diffset_history')
 
             if diffset_history is not None:
@@ -1292,7 +1292,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         return self._diffsets
 
-    def get_latest_diffset(self) -> Optional[DiffSet]:
+    def get_latest_diffset(self) -> DiffSet | None:
         """Return the latest diffset for this review request.
 
         The result is cached on this object for future calls.
@@ -1308,7 +1308,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         try:
             diffset = self._latest_diffset
         except AttributeError:
-            diffset: Optional[DiffSet]
+            diffset: DiffSet | None
 
             diffsets = self.get_diffsets(with_filediffs=False)
 
@@ -1407,10 +1407,10 @@ class ReviewRequest(BaseReviewRequestDetails):
     def get_file_attachments_data(
         self,
         *,
-        active_attachments: Optional[FileAttachmentSequence] = None,
-        inactive_attachments: Optional[FileAttachmentSequence] = None,
-        draft_active_attachments: Optional[FileAttachmentSequence] = None,
-        draft_inactive_attachments: Optional[FileAttachmentSequence] = None,
+        active_attachments: (FileAttachmentSequence | None) = None,
+        inactive_attachments: (FileAttachmentSequence | None) = None,
+        draft_active_attachments: (FileAttachmentSequence | None) = None,
+        draft_inactive_attachments: (FileAttachmentSequence | None) = None,
     ) -> ReviewRequestFileAttachmentsData:
         """Return data about a review request and its draft's file attachments.
 
@@ -1545,7 +1545,7 @@ class ReviewRequest(BaseReviewRequestDetails):
     def save(
         self,
         update_counts: bool = False,
-        old_submitter: Optional[User] = None,
+        old_submitter: (User | None) = None,
         **kwargs,
     ) -> None:
         """Save the review request.
@@ -1626,8 +1626,8 @@ class ReviewRequest(BaseReviewRequestDetails):
     def close(
         self,
         close_type: str,
-        user: Optional[User] = None,
-        description: Optional[str] = None,
+        user: (User | None) = None,
+        description: (str | None) = None,
         rich_text: bool = False,
         **kwargs,
     ) -> None:
@@ -1747,7 +1747,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     def reopen(
         self,
-        user: Optional[User] = None,
+        user: (User | None) = None,
     ) -> None:
         """Reopen the review request for review.
 
@@ -1801,7 +1801,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         user: User,
         trivial: bool = False,
         validate_fields: bool = True,
-    ) -> Optional[ChangeDescription]:
+    ) -> ChangeDescription | None:
         """Publish the current draft attached to this review request.
 
         The review request will be mark as public, and signals will be
@@ -1979,7 +1979,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
     def _update_counts(
         self,
-        old_submitter: Optional[User],
+        old_submitter: User | None,
     ) -> None:
         """Update the review request counters for affected users and groups.
 

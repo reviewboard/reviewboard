@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 
 from django.db import models
 from django.utils.functional import cached_property
@@ -44,16 +44,16 @@ class FileAttachmentCommentRevisionInfo(TypedDict):
     diffset_id: int
 
     #: The interdiff revision, if present.
-    interdiff_revision: Optional[int]
+    interdiff_revision: int | None
 
     #: The PK of the interdiff DiffSet, when present.
-    interdiffset_id: Optional[int]
+    interdiffset_id: int | None
 
     #: The base commit ID, if present.
-    base_commit_id: Optional[int]
+    base_commit_id: int | None
 
     #: The tip commit ID, if present.
-    tip_commit_id: Optional[int]
+    tip_commit_id: int | None
 
     #: The last commit ID in the commit series.
     #:
@@ -91,7 +91,7 @@ class FileAttachmentComment(BaseComment):
         FileAttachmentCommentManager()
 
     @cached_property
-    def review_ui(self) -> Optional[ReviewUI]:
+    def review_ui(self) -> ReviewUI | None:
         """Return a ReviewUI appropriate for this comment.
 
         If a ReviewUI is available for this type of file, an instance of
@@ -113,7 +113,7 @@ class FileAttachmentComment(BaseComment):
         return review_ui
 
     @property
-    def thumbnail(self) -> Optional[SafeString]:
+    def thumbnail(self) -> SafeString | None:
         """Return the thumbnail for this comment, if any, as HTML.
 
         The thumbnail will be generated from the appropriate ReviewUI,
@@ -135,7 +135,7 @@ class FileAttachmentComment(BaseComment):
 
         return mark_safe('')
 
-    def get_absolute_url(self) -> Optional[str]:
+    def get_absolute_url(self) -> str | None:
         """Return the URL for this comment.
 
         Returns:
@@ -154,7 +154,7 @@ class FileAttachmentComment(BaseComment):
 
         return self.file_attachment.get_absolute_url()
 
-    def get_link_text(self) -> Optional[str]:
+    def get_link_text(self) -> str | None:
         """Return the text for the link to the file.
 
         Returns:
@@ -186,7 +186,7 @@ class FileAttachmentComment(BaseComment):
 
     def get_comment_diff_revision_info(
         self,
-    ) -> Optional[FileAttachmentCommentRevisionInfo]:
+    ) -> FileAttachmentCommentRevisionInfo | None:
         """Return the revision info for the comment.
 
         Version Added:
@@ -201,14 +201,14 @@ class FileAttachmentComment(BaseComment):
 
         diff_revision: int
         diffset_id: int
-        interdiff_revision: Optional[int] = None
-        interdiffset_id: Optional[int] = None
+        interdiff_revision: (int | None) = None
+        interdiffset_id: (int | None) = None
 
         modified_filediff = self.file_attachment.added_in_filediff
         modified_diffset = modified_filediff.diffset
 
-        base_commit_id: Optional[int] = None
-        tip_commit_id: Optional[int] = None
+        base_commit_id: (int | None) = None
+        tip_commit_id: (int | None) = None
 
         diff_attachment = self.diff_against_file_attachment
 

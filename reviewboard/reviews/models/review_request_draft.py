@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -140,7 +140,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     commit = property(lambda self: self.commit_id,
                       lambda self, value: setattr(self, 'commit_id', value))
 
-    def get_latest_diffset(self) -> Optional[DiffSet]:
+    def get_latest_diffset(self) -> DiffSet | None:
         """Return the diffset for this draft.
 
         Returns:
@@ -184,10 +184,10 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     def get_file_attachments_data(
         self,
         *,
-        active_attachments: Optional[FileAttachmentSequence] = None,
-        inactive_attachments: Optional[FileAttachmentSequence] = None,
-        draft_active_attachments: Optional[FileAttachmentSequence] = None,
-        draft_inactive_attachments: Optional[FileAttachmentSequence] = None,
+        active_attachments: (FileAttachmentSequence | None) = None,
+        inactive_attachments: (FileAttachmentSequence | None) = None,
+        draft_active_attachments: (FileAttachmentSequence | None) = None,
+        draft_inactive_attachments: (FileAttachmentSequence | None) = None,
         **kwargs,
     ) -> ReviewRequestFileAttachmentsData:
         """Return data about a review request and its draft's file attachments.
@@ -365,12 +365,12 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
     def publish(
         self,
-        review_request: Optional[ReviewRequest] = None,
-        user: Optional[User] = None,
+        review_request: (ReviewRequest | None) = None,
+        user: (User | None) = None,
         trivial: bool = False,
         send_notification: bool = True,
         validate_fields: bool = True,
-        timestamp: Optional[datetime] = None,
+        timestamp: (datetime | None) = None,
     ) -> ChangeDescription:
         """Publish this draft.
 
@@ -778,7 +778,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
     def _copy_attachments_to_review_request(
         self,
         *,
-        changedesc: Optional[ChangeDescription],
+        changedesc: ChangeDescription | None,
         changedesc_captions_field: str,
         changedesc_items_field: str,
         changedesc_item_name_field: str,

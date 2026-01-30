@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urlencode
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -45,7 +45,7 @@ class Comment(BaseComment):
     last_line = property(lambda self: self.first_line + self.num_lines - 1)
 
     @property
-    def base_filediff_id(self) -> Optional[int]:
+    def base_filediff_id(self) -> int | None:
         """The base FileDiff ID for the cumulative diff this comment is on.
 
         Type:
@@ -64,7 +64,7 @@ class Comment(BaseComment):
         self.extra_data[self._BASE_FILEDIFF_ID_KEY] = filediff_id
 
     @property
-    def base_filediff(self) -> Optional[FileDiff]:
+    def base_filediff(self) -> FileDiff | None:
         """The base filediff, if this comment is made on a commit range.
 
         Type:
