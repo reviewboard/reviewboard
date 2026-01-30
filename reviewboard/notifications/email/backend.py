@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 import smtplib
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Union, TYPE_CHECKING
 
 from django.core.mail.backends import smtp
 from django.core.mail.message import EmailMessage
@@ -33,7 +33,7 @@ class SMTPConnectionMixin(ConnectionParent):
             details string.
     """
 
-    rb_last_reply: Optional[tuple[int, bytes]]
+    rb_last_reply: tuple[int, bytes] | None
 
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the mixin.

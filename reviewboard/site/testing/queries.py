@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.db.models import Q, Value
@@ -98,7 +98,7 @@ def get_local_site_is_mutable_by_equeries(
     *,
     user: User,
     local_site: LocalSite,
-    note: Optional[str] = None,
+    note: (str | None) = None,
 ) -> ExpectedQueries:
     """Return expected queries for Local Site mutability checks.
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 import sys
 from contextlib import contextmanager
-from typing import Iterator, Optional
+from typing import Iterator
 
 from setuptools import build_meta
 
@@ -56,7 +56,7 @@ def _prepare_package_files() -> Iterator[None]:
 
 def build_sdist(
     sdist_directory: str,
-    config_settings: Optional[dict] = None,
+    config_settings: (dict | None) = None,
 ) -> str:
     """Build a source distribution.
 
@@ -81,8 +81,8 @@ def build_sdist(
 
 def build_wheel(
     wheel_directory: str,
-    config_settings: Optional[dict] = None,
-    metadata_directory: Optional[str] = None,
+    config_settings: (dict | None) = None,
+    metadata_directory: (str | None) = None,
 ) -> str:
     """Build a wheel.
 

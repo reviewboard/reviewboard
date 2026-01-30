@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import importlib
 import unittest
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from djblets.util.decorators import simple_decorator
 
@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 
-_TestCase: Optional[TestCase] = None
+_TestCase: (TestCase | None) = None
 _online = None
 
 

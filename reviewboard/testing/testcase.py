@@ -7,7 +7,7 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from typing import Any, Callable, Optional, TYPE_CHECKING, Union
+from typing import Any, Callable, TYPE_CHECKING, Union
 from uuid import uuid4
 
 import kgb
@@ -273,8 +273,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     def get_local_site_or_none(
         self,
-        name: Optional[str],
-    ) -> Optional[LocalSite]:
+        name: str | None,
+    ) -> LocalSite | None:
         """Return a LocalSite matching the name, if provided, or None.
 
         Args:
@@ -382,13 +382,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_http_request(
         self,
         path: str = '/',
-        user: Optional[Union[AnonymousUser, User]] = None,
+        user: (AnonymousUser | User | None) = None,
         method: str = 'get',
         with_local_site: bool = False,
-        local_site: Optional[LocalSite] = None,
-        resolver_match: Optional[ResolverMatch] = None,
-        view: Optional[Callable[..., Any]] = None,
-        url_name: Optional[str] = None,
+        local_site: (LocalSite | None) = None,
+        resolver_match: (ResolverMatch | None) = None,
+        view: (Callable[..., Any] | None) = None,
+        url_name: (str | None) = None,
         **kwargs,
     ) -> HttpRequest:
         """Create an HttpRequest for testing.
@@ -492,7 +492,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         username: str = 'test-user',
         password: str = '',
         email: str = 'test@example.com',
-        perms: Optional[Sequence[tuple[str, str]]] = None,
+        perms: (Sequence[tuple[str, str]] | None) = None,
         **kwargs,
     ) -> User:
         """Create a User for testing.
@@ -542,9 +542,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         note: str = 'Sample note',
         policy: JSONDict = {'access': 'rw'},
         with_local_site: bool = False,
-        token_generator_id: Optional[str] = None,
+        token_generator_id: (str | None) = None,
         token_info: JSONDict = {'token_type': 'rbp'},
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
     ) -> WebAPIToken:
         """Create a WebAPIToken for testing.
@@ -705,7 +705,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def assert_warns(
         self,
         cls: type[DeprecationWarning] = DeprecationWarning,
-        message: Optional[str] = None,
+        message: (str | None) = None,
     ) -> Iterator[None]:
         """A context manager for asserting code generates a warning.
 
@@ -747,7 +747,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         self,
         filediff: FileDiff,
         from_modified: bool = True,
-        review_request: Optional[ReviewRequest] = None,
+        review_request: (ReviewRequest | None) = None,
         orig_filename: str = 'filename.png',
         caption: str = 'My Caption',
         mimetype: str = 'image/png',
@@ -807,21 +807,21 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     def create_diffcommit(
         self,
-        repository: Optional[Repository] = None,
-        diffset: Optional[DiffSet] = None,
+        repository: (Repository | None) = None,
+        diffset: (DiffSet | None) = None,
         commit_id: str = 'r1',
         parent_id: str = 'r0',
         diff_contents: bytes = DEFAULT_GIT_FILEDIFF_DATA_DIFF,
-        parent_diff_contents: Optional[bytes] = None,
+        parent_diff_contents: (bytes | None) = None,
         author_name: str = 'Author',
         author_email: str = 'author@example.com',
-        author_date: Optional[datetime] = None,
+        author_date: (datetime | None) = None,
         commit_message: str = 'Commit message',
         committer_name: str = 'Committer',
         committer_email: str = 'committer@example.com',
-        committer_date: Optional[datetime] = None,
+        committer_date: (datetime | None) = None,
         with_diff: bool = True,
-        extra_data: Optional[JSONDict] = None,
+        extra_data: (JSONDict | None) = None,
         **kwargs,
     ) -> DiffCommit:
         """Create a DiffCommit for testing.
@@ -966,9 +966,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     def create_diffset(
         self,
-        review_request: Optional[ReviewRequest] = None,
+        review_request: (ReviewRequest | None) = None,
         revision: int = 1,
-        repository: Optional[Repository] = None,
+        repository: (Repository | None) = None,
         draft: bool = False,
         name: str = 'diffset',
         **kwargs,
@@ -1029,15 +1029,15 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         self,
         review: Review,
         filediff: FileDiff,
-        interfilediff: Optional[FileDiff] = None,
+        interfilediff: (FileDiff | None) = None,
         text: str = 'My comment',
         issue_opened: bool = False,
-        issue_status: Optional[str] = None,
+        issue_status: (str | None) = None,
         first_line: int = 1,
         num_lines: int = 5,
-        extra_fields: Optional[JSONDict] = None,
-        reply_to: Optional[Comment] = None,
-        timestamp: Optional[datetime] = None,
+        extra_fields: (JSONDict | None) = None,
+        reply_to: (Comment | None) = None,
+        timestamp: (datetime | None) = None,
         **kwargs,
     ) -> Comment:
         """Create a Comment for testing.
@@ -1123,7 +1123,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_file_attachment(
         self,
         review_request: ReviewRequest,
-        attachment_history: Optional[FileAttachmentHistory] = None,
+        attachment_history: (FileAttachmentHistory | None) = None,
         draft: Union[ReviewRequestDraft, bool] = False,
         active: bool = True,
         has_file: bool = True,
@@ -1260,13 +1260,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         self,
         review: Review,
         file_attachment: FileAttachment,
-        diff_against_file_attachment: Optional[FileAttachment] = None,
+        diff_against_file_attachment: (FileAttachment | None) = None,
         text: str = 'My comment',
         issue_opened: bool = False,
-        issue_status: Optional[str] = None,
-        extra_fields: Optional[JSONDict] = None,
-        reply_to: Optional[FileAttachmentComment] = None,
-        timestamp: Optional[datetime] = None,
+        issue_status: (str | None) = None,
+        extra_fields: (JSONDict | None) = None,
+        reply_to: (FileAttachmentComment | None) = None,
+        timestamp: (datetime | None) = None,
         **kwargs,
     ) -> FileAttachmentComment:
         """Create a FileAttachmentComment for testing.
@@ -1343,8 +1343,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
     def create_file_attachment_history(
         self,
-        review_request: Optional[ReviewRequest] = None,
-        display_position: Optional[int] = None,
+        review_request: (ReviewRequest | None) = None,
+        display_position: (int | None) = None,
         **kwargs,
     ) -> FileAttachmentHistory:
         """Create a FileAttachmentHistory for testing.
@@ -1391,8 +1391,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         dest_detail: str = '124',
         status: str = FileDiff.MODIFIED,
         diff: bytes = DEFAULT_FILEDIFF_DATA_DIFF,
-        commit: Optional[DiffCommit] = None,
-        encoding: Optional[str] = None,
+        commit: (DiffCommit | None) = None,
+        encoding: (str | None) = None,
         save: bool = True,
         **kwargs,
     ) -> FileDiff:
@@ -1470,9 +1470,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         with_local_site: bool = False,
         name: str = 'Test Repo',
         tool_name: str = 'Git',
-        path: Optional[str] = None,
-        local_site: Optional[LocalSite] = None,
-        extra_data: Optional[JSONDict] = None,
+        path: (str | None) = None,
+        local_site: (LocalSite | None) = None,
+        extra_data: (JSONDict | None) = None,
         *,
         users: Sequence[User] = [],
         review_groups: Sequence[Group] = [],
@@ -1587,21 +1587,21 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         create_repository: bool = False,
         create_with_history: bool = False,
         publish: bool = False,
-        id: Optional[int] = None,
-        local_id: Optional[int] = 1001,
-        local_site: Optional[LocalSite] = None,
-        repository: Optional[Repository] = None,
-        time_added: Optional[datetime] = None,
-        last_updated: Optional[datetime] = None,
+        id: (int | None) = None,
+        local_id: (int | None) = 1001,
+        local_site: (LocalSite | None) = None,
+        repository: (Repository | None) = None,
+        time_added: (datetime | None) = None,
+        last_updated: (datetime | None) = None,
         status: str = ReviewRequest.PENDING_REVIEW,
-        submitter: Union[str, User] = 'doc',
+        submitter: (str | User) = 'doc',
         summary: str = 'Test Summary',
         description: str = 'Test Description',
-        testing_done: Optional[str] = 'Testing',
-        branch: Optional[str] = 'my-branch',
-        depends_on: Optional[Sequence[ReviewRequest]] = None,
-        target_people: Optional[Sequence[User]] = None,
-        target_groups: Optional[Sequence[Group]] = None,
+        testing_done: (str | None) = 'Testing',
+        branch: (str | None) = 'my-branch',
+        depends_on: (Sequence[ReviewRequest] | None) = None,
+        target_people: (Sequence[User] | None) = None,
+        target_groups: (Sequence[Group] | None) = None,
         **kwargs,
     ) -> ReviewRequest:
         """Create a ReviewRequest for testing.
@@ -1768,20 +1768,20 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         with_local_site: bool = False,
         create_repository: bool = False,
         create_with_history: bool = True,
-        start_id: Optional[int] = None,
-        start_local_id: Optional[int] = 1001,
-        local_site: Optional[LocalSite] = None,
-        repository: Optional[Repository] = None,
+        start_id: (int | None) = None,
+        start_local_id: (int | None) = 1001,
+        local_site: (LocalSite | None) = None,
+        repository: (Repository | None) = None,
         public: bool = False,
         status: str = ReviewRequest.PENDING_REVIEW,
-        submitter: Union[str, User] = 'doc',
+        submitter: (str | User) = 'doc',
         summary: str = 'Test Summary %s',
         description: str = 'Test Description %s',
         testing_done: str = 'Testing %s',
-        branch: Optional[str] = 'my-branch',
-        depends_on: Optional[Sequence[ReviewRequest]] = None,
-        target_people: Optional[Sequence[User]] = None,
-        target_groups: Optional[Sequence[Group]] = None,
+        branch: (str | None) = 'my-branch',
+        depends_on: (Sequence[ReviewRequest] | None) = None,
+        target_people: (Sequence[User] | None) = None,
+        target_groups: (Sequence[Group] | None) = None,
         **kwargs,
     ) -> list[ReviewRequest]:
         """Batch-create multiple ReviewRequests for testing.
@@ -2061,7 +2061,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         review_request: ReviewRequest,
         visibility: str,
         user: Union[str, User] = 'doc',
-        timestamp: Optional[datetime] = None,
+        timestamp: (datetime | None) = None,
         **kwargs,
     ) -> ReviewRequestVisit:
         """Create a ReviewRequestVisit for testing.
@@ -2112,12 +2112,12 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_review(
         self,
         review_request: ReviewRequest,
-        user: Union[str, User] = 'dopey',
-        body_top: Optional[str] = 'Test Body Top',
-        body_bottom: Optional[str] = 'Test Body Bottom',
+        user: (str | User) = 'dopey',
+        body_top: (str | None) = 'Test Body Top',
+        body_bottom: (str | None) = 'Test Body Bottom',
         ship_it: bool = False,
         publish: bool = False,
-        timestamp: Optional[datetime] = None,
+        timestamp: (datetime | None) = None,
         **kwargs,
     ) -> Review:
         """Create a Review for testing.
@@ -2183,7 +2183,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         self,
         name: str = 'test-group',
         with_local_site: bool = False,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         visible: bool = True,
         invite_only: bool = False,
         is_default_group: bool = False,
@@ -2248,8 +2248,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         self,
         review: Review,
         user: Union[str, User] = 'grumpy',
-        body_top: Optional[str] = 'Test Body Top',
-        timestamp: Optional[datetime] = None,
+        body_top: (str | None) = 'Test Body Top',
+        timestamp: (datetime | None) = None,
         publish: bool = False,
         **kwargs,
     ) -> Review:
@@ -2388,10 +2388,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         w: int = 5,
         h: int = 5,
         issue_opened: bool = False,
-        issue_status: Optional[str] = None,
-        extra_fields: Optional[JSONDict] = None,
-        reply_to: Optional[ScreenshotComment] = None,
-        timestamp: Optional[datetime] = None,
+        issue_status: (str | None) = None,
+        extra_fields: (JSONDict | None) = None,
+        reply_to: (ScreenshotComment | None) = None,
+        timestamp: (datetime | None) = None,
         **kwargs,
     ) -> ScreenshotComment:
         """Create a ScreenshotComment for testing.
@@ -2481,13 +2481,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         caption: str = 'My Caption',
         orig_filename: str = 'logo.png',
         mimetype: str = 'image/png',
-        uuid: Optional[str] = None,
+        uuid: (str | None) = None,
         has_file: bool = True,
-        file_content: Optional[bytes] = None,
-        user: Optional[User] = None,
+        file_content: (bytes | None) = None,
+        user: (User | None) = None,
         with_local_site: bool = False,
-        local_site_name: Optional[str] = None,
-        local_site: Optional[LocalSite] = None,
+        local_site_name: (str | None) = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
     ) -> FileAttachment:
         """Base helper to create a FileAttachment object.
@@ -2597,10 +2597,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         review: Review,
         text: str = 'My comment',
         issue_opened: bool = False,
-        issue_status: Optional[str] = None,
-        extra_fields: Optional[JSONDict] = None,
-        reply_to: Optional[GeneralComment] = None,
-        timestamp: Optional[datetime] = None,
+        issue_status: (str | None) = None,
+        extra_fields: (JSONDict | None) = None,
+        reply_to: (GeneralComment | None) = None,
+        timestamp: (datetime | None) = None,
         **kwargs,
     ) -> GeneralComment:
         """Create a GeneralComment for testing.
@@ -2672,9 +2672,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         service_id: str = 'service',
         summary: str = 'Status Update',
         state: str = StatusUpdate.PENDING,
-        review: Optional[Review] = None,
-        change_description: Optional[ChangeDescription] = None,
-        timestamp: Optional[datetime] = None,
+        review: (Review | None) = None,
+        change_description: (ChangeDescription | None) = None,
+        timestamp: (datetime | None) = None,
         **kwargs,
     ) -> StatusUpdate:
         """Create a status update for testing.
@@ -2749,10 +2749,10 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         custom_content: str = '',
         secret: str = '',
         apply_to: str = WebHookTarget.APPLY_TO_ALL,
-        repositories: Optional[Sequence[Repository]] = None,
+        repositories: (Sequence[Repository] | None) = None,
         with_local_site: bool = False,
-        local_site: Optional[LocalSite] = None,
-        extra_fields: Optional[JSONDict] = None,
+        local_site: (LocalSite | None) = None,
+        extra_fields: (JSONDict | None) = None,
         **kwargs,
     ) -> WebHookTarget:
         """Create a webhook for testing.
@@ -2842,7 +2842,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_oauth_application(
         self,
         user: User,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         with_local_site: bool = False,
         redirect_uris: str = 'http://example.com',
         authorization_grant_type: str = Application.GRANT_CLIENT_CREDENTIALS,
@@ -2896,7 +2896,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         application: Application,
         user: User,
         scope: str = '',
-        expires: Optional[timedelta] = None,
+        expires: (timedelta | None) = None,
         **kwargs,
     ) -> AccessToken:
         """Create an OAuth2 access token for testing.
@@ -2946,11 +2946,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         port: int = 443,
         subject: Unsettable[str] = 'Test Subject',
         issuer: Unsettable[str] = 'Test Issuer',
-        valid_from: Unsettable[Optional[datetime]] = None,
-        valid_through: Unsettable[Optional[datetime]] = None,
-        fingerprints: Unsettable[Optional[CertificateFingerprints]] = None,
-        cert_data: Optional[bytes] = None,
-        key_data: Optional[bytes] = None,
+        valid_from: Unsettable[datetime | None] = None,
+        valid_through: Unsettable[datetime | None] = None,
+        fingerprints: Unsettable[CertificateFingerprints | None] = None,
+        cert_data: (bytes | None) = None,
+        key_data: (bytes | None) = None,
         **kwargs,
     ) -> Certificate:
         """Return a Certificate for testing.
@@ -3063,7 +3063,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_certificate_bundle(
         self,
         *,
-        bundle_data: Optional[bytes] = None,
+        bundle_data: (bytes | None) = None,
         **kwargs,
     ) -> CertificateBundle:
         """Return a CertificateBundle for testing.
@@ -3101,8 +3101,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     def create_certificate_fingerprints(
         self,
         *,
-        sha1: Unsettable[Optional[str]] = UNSET,
-        sha256: Unsettable[Optional[str]] = UNSET,
+        sha1: Unsettable[str | None] = UNSET,
+        sha256: Unsettable[str | None] = UNSET,
         **kwargs,
     ) -> CertificateFingerprints:
         """Return a CertificateFingerprints for testing.
@@ -3386,8 +3386,8 @@ class BaseFileDiffAncestorTests(kgb.SpyAgency, TestCase):
             path: str,
             revision: str,
             *args,
-            base_commit_id: Optional[str] = None,
-            context: Optional[FileLookupContext] = None,
+            base_commit_id: (str | None) = None,
+            context: (FileLookupContext | None) = None,
             **kwargs,
         ) -> bytes:
             if repo == self.repository:

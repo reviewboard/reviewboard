@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.db.models import Manager, Q
 
@@ -24,8 +24,8 @@ class WebHookTargetManager(Manager):
     def for_event(
         self,
         event: str,
-        local_site_id: Optional[int] = None,
-        repository_id: Optional[int] = None,
+        local_site_id: (int | None) = None,
+        repository_id: (int | None) = None,
     ) -> list[WebHookTarget]:
         """Return a list of matching webhook targets for the given event.
 
@@ -67,7 +67,7 @@ class WebHookTargetManager(Manager):
 
     def for_local_site(
         self,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> QuerySet:
         """Return a list of webhooks on the local site.
 
@@ -84,7 +84,7 @@ class WebHookTargetManager(Manager):
     def can_create(
         self,
         user: User,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> bool:
         """Return whether the user can create webhooks on the local site.
 

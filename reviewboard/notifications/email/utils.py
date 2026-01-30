@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 from typing import (Callable,
                     Collection,
-                    Optional,
                     Union,
                     TYPE_CHECKING)
 
@@ -35,8 +34,8 @@ RecipientList: TypeAlias = Collection[Recipient]
 def build_recipients(
     user: User,
     review_request: ReviewRequest,
-    extra_recipients: Optional[RecipientList] = None,
-    limit_recipients_to: Optional[RecipientList] = None,
+    extra_recipients: (RecipientList | None) = None,
+    limit_recipients_to: (RecipientList | None) = None,
 ) -> tuple[RecipientList, RecipientList]:
     """Build the recipient sets for an e-mail.
 
@@ -208,7 +207,7 @@ def build_recipients(
 
 def get_email_addresses_for_group(
     group: Group,
-    review_request_id: Optional[int] = None,
+    review_request_id: (int | None) = None,
 ) -> Sequence[str]:
     """Build a list of e-mail addresses for the group.
 
@@ -275,7 +274,7 @@ def get_email_addresses_for_group(
 
 def recipients_to_addresses(
     recipients: RecipientList,
-    review_request_id: Optional[int] = None,
+    review_request_id: (int | None) = None,
 ) -> set[str]:
     """Return the set of e-mail addresses for the recipients.
 
@@ -309,7 +308,7 @@ def recipients_to_addresses(
 def send_email(
     email_builder: Callable,
     **kwargs,
-) -> tuple[Optional[EmailMessage], bool]:
+) -> tuple[EmailMessage | None, bool]:
     """Attempt to send an e-mail, logging any exceptions that occur.
 
     Args:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -97,13 +97,13 @@ def prepare_base_review_request_mail(
     user: User,
     review_request: ReviewRequest,
     subject: str,
-    in_reply_to: Optional[str],
+    in_reply_to: str | None,
     to_field: RecipientList,
     cc_field: RecipientList,
     template_name_base: str,
-    context: Optional[dict] = None,
-    extra_headers: Optional[dict] = None,
-) -> Optional[EmailMessage]:
+    context: (dict | None) = None,
+    extra_headers: (dict | None) = None,
+) -> EmailMessage | None:
     """Return a customized review request e-mail.
 
     This is intended to be called by one of the ``prepare_{type}_mail``
@@ -442,8 +442,8 @@ def prepare_review_published_mail(
 def prepare_review_request_mail(
     user: User,
     review_request: ReviewRequest,
-    changedesc: Optional[ChangeDescription] = None,
-    close_type: Optional[str] = None,
+    changedesc: (ChangeDescription | None) = None,
+    close_type: (str | None) = None,
 ) -> EmailMessage:
     """Return an e-mail representing the supplied review request.
 
@@ -542,14 +542,14 @@ def prepare_review_request_mail(
 
 def prepare_batch_review_request_mail(
     *,
-    user: Optional[User],
+    user: User | None,
     review_request: ReviewRequest,
     review_request_changed: bool,
-    changedesc: Optional[ChangeDescription],
+    changedesc: ChangeDescription | None,
     reviews: Sequence[Review],
     review_replies: Sequence[Review],
     request: HttpRequest,
-) -> Optional[EmailMessage]:
+) -> EmailMessage | None:
     """Return an e-mail with batched review request and reviews.
 
     Version Added:
@@ -596,8 +596,8 @@ def prepare_batch_review_request_mail(
     subject: str = 'Review Request %d: %s' % (review_request.display_id,
                                               summary)
 
-    reply_message_id: Optional[str] = review_request.email_message_id
-    extra_recipients: Optional[RecipientList] = None
+    reply_message_id: (str | None) = review_request.email_message_id
+    extra_recipients: (RecipientList | None) = None
 
     if reply_message_id:
         # Fancy quoted "replies".
