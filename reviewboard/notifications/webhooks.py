@@ -18,7 +18,7 @@ from django.db.models.query import QuerySet
 from django.http.request import HttpRequest
 from django.utils.encoding import force_bytes, force_str
 from django.utils.functional import cached_property
-from django.utils.safestring import SafeText
+from django.utils.safestring import SafeString
 from django.utils.text import get_text_list
 from django.utils.translation import gettext as _
 from django.template import Context, Template
@@ -227,7 +227,7 @@ def normalize_webhook_payload(payload, request, use_string_keys=False):
             return None
         elif isinstance(key, str):
             return key
-        elif isinstance(key, (SafeText, bool, float)):
+        elif isinstance(key, (SafeString, bool, float)):
             return str(key)
         elif isinstance(key, bytes):
             return force_str(key)
@@ -246,7 +246,7 @@ def normalize_webhook_payload(payload, request, use_string_keys=False):
         if value is None:
             return None
 
-        if isinstance(value, SafeText):
+        if isinstance(value, SafeString):
             return str(value)
         elif isinstance(value, bytes):
             return force_str(value)

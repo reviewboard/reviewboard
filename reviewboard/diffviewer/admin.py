@@ -56,7 +56,7 @@ class _FileDiffCommon(object):
                 The raw diff content.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The syntax-highlighted HTML.
         """
         # NOTE: Django wraps the contents in a <p>, but browsers will

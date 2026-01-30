@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.test.client import RequestFactory
-from django.utils.safestring import SafeText
+from django.utils.safestring import SafeString
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.scmtools.core import Branch, Commit
@@ -208,7 +208,7 @@ class GitHubTests(GitHubTestCase):
             request=request,
             repository=repository)
 
-        self.assertIsInstance(content, SafeText)
+        self.assertIsInstance(content, SafeString)
         self.assertIn(
             'https://github.com/myuser/myrepo/settings/hooks/new',
             content)

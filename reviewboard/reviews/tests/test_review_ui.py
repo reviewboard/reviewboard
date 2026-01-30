@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any, TYPE_CHECKING
 
-from django.utils.safestring import SafeText
+from django.utils.safestring import SafeString
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
 
@@ -278,7 +278,7 @@ class ReviewUITests(SpyAgency, TestCase):
         request = self.create_http_request()
 
         content = review_ui.render_to_string(request, inline=False)
-        self.assertIsInstance(content, SafeText)
+        self.assertIsInstance(content, SafeString)
         self.assertIn('model: new RB.Test.ReviewUI(', content)
         self.assertIn('view = new RB.Test.ReviewUIView(', content)
         self.assertIn('"renderedInline": false', content)
@@ -290,7 +290,7 @@ class ReviewUITests(SpyAgency, TestCase):
         request = self.create_http_request()
 
         content = review_ui.render_to_string(request, inline=True)
-        self.assertIsInstance(content, SafeText)
+        self.assertIsInstance(content, SafeString)
         self.assertIn('model: new RB.Test.ReviewUI(', content)
         self.assertIn('view = new RB.Test.ReviewUIView(', content)
         self.assertIn('"renderedInline": true', content)

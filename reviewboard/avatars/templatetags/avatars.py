@@ -41,7 +41,7 @@ def avatar(context, user, size, service_id=None):
             the default avatar service will be used.
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         The user's avatar rendered to HTML, or an empty string if no avatar
         service could be found.
     """
@@ -90,7 +90,7 @@ def avatar_url(context, user, size, resolution='1x', service_id=None):
             the default avatar service will be used.
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         The URL of the requested avatar, or an empty string if no avatar
         service could be found.
     """
@@ -131,7 +131,7 @@ def avatar_urls(context, user, size, service_id=None):
             the default avatar service will be used.
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         The rendered JavaScript object.
     """
     service = avatar_services.for_user(user, service_id)

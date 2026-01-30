@@ -125,7 +125,7 @@ def changelist_js_model_attrs(context):
             The context for the page.
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         A string containing the JSON attributes for the page model.
     """
     action_form = context.get('action_form')
@@ -164,7 +164,7 @@ def change_form_submit_buttons(context):
             The context for the page.
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         A string containing the submit buttons.
     """
     show_save = context.get('show_save', True)
@@ -273,7 +273,7 @@ def render_change_form_fieldset(context, fieldset):
             The fieldset to render.
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         The resulting HTML for the fieldset.
     """
     return fieldset.render(context)

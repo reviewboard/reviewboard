@@ -481,7 +481,7 @@ class MimetypeHandler(object):
         By default, this returns an empty thumbnail.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The HTML for the thumbnail for the associated attachment.
         """
         return mark_safe('<pre class="file-thumbnail"></pre>')
@@ -618,7 +618,7 @@ class ImageMimetype(MimetypeHandler):
         """Return a thumbnail of the image.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The HTML for the thumbnail for the associated attachment.
         """
         attachment = self.attachment
@@ -754,7 +754,7 @@ class TextMimetype(MimetypeHandler):
                 The contents of the attachment.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The resulting HTML-safe thumbnail content.
         """
         from reviewboard.diffviewer.chunk_generator import \
@@ -789,7 +789,7 @@ class TextMimetype(MimetypeHandler):
         """Return the HTML for a thumbnail preview for a text file.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The resulting HTML-safe thumbnail content.
         """
         try:
@@ -821,7 +821,7 @@ class TextMimetype(MimetypeHandler):
         The content will be generated and then cached for future requests.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The resulting HTML-safe thumbnail content.
         """
         # Caches the generated thumbnail to eliminate the need on each page
@@ -851,7 +851,7 @@ class ReStructuredTextMimetype(TextMimetype):
                 The contents of the file.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The resulting HTML-safe thumbnail content.
         """
         # Use safe filtering against injection attacks
@@ -882,7 +882,7 @@ class MarkDownMimetype(TextMimetype):
         """Return the HTML for a thumbnail preview for a Markdown file.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The resulting HTML-safe thumbnail content.
         """
         return mark_safe(render_markdown(force_str(data_string)))
@@ -906,7 +906,7 @@ class VideoMimetype(MimetypeHandler):
         order to show this.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The HTML for the video thumbnail.
         """
         attachment = self.attachment

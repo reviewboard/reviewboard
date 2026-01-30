@@ -81,7 +81,7 @@ class ChangeFormFieldset(Fieldset):
                 The current template context.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The resulting HTML for the fieldset.
         """
         template_name = (
@@ -242,7 +242,7 @@ class ChangeFormField(object):
         containing the label.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The ``<label>`` tag for this field.
         """
         field = self.field
@@ -276,7 +276,7 @@ class ChangeFormField(object):
         if the field is meant to be read-only.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered content for the field.
         """
         if self.is_readonly:

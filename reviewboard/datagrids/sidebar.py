@@ -145,7 +145,7 @@ class BaseSidebarItem(object):
         """Render the item.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered HTML for the item.
         """
         count = self.get_count()

@@ -56,7 +56,7 @@ class OAuthSecretInputWidget(widgets.TextInput):
                 The form renderer.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered HTML.
         """
         context = self.get_context(name, value, attrs)

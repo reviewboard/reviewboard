@@ -70,7 +70,7 @@ def js_user_session_info(context):
             The current template context.
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         The JSON-serialized attribute data.
     """
     request = context['request']

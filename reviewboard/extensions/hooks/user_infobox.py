@@ -94,7 +94,7 @@ class UserInfoboxHook(ExtensionHook, metaclass=ExtensionHookPoint):
                 Additional keyword arguments.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             Text to include in the infobox HTML.
         """
         assert self.template_name is not None

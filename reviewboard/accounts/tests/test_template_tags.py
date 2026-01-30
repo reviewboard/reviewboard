@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 from django.contrib.auth.models import AnonymousUser, User
 from django.template import Context, Template
 from django.test.client import RequestFactory
-from django.utils.safestring import SafeText
+from django.utils.safestring import SafeString
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.user_details import (BaseUserDetailsProvider,
@@ -289,7 +289,7 @@ class JSUserSessionInfoTests(TestCase):
                 An optional Local Site for the request.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered content.
         """
         request = RequestFactory().get('/s/local-site-1/')
@@ -306,7 +306,7 @@ class JSUserSessionInfoTests(TestCase):
             'request': request,
         }))
 
-        self.assertIsInstance(rendered, SafeText)
+        self.assertIsInstance(rendered, SafeString)
 
         return rendered
 
@@ -330,7 +330,7 @@ class UserBadgesTests(TestCase):
             'user': user,
         }))
 
-        self.assertIsInstance(rendered, SafeText)
+        self.assertIsInstance(rendered, SafeString)
 
         self.assertEqual(rendered, '')
 
@@ -363,7 +363,7 @@ class UserBadgesTests(TestCase):
         finally:
             user_details_provider_registry.unregister(provider)
 
-        self.assertIsInstance(rendered, SafeText)
+        self.assertIsInstance(rendered, SafeString)
 
         self.assertHTMLEqual(
             rendered,
@@ -419,7 +419,7 @@ class UserBadgesTests(TestCase):
             r'MyUserDetailsProvider object at 0x[a-f0-9]+>: oh no\n.*'
             r'Traceback')
 
-        self.assertIsInstance(rendered, SafeText)
+        self.assertIsInstance(rendered, SafeString)
 
         self.assertHTMLEqual(
             rendered,
@@ -468,7 +468,7 @@ class UserProfileDisplayNameTests(TestCase):
                 The requesting user.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered content.
         """
         request = RequestFactory().get('/')
@@ -482,6 +482,6 @@ class UserProfileDisplayNameTests(TestCase):
             'user': user,
         }))
 
-        self.assertIsInstance(rendered, SafeText)
+        self.assertIsInstance(rendered, SafeString)
 
         return rendered

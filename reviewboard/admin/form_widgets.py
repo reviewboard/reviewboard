@@ -94,7 +94,7 @@ class RelatedUserWidget(RelatedObjectWidget):
                 The form renderer.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered HTML.
         """
         if value:
@@ -259,7 +259,7 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
                 The form renderer.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered HTML.
         """
         existing_repos: Iterable[Repository]
@@ -433,7 +433,7 @@ class RelatedGroupWidget(RelatedObjectWidget):
                 The form renderer.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered HTML.
         """
         existing_groups: Iterable[Group]

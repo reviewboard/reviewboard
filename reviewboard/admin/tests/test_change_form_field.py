@@ -6,7 +6,7 @@ from django import forms
 from django.contrib.admin.helpers import AdminField, AdminReadonlyField
 from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
-from django.utils.safestring import SafeText
+from django.utils.safestring import SafeString
 
 from reviewboard.admin import admin_site
 from reviewboard.admin.form_widgets import (RelatedGroupWidget,
@@ -181,7 +181,7 @@ class ChangeFormFieldTests(TestCase):
                                                        is_first=True))
         html = field.label_tag()
 
-        self.assertIsInstance(html, SafeText)
+        self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
             html,
             '<label class="rb-c-form-field__label"'
@@ -198,7 +198,7 @@ class ChangeFormFieldTests(TestCase):
                                            model_admin=self.model_admin))
         html = field.label_tag()
 
-        self.assertIsInstance(html, SafeText)
+        self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
             html,
             '<label class="rb-c-form-field__label">Username:</label>')
@@ -213,7 +213,7 @@ class ChangeFormFieldTests(TestCase):
                                    is_first=True))
         html = field.label_tag()
 
-        self.assertIsInstance(html, SafeText)
+        self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
             html,
             '<label class="rb-c-form-field__label" for="id_is_active">'
@@ -228,7 +228,7 @@ class ChangeFormFieldTests(TestCase):
                                                        is_first=True))
         html = field.render()
 
-        self.assertIsInstance(html, SafeText)
+        self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
             html,
             '<input id="id_is_active" name="is_active" type="checkbox"'
@@ -245,7 +245,7 @@ class ChangeFormFieldTests(TestCase):
                                            model_admin=self.model_admin))
         html = field.render()
 
-        self.assertIsInstance(html, SafeText)
+        self.assertIsInstance(html, SafeString)
         self.assertHTMLEqual(
             html,
             '<div class="rb-c-form-field__readonly-value">test-user</div>')

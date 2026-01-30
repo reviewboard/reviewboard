@@ -123,7 +123,7 @@ class GitLabHostingURLWidget(forms.Widget):
                 The form renderer.
 
         Returns:
-            django.util.safestring.SafeText:
+            django.util.safestring.SafeString:
             The rendered widget.
         """
         attrs = self.build_attrs(attrs)

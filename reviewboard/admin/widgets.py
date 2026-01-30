@@ -150,7 +150,7 @@ class BaseAdminWidget(object):
                 The HTTP request from the client.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered widget HTML.
         """
         return render_to_string(

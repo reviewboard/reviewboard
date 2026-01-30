@@ -28,7 +28,7 @@ def js_product_info():
     the cached information.
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         The JSON-serialized product information.
     """
     global _product_info_str

@@ -75,7 +75,7 @@ class HostingAccountWidget(Select):
                 Keyword arguments for the render.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The HTML for the widget.
         """
         html = super(HostingAccountWidget, self).render(*args, **kwargs)

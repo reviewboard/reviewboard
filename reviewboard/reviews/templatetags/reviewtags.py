@@ -137,7 +137,7 @@ def _generate_reply_html(context, user, context_id, review, reply, timestamp,
             Extra template context to include when rendering the page.
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         The HTML for the reply.
     """
     # Note that update() implies push().
@@ -189,7 +189,7 @@ def comment_replies(context, review, comment, context_id):
             categorizing replies.
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         The resulting HTML for the replies.
     """
     siteconfig = SiteConfiguration.objects.get_current()
@@ -242,7 +242,7 @@ def review_body_replies(context, review, body_field, context_id):
             categorizing replies.
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         The resulting HTML for the replies.
 
     Raises:
@@ -554,7 +554,7 @@ def star(context, obj):
              reviewboard.reviews.models.group.Group):
 
     Returns:
-        django.utils.safestring.SafeText:
+        django.utils.safestring.SafeString:
         The rendered HTML for the star.
     """
     return render_star(context.get('user', None), obj)

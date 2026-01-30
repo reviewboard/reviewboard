@@ -38,7 +38,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
-    from django.utils.safestring import SafeText
+    from django.utils.safestring import SafeString
     from typelets.json import JSONDict
 
     from reviewboard.reviews.models import (
@@ -391,7 +391,7 @@ class ReviewUI(Generic[
         self,
         request: HttpRequest,
         inline: bool = True,
-    ) -> SafeText:
+    ) -> SafeString:
         """Render the Review UI to an HTML string.
 
         This renders the Review UI to a string for use in embedding into
@@ -406,7 +406,7 @@ class ReviewUI(Generic[
                 existing page, instead of as a standalone page.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The HTML for the Review UI.
         """
         self.request = request
@@ -618,7 +618,7 @@ class ReviewUI(Generic[
     def get_comment_thumbnail(
         self,
         comment: CommentType,
-    ) -> Optional[SafeText]:
+    ) -> Optional[SafeString]:
         """Return an HTML thumbnail for a comment.
 
         If comment thumbnails are possible for the reviewable object, this
@@ -629,7 +629,7 @@ class ReviewUI(Generic[
                 The comment to return a thumbnail for.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The HTML for a thumbnail for the comment, or ``None`` if one
             can't be generated (using the default thumbnailing for the
             comment type, if one exists).

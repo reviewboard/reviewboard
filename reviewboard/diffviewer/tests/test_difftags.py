@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from django.utils.safestring import SafeText
+from django.utils.safestring import SafeString
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.diffviewer.templatetags.difftags import (highlightregion,
@@ -117,7 +117,7 @@ class ShowExtraWhitespaceTests(TestCase):
         """Testing {{...|showextrawhitespace}} with trailing spaces"""
         html = showextrawhitespace('test   ')
 
-        self.assertIsInstance(html, SafeText)
+        self.assertIsInstance(html, SafeString)
         self.assertEqual(html, 'test<span class="ew">   </span>')
 
     def test_with_trailing_spaces_and_span(self):
@@ -126,14 +126,14 @@ class ShowExtraWhitespaceTests(TestCase):
         """
         html = showextrawhitespace('test   </span>')
 
-        self.assertIsInstance(html, SafeText)
+        self.assertIsInstance(html, SafeString)
         self.assertEqual(html, 'test<span class="ew">   </span></span>')
 
     def test_with_trailing_tab(self):
         """Testing {{...|showextrawhitespace}} with trailing tab"""
         html = showextrawhitespace('test\t')
 
-        self.assertIsInstance(html, SafeText)
+        self.assertIsInstance(html, SafeString)
         self.assertEqual(
             html,
             'test<span class="ew"><span class="tb">\t</span></span>')
@@ -142,7 +142,7 @@ class ShowExtraWhitespaceTests(TestCase):
         """Testing {{...|showextrawhitespace}} with multiple trailing tabs"""
         html = showextrawhitespace('test\t\t')
 
-        self.assertIsInstance(html, SafeText)
+        self.assertIsInstance(html, SafeString)
         self.assertEqual(
             html,
             'test<span class="ew"><span class="tb">\t</span>'
@@ -153,7 +153,7 @@ class ShowExtraWhitespaceTests(TestCase):
         """
         html = showextrawhitespace('test\t</span>')
 
-        self.assertIsInstance(html, SafeText)
+        self.assertIsInstance(html, SafeString)
         self.assertEqual(
             html,
             'test<span class="ew"><span class="tb">\t</span></span></span>')

@@ -26,7 +26,7 @@ class CommentDetailDisplayHook(ExtensionHook, metaclass=ExtensionHookPoint):
                 The comment to render HTML for,
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The resulting HTML for the comment. This can be an empty string.
         """
         raise NotImplementedError
@@ -48,7 +48,7 @@ class CommentDetailDisplayHook(ExtensionHook, metaclass=ExtensionHookPoint):
                 Whether this must return HTML content.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The resulting HTML for the comment. This can be an empty string.
         """
         raise NotImplementedError

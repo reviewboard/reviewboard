@@ -18,7 +18,7 @@ from reviewboard.reviews.models.base_comment import BaseComment
 if TYPE_CHECKING:
     from typing import ClassVar
 
-    from django.utils.safestring import SafeText
+    from django.utils.safestring import SafeString
 
     from reviewboard.diffviewer.models import DiffSet, FileDiff
     from reviewboard.reviews.ui.base import ReviewUI
@@ -113,14 +113,14 @@ class FileAttachmentComment(BaseComment):
         return review_ui
 
     @property
-    def thumbnail(self) -> Optional[SafeText]:
+    def thumbnail(self) -> Optional[SafeString]:
         """Return the thumbnail for this comment, if any, as HTML.
 
         The thumbnail will be generated from the appropriate ReviewUI,
         if there is one for this type of file.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The thumbnail for the file comment.
         """
         review_ui = self.review_ui

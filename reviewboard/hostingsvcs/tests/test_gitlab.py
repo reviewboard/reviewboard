@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from django.utils.safestring import SafeText
+from django.utils.safestring import SafeString
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
@@ -1701,7 +1701,7 @@ class GitLabHostingURLWidgetTests(GitLabTestCase):
                 'data-foo': 'bar',
             })
 
-        self.assertIsInstance(content, SafeText)
+        self.assertIsInstance(content, SafeString)
         self.assertInHTML(
             '<input type="text" id="my-url_custom_input"'
             ' value="http://example.com/" data-foo="bar">',

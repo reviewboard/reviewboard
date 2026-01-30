@@ -9,7 +9,7 @@ from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
 from django.test.client import RequestFactory
 from django.urls import resolve
-from django.utils.safestring import SafeText
+from django.utils.safestring import SafeString
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.builtin_fields import (BugsField,
@@ -1292,7 +1292,7 @@ class FileAttachmentsFieldTests(FieldsTestCase):
             result = field.render_change_entry_html(
                 changedesc.fields_changed[field.field_id]['added'])
 
-        self.assertIsInstance(result, SafeText)
+        self.assertIsInstance(result, SafeString)
 
         self.assertNotIn('"id": %s,' % attachment1.pk, result)
         self.assertIn('"id": %s,' % attachment2.pk, result)
@@ -1304,7 +1304,7 @@ class FileAttachmentsFieldTests(FieldsTestCase):
             result = field.render_change_entry_html(
                 changedesc.fields_changed[field.field_id]['removed'])
 
-        self.assertIsInstance(result, SafeText)
+        self.assertIsInstance(result, SafeString)
 
         self.assertIn('"id": %s,' % attachment1.pk, result)
         self.assertNotIn('"id": %s,' % attachment2.pk, result)

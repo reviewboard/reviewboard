@@ -1176,7 +1176,7 @@ class Bitbucket(BaseHostingService):
                 The repository to configure webhooks for.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The HTML to display with instructions.
         """
         webhook_endpoint_url = build_server_url(local_site_reverse(

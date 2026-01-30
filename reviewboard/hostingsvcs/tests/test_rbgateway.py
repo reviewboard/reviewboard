@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.test.client import RequestFactory
-from django.utils.safestring import SafeText
+from django.utils.safestring import SafeString
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.hostingsvcs.hook_utils import logger
@@ -106,7 +106,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
             request=request,
             repository=repository)
 
-        self.assertIsInstance(content, SafeText)
+        self.assertIsInstance(content, SafeString)
         self.assertIn(
             ('"url": '
              '"http://example.com/repos/1/rbgateway/hooks/close-submitted/"'),

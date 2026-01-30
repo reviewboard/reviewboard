@@ -10,7 +10,7 @@ from __future__ import annotations
 import kgb
 
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.utils.safestring import SafeText
+from django.utils.safestring import SafeString
 
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.testing import TestCase
@@ -42,15 +42,15 @@ class TextMimetypeTests(kgb.SpyAgency, TestCase):
         self.file_attachment = form.create()
 
     def test_get_thumbnail_uncached_is_safe_text(self):
-        """Testing TextMimetype.get_thumbnail string type is SafeText
+        """Testing TextMimetype.get_thumbnail string type is SafeString
         without cached thumbnail
         """
         thumbnail = self.file_attachment.thumbnail
 
-        self.assertIsInstance(thumbnail, SafeText)
+        self.assertIsInstance(thumbnail, SafeString)
 
     def test_get_thumbnail_cached_is_safe_text(self):
-        """Testing TextMimetype.get_thumbnail string type is SafeText with
+        """Testing TextMimetype.get_thumbnail string type is SafeString with
         cached thumbnail
         """
         # Django's in-memory cache won't mangle the string types, so we can't
@@ -62,7 +62,7 @@ class TextMimetypeTests(kgb.SpyAgency, TestCase):
 
         thumbnail = self.file_attachment.thumbnail
 
-        self.assertIsInstance(thumbnail, SafeText)
+        self.assertIsInstance(thumbnail, SafeString)
 
     def test_get_raw_thumbnail_image_url(self) -> None:
         """Testing TextMimetype.test_get_raw_thumbnail_image_url"""
