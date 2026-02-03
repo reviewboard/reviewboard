@@ -455,7 +455,20 @@ class FileDiff(models.Model):
         Version Added:
             4.0
         """
-        return self.extra_data.get('orig_sha256')
+        # Avoid a circular import.
+        from reviewboard.attachments.models import FileAttachment
+
+        if not self.binary:
+            return self.extra_data.get('orig_sha256')
+        else:
+            attachment = FileAttachment.objects.get_for_filediff(
+                self,
+                modified=False)
+
+            if attachment:
+                return attachment.sha256_checksum
+            else:
+                return None
 
     @property
     def patched_sha256(self):
@@ -467,7 +480,18 @@ class FileDiff(models.Model):
         Version Added:
             4.0
         """
-        return self.extra_data.get('patched_sha256')
+        # Avoid a circular import.
+        from reviewboard.attachments.models import FileAttachment
+
+        if not self.binary:
+            return self.extra_data.get('patched_sha256')
+        else:
+            attachment = FileAttachment.objects.get_for_filediff(self)
+
+            if attachment:
+                return attachment.sha256_checksum
+            else:
+                return None
 
     @property
     def encoding(self):
