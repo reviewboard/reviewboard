@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import fnmatch
+import hashlib
 import logging
 import os
 import re
@@ -13,13 +14,14 @@ from difflib import SequenceMatcher
 from typing import (Any, AnyStr, Callable, Iterator, Optional, Sequence,
                     TYPE_CHECKING, TypeVar)
 
-from django.core.files.base import ContentFile
+from django.core.files.base import ContentFile, File
 from django.utils.encoding import force_str
 from django.utils.translation import gettext as _
 from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.contextmanagers import controlled_subprocess
 from housekeeping.functions import deprecate_non_keyword_only_args
+from typelets.runtime import raise_invalid_type
 from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.attachments.mimetypes import guess_mimetype
@@ -2698,3 +2700,44 @@ def get_total_line_counts(files_qs):
                     counts[key] += value
 
     return counts
+
+
+def get_sha256(
+    content: bytes | File,
+) -> str:
+    """Return a SHA256 hash for the provided content.
+
+    Version Added:
+        7.1
+
+    Args:
+        content (bytes or django.core.files.File):
+            The file content or file object to generate the hash for.
+
+    Returns:
+        str:
+        The resulting hash.
+
+    Raises:
+        ValueError:
+            The content is not a File object or bytes.
+    """
+    if isinstance(content, bytes):
+        return force_str(hashlib.sha256(content).hexdigest())
+    elif isinstance(content, File):
+        # Make sure we're reading from the start of the file.
+        content.seek(0)
+
+        hash_obj = hashlib.sha256()
+
+        for chunk in content.chunks():
+            hash_obj.update(chunk)
+
+        # Now reset it in case something else uses it after.
+        content.seek(0)
+
+        return force_str(hash_obj.hexdigest())
+    else:
+        raise_invalid_type(
+            content,
+            'content must be a File object or bytes.')

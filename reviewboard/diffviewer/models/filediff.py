@@ -21,6 +21,7 @@ from reviewboard.scmtools.core import PRE_CREATION
 
 if TYPE_CHECKING:
     from reviewboard.reviews.models import ReviewRequest
+    from reviewboard.scmtools.models import Repository
 
 
 logger = logging.getLogger(__name__)
@@ -729,7 +730,7 @@ class FileDiff(models.Model):
 
         return [by_id[pk] for pk in ids]
 
-    def get_repository(self):
+    def get_repository(self) -> Repository:
         """Return the repository this diff applies to.
 
         Version Added:

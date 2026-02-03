@@ -18,6 +18,7 @@ from reviewboard.attachments.mimetypes import get_uploaded_file_mimetype
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.diffviewer.diffutils import get_sha256
 from reviewboard.reviews.models import ReviewRequestDraft
 
 if TYPE_CHECKING:
@@ -129,6 +130,11 @@ class UploadFileForm(forms.Form):
 
         caption = self.cleaned_data['caption'] or file_obj.name
         extra_data = self.cleaned_data['extra_data']
+
+        if not extra_data:
+            extra_data = {}
+
+        extra_data['sha256_checksum'] = get_sha256(file_obj)
 
         mimetype = get_uploaded_file_mimetype(file_obj)
         filename = get_unique_filename(file_obj.name)

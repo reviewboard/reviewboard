@@ -1161,6 +1161,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             attachment_history=attachment_history,
             **kwargs)
 
+        # This will set the checksum in extra_data, which mirrors our real
+        # world behavior of setting the checksum where ever we create file
+        # attachments.
+        file_attachment.sha256_checksum
+
         if draft:
             if isinstance(draft, ReviewRequestDraft):
                 review_request_draft = draft

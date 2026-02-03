@@ -29,6 +29,7 @@ from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
                                               get_original_file,
                                               get_original_and_patched_files,
                                               get_patched_file,
+                                              get_sha256,
                                               convert_to_unicode,
                                               split_line_endings)
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
@@ -1341,8 +1342,8 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
                 })
 
             filediff.extra_data.update({
-                'orig_sha256': self._get_sha256(old),
-                'patched_sha256': self._get_sha256(new),
+                'orig_sha256': get_sha256(old),
+                'patched_sha256': get_sha256(new),
             })
             filediff.save(update_fields=['extra_data'])
 
@@ -1369,8 +1370,8 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
                     })
 
                 interfilediff.extra_data.update({
-                    'orig_sha256': self._get_sha256(interdiff_orig),
-                    'patched_sha256': self._get_sha256(new),
+                    'orig_sha256': get_sha256(interdiff_orig),
+                    'patched_sha256': get_sha256(new),
                 })
                 interfilediff.save(update_fields=['extra_data'])
         elif self.force_interdiff:
@@ -1495,19 +1496,6 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             The resulting hash.
         """
         return force_str(hashlib.sha1(content).hexdigest())
-
-    def _get_sha256(self, content):
-        """Return a SHA256 hash for the provided content.
-
-        Args:
-            content (bytes):
-                The content to generate the hash for.
-
-        Returns:
-            unicode:
-            The resulting hash.
-        """
-        return force_str(hashlib.sha256(content).hexdigest())
 
 
 def compute_chunk_last_header(lines, numlines, meta, last_header=None):
