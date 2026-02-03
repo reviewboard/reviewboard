@@ -1,5 +1,7 @@
 """Unit tests for review request page entries."""
 
+from __future__ import annotations
+
 from datetime import datetime, timedelta, timezone
 
 from django.contrib.auth.models import AnonymousUser, User
@@ -320,72 +322,96 @@ class BaseReviewRequestPageEntryTests(SpyAgency, TestCase):
 class StatusUpdatesEntryMixinTests(TestCase):
     """Unit tests for StatusUpdatesEntryMixin."""
 
-    def test_add_update_with_done_failure(self):
+    fixtures = ['test_users']
+
+    def setUp(self) -> None:
+        """Set up the unit test."""
+        super().setUp()
+
+        self.review_request = self.create_review_request()
+
+        self.request = RequestFactory().request()
+        self.request.user = User.objects.get(username='doc')
+
+        self.data = ReviewRequestPageData(review_request=self.review_request,
+                                          request=self.request)
+        entry = StatusUpdatesEntryMixin()
+        entry.data = self.data
+        self.entry = entry
+
+    def test_add_update_with_done_failure(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update with DONE_FAILURE"""
-        status_update = StatusUpdate(state=StatusUpdate.DONE_FAILURE)
-        entry = StatusUpdatesEntryMixin()
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.DONE_FAILURE)
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertEqual(entry.status_updates, [status_update])
         self.assertEqual(status_update.header_class,
                          'status-update-state-failure')
 
-    def test_add_update_with_error(self):
+    def test_add_update_with_error(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update with ERROR"""
-        status_update = StatusUpdate(state=StatusUpdate.ERROR)
-        entry = StatusUpdatesEntryMixin()
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.ERROR)
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertEqual(entry.status_updates, [status_update])
         self.assertEqual(status_update.header_class,
                          'status-update-state-failure')
 
-    def test_add_update_with_timeout(self):
+    def test_add_update_with_timeout(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update with TIMEOUT"""
-        status_update = StatusUpdate(state=StatusUpdate.TIMEOUT)
-        entry = StatusUpdatesEntryMixin()
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.TIMEOUT)
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertEqual(entry.status_updates, [status_update])
         self.assertEqual(status_update.header_class,
                          'status-update-state-failure')
 
-    def test_add_update_with_pending(self):
+    def test_add_update_with_pending(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update with PENDING"""
-        status_update = StatusUpdate(state=StatusUpdate.PENDING)
-        entry = StatusUpdatesEntryMixin()
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.PENDING)
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertEqual(entry.status_updates, [status_update])
         self.assertEqual(status_update.header_class,
                          'status-update-state-pending')
 
-    def test_add_update_with_not_yet_run(self):
+    def test_add_update_with_not_yet_run(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update with NOT_YET_RUN"""
-        status_update = StatusUpdate(state=StatusUpdate.NOT_YET_RUN)
-        entry = StatusUpdatesEntryMixin()
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.NOT_YET_RUN)
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertEqual(entry.status_updates, [status_update])
         self.assertEqual(status_update.header_class,
                          'status-update-state-not-yet-run')
 
-    def test_add_update_with_done_success(self):
+    def test_add_update_with_done_success(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update with DONE_SUCCESS"""
-        status_update = StatusUpdate(state=StatusUpdate.DONE_SUCCESS)
-        entry = StatusUpdatesEntryMixin()
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.DONE_SUCCESS)
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertEqual(entry.status_updates, [status_update])
         self.assertEqual(status_update.header_class,
                          'status-update-state-success')
 
-    def test_add_update_html_rendering(self):
+    def test_add_update_html_rendering(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update HTML rendering"""
-        status_update = StatusUpdate(state=StatusUpdate.DONE_SUCCESS,
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.DONE_SUCCESS,
                                      description='My description.',
                                      summary='My summary.')
-        entry = StatusUpdatesEntryMixin()
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertHTMLEqual(
@@ -396,14 +422,15 @@ class StatusUpdatesEntryMixinTests(TestCase):
              ' My description.\n'
              '</div>'))
 
-    def test_add_update_html_rendering_with_url(self):
+    def test_add_update_html_rendering_with_url(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update HTML rendering with URL
         """
-        status_update = StatusUpdate(state=StatusUpdate.DONE_SUCCESS,
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.DONE_SUCCESS,
                                      description='My description.',
                                      summary='My summary.',
                                      url='https://example.com/')
-        entry = StatusUpdatesEntryMixin()
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertHTMLEqual(
@@ -415,16 +442,17 @@ class StatusUpdatesEntryMixinTests(TestCase):
              ' <a href="https://example.com/">https://example.com/</a>'
              '</div>'))
 
-    def test_add_update_html_rendering_with_url_and_text(self):
+    def test_add_update_html_rendering_with_url_and_text(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update HTML rendering with URL
         and URL text
         """
-        status_update = StatusUpdate(state=StatusUpdate.DONE_SUCCESS,
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.DONE_SUCCESS,
                                      description='My description.',
                                      summary='My summary.',
                                      url='https://example.com/',
                                      url_text='My URL')
-        entry = StatusUpdatesEntryMixin()
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertHTMLEqual(
@@ -436,14 +464,15 @@ class StatusUpdatesEntryMixinTests(TestCase):
              ' <a href="https://example.com/">My URL</a>'
              '</div>'))
 
-    def test_add_update_html_rendering_with_timeout(self):
+    def test_add_update_html_rendering_with_timeout(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update HTML rendering with
         timeout
         """
-        status_update = StatusUpdate(state=StatusUpdate.TIMEOUT,
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.TIMEOUT,
                                      description='My description.',
                                      summary='My summary.')
-        entry = StatusUpdatesEntryMixin()
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertHTMLEqual(
@@ -454,19 +483,17 @@ class StatusUpdatesEntryMixinTests(TestCase):
              ' timed out.\n'
              '</div>'))
 
-    @add_fixtures(['test_users'])
-    def test_add_update_html_rendering_with_timeout_can_retry(self):
+    def test_add_update_html_rendering_with_timeout_can_retry(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update HTML rendering with
         timeout and retry
         """
-        review_request = self.create_review_request()
-        status_update = StatusUpdate(state=StatusUpdate.TIMEOUT,
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.TIMEOUT,
                                      description='My description.',
-                                     summary='My summary.',
-                                     review_request=review_request)
+                                     summary='My summary.',)
         status_update.extra_data['can_retry'] = True
         status_update.save()
-        entry = StatusUpdatesEntryMixin()
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertHTMLEqual(
@@ -480,18 +507,41 @@ class StatusUpdatesEntryMixinTests(TestCase):
              '         type="button">Retry</button>'
              '</div>'))
 
-    @add_fixtures(['test_users'])
-    def test_add_update_html_rendering_with_not_yet_run(self):
+    def test_add_update_html_rendering_with_timeout_can_retry_non_mutable(
+        self,
+    ) -> None:
+        """Testing StatusUpdatesEntryMixin.add_update HTML rendering with
+        timeout and retry and a user who does not have mutability permission
+        for the status update
+        """
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.TIMEOUT,
+                                     description='My description.',
+                                     summary='My summary.',)
+        status_update.extra_data['can_retry'] = True
+        status_update.save()
+        entry = self.entry
+        entry.data.request.user = AnonymousUser()
+        entry.add_update(status_update)
+
+        self.assertHTMLEqual(
+            status_update.summary_html,
+            ('<div class="status-update-summary-entry'
+             ' status-update-state-failure">\n'
+             ' <span class="summary">My summary.</span>\n'
+             ' timed out.\n'
+             '</div>'))
+
+    def test_add_update_html_rendering_with_not_yet_run(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_update HTML rendering with not
         yet run
         """
-        review_request = self.create_review_request()
-        status_update = StatusUpdate(state=StatusUpdate.NOT_YET_RUN,
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.NOT_YET_RUN,
                                      description='My description.',
-                                     summary='My summary.',
-                                     review_request=review_request)
+                                     summary='My summary.')
         status_update.save()
-        entry = StatusUpdatesEntryMixin()
+        entry = self.entry
         entry.add_update(status_update)
 
         self.assertHTMLEqual(
@@ -505,8 +555,31 @@ class StatusUpdatesEntryMixinTests(TestCase):
              '         type="button">Run</button>'
              '</div>'))
 
-    @add_fixtures(['test_users'])
-    def test_add_comment(self):
+    def test_add_update_html_rendering_with_not_yet_run_and_non_mutable(
+        self,
+    ) -> None:
+        """Testing StatusUpdatesEntryMixin.add_update HTML rendering with not
+        yet run and a user who does not have mutability permission for the
+        status update
+        """
+        status_update = StatusUpdate(review_request=self.review_request,
+                                     state=StatusUpdate.NOT_YET_RUN,
+                                     description='My description.',
+                                     summary='My summary.')
+        status_update.save()
+        entry = self.entry
+        entry.data.request.user = AnonymousUser()
+        entry.add_update(status_update)
+
+        self.assertHTMLEqual(
+            status_update.summary_html,
+            ('<div class="status-update-summary-entry'
+             ' status-update-state-not-yet-run">\n'
+             ' <span class="summary">My summary.</span>\n'
+             ' not yet run.\n'
+             '</div>'))
+
+    def test_add_comment(self) -> None:
         """Testing StatusUpdatesEntryMixin.add_comment"""
         review_request = self.create_review_request()
         review = self.create_review(review_request)
@@ -520,32 +593,39 @@ class StatusUpdatesEntryMixinTests(TestCase):
             review_request=review_request,
             review=review)
 
-        entry = StatusUpdatesEntryMixin()
+        entry = self.entry
         entry.add_update(status_update)
         entry.add_comment('general_comments', comment)
 
         self.assertEqual(status_update.comments['general_comments'], [comment])
 
-    def test_finalize_with_all_states(self):
+    def test_finalize_with_all_states(self) -> None:
         """Testing StatusUpdatesEntryMixin.finalize with all states"""
-        entry = StatusUpdatesEntryMixin()
+        entry = self.entry
+        review_request = self.review_request
 
-        entry.add_update(StatusUpdate(state=StatusUpdate.DONE_FAILURE))
+        entry.add_update(StatusUpdate(review_request=review_request,
+                                      state=StatusUpdate.DONE_FAILURE))
 
         for i in range(2):
-            entry.add_update(StatusUpdate(state=StatusUpdate.DONE_SUCCESS))
+            entry.add_update(StatusUpdate(review_request=review_request,
+                                          state=StatusUpdate.DONE_SUCCESS))
 
         for i in range(3):
-            entry.add_update(StatusUpdate(state=StatusUpdate.PENDING))
+            entry.add_update(StatusUpdate(review_request=review_request,
+                                          state=StatusUpdate.PENDING))
 
         for i in range(4):
-            entry.add_update(StatusUpdate(state=StatusUpdate.NOT_YET_RUN))
+            entry.add_update(StatusUpdate(review_request=review_request,
+                                          state=StatusUpdate.NOT_YET_RUN))
 
         for i in range(5):
-            entry.add_update(StatusUpdate(state=StatusUpdate.ERROR))
+            entry.add_update(StatusUpdate(review_request=review_request,
+                                          state=StatusUpdate.ERROR))
 
         for i in range(6):
-            entry.add_update(StatusUpdate(state=StatusUpdate.TIMEOUT))
+            entry.add_update(StatusUpdate(review_request=review_request,
+                                          state=StatusUpdate.TIMEOUT))
 
         entry.finalize()
 
@@ -554,75 +634,85 @@ class StatusUpdatesEntryMixinTests(TestCase):
             '1 failed, 2 succeeded, 3 pending, 4 not yet run, '
             '5 failed with error, 6 timed out')
 
-    def test_finalize_with_done_failure(self):
+    def test_finalize_with_done_failure(self) -> None:
         """Testing StatusUpdatesEntryMixin.finalize with DONE_FAILURE"""
-        entry = StatusUpdatesEntryMixin()
-        entry.add_update(StatusUpdate(state=StatusUpdate.DONE_FAILURE))
+        entry = self.entry
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.DONE_FAILURE))
         entry.finalize()
 
         self.assertEqual(entry.state_summary, '1 failed')
         self.assertEqual(entry.state_summary_class,
                          'status-update-state-failure')
 
-    def test_finalize_with_error(self):
+    def test_finalize_with_error(self) -> None:
         """Testing StatusUpdatesEntryMixin.finalize with ERROR"""
-        entry = StatusUpdatesEntryMixin()
-        entry.add_update(StatusUpdate(state=StatusUpdate.ERROR))
+        entry = self.entry
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.ERROR))
         entry.finalize()
 
         self.assertEqual(entry.state_summary, '1 failed with error')
         self.assertEqual(entry.state_summary_class,
                          'status-update-state-failure')
 
-    def test_finalize_with_timeout(self):
+    def test_finalize_with_timeout(self) -> None:
         """Testing StatusUpdatesEntryMixin.finalize with TIMEOUT"""
-        entry = StatusUpdatesEntryMixin()
-        entry.add_update(StatusUpdate(state=StatusUpdate.TIMEOUT))
+        entry = self.entry
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.TIMEOUT))
         entry.finalize()
 
         self.assertEqual(entry.state_summary, '1 timed out')
         self.assertEqual(entry.state_summary_class,
                          'status-update-state-failure')
 
-    def test_finalize_with_pending(self):
+    def test_finalize_with_pending(self) -> None:
         """Testing StatusUpdatesEntryMixin.finalize with PENDING"""
-        entry = StatusUpdatesEntryMixin()
-        entry.add_update(StatusUpdate(state=StatusUpdate.PENDING))
+        entry = self.entry
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.PENDING))
         entry.finalize()
 
         self.assertEqual(entry.state_summary, '1 pending')
         self.assertEqual(entry.state_summary_class,
                          'status-update-state-pending')
 
-    def test_finalize_with_not_yet_run(self):
+    def test_finalize_with_not_yet_run(self) -> None:
         """Testing StatusUpdatesEntryMixin.finalize with NOT_YET_RUN"""
-        entry = StatusUpdatesEntryMixin()
-        entry.add_update(StatusUpdate(state=StatusUpdate.NOT_YET_RUN))
+        entry = self.entry
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.NOT_YET_RUN))
         entry.finalize()
 
         self.assertEqual(entry.state_summary, '1 not yet run')
         self.assertEqual(entry.state_summary_class,
                          'status-update-state-pending')
 
-    def test_finalize_with_done_success(self):
+    def test_finalize_with_done_success(self) -> None:
         """Testing StatusUpdatesEntryMixin.finalize with DONE_SUCCESS"""
-        entry = StatusUpdatesEntryMixin()
-        entry.add_update(StatusUpdate(state=StatusUpdate.DONE_SUCCESS))
+        entry = self.entry
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.DONE_SUCCESS))
         entry.finalize()
 
         self.assertEqual(entry.state_summary, '1 succeeded')
         self.assertEqual(entry.state_summary_class,
                          'status-update-state-success')
 
-    def test_finalize_with_failures_take_precedence(self):
+    def test_finalize_with_failures_take_precedence(self) -> None:
         """Testing StatusUpdatesEntryMixin.finalize with failures taking
         precedence over PENDING and DONE_SUCCESS
         """
-        entry = StatusUpdatesEntryMixin()
-        entry.add_update(StatusUpdate(state=StatusUpdate.DONE_FAILURE))
-        entry.add_update(StatusUpdate(state=StatusUpdate.PENDING))
-        entry.add_update(StatusUpdate(state=StatusUpdate.DONE_SUCCESS))
-        entry.add_update(StatusUpdate(state=StatusUpdate.NOT_YET_RUN))
+        entry = self.entry
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.DONE_FAILURE))
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.PENDING))
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.DONE_SUCCESS))
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.NOT_YET_RUN))
         entry.finalize()
 
         self.assertEqual(entry.state_summary,
@@ -630,21 +720,22 @@ class StatusUpdatesEntryMixinTests(TestCase):
         self.assertEqual(entry.state_summary_class,
                          'status-update-state-failure')
 
-    def test_finalize_with_pending_take_precedence(self):
+    def test_finalize_with_pending_take_precedence(self) -> None:
         """Testing StatusUpdatesEntryMixin.finalize with PENDING taking
         precedence SUCCESS
         """
-        entry = StatusUpdatesEntryMixin()
-        entry.add_update(StatusUpdate(state=StatusUpdate.PENDING))
-        entry.add_update(StatusUpdate(state=StatusUpdate.DONE_SUCCESS))
+        entry = self.entry
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.PENDING))
+        entry.add_update(StatusUpdate(review_request=self.review_request,
+                                      state=StatusUpdate.DONE_SUCCESS))
         entry.finalize()
 
         self.assertEqual(entry.state_summary, '1 succeeded, 1 pending')
         self.assertEqual(entry.state_summary_class,
                          'status-update-state-pending')
 
-    @add_fixtures(['test_users'])
-    def test_populate_status_updates(self):
+    def test_populate_status_updates(self) -> None:
         """Testing StatusUpdatesEntryMixin.populate_status_updates"""
         review_request = self.create_review_request()
         review = self.create_review(review_request, public=True)
@@ -655,8 +746,10 @@ class StatusUpdatesEntryMixinTests(TestCase):
         comment.review_obj = review
 
         status_updates = [
-            StatusUpdate(state=StatusUpdate.PENDING),
-            StatusUpdate(state=StatusUpdate.DONE_FAILURE,
+            StatusUpdate(review_request=self.review_request,
+                         state=StatusUpdate.PENDING),
+            StatusUpdate(review_request=self.review_request,
+                         state=StatusUpdate.DONE_FAILURE,
                          review=review)
         ]
 
@@ -667,7 +760,7 @@ class StatusUpdatesEntryMixinTests(TestCase):
                                      request=request)
         data.review_comments[review.pk] = [comment]
 
-        entry = StatusUpdatesEntryMixin()
+        entry = self.entry
         entry.collapsed = True
         entry.data = data
         entry.populate_status_updates(status_updates)
@@ -697,8 +790,7 @@ class StatusUpdatesEntryMixinTests(TestCase):
                 'general_comments': [comment],
             })
 
-    @add_fixtures(['test_users'])
-    def test_populate_status_updates_with_draft_replies(self):
+    def test_populate_status_updates_with_draft_replies(self) -> None:
         """Testing StatusUpdatesEntryMixin.populate_status_updates with
         draft replies
         """
@@ -714,8 +806,10 @@ class StatusUpdatesEntryMixinTests(TestCase):
         comment.review_obj = review
 
         status_updates = [
-            StatusUpdate(state=StatusUpdate.PENDING),
-            StatusUpdate(state=StatusUpdate.DONE_FAILURE,
+            StatusUpdate(review_request=self.review_request,
+                         state=StatusUpdate.PENDING),
+            StatusUpdate(review_request=self.review_request,
+                         state=StatusUpdate.DONE_FAILURE,
                          review=review)
         ]
 
@@ -727,7 +821,7 @@ class StatusUpdatesEntryMixinTests(TestCase):
         data.review_comments[review.pk] = [comment]
         data.draft_reply_comments[review.pk] = [reply_comment]
 
-        entry = StatusUpdatesEntryMixin()
+        entry = self.entry
         entry.data = data
         entry.populate_status_updates(status_updates)
 

@@ -336,10 +336,14 @@ class StatusUpdate(models.Model):
             bool:
             True if the user can modify this status update.
         """
+        user_pk = user.pk
+        review_request = self.review_request
+
         return (user.is_authenticated and
-                (self.user_id == user.pk or
+                (self.user_id == user_pk or
+                 user_pk == review_request.submitter_id or
                  user.has_perm('reviews.change_statusupdate',
-                               self.review_request.local_site)))
+                               review_request.local_site)))
 
     @property
     def effective_state(self) -> _StateFlag:
