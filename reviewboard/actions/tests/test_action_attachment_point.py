@@ -60,30 +60,6 @@ class _MyMenuItemAction1(TestMenuItemAction):
     ]
 
 
-class _MyHiddenMenuAction(TestMenuAction):
-    action_id = 'hidden-menu-action'
-    label = 'Hidden Menu'
-    placements = [
-        ActionPlacement(attachment='test-point'),
-    ]
-
-    def should_render(
-        self,
-        *,
-        context: Context,
-    ) -> bool:
-        return False
-
-
-class _MyHiddenMenuItemAction(TestMenuItemAction):
-    action_id = 'hidden-menu-item-action'
-    label = 'Hidden Menu Item'
-    placements = [
-        ActionPlacement(attachment='test-point',
-                        parent_id='hidden-menu-action'),
-    ]
-
-
 class _MyRegisteredAction(BaseAction):
     action_id = 'new-action'
     label = 'New Action'
@@ -379,30 +355,3 @@ class ActionAttachmentPointTests(TestCase):
                 model: page.getAction("new-action"),
             }));
             """)
-
-    def test_render_js_with_hidden_parent(self) -> None:
-        """Testing ActionAttachmentPoint.render_js skips children when parent
-        should_render is False
-        """
-        actions_registry = TestActionsRegistry()
-        actions_registry.register(_MyHiddenMenuAction())
-        actions_registry.register(_MyHiddenMenuItemAction())
-
-        attachment_point = _MyActionAttachmentPoint(
-            actions=[
-                _MyHiddenMenuAction.action_id,
-            ],
-            actions_registry=actions_registry,
-        )
-
-        request = self.create_http_request()
-        context = Context({
-            'request': request,
-        })
-
-        # Both the parent and children should be skipped, resulting in an empty
-        # string.
-        self.assertHTMLEqual(
-            attachment_point.render_js(request=request,
-                                       context=context),
-            '')

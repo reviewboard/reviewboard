@@ -916,19 +916,6 @@ class StarAction(BaseAction):
                 super().should_render(context=context))
 
 
-class ArchiveMenuActionRenderer(MenuActionGroupRenderer):
-    """Action renderer for the Archive menu.
-
-    This renders as a menu, but using a custom JavaScript view for managing the
-    menu.
-
-    Version Added:
-        7.1
-    """
-
-    js_view_class = 'RB.ArchiveMenuActionView'
-
-
 class ArchiveMenuAction(BaseMenuAction):
     """A menu for managing the visibility state of the review request.
 
@@ -937,7 +924,7 @@ class ArchiveMenuAction(BaseMenuAction):
     """
 
     action_id = 'archive-menu'
-    default_renderer_cls = ArchiveMenuActionRenderer
+    default_renderer_cls = MenuActionGroupRenderer
     apply_to = all_review_request_url_names
 
     icon_class = 'rb-icon rb-icon-archive-off'

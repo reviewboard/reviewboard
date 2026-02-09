@@ -32,29 +32,24 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
     /**********************
      * Instance variables *
      **********************/
-
-    /** Whether the activation key is pressed. */
     #activationKeyDown = false;
-
-    /** The review request */
     #reviewRequest: ReviewRequest;
 
     /**
-     * Render the view (the first time).
+     * Initialize the view.
      */
-    protected onInitialRender() {
-        super.onInitialRender();
+    initialize() {
+        super.initialize();
 
         const page = RB.PageManager.getPage();
         const reviewRequestEditor = page.getReviewRequestEditorModel();
-        const reviewRequest = reviewRequestEditor.get('reviewRequest');
-        this.#reviewRequest = reviewRequest;
+        this.#reviewRequest = reviewRequestEditor.get('reviewRequest');
 
-        this.listenTo(reviewRequest, 'change:visibility', this.render);
+        this.listenTo(this.#reviewRequest, 'change:visibility', this.render);
     }
 
     /**
-     * Render or re-render the view.
+     * Render the view.
      */
     protected onRender() {
         super.onRender();

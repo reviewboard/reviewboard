@@ -87,7 +87,7 @@ class BaseActionRenderer:
 
         Args:
             action (reviewboard.actions.base.BaseAction):
-                The action being rendered.
+                The action being renderered.
 
             placement (reviewboard.actions.base.ActionPlacement):
                 The placement for the action.
