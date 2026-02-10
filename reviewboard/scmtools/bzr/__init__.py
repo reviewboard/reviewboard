@@ -344,9 +344,9 @@ class BZRClient(SCMClient):
             reviewboard.scmtools.errors.SCMError:
                 There was an error talking to Bazaar.
         """
-        p = self._run_bzr(['info', self.path])
-        errmsg = force_str(p.stderr.read())
-        ret_code = p.wait()
+        with self._run_bzr(['info', self.path]) as p:
+            errmsg = force_str(p.stderr.read())
+            ret_code = p.wait()
 
         self._check_error(errmsg)
 
@@ -375,10 +375,10 @@ class BZRClient(SCMClient):
         """
         path = self._build_repo_path(path)
 
-        p = self._run_bzr(['cat', '-r', revspec, path])
-        contents = p.stdout.read()
-        errmsg = force_str(p.stderr.read())
-        failure = p.wait()
+        with self._run_bzr(['cat', '-r', revspec, path]) as p:
+            contents = p.stdout.read()
+            errmsg = force_str(p.stderr.read())
+            failure = p.wait()
 
         self._check_error(errmsg)
 
@@ -407,9 +407,10 @@ class BZRClient(SCMClient):
             ``True`` if the file exists in the repository. ``False`` if not.
         """
         path = self._build_repo_path(path)
-        p = self._run_bzr(['cat', '-r', revspec, path])
-        errmsg = force_str(p.stderr.read())
-        ret_code = p.wait()
+
+        with self._run_bzr(['cat', '-r', revspec, path]) as p:
+            errmsg = force_str(p.stderr.read())
+            ret_code = p.wait()
 
         self._check_error(errmsg)
 

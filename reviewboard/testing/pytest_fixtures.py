@@ -1,11 +1,9 @@
 import os
+import shutil
 import tempfile
 
 import pytest
 from djblets.cache.serials import generate_media_serial
-
-
-tests_tempdir = None
 
 
 @pytest.fixture(autouse=True)
@@ -92,6 +90,10 @@ def setup_siteconfig():
                             interactive=False)
 
     generate_media_serial()
+
+    yield
+
+    shutil.rmtree(tests_tempdir, ignore_errors=True)
 
 
 @pytest.fixture(scope='session')

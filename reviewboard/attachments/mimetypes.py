@@ -71,23 +71,22 @@ def guess_mimetype(
         # The browser didn't know what this was, so we'll need to do
         # some guess work. If we have 'file' available, use that to
         # figure it out.
-        with subprocess.Popen(
-            ['file', '--mime-type', '-b', '-'],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            stdin=subprocess.PIPE
-        ) as p:
+        with subprocess.Popen(['file', '--mime-type', '-b', '-'],
+                              stdout=subprocess.PIPE,
+                              stderr=subprocess.PIPE,
+                              stdin=subprocess.PIPE) as p:
             assert p.stdin is not None
             assert p.stdout is not None
 
-            # Write the content from the file until file has enough data to
-            # make a determination.
+            # Write the content from the file until file has enough data
+            # to make a determination.
             for chunk in uploaded_file.chunks():
                 try:
                     p.stdin.write(chunk)
                 except IOError:
-                    # `file` closed the stream. It no longer needs any more
-                    # input, so we can stop now. We hopefully have an answer.
+                    # `file` closed the stream. It no longer needs any
+                    # more input, so we can stop now. We hopefully have
+                    # an answer.
                     break
 
             try:
@@ -95,9 +94,9 @@ def guess_mimetype(
             except IOError:
                 # This was closed by `file`.
                 #
-                # Note that we may not get this on all Python environments. A
-                # closed pipe doesn't necessarily fail when calling close()
-                # again.
+                # Note that we may not get this on all Python
+                # environments. A closed pipe doesn't necessarily fail
+                # when calling close() again.
                 pass
 
             ret = p.wait()

@@ -264,7 +264,13 @@ class FileAttachment(models.Model):
         checksum: (str | None) = self.extra_data.get('sha256_checksum')
 
         if checksum is None:
-            checksum = get_sha256(self.file.file)
+            f = self.file
+
+            try:
+                checksum = get_sha256(f.file)
+            finally:
+                f.close()
+
             self.extra_data['sha256_checksum'] = checksum
             self.save(update_fields=['extra_data'])
 
