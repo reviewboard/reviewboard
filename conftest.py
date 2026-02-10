@@ -11,10 +11,11 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
 import os
 import sys
 
-import django
 import djblets
 
 import reviewboard
@@ -26,21 +27,26 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
 pytest_plugins = ['reviewboard.testing.pytest_fixtures']
 
 
-def pytest_report_header(config):
+def pytest_report_header(
+    *args,
+    **kwargs,
+) -> list[str]:
     """Return information for the report header.
 
     This will log the version of Django.
 
     Args:
-        config (object):
-            The pytest configuration object.
+        *args (tuple):
+            Unused positional arguments.
+
+        **kwargs (dict):
+            Unused keyword arguments.
 
     Returns:
-        list of unicode:
+        list of str:
         The report header entries to log.
     """
     return [
-        'Review Board: %s' % reviewboard.get_version_string(),
-        'Djblets: %s' % djblets.get_version_string(),
-        'Django: %s' % django.get_version(),
+        f'Review Board: {reviewboard.get_version_string()}',
+        f'Djblets: {djblets.get_version_string()}',
     ]
