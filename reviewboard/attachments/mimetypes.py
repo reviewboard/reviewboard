@@ -25,6 +25,7 @@ from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
 
 from reviewboard.reviews.markdown_utils import render_markdown
+from reviewboard.webapi.server_info import get_capabilities
 
 if TYPE_CHECKING:
     from django.core.files import File
@@ -34,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 
 _registered_mimetype_handlers = []
+_supported_mimetypes: list[tuple[str, str, dict[str, str]]] = []
 
 
 DEFAULT_MIMETYPE = 'application/octet-stream'
@@ -69,40 +71,42 @@ def guess_mimetype(
         # The browser didn't know what this was, so we'll need to do
         # some guess work. If we have 'file' available, use that to
         # figure it out.
-        p = subprocess.Popen(['file', '--mime-type', '-b', '-'],
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE,
-                             stdin=subprocess.PIPE)
+        with subprocess.Popen(
+            ['file', '--mime-type', '-b', '-'],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE
+        ) as p:
+            assert p.stdin is not None
+            assert p.stdout is not None
 
-        assert p.stdin is not None
-        assert p.stdout is not None
+            # Write the content from the file until file has enough data to
+            # make a determination.
+            for chunk in uploaded_file.chunks():
+                try:
+                    p.stdin.write(chunk)
+                except IOError:
+                    # `file` closed the stream. It no longer needs any more
+                    # input, so we can stop now. We hopefully have an answer.
+                    break
 
-        # Write the content from the file until file has enough data to
-        # make a determination.
-        for chunk in uploaded_file.chunks():
             try:
-                p.stdin.write(chunk)
+                p.stdin.close()
             except IOError:
-                # `file` closed the stream. It no longer needs any more input,
-                # so we can stop now. We hopefully have an answer.
-                break
+                # This was closed by `file`.
+                #
+                # Note that we may not get this on all Python environments. A
+                # closed pipe doesn't necessarily fail when calling close()
+                # again.
+                pass
 
-        try:
-            p.stdin.close()
-        except IOError:
-            # This was closed by `file`.
-            #
-            # Note that we may not get this on all Python environments. A
-            # closed pipe doesn't necessarily fail when calling close() again.
-            pass
+            ret = p.wait()
 
-        ret = p.wait()
+            if ret == 0:
+                result = p.stdout.read().strip().decode('utf-8')
 
-        if ret == 0:
-            result = p.stdout.read().strip().decode('utf-8')
-
-            if result:
-                mimetype = result
+                if result:
+                    mimetype = result
     except Exception as e:
         logger.exception('Unexpected error when determining mimetype '
                          'using `file`: %s',
@@ -278,6 +282,44 @@ def score_match(pattern, test):
         score += VND_SUBTYPE
 
     return score
+
+
+def is_mimetype_supported(
+    mimetype: str,
+) -> bool:
+    """Return whether the mimetype is supported by any review UI.
+
+    Version Added:
+        7.1
+
+    Args:
+        mimetype (str):
+            The mimetype to check.
+
+    Returns:
+        bool:
+        Whether the mimetype is supported by any review UI.
+    """
+    def _is_mimetype_supported(
+            mimetype: str,
+    ) -> bool:
+        global _supported_mimetypes
+        parsed = mimeparse.parse_mime_type(mimetype)
+
+        if not _supported_mimetypes:
+            capabilities = get_capabilities()
+            _supported_mimetypes = [
+                mimeparse.parse_mime_type(m)
+                for m in capabilities['review_uis']['supported_mimetypes']
+            ]
+
+        supported = any(score_match(pattern, parsed)
+                        for pattern in _supported_mimetypes)
+
+        return supported
+
+    return cache_memoize(f'review-uis:supported-mimetypes:{mimetype}',
+                         lambda: _is_mimetype_supported(mimetype))
 
 
 class MimetypeHandler(object):

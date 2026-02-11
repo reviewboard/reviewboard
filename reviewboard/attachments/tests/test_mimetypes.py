@@ -8,14 +8,19 @@ from __future__ import annotations
 
 import os
 import subprocess
+from unittest.mock import patch
 
 import kgb
 from django.conf import settings
+from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
+from djblets.cache.backend import make_cache_key
 from djblets.util.filesystem import is_exe_in_path
 
-from reviewboard.attachments.mimetypes import guess_mimetype
+from reviewboard.attachments.mimetypes import (guess_mimetype,
+                                               is_mimetype_supported)
 from reviewboard.testing import TestCase
+from reviewboard.webapi.server_info import get_capabilities
 
 
 class GuessMimetypeTests(kgb.SpyAgency, TestCase):
@@ -33,7 +38,7 @@ class GuessMimetypeTests(kgb.SpyAgency, TestCase):
         self.assertEqual(file.tell(), 0)
 
     def test_with_image(self) -> None:
-        """Testing guess_mimetype with text file"""
+        """Testing guess_mimetype with image file"""
         filename = os.path.join(settings.STATIC_ROOT,
                                 'rb', 'images', 'logo.png')
 
@@ -90,3 +95,63 @@ class GuessMimetypeTests(kgb.SpyAgency, TestCase):
 
         self.assertEqual(guess_mimetype(file), 'application/octet-stream')
         self.assertEqual(file.tell(), 0)
+
+
+class IsMimetypeSupportedTests(kgb.SpyAgency, TestCase):
+    """Unit tests for is_mimetype_supported.
+
+    Version Added:
+        7.0.4
+    """
+
+    def test_with_text(self) -> None:
+        """Testing is_mimetype_supported with text file"""
+        self.assertTrue(is_mimetype_supported('text/plain'))
+
+    def test_with_image(self) -> None:
+        """Testing is_mimetype_supported with image file"""
+        self.assertTrue(is_mimetype_supported('image/png'))
+
+    def test_with_pdf(self) -> None:
+        """Testing is_mimetype_supported with PDF"""
+        self.assertTrue(is_mimetype_supported('application/pdf'))
+
+    def test_with_unknown(self) -> None:
+        """Testing is_mimetype_supported with unknown file type"""
+        self.assertFalse(is_mimetype_supported('application/octet-stream'))
+
+    def test_cache_supported(self) -> None:
+        """Testing is_mimetype_supported sets the cache for supported files"""
+        self.spy_on(cache.set)
+        key = make_cache_key('review-uis:supported-mimetypes:text/plain')
+
+        self.assertIsNone(cache.get(key))
+        self.assertTrue(is_mimetype_supported('text/plain'))
+        self.assertTrue(cache.get(key))
+        self.assertTrue(is_mimetype_supported('text/plain'))
+        self.assertSpyCallCount(cache.set, 1)
+
+    def test_cache_unsupported(self) -> None:
+        """Testing is_mimetype_supported sets the cache for unsupported files
+        """
+        self.spy_on(cache.set)
+        key = make_cache_key(
+            'review-uis:supported-mimetypes:application/octet-stream')
+
+        self.assertIsNone(cache.get(key))
+        self.assertFalse(is_mimetype_supported('application/octet-stream'))
+        self.assertFalse(cache.get(key))
+        self.assertFalse(is_mimetype_supported('application/octet-stream'))
+        self.assertSpyCallCount(cache.set, 1)
+
+    @patch('reviewboard.attachments.mimetypes._supported_mimetypes', [])
+    def test_cache_supported_list(self) -> None:
+        """Testing is_mimetype_supported uses the in-memory list of supported
+        mimetypes if it has been set
+        """
+        cache.clear()
+        self.spy_on(get_capabilities)
+
+        self.assertTrue(is_mimetype_supported('text/plain'))
+        self.assertTrue(is_mimetype_supported('application/pdf'))
+        self.assertSpyCallCount(get_capabilities, 1)
