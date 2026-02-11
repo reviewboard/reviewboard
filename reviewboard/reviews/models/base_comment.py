@@ -13,6 +13,7 @@ from djblets.db.fields import CounterField, JSONField
 
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.reviews.managers import CommentManager
+from reviewboard.reviews.signals import comment_issue_status_updated
 
 if TYPE_CHECKING:
     from reviewboard.reviews.models import Review
@@ -275,18 +276,32 @@ class BaseComment(models.Model):
                 user.pk == review.user_id or
                 (local_site and local_site.is_mutable_by(user)))
 
-    def save(self, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         """Save the comment.
 
         Args:
+            *args (tuple):
+                Positional arguments to pass to the save method.
+
             **kwargs (dict):
-                Keyword arguments passed to the method (unused).
+                Keyword arguments passed to the save method.
         """
         from reviewboard.reviews.models.review_request import ReviewRequest
 
         self.timestamp = timezone.now()
 
-        super(BaseComment, self).save()
+        if update_fields := kwargs.get('update_fields'):
+            # Add the timestamp to update_fields if it was passed.
+            kwargs['update_fields'] = {
+                *update_fields,
+                'timestamp',
+            }
+
+        super().save(*args, **kwargs)
+
+        issue_status_updated: bool = False
+        prev_issue_status = self._loaded_issue_status
+        issue_status = self.issue_status
 
         try:
             # Update the review timestamp, but only if it's a draft.
@@ -300,13 +315,16 @@ class BaseComment(models.Model):
             else:
                 if (not self.is_reply() and
                     self.issue_opened and
-                    self._loaded_issue_status != self.issue_status):
+                    prev_issue_status != issue_status):
                     # The user has toggled the issue status of this comment,
                     # so update the issue counts for the review request.
+                    assert prev_issue_status is not None
+                    assert issue_status is not None
+
                     old_field = ReviewRequest.ISSUE_COUNTER_FIELDS[
-                        self._loaded_issue_status]
+                        prev_issue_status]
                     new_field = ReviewRequest.ISSUE_COUNTER_FIELDS[
-                        self.issue_status]
+                        issue_status]
 
                     if old_field != new_field:
                         CounterField.increment_many(
@@ -316,8 +334,18 @@ class BaseComment(models.Model):
                                 new_field: 1,
                             })
 
+                    self._loaded_issue_status = issue_status
+                    issue_status_updated = True
+
                 q = ReviewRequest.objects.filter(pk=review.review_request_id)
                 q.update(last_review_activity_timestamp=self.timestamp)
+
+                if issue_status_updated:
+                    comment_issue_status_updated.send(
+                        sender=self.__class__,
+                        comment=self,
+                        prev_status=prev_issue_status,
+                        cur_status=issue_status)
         except ObjectDoesNotExist:
             pass
 

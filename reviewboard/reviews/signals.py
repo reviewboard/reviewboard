@@ -190,7 +190,7 @@ review_published = Signal()
 #:     user (django.contrib.auth.models.User):
 #:         The user publishing the reply.
 #:
-#:     review (reviewboard.reviews.models.Review):
+#:     reply (reviewboard.reviews.models.Review):
 #:         The reply that's being published.
 reply_publishing = Signal()
 
@@ -201,12 +201,29 @@ reply_publishing = Signal()
 #:     user (django.contrib.auth.models.User):
 #:         The user who published the reply.
 #:
-#:     review (reviewboard.reviews.models.Review):
+#:     reply (reviewboard.reviews.models.Review):
 #:         The reply that was published.
 #:
 #:     trivial (bool):
 #:         Whether the reply was considered trivial.
 reply_published = Signal()
+
+
+#: Emitted when a comment's issue status has been updated.
+#:
+#: Version Added:
+#:     7.1:
+#:
+#: Args:
+#:     comment (reviewboard.reviews.models.BaseComment):
+#:         The comment that had its issue status updated.
+#:
+#:     prev_status (str):
+#:         The previous value for the issue status.
+#:
+#:     cur_status (str):
+#:         The current value for the issue status.
+comment_issue_status_updated = Signal()
 
 
 #: Emitted when a StatusUpdate should run or re-run.
