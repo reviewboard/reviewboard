@@ -761,11 +761,19 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         modified_attachment: (FileAttachment | None) = None
 
         if force_interdiff:
-            assert interfilediff is not None
-
-            orig_attachment = self._get_diff_file_attachment(filediff=filediff)
-            modified_attachment = self._get_diff_file_attachment(
-                filediff=interfilediff)
+            if interfilediff:
+                orig_attachment = self._get_diff_file_attachment(
+                    filediff=filediff)
+                modified_attachment = self._get_diff_file_attachment(
+                    filediff=interfilediff)
+            else:
+                # We're forcing an interdiff but have no interfilediff, which
+                # means this is a reverted file.
+                orig_attachment = self._get_diff_file_attachment(
+                    filediff=filediff)
+                modified_attachment = self._get_diff_file_attachment(
+                    filediff=filediff,
+                    use_modified=False)
         else:
             modified_attachment = self._get_diff_file_attachment(
                 filediff=filediff)
