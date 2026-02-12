@@ -19,6 +19,7 @@ from django.contrib.sessions.middleware import SessionMiddleware
 from django.core.cache import cache
 from django.core.files import File
 from django.core.files.base import ContentFile
+from django.db import DEFAULT_DB_ALIAS
 from django.db.models import Q
 from django.http import HttpRequest, HttpResponse
 from django.test.client import RequestFactory
@@ -118,6 +119,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     the cache is not cleared across tests, leading to inconsistent results
     and useless testing.
     """
+
     local_site_name = 'local-site-1'
     local_site_id = 1
 
@@ -186,20 +188,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     )
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """Set up the test class."""
-        orig_fixtures = cls.fixtures
-
-        if orig_fixtures and 'test_scmtools' in orig_fixtures:
-            # Avoid a warning due to the empty fixture. We want to remove it
-            # from the list in the parent setUpClass(), but keep it for the
-            # later call to _fixture_setup().
-            cls.fixtures = list(orig_fixtures)
-            cls.fixtures.remove('test_scmtools')
-
         super().setUpClass()
-
-        cls.fixtures = orig_fixtures
 
         # Add any test SCMTools to the registry
         try:
@@ -213,7 +204,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             pass
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         """Tear down the test class."""
         super().tearDownClass()
 
@@ -224,8 +215,40 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         except ItemLookupError:
             pass
 
-    def setUp(self):
-        super(TestCase, self).setUp()
+    @classmethod
+    def load_fixtures(
+        cls,
+        fixtures: Sequence[str],
+        db: str = DEFAULT_DB_ALIAS,
+    ) -> None:
+        """Load data from fixtures.
+
+        If the legacy ``test_scmtools`` fixture is used, the SCMTools registry
+        will re-synchronize with the database, adding any missing tools.
+
+        Args:
+            fixtures (list of str):
+                A list of the fixtures to load.
+
+            db (str, optional):
+                The name of the database to use.
+
+        Version Changed:
+            7.1:
+            Changed to be a classmethod to match changes in Djblets 5.3.
+        """
+        new_fixtures = list(fixtures)
+
+        if fixtures and 'test_scmtools' in fixtures:
+            new_fixtures.remove('test_scmtools')
+            scmtools_registry.populate_db()
+
+        if new_fixtures:
+            super().load_fixtures(new_fixtures, db)
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
 
         initialize(load_extensions=False)
 
@@ -233,28 +256,6 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         # Clear the cache so that previous tests don't impact this one.
         cache.clear()
-
-    def load_fixtures(self, fixtures, **kwargs):
-        """Load data from fixtures.
-
-        If the legacy ``test_scmtools`` fixture is used, the SCMTools
-        registry will re-synchronize with the database, adding any missing
-        tools.
-
-        Args:
-            fixtures (list of str):
-                The list of fixtures to load.
-
-            **kwargs (dict):
-                Additional keyword arguments to pass to the parent method.
-        """
-        if fixtures and 'test_scmtools' in fixtures:
-            fixtures = list(fixtures)
-            fixtures.remove('test_scmtools')
-
-            scmtools_registry.populate_db()
-
-        super().load_fixtures(fixtures, **kwargs)
 
     def shortDescription(self):
         """Returns the description of the current test.
@@ -1184,6 +1185,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         file_attachment = self.create_file_attachment_base(
             attachment_history=attachment_history,
             **kwargs)
+
+        # This will set the checksum in extra_data, which mirrors our real
+        # world behavior of setting the checksum where ever we create file
+        # attachments.
+        file_attachment.sha256_checksum
 
         if draft:
             if isinstance(draft, ReviewRequestDraft):

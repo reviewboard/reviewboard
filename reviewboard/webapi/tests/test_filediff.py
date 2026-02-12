@@ -38,6 +38,8 @@ def _compare_item(self, item_rsp, filediff):
     self.assertEqual(item_rsp['source_revision'], filediff.source_revision)
     self.assertEqual(item_rsp['dest_detail'], filediff.dest_detail)
     self.assertEqual(item_rsp['status'], filediff.status_string)
+    self.assertEqual(item_rsp['orig_sha256'], filediff.orig_sha256)
+    self.assertEqual(item_rsp['patched_sha256'], filediff.patched_sha256)
 
 
 class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase,
@@ -376,7 +378,33 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
                 filediff_list_mimetype)
 
     @webapi_test_template
-    def test_get_with_diff_data(self) -> None:
+    def test_get_with_shas(self):
+        """Testing the GET <URL> API with patched_sha256 and orig_sha256 set"""
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(
+            repository=repository,
+            publish=True)
+
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(
+            diffset,
+            source_file='newfile.py',
+            source_revision=PRE_CREATION,
+            dest_file='newfile.py',
+            dest_detail='20e43bb7c2d9f3a31768404ac71121804d806f7c',
+            extra_data={
+                'orig_sha256': 'orig_sha_dummy',
+                'patched_sha256': 'patched_sha_dummy',
+            })
+
+        rsp = self.api_get(
+            get_filediff_item_url(filediff, review_request),
+            expected_mimetype=filediff_item_mimetype)
+
+        self.compare_item(rsp['file'], filediff)
+
+    @webapi_test_template
+    def test_get_with_diff_data(self):
         """Testing the GET <URL> API with diff data result"""
         repository = self.create_repository(tool_name='Git')
         review_request = self.create_review_request(

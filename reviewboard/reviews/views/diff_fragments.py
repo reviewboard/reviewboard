@@ -30,7 +30,8 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.diffutils import (get_file_chunks_in_range,
                                               get_last_header_before_line,
-                                              get_last_line_number_in_diff)
+                                              get_last_line_number_in_diff,
+                                              get_sha256)
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.diffviewer.views import (DiffFragmentView,
@@ -760,11 +761,19 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         modified_attachment: (FileAttachment | None) = None
 
         if force_interdiff:
-            assert interfilediff is not None
-
-            orig_attachment = self._get_diff_file_attachment(filediff=filediff)
-            modified_attachment = self._get_diff_file_attachment(
-                filediff=interfilediff)
+            if interfilediff:
+                orig_attachment = self._get_diff_file_attachment(
+                    filediff=filediff)
+                modified_attachment = self._get_diff_file_attachment(
+                    filediff=interfilediff)
+            else:
+                # We're forcing an interdiff but have no interfilediff, which
+                # means this is a reverted file.
+                orig_attachment = self._get_diff_file_attachment(
+                    filediff=filediff)
+                modified_attachment = self._get_diff_file_attachment(
+                    filediff=filediff,
+                    use_modified=False)
         else:
             modified_attachment = self._get_diff_file_attachment(
                 filediff=filediff)
@@ -947,7 +956,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         *,
         request: HttpRequest,
         filediff: FileDiff,
-    ) -> Optional[FileAttachment]:
+    ) -> FileAttachment | None:
         """Create an attachment for the original version of a binary file.
 
         New versions of binary files in diffs are expected to be uploaded by
@@ -966,7 +975,8 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
 
         Returns:
             reviewboard.attachments.models.FileAttachment:
-            The newly-created file attachment.
+            The newly-created file attachment, or ``None`` if the creation
+            failed.
         """
         extra_data = filediff.extra_data or {}
 
@@ -990,9 +1000,13 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
                 path=filediff.source_file,
                 revision=filediff.source_revision,
                 context=context)
+            attachment_extra_data = {
+                'sha256_checksum': get_sha256(file_contents),
+            }
 
             with ContentFile(file_contents) as file_obj:
                 attachment = FileAttachment.objects.create_from_filediff(
+                    extra_data=attachment_extra_data,
                     filediff=filediff,
                     from_modified=False,
                     mimetype=guess_mimetype(file_obj))
@@ -1014,3 +1028,5 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
                 filediff.source_file,
                 filediff.source_revision,
                 e)
+
+            return None

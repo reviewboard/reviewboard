@@ -48,7 +48,12 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
             '__logo.png'))
         self.assertEqual(file_attachment.mimetype, 'image/png')
-        self.assertEqual(file_attachment.extra_data, {})
+        self.assertEqual(
+            file_attachment.extra_data,
+            {
+                'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
+                                    '2225de7c47550dd1cc49085077e49'),
+            })
 
     @add_fixtures(['test_users', 'test_scmtools'])
     def test_upload_file_with_history(self):
@@ -185,6 +190,8 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         file_attachment.refresh_from_db()
 
         self.assertEqual(file_attachment.extra_data, {
+            'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
+                                '2225de7c47550dd1cc49085077e49'),
             'test_bool': True,
             'test_date': '2023-01-26T05:30:03.123',
             'test_int': 1,
@@ -230,6 +237,8 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         file_attachment.refresh_from_db()
 
         self.assertEqual(file_attachment.extra_data, {
+            'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
+                                '2225de7c47550dd1cc49085077e49'),
             'test_bool': True,
             'test_int': 1,
             'test_list': [1, 2, 3],
@@ -259,7 +268,12 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
 
         file_attachment = form.create()
         file_attachment.refresh_from_db()
-        self.assertEqual(file_attachment.extra_data, {})
+        self.assertEqual(
+            file_attachment.extra_data,
+            {
+                'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
+                                    '2225de7c47550dd1cc49085077e49'),
+            })
 
         form = UploadFileForm(
             review_request,
@@ -271,7 +285,12 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
 
         file_attachment = form.create()
         file_attachment.refresh_from_db()
-        self.assertEqual(file_attachment.extra_data, {})
+        self.assertEqual(
+            file_attachment.extra_data,
+            {
+                'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
+                                    '2225de7c47550dd1cc49085077e49'),
+            })
 
         form = UploadFileForm(
             review_request,
@@ -283,7 +302,12 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
 
         file_attachment = form.create()
         file_attachment.refresh_from_db()
-        self.assertEqual(file_attachment.extra_data, {})
+        self.assertEqual(
+            file_attachment.extra_data,
+            {
+                'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
+                                    '2225de7c47550dd1cc49085077e49'),
+            })
 
         form = UploadFileForm(
             review_request,
@@ -301,6 +325,8 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         file_attachment = form.create()
         file_attachment.refresh_from_db()
         self.assertEqual(file_attachment.extra_data, {
+            'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
+                                '2225de7c47550dd1cc49085077e49'),
             'test_list': [],
             'test_nested_dict': {},
             'test_none': None,

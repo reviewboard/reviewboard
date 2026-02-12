@@ -112,6 +112,20 @@ class FileDiffResource(WebAPIResource):
                            "a binary file.",
             'added_in': '2.0',
         },
+        'orig_sha256': {
+            'type': StringFieldType,
+            'description': 'The SHA256 hash of the original file. This may '
+                           'be ``None``, in which case it will be populated '
+                           'when the diff is next viewed.',
+            'added_in': '7.1',
+        },
+        'patched_sha256': {
+            'type': StringFieldType,
+            'description': 'The SHA256 hash of the patched file. This may '
+                           'be ``None``, in which case it will be populated '
+                           'when the diff is next viewed.',
+            'added_in': '7.1',
+        },
         'status': {
             'type': StringFieldType,
             'description': 'The status of the file. This is one of copied, '
@@ -146,6 +160,50 @@ class FileDiffResource(WebAPIResource):
 
     def serialize_dest_attachment_field(self, filediff, **kwargs):
         return FileAttachment.objects.get_for_filediff(filediff, modified=True)
+
+    def serialize_orig_sha256_field(
+        self,
+        filediff: FileDiff,
+        **kwargs,
+    ) -> str | None:
+        """Serialize the ``orig_sha256`` field.
+
+        Args:
+            filediff (reviewboard.diffviewer.models.FileDiff):
+                The filediff.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            str:
+            The serialized content for the
+            :py:attr:`~reviewboard.diffviewer.models.FileDiff.orig_sha256`
+            field or ``None`` if not yet set.
+        """
+        return filediff.orig_sha256
+
+    def serialize_patched_sha256_field(
+        self,
+        filediff: FileDiff,
+        **kwargs,
+    ) -> str | None:
+        """Serialize the ``patched_sha256`` field.
+
+        Args:
+            filediff (reviewboard.diffviewer.models.FileDiff):
+                The filediff.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            str:
+            The serialized content for the
+            :py:attr:`~reviewboard.diffviewer.models.FileDiff.patched_sha256`
+            field or ``None`` if not yet set.
+        """
+        return filediff.patched_sha256
 
     def serialize_status_field(self, filediff, **kwargs):
         """Serialize the status field.

@@ -172,6 +172,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         self.assertEqual(item_rsp['id'], filediff.pk)
         self.assertEqual(item_rsp['source_file'], filediff.source_file)
         self.assertEqual(item_rsp['extra_data'], filediff.extra_data)
+        self.assertEqual(item_rsp['orig_sha256'], filediff.orig_sha256)
+        self.assertEqual(item_rsp['patched_sha256'], filediff.patched_sha256)
 
     #
     # HTTP GET tests

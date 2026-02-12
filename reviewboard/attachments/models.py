@@ -13,12 +13,14 @@ from django.db import models
 from django.db.models import Max
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField, RelationCounterField
+from djblets.util.decorators import cached_property
 from typing_extensions import TypeAlias
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.managers import FileAttachmentManager
 from reviewboard.attachments.mimetypes import MimetypeHandler
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.diffviewer.diffutils import get_sha256
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
@@ -251,6 +253,28 @@ class FileAttachment(models.Model):
         """Return the number of revisions of this attachment."""
         return FileAttachment.objects.filter(
             attachment_history=self.attachment_history_id).count() - 1
+
+    @cached_property
+    def sha256_checksum(self) -> str:
+        """The SHA256 hash of the file.
+
+        Version Added:
+            7.1
+        """
+        checksum: (str | None) = self.extra_data.get('sha256_checksum')
+
+        if checksum is None:
+            f = self.file
+
+            try:
+                checksum = get_sha256(f.file)
+            finally:
+                f.close()
+
+            self.extra_data['sha256_checksum'] = checksum
+            self.save(update_fields=['extra_data'])
+
+        return checksum
 
     def __str__(self):
         """Return a string representation of this file for the admin list."""

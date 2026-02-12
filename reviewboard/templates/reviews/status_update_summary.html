@@ -1,7 +1,7 @@
 <div class="status-update-summary-entry {{header_class}}">
  <span class="summary">{{summary}}</span>
  {{description}}
- {% if can_run %}
+ {% if can_run and is_mutable_by_user %}
  <button type="button"
          class="ink-c-button status-update-request-run"
          data-status-update-id="{{status_update_id}}">

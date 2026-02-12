@@ -1,12 +1,20 @@
 """Mixins for adding extra_data unit tests for API resources."""
 
+from __future__ import annotations
+
 import json
+from typing import TYPE_CHECKING
 
 from djblets.features.testing import override_feature_checks
 from djblets.webapi.errors import INVALID_FORM_DATA
 from djblets.webapi.testing.decorators import webapi_test_template
 
 from reviewboard.webapi.base import ExtraDataAccessLevel
+
+if TYPE_CHECKING:
+    from typing import Any, ClassVar, Mapping
+
+    from typelets.json import JSONValue
 
 
 class ExtraDataListMixin(object):
@@ -165,6 +173,17 @@ class ExtraDataListMixin(object):
 class ExtraDataItemMixin(object):
     """Mixin for adding extra_data tests for item resources."""
 
+    #: Extra data that exists on the item resource by default.
+    #:
+    #: Subclasses should set this to a dict that contains any extra
+    #: data that is already expected to be set on the item. The data
+    #: here will be checked for in the item's extra data upon successful
+    #: PUT requests.
+    #:
+    #: Version Added:
+    #:     7.1
+    default_extra_data: ClassVar[Mapping[str, JSONValue] | None] = None
+
     @webapi_test_template
     def test_put_with_extra_data_in_simple_form(self):
         """Testing the PUT <URL> API with extra_data.key=value"""
@@ -198,6 +217,7 @@ class ExtraDataItemMixin(object):
         self.assertNotIn('ignored', obj.extra_data)
         self.assertEqual(obj.extra_data['foo'], extra_fields['extra_data.foo'])
         self.assertEqual(obj.extra_data['bar'], extra_fields['extra_data.bar'])
+        self._check_default_extra_data(obj)
 
     @webapi_test_template
     def test_put_with_private_extra_data_in_simple_form(self):
@@ -272,6 +292,7 @@ class ExtraDataItemMixin(object):
             },
         })
         self.assertEqual(obj.extra_data['test'], [1, 2, 3])
+        self._check_default_extra_data(obj)
 
     @webapi_test_template
     def test_put_with_extra_data_json_with_private_keys(self):
@@ -307,6 +328,7 @@ class ExtraDataItemMixin(object):
         self.assertEqual(obj.extra_data['foo'], {
             'baz': 456,
         })
+        self._check_default_extra_data(obj)
 
     @webapi_test_template
     def test_put_with_extra_data_json_with_access_levels(self):
@@ -320,6 +342,7 @@ class ExtraDataItemMixin(object):
                 return ExtraDataAccessLevel.ACCESS_STATE_PUBLIC
 
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
+        default_extra_data = self.default_extra_data or {}
 
         if self.basic_put_use_admin:
             self._login_user(admin=True)
@@ -359,6 +382,7 @@ class ExtraDataItemMixin(object):
             'parent': {},
             'public-readonly': 'orig',
             'test': 3,
+            **default_extra_data,
         })
 
     @webapi_test_template
@@ -403,6 +427,10 @@ class ExtraDataItemMixin(object):
             })
 
         obj = self.resource.model.objects.get(pk=obj.pk)
+
+        # We don't expect the default extra data here, because it was
+        # overridden above and since the PUT failed nothing could have
+        # changed it.
         self.assertEqual(obj.extra_data, {
             'a': 1,
             'b': 2,
@@ -412,6 +440,7 @@ class ExtraDataItemMixin(object):
     def test_put_with_extra_data_json_patch(self):
         """Testing the PUT <URL> API with extra_data:json-patch"""
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
+        default_extra_data = self.default_extra_data or {}
 
         if self.basic_put_use_admin:
             self._login_user(admin=True)
@@ -460,6 +489,7 @@ class ExtraDataItemMixin(object):
                 'd': 3,
             },
             'e': 2,
+            **default_extra_data,
         })
 
     @webapi_test_template
@@ -511,6 +541,10 @@ class ExtraDataItemMixin(object):
             })
 
         obj = self.resource.model.objects.get(pk=obj.pk)
+
+        # We don't expect the default extra data here, because it was
+        # overridden above and since the PUT failed nothing could have
+        # changed it.
         self.assertEqual(obj.extra_data, {
             'a': 1,
             'b': {
@@ -580,6 +614,10 @@ class ExtraDataItemMixin(object):
             })
 
         obj = self.resource.model.objects.get(pk=obj.pk)
+
+        # We don't expect the default extra data here, because it was
+        # overridden above and since the PUT failed nothing could have
+        # changed it.
         self.assertEqual(obj.extra_data, {
             'a': 1,
         })
@@ -651,6 +689,10 @@ class ExtraDataItemMixin(object):
             })
 
         obj = self.resource.model.objects.get(pk=obj.pk)
+
+        # We don't expect the default extra data here, because it was
+        # overridden above and since the PUT failed nothing could have
+        # changed it.
         self.assertEqual(obj.extra_data, {
             'a': 1,
         })
@@ -705,6 +747,10 @@ class ExtraDataItemMixin(object):
             })
 
         obj = self.resource.model.objects.get(pk=obj.pk)
+
+        # We don't expect the default extra data here, because it was
+        # overridden above and since the PUT failed nothing could have
+        # changed it.
         self.assertEqual(obj.extra_data, {
             'a': 1,
             'b': 2,
@@ -744,3 +790,28 @@ class ExtraDataItemMixin(object):
                          item_rsp['extra_data']['public_key'])
         self.assertIn('another_public_key',
                       item_rsp['extra_data']['public_key'])
+
+    def _check_default_extra_data(
+        self,
+        obj: Any,
+    ) -> None:
+        """Check that the default extra data on the object is correct.
+
+        Version Added:
+            7.1
+
+        Args:
+            obj (object):
+                The object to check for.
+
+        Raises:
+            AssertionError:
+                One of the checks failed.
+        """
+        obj_extra_data = obj.extra_data
+
+        if (default_extra_data := self.default_extra_data):
+            for key in default_extra_data:
+                self.assertIn(key, obj_extra_data)
+                self.assertEqual(default_extra_data[key],
+                                 obj_extra_data[key])

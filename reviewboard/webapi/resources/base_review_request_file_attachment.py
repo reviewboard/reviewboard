@@ -62,6 +62,11 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             'description': 'The revision of the file attachment.',
             'added_in': '2.5',
         },
+        'sha256_checksum': {
+            'type': StringFieldType,
+            'description': 'The SHA256 hash of the file.',
+            'added_in': '7.1',
+        },
         'url': {
             'type': StringFieldType,
             'description': "The URL of the file, for downloading purposes. "
@@ -143,6 +148,26 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
             attachment.
         """
         return obj.is_review_ui_accessible_by(user=kwargs.get('request').user)
+
+    def serialize_sha256_checksum_field(
+        self,
+        obj: FileAttachment,
+        **kwargs,
+    ) -> str:
+        """Serialize the ``sha256_checksum`` field.
+
+        Args:
+            obj (reviewboard.attachments.models.FileAttachment):
+                The file attachment.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            str:
+            The serialized content for the sha256_checksum field.
+        """
+        return obj.sha256_checksum
 
     def serialize_url_field(self, obj, **kwargs):
         return obj.get_absolute_url()

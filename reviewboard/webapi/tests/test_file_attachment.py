@@ -59,6 +59,8 @@ class ResourceListTests(ReviewRequestChildListMixin,
         self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
         self.assertEqual(item_rsp['filename'], attachment.filename)
         self.assertEqual(item_rsp['revision'], attachment.attachment_revision)
+        self.assertEqual(item_rsp['sha256_checksum'],
+                         attachment.sha256_checksum)
 
     #
     # HTTP GET tests
@@ -239,6 +241,11 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
     sample_api_url = 'review-requests/<id>/file-attachments/<id>/'
     resource = resources.file_attachment
 
+    default_extra_data = {
+        'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
+                            '2225de7c47550dd1cc49085077e49')
+    }
+
     def setup_review_request_child_test(self, review_request):
         file_attachment = self.create_file_attachment(review_request)
 
@@ -335,6 +342,143 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         self.assertIn(file_attachment, draft.file_attachments.all())
         self.assertIn(file_attachment, review_request.file_attachments.all())
         self.compare_item(item_rsp, file_attachment)
+
+    def test_put_with_no_sha256_checksum(self) -> None:
+        """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/
+        for an attachment that doesn't have its sha256_checksum set already
+        """
+        user = self.user
+        assert user is not None
+
+        review_request = self.create_review_request(submitter=user)
+        file_attachment = self.create_file_attachment(review_request)
+        review_request_draft = self.create_review_request_draft(review_request)
+
+        file_attachment.extra_data.pop('sha256_checksum')
+        file_attachment.save(update_fields=('extra_data',))
+
+        equeries: ExpectedQueries = [
+            {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(file_attachments__id=file_attachment.pk),
+            },
+        ]
+        equeries += get_webapi_request_start_equeries(user=user)
+        equeries += [
+            {
+                'model': ReviewRequest,
+                'select_related': {'submitter', 'repository'},
+                'where': (Q(local_site=None) &
+                          Q(pk=str(review_request.pk))),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'select_related': {'review_request'},
+                'where': Q(review_request=review_request),
+            },
+            {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments':
+                        'LEFT OUTER JOIN',
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'LEFT OUTER JOIN',
+                },
+                'model': FileAttachment,
+                'num_joins': 2,
+                'tables': {
+                    'attachments_fileattachment',
+                    'reviews_reviewrequest_file_attachments',
+                    'reviews_reviewrequestdraft_file_attachments',
+                },
+                'where': (
+                    Q(Q(Q(review_request=review_request) |
+                        Q(drafts=review_request_draft)) &
+                      Q(added_in_filediff__isnull=True) &
+                      Q(repository__isnull=True) &
+                      Q(user__isnull=True)) &
+                    Q(pk=str(review_request.pk))
+                ),
+            },
+            {
+                'extra': {
+                    '_prefetch_related_val_fileattachment_id': (
+                        '"reviews_reviewrequest_file_attachments".'
+                        '"fileattachment_id"',
+                        [],
+                    ),
+                },
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_file_attachments',
+                },
+                'where': Q(file_attachments__in=[file_attachment]),
+            },
+            {
+                'extra': {
+                    '_prefetch_related_val_fileattachment_id': (
+                        '"reviews_reviewrequestdraft_file_attachments".'
+                        '"fileattachment_id"',
+                        [],
+                    ),
+                },
+                'join_types': {
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'INNER JOIN',
+                },
+                'model': ReviewRequestDraft,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequestdraft',
+                    'reviews_reviewrequestdraft_file_attachments',
+                },
+                'where': Q(file_attachments__in=[file_attachment]),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'where': Q(review_request=review_request),
+            },
+            {
+                'model': FileAttachment,
+                'type': 'UPDATE',
+                'where': Q(pk=file_attachment.pk),
+            },
+            {
+                'model': ReviewRequestDraft,
+                'type': 'UPDATE',
+                'where': Q(pk=review_request_draft.pk)
+            },
+
+            # This extra query is for setting sha256_checksum in extra_data,
+            # which happens when we serialize the file attachment.
+            {
+                'model': FileAttachment,
+                'type': 'UPDATE',
+                'where': Q(pk=file_attachment.pk),
+            },
+        ]
+
+        with assert_queries(equeries):
+            rsp = self.api_put(
+                get_file_attachment_item_url(file_attachment),
+                {
+                    'caption': 'Updated caption',
+                },
+                expected_mimetype=file_attachment_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
 
     def test_put_with_caption(self) -> None:
         """Testing the PUT review-requests/<id>/draft/file-attachments/<id>/

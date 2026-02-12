@@ -667,12 +667,14 @@ class CVSClient(object):
         self.tempdir = tempfile.mkdtemp()
         os.chdir(self.tempdir)
 
-        p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'checkout', '-kk',
-                           '-r', str(revision), '-p', filename],
-                          self.local_site_name)
-        contents = p.stdout.read()
-        errmsg = force_str(p.stderr.read())
-        failure = p.wait()
+        with SCMTool.popen(
+            ['cvs', '-f', '-d', self.cvsroot, 'checkout', '-kk',
+             '-r', str(revision), '-p', filename],
+            self.local_site_name,
+        ) as p:
+            contents = p.stdout.read()
+            errmsg = force_str(p.stderr.read())
+            failure = p.wait()
 
         # Unfortunately, CVS is not consistent about exiting non-zero on
         # errors.  If the file is not found at all, then CVS will print an
@@ -715,11 +717,14 @@ class CVSClient(object):
         # CVSROOT is invalid, which is perfect for us. This used to use
         # 'cvs rls' which is maybe slightly more correct, but rls is only
         # available in CVS 1.12+
-        p = SCMTool.popen(['cvs', '-f', '-d', self.cvsroot, 'version'],
-                          self.local_site_name)
-        errmsg = str(p.stderr.read())
+        with SCMTool.popen(
+            ['cvs', '-f', '-d', self.cvsroot, 'version'],
+            self.local_site_name,
+        ) as p:
+            errmsg = str(p.stderr.read())
+            ret_code = p.wait()
 
-        if p.wait() != 0:
+        if ret_code != 0:
             logger.error('CVS repository validation failed for '
                          'CVSROOT %s: %s',
                          self.cvsroot, errmsg)

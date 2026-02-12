@@ -34,6 +34,7 @@ There are several integrations which are bundled with Review Board:
 * :ref:`Asana <integrations-asana>`
 * :ref:`CircleCI <integrations-circle-ci>`
 * :ref:`Discord <integrations-discord>`
+* :ref:`GitLab CI/CD <integrations-gitlab-ci>`
 * :ref:`I Done This <integrations-idonethis>`
 * :ref:`Jenkins CI <integrations-jenkins-ci>`
 * :ref:`Matrix <integrations-matrix>`
@@ -53,6 +54,7 @@ Additional integrations may be provided by extensions.
    asana
    circle-ci
    discord
+   gitlab-ci
    idonethis
    jenkins-ci
    matrix

@@ -1647,6 +1647,8 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
                 'can_run': update.can_run,
                 'description': description,
                 'header_class': update.header_class,
+                'is_mutable_by_user':
+                    update.is_mutable_by(self.data.request.user),
                 'status_update_id': update.pk,
                 'summary': update.summary,
                 'url': update.url,
