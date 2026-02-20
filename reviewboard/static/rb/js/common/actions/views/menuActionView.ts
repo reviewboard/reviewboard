@@ -284,7 +284,7 @@ export class MenuActionView<
     protected onTouchStart(e: TouchEvent) {
         const $target = $(e.target);
 
-        if (!($target.hasClass('.ink-c-menu__item') ||
+        if (!($target.hasClass('ink-c-menu__item') ||
               $target.parents('.ink-c-menu__item').length)) {
             /* Open or close the menu if its not a touch on an item. */
             e.stopPropagation();
@@ -303,41 +303,11 @@ export class MenuActionView<
 /**
  * Base class for an action within a menu.
  *
- * This handles event registration for the click and touch events in order to
- * behave properly on both desktop and mobile.
+ * This doesn't do anything special but is available for future use.
  *
  * Version Added:
  *     6.0
  */
 @spina
 export class MenuItemActionView extends ActionView {
-    static events: EventsHash = {
-        'click': '_onClick',
-        'touchstart': '_onTouchStart',
-    };
-
-    /**
-     * Handle a click event.
-     *
-     * Args:
-     *     e (MouseEvent):
-     *         The event.
-     */
-    protected _onClick(e: MouseEvent) {
-        e.stopPropagation();
-        e.preventDefault();
-
-        this.activate();
-    }
-
-    /**
-     * Handle a touchstart event.
-     */
-    protected _onTouchStart() {
-        /*
-         * For touch events, we explicitly let the event bubble up so that the
-         * parent menu can close.
-         */
-        this.activate();
-    }
 }

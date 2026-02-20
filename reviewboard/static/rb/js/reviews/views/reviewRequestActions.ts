@@ -26,7 +26,6 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
         'keyup': 'onKeyUp',
         'mouseenter': 'openMenu',
         'mouseleave': 'closeMenu',
-        'touchend .menu-title': 'onTouchEnd',
     };
 
     /**********************
@@ -128,39 +127,6 @@ export class ArchiveMenuActionView extends Actions.MenuActionView {
      */
     protected onKeyUp() {
         this.#activationKeyDown = false;
-    }
-
-    /**
-     * Handle a touchstart event.
-     */
-    protected onTouchStart() {
-        // Do nothing.
-    }
-
-    /**
-     * Handle a touchend event.
-     *
-     * Args:
-     *     e (TouchEvent):
-     *         The event object.
-     */
-    protected onTouchEnd(e: TouchEvent) {
-        /*
-         * With mouse clicks, we allow users to click on the menu header itself
-         * as a shortcut for just choosing archive, but with touch events we
-         * can't do that because then the user would never have access to the
-         * menu.
-         *
-         * If we allow this event to run the default handler, it would also
-         * give us a 'click' event after.
-         */
-        e.preventDefault();
-
-        if (this.menu.isOpen) {
-            this.closeMenu();
-        } else {
-            this.openMenu();
-        }
     }
 }
 
