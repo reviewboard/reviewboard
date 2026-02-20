@@ -18,7 +18,7 @@ pytest~=7.1.2
 pytest-django~=4.5.2
 pytest-env~=0.6.2
 
-setuptools>=18.2
+setuptools<=81.0.0
 wheel
 
 # Load in some extra dependencies defined in Review Board's setup.py.
