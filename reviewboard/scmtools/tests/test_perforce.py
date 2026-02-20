@@ -85,12 +85,14 @@ class BasePerforceTestCase(SpyAgency, SCMTestCase):
         p4_repo = os.path.join(os.path.dirname(__file__),
                                '..', 'testdata', 'p4_repo')
 
-        cls.local_repo_path = mkdtemp(prefix='rb-tests-perforce-')
-        shutil.copytree(p4_repo, cls.local_repo_path, dirs_exist_ok=True)
+        local_repo_path = mkdtemp(prefix='rb-tests-perforce-')
+        os.rmdir(local_repo_path)
+        shutil.copytree(p4_repo, local_repo_path)
+        cls.local_repo_path = local_repo_path
 
         if has_p4d:
             cls.p4d_process = subprocess.Popen(
-                ['p4d', '-p', '61666', '-r', cls.local_repo_path],
+                ['p4d', '-p', '61666', '-r', local_repo_path],
                 text=True,
             )
 
