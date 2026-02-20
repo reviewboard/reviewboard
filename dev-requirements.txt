@@ -24,7 +24,7 @@ pytest-env~=0.8.1
 # See https://github.com/pytest-dev/pytest/issues/10797.
 exceptiongroup~=1.1.1
 
-setuptools>=18.2
+setuptools<=81.0.0
 wheel
 
 # Load in some extra dependencies defined in Review Board's setup.py.

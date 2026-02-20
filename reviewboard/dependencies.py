@@ -63,7 +63,7 @@ package_dependencies = {
     'markdown': '~=3.3.7',
     'mimeparse': '~=0.1.3',
     'packaging': '>=23.1',
-    'paramiko': '>=1.12',
+    'paramiko': '>=1.12,<4.0.0',
     'pydiffx': '~=1.1',
     'Pygments': '~=2.14.0',
 
