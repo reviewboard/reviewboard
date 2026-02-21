@@ -36,7 +36,7 @@ def setup_siteconfig():
 
     # Set a faster password hasher, for performance.
     settings.PASSWORD_HASHERS = (
-        'reviewboard.testing.hashers.TestPasswordHasher',
+        'djblets.testing.hashers.TestPasswordHasher',
     )
 
     # Make sure we're using standard static files storage, and not
