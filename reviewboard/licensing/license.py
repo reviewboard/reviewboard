@@ -86,6 +86,18 @@ class LicenseInfo:
     # Instance variables #
     ######################
 
+    #: Whether the license is set to auto-renew on the license server.
+    #:
+    #: When ``True``, the license is presented as renewing rather than
+    #: expiring. The license summary and detail line will say "renews on"
+    #: instead of "expires on", and we don't show warnings that the license
+    #: will expire soon.
+    #:
+    #: This is dynamic billing-side state and is not part of the signed
+    #: license payload. License providers should populate this from the
+    #: most recent license check.
+    auto_renew: bool
+
     #: Whether a new license file can be manually uploaded for this license.
     can_upload_license: bool
 
@@ -144,6 +156,7 @@ class LicenseInfo:
         license_id: str,
         licensed_to: str,
         product_name: str,
+        auto_renew: bool = False,
         can_upload_license: bool = False,
         expires: (datetime | None) = None,
         grace_period_days_remaining: int = 0,
@@ -172,6 +185,11 @@ class LicenseInfo:
 
             product_name (str):
                 The name of the product being licensed.
+
+            auto_renew (bool, optional):
+                Whether the license is set to auto-renew on the license server.
+                When ``True``, the license summary and details show "renews on"
+                instead of "expires on".
 
             can_upload_license (bool, optional):
                 Whether a new license file can be manually uploaded for
@@ -215,6 +233,7 @@ class LicenseInfo:
         self.license_id = license_id
         self.licensed_to = licensed_to
         self.product_name = product_name
+        self.auto_renew = auto_renew
         self.can_upload_license = can_upload_license
         self.expires = expires
         self.grace_period_days_remaining = grace_period_days_remaining
@@ -270,7 +289,13 @@ class LicenseInfo:
                         (expires - timezone.now()).days
 
                     if not is_trial and self.get_expires_soon():
-                        key.append('expires_soon')
+                        # When the license is set to auto-renew, frame
+                        # the upcoming date as a renewal instead of an
+                        # expiration.
+                        if self.auto_renew:
+                            key.append('auto_renew')
+                        else:
+                            key.append('expires_soon')
                 else:
                     assert not is_trial
             elif status == LicenseStatus.EXPIRED_GRACE_PERIOD:
@@ -414,6 +439,22 @@ _DEFAULT_SUMMARY_FORMATS: _DefaultSummaryFormats = {
             ('License for {product} {plan} expires in {days_remaining} '
              'day'),
             ('License for {product} {plan} expires in {days_remaining} '
+             'days'),
+            'days_remaining'
+        ),
+
+        # Purchased license auto-renews soon
+        ('auto_renew',): N_(
+            ('License for {product} renews in {days_remaining} day'),
+            ('License for {product} renews in {days_remaining} days'),
+            'days_remaining'
+        ),
+
+        # Purchased license with plan auto-renews soon
+        ('plan', 'auto_renew'): N_(
+            ('License for {product} {plan} renews in {days_remaining} '
+             'day'),
+            ('License for {product} {plan} renews in {days_remaining} '
              'days'),
             'days_remaining'
         ),

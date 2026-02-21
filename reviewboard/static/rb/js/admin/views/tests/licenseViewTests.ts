@@ -104,6 +104,52 @@ suite('rb/admin/views/LicenseView', () => {
             `);
         });
 
+        it('Licensed with auto-renew', () => {
+            const view = new LicenseView({
+                model: new License({
+                    actionTarget: 'provider1:license1',
+                    autoRenew: true,
+                    expiresDate: new Date('2025-04-23T00:00:00-07:00'),
+                    gracePeriodDaysRemaining: 4,
+                    licenseID: 'license1',
+                    productName: 'Test Product',
+                    status: LicenseStatus.LICENSED,
+                    summary: 'License summary',
+                }, {
+                    actionCSRFToken: 'abc123',
+                }),
+            });
+
+            view.render();
+
+            expect(view.el).toEqual(paint`
+                <div class="rb-c-license"
+                     data-status="licensed"
+                     data-check-status="has-latest">
+                 <div class="rb-c-license__header">
+                  <h3 class="rb-c-license__summary">
+                   License summary
+                  </h3>
+                  <div class="rb-c-license__state">
+                   Your license is up-to-date.
+                  </div>
+                  <div class="rb-c-license__actions"/>
+                  <ul class="rb-c-license__details">
+                   <li class="rb-c-license__detail">
+                    <span class="rb-c-license__detail-icon ink-i-info"/>
+                    <div class="rb-c-license__detail-content">
+                     ${'Renews '}
+                     <time class="timesince"
+                           dateTime="2025-04-23T00:00:00-07:00"/>
+                     ${' on Apr. 23, 2025, 12:00 AM'}
+                    </div>
+                   </li>
+                  </ul>
+                 </div>
+                </div>
+            `);
+        });
+
         it('Expired (grace period)', () => {
             const view = new LicenseView({
                 model: new License({

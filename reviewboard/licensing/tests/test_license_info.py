@@ -185,6 +185,38 @@ class LicenseInfoTests(kgb.SpyAgency, TestCase):
                          'License for Test Product Super Plan expires in '
                          '10 days')
 
+    def test_get_summary_with_licensed_auto_renew(self) -> None:
+        """Testing LicenseInfo.get_summary with purchased license set to
+        auto-renew within the expires-soon window
+        """
+        license_info = LicenseInfo(
+            auto_renew=True,
+            expires=timezone.now() + timedelta(days=10),
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            status=LicenseStatus.LICENSED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product renews in 10 days')
+
+    def test_get_summary_with_licensed_plan_auto_renew(self) -> None:
+        """Testing LicenseInfo.get_summary with purchased license with plan
+        set to auto-renew within the expires-soon window
+        """
+        license_info = LicenseInfo(
+            auto_renew=True,
+            expires=timezone.now() + timedelta(days=10),
+            product_name='Test Product',
+            license_id='test-license',
+            licensed_to='Test User',
+            plan_name='Super Plan',
+            status=LicenseStatus.LICENSED)
+
+        self.assertEqual(license_info.get_summary(),
+                         'License for Test Product Super Plan renews in '
+                         '10 days')
+
     def test_get_summary_with_trial(self) -> None:
         """Testing LicenseInfo.get_summary with trial license"""
         license_info = LicenseInfo(
