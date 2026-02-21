@@ -53,7 +53,7 @@ djblets_doc_major_version = '5.x'
 django_version = '~=4.2.23'
 
 #: The version range required for Djblets.
-djblets_version = '~=5.3.0a0.dev0'
+djblets_version = '~=5.2.0'
 
 
 ###########################################################################
