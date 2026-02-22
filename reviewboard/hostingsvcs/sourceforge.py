@@ -1,11 +1,11 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
-from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.service import HostingService
 
 
-class SourceForgeForm(BaseHostingServiceRepositoryForm):
+class SourceForgeForm(HostingServiceForm):
     sourceforge_project_name = forms.CharField(
         label=_('Project name'),
         max_length=64,
@@ -13,7 +13,7 @@ class SourceForgeForm(BaseHostingServiceRepositoryForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class SourceForge(BaseHostingService):
+class SourceForge(HostingService):
     name = 'SourceForge'
     hosting_service_id = 'sourceforge'
     form = SourceForgeForm

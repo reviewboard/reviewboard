@@ -1,6 +1,3 @@
-import '../admin/collections/tests';
-import '../admin/models/tests';
-import '../admin/views/tests';
 import '../common/models/tests';
 import '../common/resources/collections/tests';
 import '../common/resources/models/tests';

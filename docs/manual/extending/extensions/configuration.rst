@@ -1,8 +1,8 @@
 .. _extension-configuration:
 
-===========================
-Adding a Configuration Form
-===========================
+=======================
+Extension Configuration
+=======================
 
 
 .. _extension-settings:

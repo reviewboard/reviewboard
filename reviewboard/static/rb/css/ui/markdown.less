@@ -9,11 +9,7 @@
 
 :root,
 .rich-text {
-  --rb-u-code-block-border-radius: var(--ink-u-border-radius-s-inner);
-  --rb-u-code-block-border-size: var(--ink-u-border-thin);
-  --rb-g-code-block-border: var(--ink-g-border-input);
-  --rb-u-inline-code-border-size: var(--ink-u-border-thin);
-  --rb-u-inline-code-border-radius: var(--ink-u-border-radius-s-inner);
+  --rb-p-code-block-border: var(--ink-g-border-input);
 }
 
 .rich-text {
@@ -41,12 +37,12 @@
       content: "";
       position: absolute;
       background: inherit;
-      border: var(--rb-g-code-block-border);
-      border-radius: var(--rb-u-code-block-border-radius);
-      top: calc(-1 * var(--rb-u-code-block-border-size));
+      border: var(--rb-p-code-block-border);
+      border-radius: @code-block-border-radius;
+      top: -@code-block-border-size;
       left: -@code-block-padding-horiz;
       right: -@code-block-padding-horiz;
-      bottom: calc(-1 * var(--rb-u-code-block-border-size));
+      bottom: -@code-block-border-size;
     }
 
     code {
@@ -74,16 +70,15 @@
     }
 
     &:before {
-      border: var(--rb-u-inline-code-border-size)
-              var(--ink-p-code-literal-border-color)
-              solid;
-      border-radius: var(--rb-u-inline-code-border-radius);
       content: "";
       position: absolute;
-      top: calc(-1 * var(--rb-u-inline-code-border-size));
-      left: calc(-1 * var(--rb-u-inline-code-border-size));
-      right: calc(-1 * var(--rb-u-inline-code-border-size));
-      bottom: calc(-1 * var(--rb-u-inline-code-border-size));
+      top: -@inline-code-border-size;
+      left: -@inline-code-border-size;
+      right: -@inline-code-border-size;
+      bottom: -@inline-code-border-size;
+      border: @inline-code-border-size var(--ink-p-code-literal-border-color)
+              solid;
+      border-radius: @inline-code-border-radius;
       pointer-events: none;
       visibility: visible;
     }

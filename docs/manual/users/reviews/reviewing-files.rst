@@ -5,27 +5,13 @@ Reviewing File Attachments
 ==========================
 
 File attachments can be reviewed using Review Board. Some file types, such as
-images, have special interfaces for doing reviews.
-
-* For image files, see :ref:`Reviewing Images <reviewing-images>`.
-* For Markdown files, see :ref:`Reviewing Markdown Files <reviewing-markdown>`.
-* For other text files, see :ref:`Reviewing Text Files <reviewing-text-files>`.
+images, have special interfaces for doing reviews. For image files, see
+:ref:`Reviewing Images <reviewing-images>`. For Markdown files, see
+:ref:`Reviewing Markdown Files <reviewing-markdown>`. For other text files, see
+:ref:`Reviewing Text Files <reviewing-text-files>`.
 
 For other files, reviewers can download the files, and add comments to the
-attachment as a whole. You can also :ref:`create your own review interface
-<extension-review-ui-integration>` for file types that we don't support.
-
-.. tip::
-
-   `Power Pack`_ offers interfaces for reviewing a wider variety of document
-   file types, including:
-
-   * Microsoft Office documents (Word, Excel, PowerPoint)
-   * OpenOffice/LibreOffice documents (Writer, Calc, Impress)
-   * Google Workspace documents (Docs, Sheets, Slides)
-   * PDF documents
-
-   Learn more about `Power Pack's Document Review`_.
+attachment as a whole.
 
 .. image:: ../review-requests/file-attachments.png
 
@@ -52,12 +38,6 @@ The file attachment comment dialog supports issue tracking. See the section on
 As of Review Board 1.6.0, there's no visual indication of an existing comment
 on the file attachment. However, you can see your comment and edit it by
 clicking :guilabel:`Add Comment` again.
-
-.. _Power Pack:
-   https://www.reviewboard.org/powerpack/
-
-.. _Power Pack's Document Review:
-   https://www.reviewboard.org/docs/powerpack/latest/features/doc-review/
 
 
 Viewing Other File Revisions

@@ -2,15 +2,7 @@
  * View that handles editing review requests.
  */
 
-import {
-    type DialogView,
-    ButtonType,
-    DialogActionType,
-    craft,
-    paint,
-    showConfirmDialog,
-    showErrorDialog,
-} from '@beanbag/ink';
+import { paint } from '@beanbag/ink';
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
@@ -20,7 +12,6 @@ import {
     ReviewRequest,
     UserSession,
 } from 'reviewboard/common';
-import { ReviewRequestActionHook } from 'reviewboard/extensions';
 import { DnDUploader } from 'reviewboard/ui';
 
 import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
@@ -246,10 +237,7 @@ class ClosedBannerView extends BannerView {
      */
     _onReopenClicked() {
         this.reviewRequest.reopen()
-            .catch(err => showErrorDialog({
-                error: err,
-                title: _`Error reopening the review request`,
-            }));
+            .catch(err => alert(err.message));
 
         return false;
     }
@@ -588,9 +576,8 @@ export class ReviewRequestEditorView extends BaseView<
      * thumbnails, turning them into FileAttachment and Screenshot objects.
      */
     protected onInitialRender() {
-        const model = this.model;
-        const reviewRequest = model.get('reviewRequest');
-        const fileAttachments = model.get('fileAttachments');
+        const reviewRequest = this.model.get('reviewRequest');
+        const fileAttachments = this.model.get('fileAttachments');
         const draft = reviewRequest.draft;
 
         this.#$warning = $('#review-request-warning');
@@ -607,7 +594,7 @@ export class ReviewRequestEditorView extends BaseView<
          */
         this.showBanner();
 
-        if (model.get('editable')) {
+        if (this.model.get('editable')) {
             DnDUploader.instance.registerDropTarget(
                 this.#$attachmentsContainer,
                 _`Drop to add a file attachment`,
@@ -630,7 +617,7 @@ export class ReviewRequestEditorView extends BaseView<
                 this.#$attachmentsContainer.hide();
             }
         });
-        this.listenTo(model, 'replaceAttachment', this._removeThumbnail);
+        this.listenTo(this.model, 'replaceAttachment', this._removeThumbnail);
 
         /*
          * Import all the screenshots and file attachments rendered onto
@@ -650,59 +637,52 @@ export class ReviewRequestEditorView extends BaseView<
 
         this._setupActions();
 
-        this.listenTo(model, 'publishError', errorText => {
-            showErrorDialog({
-                error: errorText,
-                title: _`Error publishing the review request`,
-            });
+        this.model.on('publishError', errorText => {
+            alert(errorText);
 
             this.$('#btn-draft-publish').enable();
             this.$('#btn-draft-discard').enable();
         });
 
-        this.listenTo(model, 'saved', this.showBanner);
-        this.listenTo(model, 'published', this._refreshPage);
-        this.listenTo(reviewRequest, 'closed reopened', this._refreshPage);
-        this.listenTo(reviewRequest, 'destroyed',
-                      () => RB.navigateTo(SITE_ROOT));
+        this.model.on('closeError', errorText => alert(errorText));
+        this.model.on('saved', this.showBanner, this);
+        this.model.on('published', this._refreshPage, this);
+        reviewRequest.on('closed reopened', this._refreshPage, this);
 
-        this.listenTo(draft, 'destroyed', this._refreshPage);
+        draft.on('destroyed', this._refreshPage, this);
 
         window.onbeforeunload = this._onBeforeUnload.bind(this);
     }
 
     /**
      * Prompt the user to load an unpublished draft.
-     *
-     * Version Changed:
-     *     7.1:
-     *     This function is now asynchronous, returning a Promise.
-     *
-     * Returns:
-     *     Promise<void>:
-     *     A promise for the operation.
      */
-    async promptToLoadUserDraft() {
-        await showConfirmDialog({
-            title: _`View draft data`,
+    promptToLoadUserDraft() {
+        const loadDraft = () => {
+            this.model.set('viewingUserDraft', true);
+        };
 
-            body: [
-                _`
-                    This review request is owned by another user and has an
-                    unpublished draft.
-                `,
+        const buttons = paint<HTMLButtonElement[]>`
+            <Ink.Button type="primary"
+                        onClick="${() => loadDraft()}">
+                ${_`Load Draft Data`}
+            </Ink.Button>
+            <Ink.Button>
+                ${_`Cancel`}
+            </Ink.Button>
+        `;
 
-                _`
-                    Before making any changes to the review request, you will
-                    need to view the draft.
-                `,
-            ],
-            confirmButtonText: _`Load draft data`,
-
-            onConfirm: async () => {
-                this.model.set('viewingUserDraft', true);
-            },
-        });
+        $('<div>')
+            .append(_`
+                <p>This review request is owned by another user and has an
+                unpublished draft.</p>
+                <p>Before making any changes to the review request, you will
+                need to view the draft.</p>
+            `)
+            .modalBox({
+                buttons: buttons,
+                title: _`View draft data`,
+            });
     }
 
     /**
@@ -824,206 +804,6 @@ export class ReviewRequestEditorView extends BaseView<
     }
 
     /**
-     * Close the review request as completed.
-     *
-     * If there's a current draft, this will prompt for confirmation before
-     * closing the review request.
-     *
-     * Version Added:
-     *     7.1
-     *
-     * Returns:
-     *     Promise<void>:
-     *     The promise for the operation.
-     */
-    async closeCompleted() {
-        /*
-         * This is a non-destructive event, so don't confirm unless there's
-         * a draft.
-         */
-        const model = this.model;
-
-        async function onConfirm(): Promise<boolean> {
-            const reviewRequest = model.get('reviewRequest');
-
-            try {
-                await reviewRequest.close({
-                    type: ReviewRequest.CLOSE_SUBMITTED,
-                });
-            } catch (err) {
-                showErrorDialog({
-                    error: err,
-                    title: 'Error closing the review request',
-                });
-
-                return false;
-            }
-        }
-
-        if (model.get('hasDraft')) {
-            await showConfirmDialog({
-                isDangerous: true,
-                title: _`Are you sure you want to close this review request?`,
-
-                body: [
-                    _`
-                        You have an unpublished draft. If you close this review
-                        request, the draft will be discarded.
-                    `,
-                ],
-                confirmButtonText: _`Close the review request`,
-
-                onConfirm: onConfirm,
-            });
-        } else {
-            await onConfirm();
-        }
-    }
-
-    /**
-     * Close the review request as discarded.
-     *
-     * This will prompt for confirmation before closing the review request.
-     *
-     * Version Added:
-     *     7.1
-     *
-     * Returns:
-     *     Promise<void>:
-     *     The promise for the operation.
-     */
-    async closeDiscarded() {
-        const reviewRequest = this.model.get('reviewRequest');
-
-        await showConfirmDialog({
-            isDangerous: true,
-            title: _`Are you sure you want to discard this review request?`,
-
-            body: [
-                _`
-                    Any unpublished changes will be lost, and the review
-                    request will be closed to further updates.
-                `,
-
-                _`Discarded review requests can be reopened later.`,
-            ],
-            confirmButtonText: _`Discard the review request`,
-
-            onConfirm: async () => {
-                try {
-                    await reviewRequest.close({
-                        type: ReviewRequest.CLOSE_DISCARDED,
-                    });
-                } catch (err) {
-                    showErrorDialog({
-                        error: err,
-                        title: 'Error discarding the review request',
-                    });
-
-                    return false;
-                }
-            },
-        });
-    }
-
-    /**
-     * Discard the active review request draft.
-     *
-     * This will prompt for confirmation before closing the review request.
-     *
-     * Version Added:
-     *     7.1
-     *
-     * Returns:
-     *     Promise<void>:
-     *     The promise for the operation.
-     */
-    async discardDraft() {
-        const reviewRequest = this.model.get('reviewRequest');
-
-        if (!reviewRequest.draft.isNew()) {
-            console.assert(
-                false,
-                'There is no draft to discard. This is an internal error.');
-
-            return;
-        }
-
-        await showConfirmDialog({
-            isDangerous: true,
-            title: _`
-                Are you sure you want to discard this review request draft?
-            `,
-
-            body: _`
-                If you discard this review request draft, all unpublished
-                data will be deleted.
-            `,
-            confirmButtonText: _`Discard the draft`,
-
-            onConfirm: async () => {
-                try {
-                    if (!reviewRequest.draft.isNew()) {
-                        await reviewRequest.draft.destroy();
-                    }
-                } catch (err) {
-                    showErrorDialog({
-                        error: err,
-                        title: 'Error discarding the review request',
-                    });
-
-                    return false;
-                }
-            },
-        });
-    }
-
-    /**
-     * Delete the review request.
-     *
-     * This will prompt for confirmation. If confirmed, the review request
-     * will be deleted.
-     *
-     * Version Added:
-     *     7.1
-     *
-     * Returns:
-     *     Promise<void>:
-     *     The promise for the operation.
-     */
-    async deleteReviewRequest() {
-        const reviewRequest = this.model.get('reviewRequest');
-
-        await showConfirmDialog({
-            isDangerous: true,
-            title: _`Are you sure you want to delete this review request?`,
-
-            body: [
-                _`
-                    This deletion cannot be undone. All diffs and reviews and
-                    all other content will be deleted as well.
-                `,
-
-                _`This is permanent. Consider discarding instead.`,
-            ],
-            confirmButtonText: _`Delete the review request`,
-
-            onConfirm: async () => {
-                try {
-                    await reviewRequest.destroy();
-                } catch (err) {
-                    showErrorDialog({
-                        error: err,
-                        title: 'Error deleting the review request',
-                    });
-
-                    return false;
-                }
-            },
-        });
-    }
-
-    /**
      * Finish saving all open editors.
      */
     async saveOpenEditors() {
@@ -1067,7 +847,7 @@ export class ReviewRequestEditorView extends BaseView<
      * Set up all review request actions and listens for events.
      */
     _setupActions() {
-        ReviewRequestActionHook.each(hook => {
+        RB.ReviewRequestActionHook.each(hook => {
             _.each(hook.get('callbacks'),
                    (handler, selector) => this.$(selector).click(handler));
         });

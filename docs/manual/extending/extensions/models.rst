@@ -1,8 +1,8 @@
 .. _extension-models:
 
-=========================
-Providing Database Models
-=========================
+===============
+Database Models
+===============
 
 Writing Database Models
 =======================

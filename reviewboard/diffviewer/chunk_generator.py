@@ -15,6 +15,7 @@ from django.utils.html import escape
 from django.utils.translation import get_language, gettext as _
 from djblets.log import log_timed
 from djblets.cache.backend import cache_memoize
+from djblets.siteconfig.models import SiteConfiguration
 from housekeeping.functions import deprecate_non_keyword_only_args
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
@@ -353,9 +354,10 @@ class RawDiffChunkGenerator(object):
             if not markup_b:
                 markup_b = self.NEWLINES_RE.split(escape(new))
 
+        siteconfig = SiteConfiguration.objects.get_current()
         ignore_space = True
 
-        for pattern in self.diff_settings.include_space_patterns:
+        for pattern in siteconfig.get('diffviewer_include_space_patterns'):
             if fnmatch.fnmatch(self.orig_filename, pattern):
                 ignore_space = False
                 break
@@ -364,7 +366,7 @@ class RawDiffChunkGenerator(object):
                                  compat_version=self.diff_compat)
         self.differ.add_interesting_lines_for_headers(self.orig_filename)
 
-        context_num_lines = self.diff_settings.context_num_lines
+        context_num_lines = siteconfig.get("diffviewer_context_num_lines")
         collapse_threshold = 2 * context_num_lines + 3
 
         line_num = 1
@@ -1379,27 +1381,25 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             old_encoding_list, new_encoding_list = \
                 new_encoding_list, old_encoding_list
 
-        timer_msg: str
-
         if interfilediff:
-            timer_msg = (
-                f'Generating diff chunks for interdiff ids '
-                f'{filediff.pk}-{interfilediff.pk} ({filediff.source_file})'
-            )
+            log_timer = log_timed(
+                "Generating diff chunks for interdiff ids %s-%s (%s)" %
+                (filediff.id, interfilediff.id,
+                 filediff.source_file),
+                request=request)
         else:
-            timer_msg = (
-                f'Generating diff chunks for filediff id {filediff.pk} '
-                f'({filediff.source_file})'
-            )
+            log_timer = log_timed(
+                "Generating diff chunks for filediff id %s (%s)" %
+                (filediff.id, filediff.source_file),
+                request=request)
 
-        with log_timed(timer_msg,
-                       logger=logger,
-                       request=request):
-            yield from self.generate_chunks(
-                old=old,
-                new=new,
-                old_encoding_list=old_encoding_list,
-                new_encoding_list=new_encoding_list)
+        for chunk in self.generate_chunks(old=old,
+                                          new=new,
+                                          old_encoding_list=old_encoding_list,
+                                          new_encoding_list=new_encoding_list):
+            yield chunk
+
+        log_timer.done()
 
         if (not interfilediff and
             not self.base_filediff and

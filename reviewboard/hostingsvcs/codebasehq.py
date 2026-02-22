@@ -1,39 +1,26 @@
-"""Hosting service for CodebaseHQ."""
-
-from __future__ import annotations
-
 import logging
-from typing import TYPE_CHECKING
 from urllib.error import HTTPError, URLError
 from xml.dom.minidom import parseString
 
 from django import forms
 from django.utils.translation import gettext_lazy as _, gettext
-from housekeeping import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
-from reviewboard.hostingsvcs.base.client import HostingServiceClient
-from reviewboard.hostingsvcs.base.forms import (
-    BaseHostingServiceAuthForm,
-    BaseHostingServiceRepositoryForm,
-)
-from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             RepositoryError)
+from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
+                                           HostingServiceForm)
+from reviewboard.hostingsvcs.service import (HostingService,
+                                             HostingServiceClient)
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
-
-if TYPE_CHECKING:
-    from reviewboard.hostingsvcs.base.hosting_service import \
-        HostingServiceCredentials
 
 
 logger = logging.getLogger(__name__)
 
 
-class CodebaseHQAuthForm(BaseHostingServiceAuthForm):
+class CodebaseHQAuthForm(HostingServiceAuthForm):
     api_key = forms.CharField(
         label=_('API key'),
         max_length=128,
@@ -73,7 +60,7 @@ class CodebaseHQAuthForm(BaseHostingServiceAuthForm):
         }
 
 
-class CodebaseHQForm(BaseHostingServiceRepositoryForm):
+class CodebaseHQForm(HostingServiceForm):
     codebasehq_project_name = forms.CharField(
         label=_('Project name'),
         max_length=64,
@@ -334,7 +321,7 @@ class CodebaseHQClient(HostingServiceClient):
         return result
 
 
-class CodebaseHQ(BaseHostingService):
+class CodebaseHQ(HostingService):
     """Repository hosting support for Codebase.
 
     Codebase is a repository hosting service that supports Subversion, Git,
@@ -399,15 +386,7 @@ class CodebaseHQ(BaseHostingService):
 
         self.client = CodebaseHQClient(self)
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-    def authorize(
-        self,
-        *,
-        username: str | None,
-        password: str | None,
-        credentials: HostingServiceCredentials,
-        **kwargs,
-    ) -> None:
+    def authorize(self, username, password, credentials, *args, **kwargs):
         """Authorize an account for Codebase.
 
         Codebase uses HTTP Basic Auth with an API username (consisting of the
@@ -415,21 +394,20 @@ class CodebaseHQ(BaseHostingService):
         the password) for API calls, and a standard username/password for
         Subversion repository access. We need to store all of this.
 
-        Version Changed:
-            7.1:
-            Made arguments keyword-only.
-
         Args:
-            username (str):
+            username (unicode):
                 The username to authorize.
 
-            password (str):
+            password (unicode):
                 The API token used as a password.
 
             credentials (dict):
                 Additional credentials from the authentication form.
 
-            **kwargs (dict, unused):
+            *args (tuple):
+                Extra unused positional arguments.
+
+            **kwargs (dict):
                 Extra unused keyword arguments.
 
         Raises:
@@ -486,37 +464,30 @@ class CodebaseHQ(BaseHostingService):
         """
         return decrypt_password(self.account.data['password'])
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-    def check_repository(
-        self,
-        *,
-        codebasehq_project_name: (str | None) = None,
-        codebasehq_repo_name: (str | None) = None,
-        tool_name: (str | None) = None,
-        **kwargs,
-    ) -> None:
+    def check_repository(self, codebasehq_project_name=None,
+                         codebasehq_repo_name=None, tool_name=None,
+                         *args, **kwargs):
         """Check the validity of a repository.
 
         This will perform an API request against Codebase to get information on
         the repository. This will throw an exception if the repository was not
         found, and return cleanly if it was found.
 
-        Version Changed:
-            7.1:
-            Made arguments keyword-only.
-
         Args:
-            codebasehq_project_name (str):
+            codebase_project_name (unicode):
                 The name of the project on Codebase.
 
-            codebasehq_repo_name (str):
+            codebasehq_repo_name (unicode):
                 The name of the repository on Codebase.
 
-            tool_name (str):
+            tool_name (unicode):
                 The name of the SCMTool for the repository.
 
-            **kwargs (dict, unused):
-                Additional keyword arguments passed by the repository form.
+            *args (tuple):
+                Extra unused positional arguments passed to this function.
+
+            **kwargs (dict):
+                Extra unused keyword arguments passed to this function.
 
         Raises:
             reviewboard.hostingsvcs.errors.RepositoryError:

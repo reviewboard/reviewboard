@@ -11,11 +11,7 @@
 {% endblock global-vars %}
 
 
-{% block page_class %}
-{{block.super}}
-{% if opts %}{{opts.app_label}}-{{opts.object_name.lower}}{% endif %}
-{% endblock page_class %}
-
+{% block page_class %}{% if opts %}{{opts.app_label}}-{{opts.object_name.lower}}{% endif %}{% endblock %}
 {% block page-sidebar-css-classes %}-is-connected{% endblock %}
 {% block js-page-view-type %}RB.Admin.ChangeFormPageView{% endblock %}
 {% block js-page-view-options %}{formID: {{form_id|json_dumps}}}{% endblock %}

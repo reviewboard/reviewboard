@@ -29,5 +29,5 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self) -> None:
+        def initialize(self):
             SCMToolHook(self, SampleSCMTool)

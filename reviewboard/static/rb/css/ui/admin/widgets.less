@@ -164,12 +164,10 @@
   @_margin: @_widget-vars[@margin];
   @_padding: @_widget-vars[@padding];
 
-  background:
-    var(--if-dark, var(--ink-p-container-bg))
-    var(--if-light, #FFFFFF);
-  border: 1px var(--ink-p-container-border-color) solid;
+  background-color: white;
+  border: 1px solid @_widget-vars[@border-color];
   border-radius: @_widget-vars[@border-radius];
-  box-shadow: var(--ink-g-shadow-std);
+  box-shadow: @_widget-vars[@shadow];
   box-sizing: border-box;
   margin: 0 0 @_margin 0;
   padding: 0;
@@ -301,7 +299,7 @@
    *     </header>
    */
   &__header {
-    color: var(--ink-p-fg-weak);
+    color: @_widget-vars[@heading-text-color];
     font-size: @_widget-vars[@heading-font-size];
     margin: @_padding;
     padding: 0;

@@ -1,14 +1,11 @@
 """Unit tests for the Kiln hosting service."""
 
-from __future__ import annotations
-
-from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.errors import RepositoryError
-from reviewboard.hostingsvcs.kiln import Kiln
+from reviewboard.hostingsvcs.service import HostingServiceClient
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
-class KilnTests(HostingServiceTestCase[Kiln]):
+class KilnTests(HostingServiceTestCase):
     """Unit tests for the Kiln hosting service."""
 
     service_name = 'kiln'
@@ -26,7 +23,7 @@ class KilnTests(HostingServiceTestCase[Kiln]):
         'kiln_repo_name': 'myrepo',
     }
 
-    def test_service_support(self) -> None:
+    def test_service_support(self):
         """Testing Kiln service support capabilities"""
         self.assertTrue(self.service_class.supports_repositories)
         self.assertTrue(self.service_class.needs_authorization)
@@ -34,7 +31,7 @@ class KilnTests(HostingServiceTestCase[Kiln]):
         self.assertFalse(self.service_class.supports_post_commit)
         self.assertFalse(self.service_class.supports_two_factor_auth)
 
-    def test_repo_field_values_git(self) -> None:
+    def test_repo_field_values_git(self):
         """Testing Kiln.get_repository_fields for Git"""
         self.assertEqual(
             self.get_repository_fields(
@@ -53,7 +50,7 @@ class KilnTests(HostingServiceTestCase[Kiln]):
                                 'mygroup/myrepo'),
             })
 
-    def test_repo_field_values_mercurial(self) -> None:
+    def test_repo_field_values_mercurial(self):
         """Testing Kiln.get_repository_fields for Mercurial"""
         self.assertEqual(
             self.get_repository_fields(
@@ -72,7 +69,7 @@ class KilnTests(HostingServiceTestCase[Kiln]):
                                 'mygroup/myrepo'),
             })
 
-    def test_authorize(self) -> None:
+    def test_authorize(self):
         """Testing Kiln.authorize"""
         hosting_account = self.create_hosting_account(data={})
 
@@ -112,7 +109,7 @@ class KilnTests(HostingServiceTestCase[Kiln]):
         self.assertEqual(hosting_account.data['auth_token'], 'my-token')
         self.assertTrue(ctx.service.is_authorized())
 
-    def test_check_repository(self) -> None:
+    def test_check_repository(self):
         """Testing Kiln.check_repository"""
         payload = self.dump_json([{
             'sSlug': 'myproject',
@@ -138,7 +135,7 @@ class KilnTests(HostingServiceTestCase[Kiln]):
             username=None,
             password=None)
 
-    def test_check_repository_with_incorrect_repo_info(self) -> None:
+    def test_check_repository_with_incorrect_repo_info(self):
         """Testing Kiln.check_repository with incorrect repo info"""
         payload = self.dump_json([{
             'sSlug': 'otherproject',
@@ -171,7 +168,7 @@ class KilnTests(HostingServiceTestCase[Kiln]):
             username=None,
             password=None)
 
-    def test_get_file(self) -> None:
+    def test_get_file(self):
         """Testing Kiln.get_file"""
         paths = {
             '/Api/1.0/Project': {
@@ -215,7 +212,7 @@ class KilnTests(HostingServiceTestCase[Kiln]):
             username=None,
             password=None)
 
-    def test_get_file_exists(self) -> None:
+    def test_get_file_exists(self):
         """Testing Kiln.get_file_exists"""
         paths = {
             '/Api/1.0/Project': {

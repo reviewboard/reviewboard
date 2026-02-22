@@ -12,7 +12,6 @@ import {
 import {
     EnabledFeatures,
     ReviewRequest,
-    UserSession,
 } from 'reviewboard/common';
 import {
     ReviewablePage,
@@ -143,117 +142,53 @@ suite('rb/pages/views/ReviewablePageView', function() {
             expect(options.reviewRequestEditor).toBe(page.reviewRequestEditor);
         });
 
-        describe('Ship It', () => {
+        describe('Ship It', function() {
             let pendingReview;
-            let cid: string;
-            let userSession: UserSession;
 
-            beforeEach(() => {
-                spyOn(page, 'markShipIt').and.resolveTo();
-
+            beforeEach(function() {
                 pendingReview = page.get('pendingReview');
-                cid = pageView.cid;
-                userSession = UserSession.instance;
             });
 
-            it('Confirmed', done => {
+            it('Confirmed', async function() {
+                if (EnabledFeatures.unifiedBanner) {
+                    pending();
+
+                    return;
+                }
+
+                spyOn(window, 'confirm').and.returnValue(true);
                 spyOn(pendingReview, 'save').and.resolveTo();
                 spyOn(pendingReview, 'publish').and.callThrough();
-                spyOn(userSession, 'storeSettings').and.callThrough();
-                RB.navigateTo.and.callFake(() => {
-                    expect(userSession.get('confirmShipIt')).toBeTrue();
-                    expect(userSession.storeSettings).not.toHaveBeenCalled();
-                    expect(page.markShipIt).toHaveBeenCalled();
 
-                    done();
-                });
+                if (!EnabledFeatures.unifiedBanner) {
+                    spyOn(pageView.draftReviewBanner, 'hideAndReload')
+                        .and.callFake(() => {
+                            expect(window.confirm).toHaveBeenCalled();
+                            expect(pendingReview.ready).toHaveBeenCalled();
+                            expect(pendingReview.publish).toHaveBeenCalled();
+                            expect(pendingReview.save).toHaveBeenCalled();
+                            expect(pendingReview.get('shipIt')).toBe(true);
+                            expect(pendingReview.get('bodyTop'))
+                                .toBe('Ship It!');
+                        });
+                }
 
-                pageView.shipIt();
-
-                const dialogEl = document.getElementById(
-                    `confirm-ship-it-dialog-${cid}`
-                ) as HTMLDialogElement;
-
-                expect(dialogEl).not.toBeNull();
-
-                const confirmEl = document.getElementById(
-                    `confirm-ship-it-dialog-${cid}__confirm-action`);
-                expect(confirmEl).not.toBeNull();
-
-                confirmEl.click();
+                await pageView.shipIt();
             });
 
-            it('Confirmed with Do Not Ask Again', done => {
-                spyOn(pendingReview, 'save').and.resolveTo();
-                spyOn(pendingReview, 'publish').and.callThrough();
-                spyOn(userSession, 'storeSettings').and.resolveTo();
-                RB.navigateTo.and.callFake(() => {
-                    expect(userSession.get('confirmShipIt')).toBeFalse();
-                    expect(userSession.storeSettings).toHaveBeenCalledWith([
-                        'confirmShipIt',
-                    ]);
-                    expect(page.markShipIt).toHaveBeenCalled();
+            it('Canceled', async function() {
+                if (EnabledFeatures.unifiedBanner) {
+                    pending();
 
-                    done();
-                });
+                    return;
+                }
 
-                pageView.shipIt();
+                spyOn(window, 'confirm').and.returnValue(false);
 
-                const dialogEl = document.getElementById(
-                    `confirm-ship-it-dialog-${cid}`
-                ) as HTMLDialogElement;
+                await pageView.shipIt();
 
-                expect(dialogEl).not.toBeNull();
-
-                const checkboxEl = dialogEl.querySelector<HTMLInputElement>(
-                    '.ink-c-dialog__suppress');
-                expect(checkboxEl).not.toBeNull();
-
-                checkboxEl.checked = true;
-
-                const confirmEl = document.getElementById(
-                    `confirm-ship-it-dialog-${cid}__confirm-action`);
-                expect(confirmEl).not.toBeNull();
-
-                confirmEl.click();
-            });
-
-            it('Without confirmation dialog', done => {
-                userSession.set('confirmShipIt', false);
-
-                spyOn(pendingReview, 'save').and.resolveTo();
-                spyOn(pendingReview, 'publish').and.callThrough();
-                RB.navigateTo.and.callFake(() => {
-                    const dialogEl = document.getElementById(
-                        `confirm-ship-it-dialog-${cid}`
-                    ) as HTMLDialogElement;
-
-                    expect(dialogEl).toBeNull();
-
-                    done();
-                });
-
-                pageView.shipIt();
-            });
-
-            it('Canceled', () => {
-                pageView.shipIt();
-
-                const dialogEl = document.getElementById(
-                    `confirm-ship-it-dialog-${cid}`
-                ) as HTMLDialogElement;
-
-                expect(dialogEl).not.toBeNull();
-
-                const cancelEl = document.getElementById(
-                    `confirm-ship-it-dialog-${cid}__cancel-action`);
-                expect(cancelEl).not.toBeNull();
-
-                cancelEl.click();
-
-                expect(page.markShipIt).not.toHaveBeenCalled();
-                expect(RB.navigateTo).not.toHaveBeenCalled();
-                expect(dialogEl.open).toBeFalse();
+                expect(window.confirm).toHaveBeenCalled();
+                expect(pendingReview.ready).not.toHaveBeenCalled();
             });
         });
     });

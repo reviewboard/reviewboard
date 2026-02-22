@@ -1,11 +1,9 @@
 .. _action-hooks:
 .. _action-hook:
 
-==========
-ActionHook
-==========
-
-.. versionadded:: 6.0
+============
+Action Hooks
+============
 
 Starting in Review Board 6.0, all actions throughout the application are based
 on :py:class:`~reviewboard.actions.base.BaseAction`. This provides a simple
@@ -108,8 +106,6 @@ Example
 
 .. code-block:: python
 
-    from typing import Any
-
     from reviewboard.actions import BaseAction, BaseMenuAction
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import ActionHook
@@ -133,10 +129,7 @@ Example
         # JavaScript view that handles clicks on the action.
         js_view_class = 'MyExtension.ActionView'
 
-        def should_render(
-            self,
-            context: dict[str, Any],
-        ) -> bool:
+        def should_render(self, context) -> bool:
             # We only render this action for logged-in-users.
             request = context['request']
             return request.user.is_authenticated
@@ -177,3 +170,125 @@ For the JavaScript:
     MyExtension = {
         ActionView,
     }
+
+
+.. _hide-action-hook:
+
+Hiding Standard Actions
+=======================
+
+In some cases, you may want your extension to hide built-in actions. This
+can be used to remove unwanted functionality, or to hide the defaults so you
+can replace them with your own custom behavior.
+
+Simply initialize the hook with a list of the
+:py:attr:`~reviewboard.actions.baseBaseAction.action_id` of the actions that
+you want to hide.
+
+
+Example
+-------
+
+.. code-block:: python
+
+    from reviewboard.extensions.base import Extension
+    from reviewboard.extensions.hooks import HideActionHook
+
+    class SampleExtension(Extension):
+        def initialize(self) -> None:
+            HideActionHook(self, action_ids=['support-menu'])
+
+
+Legacy Action Hooks
+===================
+
+Prior to Review Board 6.0, there were separate hooks for injecting
+clickable actions into various parts of the UI. These are deprecated and will
+be removed in Review Board 8.
+
+:py:mod:`reviewboard.extensions.hooks` contains the following hooks:
+
+.. autosummary::
+
+   ~reviewboard.extensions.hooks.ReviewRequestActionHook
+   ~reviewboard.extensions.hooks.DiffViewerActionHook
+   ~reviewboard.extensions.hooks.HeaderActionHook
+
+
+When instantiating any of these, you can pass a list of dictionaries defining
+the actions you'd like to insert. These dictionaries have the following fields:
+
+*
+    **id**: The ID of the action (optional)
+
+*
+    **label**: The label for the action.
+
+*
+    **url**: The URI to invoke when the action is clicked. If you want to
+    invoke a javascript action, this should be '#', and you should use a
+    selector on the **id** field to attach the handler (as opposed to a
+    javascript: URL, which doesn't work on all browsers).
+
+*
+    **image**: The path to the image used for the icon (optional). This is only
+    used for header actions.
+
+*
+    **image_width**: The width of the image (optional). This is only used for
+    header actions.
+
+*
+    **image_height**: The height of the image (optional). This is only used for
+    header actions.
+
+There are also two hooks to provide drop-down menus in the action bars:
+
+
+.. autosummary::
+
+   ~reviewboard.extensions.hooks.ReviewRequestDropdownActionHook
+   ~reviewboard.extensions.hooks.HeaderDropdownActionHook
+
+These work like the basic ActionHooks, except instead of a **url** field, they
+contain an **items** field which is another list of dictionaries. Only one
+level of nesting is possible.
+
+
+Example
+-------
+
+.. code-block:: python
+
+    from reviewboard.extensions.base import Extension
+    from reviewboard.extensions.hooks import (HeaderDropdownActionHook,
+                                              ReviewRequestActionHook)
+
+
+    class SampleExtension(Extension):
+        def initialize(self):
+            # Single entry on review requests, consumed from JavaScript.
+            ReviewRequestActionHook(self, actions=[
+                {
+                    'id': 'sample-item',
+                    'label': 'Review Request Item',
+                    'url': '#',
+                },
+            ])
+
+            # A drop-down in the header that links to other pages.
+            HeaderDropdownActionHook(self, actions=[
+                {
+                    'label': 'Header Dropdown',
+                    'items': [
+                        {
+                            'label': 'Item 1',
+                            'url': '...',
+                        },
+                        {
+                            'label': 'Item 2',
+                            'url': '...',
+                        },
+                    ],
+                },
+            ])

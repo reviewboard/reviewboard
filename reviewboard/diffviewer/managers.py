@@ -1,13 +1,10 @@
 """Managers for reviewboard.diffviewer.models."""
 
-from __future__ import annotations
-
 import bz2
 import gc
 import hashlib
 import logging
 from functools import partial
-from typing import Mapping, Sequence, TYPE_CHECKING
 
 from django.conf import settings
 from django.db import models, reset_queries, connection, connections
@@ -19,9 +16,6 @@ from reviewboard.diffviewer.commit_utils import get_file_exists_in_history
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.diffutils import check_diff_size
 from reviewboard.diffviewer.filediff_creator import create_filediffs
-
-if TYPE_CHECKING:
-    from reviewboard.diffviewer.models.diffcommit import DiffCommit
 
 
 logger = logging.getLogger(__name__)
@@ -785,10 +779,7 @@ class DiffCommitManager(BaseDiffManager):
     uploads, webapi requests, and upstream repositories.
     """
 
-    def by_diffset_ids(
-        self,
-        diffset_ids: Sequence[int],
-    ) -> Mapping[int, Sequence[DiffCommit]]:
+    def by_diffset_ids(self, diffset_ids):
         """Return the commits grouped by DiffSet IDs.
 
         Args:
@@ -807,9 +798,8 @@ class DiffCommitManager(BaseDiffManager):
             for pk in diffset_ids
         }
 
-        if diffset_ids:
-            for commit in self.filter(diffset_id__in=diffset_ids):
-                commits_by_diffset_id[commit.diffset_id].append(commit)
+        for commit in self.filter(diffset_id__in=diffset_ids):
+            commits_by_diffset_id[commit.diffset_id].append(commit)
 
         return commits_by_diffset_id
 

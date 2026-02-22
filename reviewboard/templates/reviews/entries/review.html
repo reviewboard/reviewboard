@@ -30,7 +30,6 @@
 
 {% block entry_title %}
 <a href="{% url 'user' entry.review.user %}" class="user">{% user_profile_display_name entry.review.user %}</a>
-{%  user_badges entry.avatar_user %}
 {% endblock entry_title %}
 
 

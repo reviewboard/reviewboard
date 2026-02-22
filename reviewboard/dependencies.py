@@ -53,7 +53,7 @@ djblets_doc_major_version = '5.x'
 django_version = '~=4.2.23'
 
 #: The version range required for Djblets.
-djblets_version = '~=5.2.0'
+djblets_version = '~=5.2.1'
 
 
 ###########################################################################
@@ -76,9 +76,8 @@ package_dependencies = {
     'mimeparse': '~=0.1.3',
     'packaging': '>=23.1',
     'paramiko': '~=3.4.1',
-    'pydantic': '~=2.5',
     'pydiffx': '~=1.1',
-    'Pygments': '~=2.19.0',
+    'Pygments': '~=2.14.0',
 
     # While we don't directly use pyOpenSSL, we do use cryptography, and
     # older versions of pyOpenSSL can break a system badly with newer

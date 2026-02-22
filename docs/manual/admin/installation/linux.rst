@@ -318,20 +318,19 @@ several additional features to Review Board that are useful to businesses and
 enterprises, including:
 
 * Report generation/analytics
-* PDF and Office document review
+* Document review
 * Scalability enhancements
 * Database import/export and conversion
 * Support for additional source code management solutions:
 
   * :rbintegration:`Amazon CodeCommit <aws-codecommit>`
-  * :rbintegration:`Bitbucket Data Center <bitbucket-data-center>`
+  * :rbintegration:`Bitbucket Server <bitbucket-server>`
+  * :rbintegration:`Cliosoft SOS <cliosoft-sos>`
   * :rbintegration:`GitHub Enterprise <github-enterprise>`
-  * :rbintegration:`HCL ClearCase <hcl-clearcase>`
+  * :rbintegration:`HCL VersionVault <versionvault>`
   * :rbintegration:`IBM ClearCase <clearcase>`
-  * :rbintegration:`Keysight SOS <keysight-sos>`
-  * :rbintegration:`Microsoft Azure DevOps / Team Foundation Server
-    <azure-devops-server>`
-  * :rbintegration:`Microsoft Azure DevOps Services <azure-devops-services>`
+  * :rbintegration:`Microsoft Azure DevOps / Team Foundation Server / TFS
+    <tfs>`
 
 60-day `Power Pack trial licenses`_ are available, and automatically convert
 to a perpetual 2-user license after your trial period expires.

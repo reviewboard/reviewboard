@@ -1,10 +1,13 @@
-{% extends "actions/menu_action.html" %}
-{% load avatars %}
-
-
-{% block action_menu_label %}
-{%  if siteconfig_settings.avatars_enabled %}
-{%   avatar user 32 %}
-{%  endif %}
-{{request.user.username}}
-{% endblock action_menu_label %}
+{% load actions avatars %}
+<li class="rb-c-actions__action" id="{{action.get_dom_element_id}}"
+    {% if not visible %} style="display: none;"{% endif %}
+    role="menuitem">
+ <a href="#" role="presentation" aria-label="{{label}}">
+{% if siteconfig_settings.avatars_enabled %}
+{%  avatar user 32 %}
+{% endif %}
+  {{request.user.username}}
+  <span class="ink-i-dropdown"></span>
+ </a>
+{% child_actions_html %}
+</li>

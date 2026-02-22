@@ -86,12 +86,11 @@ class SCMClientTests(kgb.SpyAgency, TestCase):
         client = SCMClient(path='/path/to/repo')
 
         message = (
-            r'Failed to fetch file at https://example.com. The repository '
-            r'returned HTTP error 500\. Administrators can find details in '
-            r'the Review Board server logs \(error ID [0-9a-z-]+\).'
+            'HTTP error code 500 when fetching file from https://example.com: '
+            'HTTP Error 500: Kablam'
         )
 
-        with self.assertRaisesRegex(SCMError, message) as ctx:
+        with self.assertRaisesMessage(SCMError, message) as ctx:
             client.get_file_http('https://example.com',
                                  path='/path/to/file',
                                  revision='abc123')

@@ -124,28 +124,29 @@
 #auth_container {
   font-size: 120%;
   margin: 7em 0 0 0;
+  text-align: center;
 
   input[type="text"],
   input[type="password"],
   input[type="number"],
   input[type="email"] {
+    border: 1px #aaa solid;
+    border-radius: @box-border-radius;
+    box-sizing: border-box;
+    font-size: inherit;
+    margin: 0;
     padding: 0.5em;
     width: @auth-field-width;
-
-    .on-mobile-medium-screen-720({
-      width: 100%;
-    });
   }
 
   .auth-button-container {
-    display: flex;
-    justify-content: center;
-    margin: var(--ink-u-spacing-m) 0;
-    width: 100%;
-    gap: var(--ink-u-spacing-m);
+    width: 16em;
 
     .ink-c-button {
+      --ink-c-button-padding-vert: var(--ink-u-spacing-sm);
       font-size: 120%;
+      margin: 0 0 0.5em;
+      width: 100%;
     }
 
     a {
@@ -155,48 +156,41 @@
 
   .auth-form-row {
     clear: both;
+    margin: 1.5em 0;
+    padding-left: @auth-label-width;
 
-    &.auth-field-row {
-      display: grid;
-      grid-template-columns: 1fr auto 1fr;
-      align-items: baseline;
-      gap: var(--ink-u-spacing-s);
+    &.auth-field-row:not(.checkbox-row) {
+      padding-left: 0;
 
-      &:not(.checkbox-row) {
-        label {
-          font-weight: normal;
-          margin: 0;
-          padding: 0;
-          text-align: right;
-        }
-
-        .errorlist {
-          display: block;
-          color: var(--ink-p-accent-error-fg-on-container);
-          margin: 0;
-          padding: 0;
-          grid-row: 2;
-          grid-column: 2;
-
-          li {
-            font-weight: normal;
-            font-size: inherit;
-          }
-        }
+      label {
+        float: left;
+        font-weight: normal;
+        padding: 0.5em 1em 0.5em 0.5em;
+        text-align: right;
+        width: @auth-label-width;
+        box-sizing: border-box;
       }
 
-      &.checkbox-row {
-        grid-template-columns: min-content auto;
-        align-items: center;
-        justify-content: center;
+      .errorlist {
+        display: block;
+        margin: 0.5em 0 0 @auth-label-width;
+        width: @auth-field-width;
 
-        input {
-          margin: 0;
+        li {
+          font-weight: normal;
+          font-size: inherit;
         }
+      }
+    }
 
-        label {
-          text-align: left;
-        }
+    &.auth-field-row.checkbox-row {
+      input {
+        vertical-align: top;
+      }
+
+      label {
+        display: inline-block;
+        width: @auth-field-width;
       }
     }
   }
@@ -204,7 +198,6 @@
   .auth-header {
     margin: 0 auto 1em auto;
     max-width: 60em;
-    text-align: center;
 
     h1 {
       font-size: 120%;
@@ -228,10 +221,14 @@
   }
 
   .auth-section {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--ink-u-spacing-std);
+    display: inline-block;
+    margin: 0 @auth-section-margin;
+    text-align: left;
+    vertical-align: top;
+
+    &.main-auth-section {
+      margin-left: (-@auth-label-width + @auth-section-margin);
+    }
   }
 
   .errorlist {
@@ -250,15 +247,17 @@
     margin-top: 3em;
 
     .auth-form-row {
-      width: 100%;
-
       /* Change the labels to appear above the fields and not to the side. */
-      &.auth-field-row:not(.checkbox-row) {
-        display: flex;
-        flex-direction: column;
+      padding-left: 0;
 
+      &.auth-field-row,
+      &.auth-field-row:not(.checkbox-row) {
         label {
+          display: block;
+          float: none;
+          padding: 0.5em 0;
           text-align: left;
+          width: auto;
         }
 
         .errorlist {
@@ -284,22 +283,18 @@
 
 #auth_container #login_form {
   .login-links {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--ink-u-spacing-std);
-    margin-top: var(--ink-u-spacing-l);
+    margin-top: 2em;
+    text-align: center;
 
     p {
-      margin: 0;
-      padding: 0;
+      width: @auth-field-width;
     }
   }
 }
 
 #auth_container .register-captcha-row {
-  display: flex;
-  justify-content: center;
+  float: right;
+  padding-left: 0;
 }
 
 

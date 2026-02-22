@@ -1,8 +1,6 @@
-.. _extensions-package-layout:
-
-==================================
-Extension Files and Package Layout
-==================================
+==============================
+Extension Files/Package Layout
+==============================
 
 When building a Review Board extension, you'll want to adopt a certain file
 layout. If you're a seasoned Python developer, you're probably already
@@ -27,87 +25,41 @@ Required Files
 
 At minimum, an extension requires the following files:
 
-*  :ref:`pyproject.toml <extension-example-files-pyproject.toml>`
+*  :ref:`setup.py <extension-example-files-setup.py>`
 *  *extensiondir*/:ref:`__init__.py <extension-example-files-__init__.py>`
 *  *extensiondir*/:ref:`extension.py <extension-example-files-extension.py>`
 
 Let's go into each of these files and show some examples.
 
 
-.. _pyproject.toml:
-.. _extension-example-files-pyproject.toml:
+.. _extension-example-files-setup.py:
 
-**pyproject.toml**
-   This file defines your Python package, its metadata, and the
-   :ref:`Entry Point <extension-entry-point>`, which allows Review Board to
-   discover your extension. This is covered in detail in
-   :ref:`extension-distribution`.
+**setup.py**
+   This is the file used to create the Python package. It defines the
+   :ref:`Entry Point <extension-entry-point>` used to allow Review Board to
+   find the extension, and contains other metadata. This is covered in detail
+   in :ref:`extension-distribution`.
 
-   You can learn more about :file:`pyproject.toml` by reading:
+   Here's an example :file:`setup.py`:
 
-   * `Writing your pyproject.toml
-     <https://packaging.python.org/en/latest/guides/writing-pyproject-toml/>`_
-   * `Configuring setuptools using pyproject.toml files
-     <https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html>`_
+   .. code-block:: python
 
-   Here's an example :file:`pyproject.toml`:
-
-   .. code-block:: toml
-
-      [build-system]
-      requires = [
-          # Update this for the target version of Review Board.
-          'reviewboard~=7.1',
-
-          'reviewboard[extension-packaging]',
-      ]
-      build-backend = 'reviewboard.extensions.packaging.backend'
+      from reviewboard.extensions.packaging import setup
+      from setuptools import find_packages
 
 
-      [project]
-      name = 'sample_extension'
-      version = '1.0'
-      description = 'Description of your extension package.'
-      authors = [
-          {name = 'Your Name', email = 'your-email@example.com'}
-      ]
-
-      dependencies = [
-          # Your package dependencies go here.
-          # Don't include "ReviewBoard" in this list.
-      ]
-
-      classifiers = [
-          # For a full list of package classifiers, see
-          # https://pypi.python.org/pypi?%3Aaction=list_classifiers
-
-          'Development Status :: 3 - Alpha',
-          'Environment :: Web Framework',
-          'Framework :: Review Board',
-          'Operating System :: OS Independent',
-          'Programming Language :: Python',
-      ]
-
-
-      [project.entry-points."reviewboard.extensions"]
-      sample_extension = 'sample_extension.extension:SampleExtension'
-
-
-      [tool.setuptools.packages.find]
-      where = ['.']
-      namespaces = false
-
-   .. important::
-
-      Prior to Review Board 7.1, new extensions would provide a
-      :file:`setup.py` file instead, and may have only included some basic
-      information in :file:`pyproject.toml`.
-
-      Modern Python packaging requires :file:`pyproject.toml`. You can keep
-      your existing :file:`setup.py` or fully convert to
-      :file:`pyproject.toml`. If you keep your :file:`setup.py`, make sure
-      to at least add the ``[build-system]`` section from above in your
-      :file:`pyproject.toml`.
+      setup(
+          name='sample_extension',
+          version='0.1',
+          description='Description of extension package.',
+          author='Your Name',
+          packages=find_packages(),
+          entry_points={
+              'reviewboard.extensions': [
+                  'sample_extension = sample_extension.extension:SampleExtension',
+              ]
+          },
+      )
 
 
 .. _extension-example-files-__init__.py:
@@ -143,25 +95,17 @@ sample_extension/**extension.py**
 Optional Files
 ==============
 
-You can put anything you want in your extension module (and even create nested
-subdirectories of modules). There's a few filenames that are special, though.
+You can put anything you want in your extension's top-level module directory
+(and even create nested subdirectories of modules). There's a few filenames
+that are special, though.
 
-**conftest.py**
-   A Pytest_ config file which sets up the necessary plugins for writing unit
-   tests for your extension. This will be automatically added if you're using
-   :ref:`rbext-create`.
-
-**MANIFEST.in**
-   A file manifest which declares which files will get included when you build
-   an installable package.
-
-**sample_extension/models.py**
+**models.py**
    An extension can provide custom Django models (which become tables in the
    database) in this file. The corresponding tables will be created in the
    database when the extension is loaded. See :ref:`extension-models` for more
    information.
 
-**sample_extension/admin_urls.py**
+**admin_urls.py**
    This file is used to define custom URLs in the administration UI. These
    are often used to create configuration pages for your extension, but they
    can really be used for any purpose.
@@ -172,7 +116,7 @@ subdirectories of modules). There's a few filenames that are special, though.
 
    For more information, see :ref:`extension-configuration-urls`.
 
-**sample_extension/admin.py**
+**admin.py**
    This file allows an extension to register its models (from
    :file:`models.py`) in its own section of the administration UI. This allows
    administrators to browse through the content of the models owned by your
@@ -183,9 +127,3 @@ subdirectories of modules). There's a few filenames that are special, though.
    ``True``.
 
    For more information, see :ref:`extension-admin-site`.
-
-**sample_extension/static**
-  A directory for static media such as CSS, JavaScript, and image files.
-
-
-.. _Pytest: https://pytest.org/

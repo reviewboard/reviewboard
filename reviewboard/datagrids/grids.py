@@ -53,7 +53,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 if TYPE_CHECKING:
     from django.db.models import QuerySet
     from django.http import HttpRequest
-    from typelets.django.strings import StrOrPromise
+    from djblets.util.typing import StrOrPromise
 
     from reviewboard.accounts.models import Profile
 
@@ -802,7 +802,6 @@ class UserPageReviewRequestDataGrid(UserPageDataGridMixin,
     This will show the review requests the user has out for review.
     """
 
-    allow_search_indexing = False
     tab_title = _('Review Requests')
 
     def __init__(self, request, user, *args, **kwargs):
@@ -835,7 +834,6 @@ class UserPageReviewsDataGrid(UserPageDataGridMixin, ReviewDataGrid):
     This will show reviews the user has made on other review requests.
     """
 
-    allow_search_indexing = False
     tab_title = _('Reviews')
 
     def __init__(self, request, user, *args, **kwargs):

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING
+from typing import List, Optional
 
 from djblets.extensions.hooks import ExtensionHook, ExtensionHookPoint
 from djblets.registries.errors import ItemLookupError
@@ -13,15 +13,9 @@ from reviewboard.actions import (AttachmentPoint,
                                  BaseAction,
                                  BaseMenuAction,
                                  actions_registry)
-from reviewboard.actions.renderers import DefaultActionRenderer
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.urls import (diffviewer_url_names,
                               main_review_request_url_name)
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
-
-    from django.template import Context
 
 
 logger = logging.getLogger(__name__)
@@ -38,11 +32,11 @@ class ActionHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """
 
     #: The actions registered by this hook.
-    actions: Sequence[BaseAction]
+    actions: List[BaseAction]
 
     def initialize(
         self,
-        actions: (Sequence[BaseAction] | None) = None,
+        actions: Optional[List[BaseAction]] = None,
         *args,
         **kwargs,
     ) -> None:
@@ -73,10 +67,7 @@ class ActionHook(ExtensionHook, metaclass=ExtensionHookPoint):
             except ItemLookupError:
                 pass
 
-    def get_actions(
-        self,
-        context: Context,
-    ) -> Sequence[BaseAction]:
+    def get_actions(self, context):
         """Return the list of action information for this action hook.
 
         Args:
@@ -98,9 +89,6 @@ class _DictAction(BaseAction):
     instances of :py:class:`reviewboard.actions.base.BaseAction`.
     """
 
-    default_renderer_cls = DefaultActionRenderer
-    _ignore_action_deprecations = True
-
     def __init__(self, action_dict, applies_to, attachment):
         """Initialize this action.
 
@@ -115,6 +103,8 @@ class _DictAction(BaseAction):
             attachment (reviewboard.actions.base.AttachmentPoint):
                 The attachment point for the action.
         """
+        super().__init__()
+
         if not isinstance(action_dict, dict):
             raise ValueError('Action definitions must be dictionaries.')
 
@@ -128,12 +118,9 @@ class _DictAction(BaseAction):
                 '-',
                 self.label.lower())
 
-        self.attachment = attachment
-
-        super().__init__()
-
         self.url = action_dict['url']
         self.apply_to = applies_to
+        self.attachment = attachment
 
         if 'image' in action_dict:
             self.image = action_dict['image']
@@ -162,8 +149,6 @@ class _DictMenuAction(BaseMenuAction):
     :py:class:`reviewboard.actions.base.BaseMenuAction`.
     """
 
-    _ignore_action_deprecations = True
-
     def __init__(self, action_dict, applies_to, attachment):
         """Initialize this action.
 
@@ -178,6 +163,8 @@ class _DictMenuAction(BaseMenuAction):
             attachment (reviewboard.actions.base.AttachmentPoint):
                 The attachment point for the action.
         """
+        super().__init__()
+
         if not isinstance(action_dict, dict):
             raise ValueError('Action definitions must be dictionaries.')
 
@@ -191,20 +178,8 @@ class _DictMenuAction(BaseMenuAction):
                 '-',
                 self.label.lower())
 
-        self.attachment = attachment
-
-        super().__init__()
-
         self.apply_to = applies_to
-
-    def get_dom_element_id(self) -> str:
-        """Return the ID used for the DOM element for this action.
-
-        Returns:
-            str:
-            The ID used for the element.
-        """
-        return f'action-{self.action_id}'
+        self.attachment = attachment
 
 
 class BaseReviewRequestActionHook(ActionHook, metaclass=ExtensionHookPoint):
@@ -597,11 +572,11 @@ class HideActionHook(ExtensionHook, metaclass=ExtensionHookPoint):
     """
 
     #: The list of action IDs hidden by this hook.
-    hidden_action_ids: set[str]
+    hidden_action_ids: List[str]
 
     def initialize(
         self,
-        action_ids: Iterable[str],
+        action_ids: List[str],
         *args,
         **kwargs,
     ) -> None:
@@ -617,4 +592,4 @@ class HideActionHook(ExtensionHook, metaclass=ExtensionHookPoint):
             **kwargs (dict):
                 Extra keyword arguments.
         """
-        self.hidden_action_ids = set(action_ids)
+        self.hidden_action_ids = action_ids

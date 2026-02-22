@@ -12,12 +12,14 @@ from reviewboard.diffviewer.commit_utils import (CommitHistoryDiffEntry,
                                                  get_base_and_tip_commits,
                                                  get_file_exists_in_history)
 from reviewboard.diffviewer.models import DiffCommit
+from reviewboard.diffviewer.tests.test_diffutils import \
+    BaseFileDiffAncestorTests
 from reviewboard.scmtools.core import FileLookupContext, UNKNOWN
 from reviewboard.scmtools.errors import FileNotFoundError
-from reviewboard.testing.testcase import BaseFileDiffAncestorTests, TestCase
+from reviewboard.testing.testcase import TestCase
 
 if TYPE_CHECKING:
-    from typelets.json import JSONDict
+    from djblets.util.typing import JSONDict
 
 
 class GetFileExistsInHistoryTests(kgb.SpyAgency, TestCase):

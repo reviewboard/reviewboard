@@ -6,19 +6,17 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Sequence, Set, TYPE_CHECKING
 
 from django.template.loader import render_to_string
 from django.utils.safestring import SafeString, mark_safe
 from typing_extensions import NotRequired, TypedDict
 
+from reviewboard.scmtools.models import Repository
+
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import Any
-
-    from typelets.django.strings import StrOrPromise
-
-    from reviewboard.scmtools.models import Repository
+    # This is available only in django-stubs.
+    from django.utils.functional import _StrOrPromise
 
 
 class CodeSafetyContentItem(TypedDict):
@@ -47,7 +45,7 @@ class CodeSafetyContentItem(TypedDict):
     #:
     #: Type:
     #:     list of str
-    lines: list[str]
+    lines: List[str]
 
     #: The repository the file is on, if any.
     #:
@@ -69,7 +67,7 @@ class CodeSafetyCheckResults(TypedDict):
     #:
     #: Type:
     #:     list of str
-    errors: NotRequired[set[str]]
+    errors: NotRequired[Set[str]]
 
     #: A set of warning IDs found by a code safety checker.
     #:
@@ -77,10 +75,10 @@ class CodeSafetyCheckResults(TypedDict):
     #:
     #: Type:
     #:     list of str
-    warnings: NotRequired[set[str]]
+    warnings: NotRequired[Set[str]]
 
 
-class BaseCodeSafetyChecker:
+class BaseCodeSafetyChecker(object):
     """Base class for a code safety checker.
 
     Code safety checkers are used to analyze the content of lines of code in
@@ -103,13 +101,13 @@ class BaseCodeSafetyChecker:
     #:
     #: Type:
     #:     str
-    checker_id: (str | None) = None
+    checker_id: Optional[str] = None
 
     #: The summary shown by the code safety checker for results.
     #:
     #: Type:
     #:    str
-    summary: (StrOrPromise | None) = None
+    summary: Optional[_StrOrPromise] = None
 
     #: The HTML template name for the alert at the top of a file.
     #:
@@ -118,7 +116,7 @@ class BaseCodeSafetyChecker:
     #:
     #: Type:
     #:     str
-    file_alert_html_template_name: (str | None) = None
+    file_alert_html_template_name: Optional[str] = None
 
     #: A mapping of warning IDs to human-readable labels.
     #:
@@ -129,11 +127,11 @@ class BaseCodeSafetyChecker:
     #:
     #: Type:
     #:     dict
-    result_labels: dict[str, StrOrPromise] = {}
+    result_labels: Dict[str, _StrOrPromise] = {}
 
     def check_content(
         self,
-        content_items: list[CodeSafetyContentItem],
+        content_items: List[CodeSafetyContentItem],
         **kwargs,
     ) -> CodeSafetyCheckResults:
         """Check content for safety issues.
@@ -174,7 +172,7 @@ class BaseCodeSafetyChecker:
     def update_line_html(
         self,
         line_html: str,
-        result_ids: Sequence[str],
+        result_ids: Sequence[str] = [],
         **kwargs,
     ) -> SafeString:
         """Update the rendered diff HTML for a line.
@@ -214,7 +212,7 @@ class BaseCodeSafetyChecker:
         self,
         result_ids: Sequence[str],
         **kwargs,
-    ) -> list[str]:
+    ) -> List[str]:
         """Return a list of result labels for the given IDs for display.
 
         By default, this will generate a list based off
@@ -247,7 +245,7 @@ class BaseCodeSafetyChecker:
         error_ids: Sequence[str],
         warning_ids: Sequence[str],
         **kwargs,
-    ) -> SafeString | None:
+    ) -> Optional[SafeString]:
         """Render an alert for the top of a file.
 
         This is responsible for rendering an alert that explains the warnings
@@ -291,7 +289,7 @@ class BaseCodeSafetyChecker:
         error_ids: Sequence[str],
         warning_ids: Sequence[str],
         **kwargs,
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """Return context variables for the file alert template.
 
         By default, this returns:

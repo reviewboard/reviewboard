@@ -1,11 +1,11 @@
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
-from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.service import HostingService
 
 
-class FedoraHostedForm(BaseHostingServiceRepositoryForm):
+class FedoraHostedForm(HostingServiceForm):
     fedorahosted_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,
@@ -13,7 +13,7 @@ class FedoraHostedForm(BaseHostingServiceRepositoryForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class FedoraHosted(BaseHostingService):
+class FedoraHosted(HostingService):
     """Hosting service support for fedorahosted.org.
 
     This was a hosting service for Git, Mercurial, and Subversion provided

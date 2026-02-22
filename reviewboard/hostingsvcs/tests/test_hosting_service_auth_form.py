@@ -1,7 +1,7 @@
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
-from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
+from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
@@ -10,7 +10,7 @@ from reviewboard.testing.hosting_services import (SelfHostedTestService,
 
 
 class HostingServiceAuthFormTests(TestCase):
-    """Unit tests for BaseHostingServiceAuthForm."""
+    """Unit tests for reviewboard.hostingsvcs.forms.HostingServiceAuthForm."""
 
     fixtures = ['test_scmtools']
 
@@ -27,9 +27,8 @@ class HostingServiceAuthFormTests(TestCase):
         hosting_service_registry.unregister(TestService)
 
     def test_override_help_texts(self):
-        """Testing BaseHostingServiceAuthForm subclasses overriding help texts
-        """
-        class MyAuthForm(BaseHostingServiceAuthForm):
+        """Testing HostingServiceAuthForm subclasses overriding help texts"""
+        class MyAuthForm(HostingServiceAuthForm):
             class Meta:
                 help_texts = {
                     'hosting_account_username': 'My help text.',
@@ -41,8 +40,8 @@ class HostingServiceAuthFormTests(TestCase):
                          'My help text.')
 
     def test_override_labels(self):
-        """Testing BaseHostingServiceAuthForm subclasses overriding labels"""
-        class MyAuthForm(BaseHostingServiceAuthForm):
+        """Testing HostingServiceAuthForm subclasses overriding labels"""
+        class MyAuthForm(HostingServiceAuthForm):
             class Meta:
                 labels = {
                     'hosting_account_username': 'My label.',
@@ -54,9 +53,8 @@ class HostingServiceAuthFormTests(TestCase):
                          'My label.')
 
     def test_get_credentials_default(self):
-        """Testing BaseHostingServiceAuthForm.get_credentials default behavior
-        """
-        form = BaseHostingServiceAuthForm(
+        """Testing HostingServiceAuthForm.get_credentials default behavior"""
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': 'myuser',
                 'hosting_account_password': 'mypass',
@@ -72,10 +70,10 @@ class HostingServiceAuthFormTests(TestCase):
             })
 
     def test_get_credentials_default_with_2fa_code(self):
-        """Testing BaseHostingServiceAuthForm.get_credentials default behavior
+        """Testing HostingServiceAuthForm.get_credentials default behavior
         with two-factor auth code
         """
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': 'myuser',
                 'hosting_account_password': 'mypass',
@@ -93,10 +91,10 @@ class HostingServiceAuthFormTests(TestCase):
             })
 
     def test_get_credentials_with_form_prefix(self):
-        """Testing BaseHostingServiceAuthForm.get_credentials default behavior
+        """Testing HostingServiceAuthForm.get_credentials default behavior
         with form prefix
         """
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'myservice-hosting_account_username': 'myuser',
                 'myservice-hosting_account_password': 'mypass',
@@ -115,8 +113,8 @@ class HostingServiceAuthFormTests(TestCase):
             })
 
     def test_save_new_account(self):
-        """Testing BaseHostingServiceAuthForm.save with new account"""
-        form = BaseHostingServiceAuthForm(
+        """Testing HostingServiceAuthForm.save with new account"""
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': 'myuser',
                 'hosting_account_password': 'mypass',
@@ -135,10 +133,10 @@ class HostingServiceAuthFormTests(TestCase):
         self.assertIsNone(hosting_account.local_site)
 
     def test_save_new_account_with_existing_stored(self):
-        """Testing BaseHostingServiceAuthForm.save with new account matching
+        """Testing HostingServiceAuthForm.save with new account matching
         existing stored account information
         """
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': 'myuser',
                 'hosting_account_password': 'mypass',
@@ -162,10 +160,9 @@ class HostingServiceAuthFormTests(TestCase):
         self.assertIsNone(hosting_account.local_site)
 
     def test_save_new_account_with_hosting_url(self):
-        """Testing BaseHostingServiceAuthForm.save with new account and
-        hosting URL
+        """Testing HostingServiceAuthForm.save with new account and hosting URL
         """
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': 'myuser',
                 'hosting_account_password': 'mypass',
@@ -185,10 +182,10 @@ class HostingServiceAuthFormTests(TestCase):
         self.assertIsNone(hosting_account.local_site)
 
     def test_save_new_account_with_hosting_url_not_self_hosted(self):
-        """Testing BaseHostingServiceAuthForm.save with new account and
-        hosting URL with non-self-hosted service
+        """Testing HostingServiceAuthForm.save with new account and hosting URL
+        with non-self-hosted service
         """
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': 'myuser',
                 'hosting_account_password': 'mypass',
@@ -203,10 +200,10 @@ class HostingServiceAuthFormTests(TestCase):
         self.assertIsNone(hosting_account.hosting_url)
 
     def test_save_new_account_without_hosting_url_self_hosted(self):
-        """Testing BaseHostingServiceAuthForm.save with new account and no
+        """Testing HostingServiceAuthForm.save with new account and no
         hosting URL with a self-hosted service
         """
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': 'myuser',
                 'hosting_account_password': 'mypass',
@@ -221,11 +218,10 @@ class HostingServiceAuthFormTests(TestCase):
             })
 
     def test_save_new_account_with_local_site(self):
-        """Testing BaseHostingServiceAuthForm.save with new account and Local
-        Site
+        """Testing HostingServiceAuthForm.save with new account and Local Site
         """
         local_site = LocalSite.objects.create(name='test-site')
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': 'myuser',
                 'hosting_account_password': 'mypass',
@@ -245,10 +241,10 @@ class HostingServiceAuthFormTests(TestCase):
         self.assertIsNone(hosting_account.hosting_url)
 
     def test_save_new_account_without_username(self):
-        """Testing BaseHostingServiceAuthForm.save with new account and no
+        """Testing HostingServiceAuthForm.save with new account and no
         username in credentials
         """
-        class MyAuthForm(BaseHostingServiceAuthForm):
+        class MyAuthForm(HostingServiceAuthForm):
             def get_credentials(self):
                 return {}
 
@@ -270,14 +266,13 @@ class HostingServiceAuthFormTests(TestCase):
             form.save()
 
     def test_save_existing_account(self):
-        """Testing BaseHostingServiceAuthForm.save with updating existing
-        account
+        """Testing HostingServiceAuthForm.save with updating existing account
         """
         orig_account = HostingServiceAccount.objects.create(
             service_name='test',
             username='myuser')
 
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': 'myuser',
                 'hosting_account_password': 'mypass',
@@ -298,14 +293,14 @@ class HostingServiceAuthFormTests(TestCase):
         self.assertIsNone(hosting_account.local_site)
 
     def test_save_existing_account_new_username(self):
-        """Testing BaseHostingServiceAuthForm.save with updating existing
-        account with new username
+        """Testing HostingServiceAuthForm.save with updating existing account
+        with new username
         """
         orig_account = HostingServiceAccount.objects.create(
             service_name='test',
             username='myuser')
 
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': 'mynewuser',
                 'hosting_account_password': 'mypass',
@@ -326,15 +321,15 @@ class HostingServiceAuthFormTests(TestCase):
         self.assertIsNone(hosting_account.local_site)
 
     def test_save_existing_account_new_hosting_url(self):
-        """Testing BaseHostingServiceAuthForm.save with updating existing
-        account with new hosting URL
+        """Testing HostingServiceAuthForm.save with updating existing account
+        with new hosting URL
         """
         orig_account = HostingServiceAccount.objects.create(
             service_name='self_hosted_test',
             username='myuser',
             hosting_url='example1.com')
 
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': 'myuser',
                 'hosting_account_password': 'mypass',
@@ -356,8 +351,8 @@ class HostingServiceAuthFormTests(TestCase):
         self.assertIsNone(hosting_account.local_site)
 
     def test_save_existing_account_new_service_fails(self):
-        """Testing BaseHostingServiceAuthForm.save with updating existing
-        account with new hosting service fails
+        """Testing HostingServiceAuthForm.save with updating existing account
+        with new hosting service fails
         """
         orig_account = HostingServiceAccount.objects.create(
             service_name='self_hosted_test',
@@ -370,12 +365,12 @@ class HostingServiceAuthFormTests(TestCase):
         )
 
         with self.assertRaisesMessage(ValueError, expected_message):
-            BaseHostingServiceAuthForm(hosting_service_cls=TestService,
+            HostingServiceAuthForm(hosting_service_cls=TestService,
                                    hosting_account=orig_account)
 
     def test_save_existing_account_new_local_site_fails(self):
-        """Testing BaseHostingServiceAuthForm.save with updating existing
-        account with new Local Site fails
+        """Testing HostingServiceAuthForm.save with updating existing account
+        with new Local Site fails
         """
         orig_account = HostingServiceAccount.objects.create(
             service_name='text',
@@ -387,16 +382,16 @@ class HostingServiceAuthFormTests(TestCase):
         )
 
         with self.assertRaisesMessage(ValueError, expected_message):
-            BaseHostingServiceAuthForm(
+            HostingServiceAuthForm(
                 hosting_service_cls=TestService,
                 hosting_account=orig_account,
                 local_site=LocalSite.objects.create(name='test-site'))
 
     def test_save_with_2fa_code_required(self):
-        """Testing BaseHostingServiceAuthForm.save with two-factor auth code
+        """Testing HostingServiceAuthForm.save with two-factor auth code
         required
         """
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': '2fa-user',
                 'hosting_account_password': 'mypass',
@@ -415,10 +410,10 @@ class HostingServiceAuthFormTests(TestCase):
             form.fields['hosting_account_two_factor_auth_code'].required)
 
     def test_save_with_2fa_code_provided(self):
-        """Testing BaseHostingServiceAuthForm.save with two-factor auth code
+        """Testing HostingServiceAuthForm.save with two-factor auth code
         provided
         """
-        form = BaseHostingServiceAuthForm(
+        form = HostingServiceAuthForm(
             {
                 'hosting_account_username': '2fa-user',
                 'hosting_account_password': 'mypass',

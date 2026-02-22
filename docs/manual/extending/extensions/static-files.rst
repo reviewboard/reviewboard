@@ -1,7 +1,7 @@
 .. _extension-static-files:
 
 ============================
-Providing Static Media Files
+Extension Static Media Files
 ============================
 
 Static Media Bundles

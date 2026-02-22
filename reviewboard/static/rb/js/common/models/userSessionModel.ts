@@ -3,7 +3,6 @@
  */
 import {
     type ModelAttributes,
-    type Result,
     BaseModel,
     spina,
 } from '@beanbag/spina';
@@ -129,15 +128,9 @@ interface StoredItemsAttrs extends BaseResourceAttrs {
  * This interfaces with a Watched Items resource (for groups or review
  * requests) and a Hidden Items resource, allowing immediate adding/removing
  * of objects.
- *
- * Version Changed:
- *     7.1:
- *     This is now exported internally, but is intended only for use in
- *     type checking and not to subclass or use directly. It's not included
- *     in the global ``RB`` namespace.
  */
 @spina
-export class StoredItems extends BaseResource<StoredItemsAttrs> {
+class StoredItems extends BaseResource<StoredItemsAttrs> {
     /**
      * Return the defaults for the model attributes.
      *
@@ -250,47 +243,16 @@ export class StoredItems extends BaseResource<StoredItemsAttrs> {
 
 /** Attributes for the UserSession model. */
 interface UserSessionAttrs extends ModelAttributes {
-    /**
-     * Whether to allow users to mark "Ship It" on their own review requests.
-     *
-     * Version Added:
-     *     7.1
-     */
-    allowSelfShipIt: boolean;
-
     /** The URL for the archived review requests API resource. */
     archivedReviewRequestsURL: string;
 
     /** Whether the user is currently authenticated. */
     authenticated: boolean;
 
-    /** HTML to use for avatars at different sizes. */
-    avatarHTML: Record<number, string>;
-
-    /** URLs for avatars at various sizes and pixel densities. */
-    avatarURLs: Record<number, Record<string, string>>;
-
-    /** Whether to open an issue by default */
-    commentsOpenAnIssue: boolean;
-
-    /**
-     * Whether to prompt to confirm publishing a Ship It! review.
-     *
-     * Version Added:
-     *     7.1
-     */
-    confirmShipIt: boolean;
-
-    /** Whether to use rich text by default. */
-    defaultUseRichText: boolean;
-
     /**
      * Whether the user wants to see diffs with excess whitespace highlighted.
      */
     diffsShowExtraWhitespace: boolean;
-
-    /** Whether to enable desktop notifications. */
-    enableDesktopNotifications: boolean;
 
     /** The user's full name. */
     fullName: string;
@@ -300,14 +262,6 @@ interface UserSessionAttrs extends ModelAttributes {
 
     /** The URL for the muted review requests API resource. */
     mutedReviewRequestsURL: string;
-
-    /**
-     * A list of actions available in the Quick Access area.
-     *
-     * Version Added:
-     *     7.1
-     */
-    quickAccessActionIDs: string[];
 
     /** Whether the server is operating in read-only mode. */
     readOnly: boolean;
@@ -341,18 +295,6 @@ interface UserSessionAttrs extends ModelAttributes {
     /** The URL for the watched review requests API resource. */
     watchedReviewRequestsURL: string;
 }
-
-
-/**
- * A map of UserSession attributes to stored settings names.
- *
- * Version Added:
- *     7.1
- */
-const _storeSettingsMap: Record<keyof UserSessionAttrs, string> = {
-    'confirmShipIt': 'confirm_ship_it',
-    'quickAccessActionIDs': 'quick_access_action_ids',
-};
 
 
 /**
@@ -396,20 +338,12 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
     }
 
     defaults: UserSessionAttrs = {
-        allowSelfShipIt: true,
         archivedReviewRequestsURL: null,
         authenticated: false,
-        avatarHTML: {},
-        avatarURLs: {},
-        commentsOpenAnIssue: true,
-        confirmShipIt: true,
-        defaultUseRichText: false,
         diffsShowExtraWhitespace: false,
-        enableDesktopNotifications: false,
         fullName: null,
         loginURL: null,
         mutedReviewRequestsURL: null,
-        quickAccessActionIDs: null,
         readOnly: false,
         sessionURL: null,
         showReviewDialogTips: true,
@@ -512,48 +446,6 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
         const urls = this.get('avatarHTML') || {};
 
         return urls[size] || '';
-    }
-
-    /**
-     * Store a setting for the user.
-     *
-     * Only a pre-defined list of settings are supported.
-     *
-     * This should be considered internal to the Review Board codebase.
-     *
-     * Version Added:
-     *     7.1
-     *
-     * Args:
-     *     setting (Array of string):
-     *         The attributes for the settings to store on the server.
-     *
-     * Returns:
-     *     Promise<void>:
-     *     The promise for the operation.
-     */
-    storeSettings(
-        settings: (keyof typeof _storeSettingsMap)[],
-    ): Promise<void> {
-        return new Promise((success, error) => {
-            RB.apiCall({
-                data: {
-                    'settings:json': JSON.stringify(Object.fromEntries(
-                        settings.map((
-                            setting: string,
-                        ) => [
-                            _storeSettingsMap[setting],
-                            this.get(setting),
-                        ])
-                    )),
-                },
-                type: 'PUT',
-                url: this.get('sessionURL'),
-
-                error: () => error(),
-                success: () => success(),
-            });
-        });
     }
 
     /**

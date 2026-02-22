@@ -1,15 +1,11 @@
-{% extends "actions/action_base.html" %}
-
-{% block action_content %}
-<a {{action_attrs}}
+{% spaceless %}
+<a id="{{action.get_dom_element_id}}"
    href="{{url}}"
    role="menuitem"
-   data-custom-rendered="true">
+   {% if not visible or has_parent %} style="display: none;"{% endif %}>
  <h4>
-{% if action.icon_class %}
   <span class="{{action.icon_class}}"></span>
-{% endif %}
-  {{verbose_label|default:label}}
+  {{label}}
  </h4>
 {%  for description_part in action.description %}
  <p>
@@ -17,4 +13,4 @@
  </p>
 {%  endfor %}
 </a>
-{% endblock action_content %}
+{% endspaceless %}

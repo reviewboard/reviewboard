@@ -24,8 +24,6 @@ from reviewboard.extensions.hooks.auth_backend import AuthBackendHook
 from reviewboard.extensions.hooks.avatar_service import AvatarServiceHook
 from reviewboard.extensions.hooks.comment_detail_display import \
     CommentDetailDisplayHook
-from reviewboard.extensions.hooks.conditions import \
-    ReviewRequestConditionChoicesHook
 from reviewboard.extensions.hooks.dashboard import (DashboardColumnsHook,
                                                     DashboardSidebarItemsHook,
                                                     DataGridSidebarItemsHook,
@@ -43,14 +41,12 @@ from reviewboard.extensions.hooks.file_attachment_thumbnail import \
 from reviewboard.extensions.hooks.filediff_acl import FileDiffACLHook
 from reviewboard.extensions.hooks.hosting_service import HostingServiceHook
 from reviewboard.extensions.hooks.integration import IntegrationHook
-from reviewboard.extensions.hooks.license_provider import LicenseProviderHook
 from reviewboard.extensions.hooks.navigation_bar import NavigationBarHook
 from reviewboard.extensions.hooks.review_request_approval import \
     ReviewRequestApprovalHook
 from reviewboard.extensions.hooks.review_ui import ReviewUIHook
 from reviewboard.extensions.hooks.scmtool import SCMToolHook
 from reviewboard.extensions.hooks.user_infobox import UserInfoboxHook
-from reviewboard.extensions.hooks.users import UserDetailsProviderHook
 from reviewboard.extensions.hooks.webapi_capabilities import \
     WebAPICapabilitiesHook
 
@@ -79,14 +75,12 @@ __all__ = [
     'HideActionHook',
     'HostingServiceHook',
     'IntegrationHook',
-    'LicenseProviderHook',
     'NavigationBarHook',
     'ReviewPublishedEmailHook',
     'ReviewReplyPublishedEmailHook',
     'ReviewRequestActionHook',
     'ReviewRequestApprovalHook',
     'ReviewRequestClosedEmailHook',
-    'ReviewRequestConditionChoicesHook',
     'ReviewRequestDropdownActionHook',
     'ReviewRequestFieldSetsHook',
     'ReviewRequestFieldsHook',
@@ -96,7 +90,6 @@ __all__ = [
     'SignalHook',
     'TemplateHook',
     'URLHook',
-    'UserDetailsProviderHook',
     'UserInfoboxHook',
     'UserPageSidebarItemsHook',
     'WebAPICapabilitiesHook',

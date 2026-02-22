@@ -2,9 +2,8 @@
 {% load djblets_extensions djblets_js pipeline %}
 
 {% block review_ui_css %}
-{%  if not skip_static_media %}
-{%   for bundle_name in review_ui.css_bundle_names %}
-{%    comment %}
+{%  for bundle_name in review_ui.css_bundle_names %}
+{%   comment %}
 NOTE: On Review Board local development servers, rendering review UI static
       media from installed extension packages is broken when running with
       Djblets <4.1 and <5.3. Using development setups of extension
@@ -15,35 +14,32 @@ NOTE: On Review Board local development servers, rendering review UI static
       being run with a lower Djblets version, then the `bundle_output` will
       be empty and we'll fall back on using the `javascript` template tag
       which will do the right thing on production servers.
-{%    endcomment %}
-{%    if review_ui.extension %}
-{%     ext_css_bundle review_ui.extension bundle_name as bundle_output %}
-{%    endif %}
-{%    if bundle_output %}
+{%   endcomment %}
+{%   if review_ui.extension %}
+{%    ext_css_bundle review_ui.extension bundle_name as bundle_output %}
+{%   endif %}
+{%   if bundle_output %}
 {{bundle_output}}
-{%    else %}
-{%     stylesheet bundle_name %}
-{%    endif %}
-{%   endfor %}
-{%  endif %}
+{%   else %}
+{%    stylesheet bundle_name %}
+{%   endif %}
+{%  endfor %}
 {% endblock %}
 
 {% block review_ui_scripts %}
-{%  if not skip_static_media %}
-{%   for bundle_name in review_ui.js_bundle_names %}
-{%    if review_ui.extension %}
-{%     ext_js_bundle review_ui.extension bundle_name as bundle_output %}
-{%    endif %}
-{%    if bundle_output %}
+{%  for bundle_name in review_ui.js_bundle_names %}
+{%   if review_ui.extension %}
+{%    ext_js_bundle review_ui.extension bundle_name as bundle_output %}
+{%   endif %}
+{%   if bundle_output %}
 {{bundle_output}}
-{%    else %}
-{%     javascript bundle_name %}
-{%    endif %}
-{%   endfor %}
-{%   for js_file in review_ui.js_files %}
+{%   else %}
+{%    javascript bundle_name %}
+{%   endif %}
+{%  endfor %}
+{%  for js_file in review_ui.js_files %}
 <script src="{{js_file}}"></script>
-{%   endfor %}
-{%  endif %}
+{%  endfor %}
 
 <script>
     $(document).ready(function() {
@@ -54,6 +50,7 @@ NOTE: On Review Board local development servers, rendering review UI static
 {%   for key, value in review_ui.get_js_view_data.items %}
                 {{key|json_dumps}}: {{value|json_dumps}},
 {%   endfor %}
+                renderedInline: {{review_ui_inline|yesno:'true,false'}},
                 model: new {{review_ui.js_model_class}}({
 {%   for key, value in review_ui.get_js_model_data.items %}
                     {{key|json_dumps}}: {{value|json_dumps}},

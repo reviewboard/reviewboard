@@ -133,7 +133,7 @@
    *      <span class="rb-c-admin-news-widget__item-title">...</span>
    */
   &__item-title {
-    color: var(--ink-p-fg);
+    color: black;
   }
 }
 
@@ -238,7 +238,7 @@
    *     <span class="rb-c-admin-repositories-widget__repo-service">...</span>
    */
   &__repo-service {
-    color: var(--ink-p-fg-weak);
+    color: #rb-ns-ui.colors[@grey-20];
   }
 }
 
@@ -269,21 +269,6 @@
   &__chart {
     width: 100%;
     height: 160px;
-
-    .legendLabel {
-      color: var(--ink-p-fg-weak);
-    }
-  }
-
-  /**
-   * A label for a slice in the pie.
-   *
-   *     <div class="rb-c-admin-user-activity-widget__slice">
-   *      ...
-   *     </div>
-   */
-  &__slice-label {
-    padding: 2px 4px;
   }
 
   /**
@@ -296,7 +281,7 @@
    */
   &__user-total {
     bottom: 10px;
-    color: var(--ink-p-fg-weak);
+    color: #545454;
     position: absolute;
     text-align: left;
     right: 1em;
@@ -329,10 +314,6 @@
   &__chart {
     width: 100%;
     height: 250px;
-
-    .legendLabel {
-      color: var(--ink-p-fg-weak);
-    }
   }
 }
 
@@ -361,20 +342,12 @@
   padding: @padding;
 
   &.loading {
-    color: var(--ink-p-fg);
     text-align: center;
   }
 
   &.error,
   &.community-support {
-    background: var(--ink-c-alert-warning-bg);
-    border: 1px var(--ink-c-alert-warning-border-color) solid;
-    color: var(--ink-c-alert-warning-fg);
-
-    a:link,
-    a:visited {
-      color: var(--ink-p-link-fg-on-light);
-    }
+    background-color: #FFE4E1;
   }
 
   &.basic-support,

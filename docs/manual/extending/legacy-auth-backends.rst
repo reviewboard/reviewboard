@@ -124,11 +124,10 @@ get_user
 Installing the Authentication Backend
 =====================================
 
-The authentication backend should be packaged as a standard Python package.
-This includes creating a :ref:`pyproject.toml` and making a proper Python
-module that includes your authentication backend.
+The authentication backend should be packaged as a standard Python egg.
+This includes creating a :file:`setup.py` and making a proper Python module
+that includes your authentication backend.
 
-Once your Python package is installed on the system running Review Board,
-you'll be able to change the Authentication type in Review Board to
-:guilabel:`Custom` and specify the Python path for your authentication backend
-class.
+Once this is Python package is installed on the system running Review Board,
+you can change the Authentication type in Review Board to :guilabel:`Custom`
+and specify the Python path for your authentication backend class.

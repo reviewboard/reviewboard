@@ -27,8 +27,8 @@ from reviewboard.reviews.ui.base import (ReviewUI,
 
 if TYPE_CHECKING:
     from django.http import HttpRequest
+    from djblets.util.typing import JSONDict
     from pygments.lexers import Lexer
-    from typelets.json import JSONDict
 
 
 logger = logging.getLogger(__name__)

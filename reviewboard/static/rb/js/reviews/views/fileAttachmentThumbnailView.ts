@@ -14,9 +14,6 @@ import {
     FileAttachmentStates,
 } from 'reviewboard/common';
 import {
-    FileAttachmentThumbnailContainerHook,
-} from 'reviewboard/extensions';
-import {
     FieldStateLabelThemes,
     FieldStateLabelView,
     InlineEditorView,
@@ -362,7 +359,7 @@ export class FileAttachmentThumbnailView extends BaseView<
              * Add any hooks. If renderThumbnail is true then the hooks will
              * have already been added.
             */
-            FileAttachmentThumbnailContainerHook.each(hook => {
+            RB.FileAttachmentThumbnailContainerHook.each(hook => {
                 const HookViewType = hook.get('viewType');
                 const hookView = new HookViewType({
                     el: this.el,
@@ -471,17 +468,15 @@ export class FileAttachmentThumbnailView extends BaseView<
             return;
         }
 
-        const allComments = this.options.comments || {};
+        const comments = this.options.comments || [];
 
-        for (const comments of Object.values(allComments)) {
-            comments.forEach(comment => {
-                if (comment.localdraft) {
-                    this._createDraftComment(comment.comment_id, comment.text);
-                } else {
-                    this.#comments.push(comment);
-                }
-            });
-        }
+        comments.forEach(comment => {
+            if (comment.localdraft) {
+                this._createDraftComment(comment.comment_id, comment.text);
+            } else {
+                this.#comments.push(comment);
+            }
+        });
 
         this.#commentsProcessed = true;
     }
@@ -750,7 +745,7 @@ export class FileAttachmentThumbnailView extends BaseView<
         * Some hooks may depend on the elements being added above, so
         * render the hooks here too.
         */
-        FileAttachmentThumbnailContainerHook.each(hook => {
+        RB.FileAttachmentThumbnailContainerHook.each(hook => {
             const HookViewType = hook.get('viewType');
             const hookView = new HookViewType({
                 el: this.el,

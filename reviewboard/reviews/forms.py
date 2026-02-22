@@ -1,22 +1,15 @@
-"""Forms and fields related to review requests and operations."""
-
-from __future__ import annotations
-
 import re
-from typing import TYPE_CHECKING
 
 from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext, gettext_lazy as _
-from djblets.forms.fields import ConditionsField
 
 from reviewboard.admin.form_widgets import (RelatedGroupWidget,
                                             RelatedRepositoryWidget,
                                             RelatedUserWidget)
 from reviewboard.diffviewer import forms as diffviewer_forms
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.conditions import review_request_condition_choices
 from reviewboard.reviews.models import (DefaultReviewer, Group,
                                         ReviewRequestDraft, Screenshot)
 from reviewboard.scmtools.models import Repository
@@ -24,10 +17,6 @@ from reviewboard.site.mixins import LocalSiteAwareModelFormMixin
 from reviewboard.site.validation import (validate_repositories,
                                          validate_review_groups,
                                          validate_users)
-
-if TYPE_CHECKING:
-    from djblets.forms.fields import ConditionsFieldChoices
-    from typelets.django.strings import StrOrPromise
 
 
 def regex_validator(value):
@@ -283,42 +272,3 @@ class UploadScreenshotForm(forms.Form):
         draft.save()
 
         return screenshot
-
-
-class ReviewRequestConditionsField(ConditionsField):
-    """A field for selecting review request conditions.
-
-    This will include all conditions that are built into Review Board and
-    those registered by extensions.
-
-    Version Added:
-        7.1
-    """
-
-    def __init__(
-        self,
-        *,
-        choices: ConditionsFieldChoices = review_request_condition_choices,
-        label: StrOrPromise = _('Conditions'),
-        **kwargs,
-    ) -> None:
-        """Initialize the field.
-
-        Args:
-            choices (djblets.conditions.choices.ConditionChoices or type or
-                     callable):
-                The registry of choices available for the conditions.
-
-                This defaults to the standard review request condition choices.
-                It can be overridden to provide a more specialized list of
-                conditions.
-
-            label (str, optional):
-                A custom label to use for this field.
-
-            **kwargs (dict):
-                Keyword arguments to pass to the parent class.
-        """
-        super().__init__(choices=choices,
-                         label=label,
-                         **kwargs)

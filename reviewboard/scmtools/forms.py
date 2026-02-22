@@ -51,7 +51,7 @@ from reviewboard.ssh.errors import (BadHostKeyError,
                                     UnknownHostKeyError)
 
 if TYPE_CHECKING:
-    from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+    from reviewboard.hostingsvcs.service import HostingService
 
 
 logger = logging.getLogger(__name__)
@@ -102,8 +102,7 @@ class BaseRepositorySubForm(forms.Form):
     one of:
 
     * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceForm`
-    * :py:class:`~reviewboard.hostingsvcs.base.forms.
-      BaseHostingServiceAuthForm`
+    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceAuthForm`
 
     Forms can provide a :py:class:`Meta` class that define
     :py:attr:`Meta.help_texts` and :py:attr:`Meta.labels` attributes. Each is
@@ -262,8 +261,7 @@ class BaseRepositoryAuthSubForm(BaseRepositorySubForm):
     Third-parties will never need to subclass this directly. Instead, subclass
     one of:
 
-    * :py:class:`~reviewboard.hostingsvcs.base.forms.
-      BaseHostingServiceAuthForm`
+    * :py:class:`~reviewboard.hostingsvcs.forms.HostingServiceAuthForm`
     * :py:class:`~reviewboard.scmtools.forms.BaseSCMToolAuthForm`
     """
 
@@ -787,8 +785,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             **kwargs (dict):
                 Keyword arguments to pass to the parent class.
         """
-        from reviewboard.hostingsvcs.base.forms import \
-            BaseHostingServiceAuthForm
+        from reviewboard.hostingsvcs.forms import HostingServiceAuthForm
 
         # Django's admin UI will pass RepositoryForm an immutable QueryDict
         # as the POST data. This normally makes sense for 99.9% of forms, but
@@ -855,7 +852,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         # fields here that aren't dependent on any loaded hosting service or
         # SCMTool forms or state.
         instance = self.instance
-        cur_hosting_service_cls: (type[BaseHostingService] | None) = None
+        cur_hosting_service_cls: Optional[Type[HostingService]] = None
 
         if instance:
             cur_scmtool_cls = instance.scmtool_class
@@ -900,8 +897,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             hosting_service_id = hosting_service.hosting_service_id
             hosting_services.add(hosting_service_id)
 
-            auth_form_cls = \
-                hosting_service.auth_form or BaseHostingServiceAuthForm
+            auth_form_cls = hosting_service.auth_form or HostingServiceAuthForm
 
             if hosting_service.supports_repositories:
                 hosting_service_choices.append(
@@ -1431,7 +1427,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         hosting_account = self.instance.hosting_account
 
         if hosting_account:
-            hosting_service: BaseHostingService | None
+            hosting_service: Optional[HostingService]
 
             try:
                 hosting_service = hosting_account.service
@@ -2286,7 +2282,6 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             return
 
         subforms_cleaned_data = self.subforms_cleaned_data
-        assert subforms_cleaned_data is not None
         path = subforms_cleaned_data.get('path')
         username = subforms_cleaned_data.get('username')
         password = subforms_cleaned_data.get('password')

@@ -54,12 +54,10 @@ Review Board supports a variety of common source code management systems:
 
 And more enterprise/market-focused systems through `Power Pack`_.
 
-* :rbintegration:`Azure DevOps Server / Team Foundation Server
-  <azure-devops-server>`
-* :rbintegration:`Azure DevOps Services <azure-devops-services>`
-* :rbintegration:`HCL ClearCase <hcl-clearcase>`
+* :rbintegration:`Azure DevOps / Team Foundation Server <tfs>`
+* :rbintegration:`Cliosoft SOS <cliosoft-sos>`
+* :rbintegration:`HCL VersionVault <versionvault>`
 * :rbintegration:`IBM ClearCase <clearcase>`
-* :rbintegration:`Keysight SOS <keysight-sos>`
 
 We're able to quickly add support for new systems as they come out, making
 Review Board a future-proof solution for your company, organization, or
@@ -163,8 +161,8 @@ You can also read through our documentation on:
 * :ref:`Using Review Board <rb-users-guide>`
 * `Review Bot`_ automated code review for Review Board
 * `RBTools`_ command line tools for Review Board
-* `Power Pack`_ PDF and Office document review, reports, management, and
-  integrations for Review Board
+* `Power Pack`_ document review, reports, management, and integrations for
+  Review Board
 
 
 .. _Get Review Board: https://www.reviewboard.org/get/

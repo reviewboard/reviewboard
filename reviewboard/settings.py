@@ -677,8 +677,6 @@ ABSOLUTE_URL_OVERRIDES = {
     'auth.user': lambda u: reverse('user', kwargs={'username': u.username})
 }
 
-PRODUCT_SUFFIX = 'Community Edition'
-
 FEATURE_CHECKER = 'reviewboard.features.checkers.RBFeatureChecker'
 
 OAUTH2_PROVIDER = {

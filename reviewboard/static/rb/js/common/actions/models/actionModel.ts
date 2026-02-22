@@ -18,6 +18,11 @@ import {
  */
 export interface ActionAttrs {
     /**
+     * The ID of the action.
+     */
+    actionId: string;
+
+    /**
      * The explicit ID to use for a DOM element.
      *
      * Version Added:
@@ -38,13 +43,6 @@ export interface ActionAttrs {
      *
      * This may impact the native rendering of the action and should be
      * used carefully.
-     *
-     * Deprecated:
-     *     7.1:
-     *     This is scheduled for removal in Review Board 9. This was only
-     *     ever used for menu items. It's no longer set. Custom menu items
-     *     should instead set the ``data-custom-rendered="true"`` attribute
-     *     on the custom element.
      *
      * Version Added:
      *     7.0
@@ -68,20 +66,6 @@ export interface ActionAttrs {
     url: string | null;
 
     /**
-     * The verbose label for the action.
-     *
-     * This can be used to provide a longer label for wider UIs that would
-     * benefit from a more descriptive label. It's also intended for ARIA
-     * labels.
-     *
-     * It's always optional.
-     *
-     * Version Added:
-     *     7.1
-     */
-    verboseLabel: string | null;
-
-    /**
      * Whether the action should be visible or hidden.
      */
     visible: boolean;
@@ -94,15 +78,6 @@ export interface ActionAttrs {
  * Subclasses may add their own attributes by passing in their own attribute
  * interface when extending this.
  *
- * Version Changed:
- *     7.1:
- *     * This is now the preferred place to put any action activation code.
- *       Multiple views could wrap a single action.
- *
- *     * Rendering state (the ``domID`` and ``isCustomRendered`` attributes)
- *       are now governed by the views. These attributes have been
- *       deprecated and are no longer set.
- *
  * Version Added:
  *     6.0
  */
@@ -111,30 +86,12 @@ export class Action<
     TAttrs extends ActionAttrs = ActionAttrs,
 > extends BaseModel<TAttrs> {
     static defaults: Result<Partial<ActionAttrs>> = {
+        actionId: '',
         domID: null,
         iconClass: null,
         isCustomRendered: false,
         label: null,
         url: null,
-        verboseLabel: null,
         visible: false,
     };
-
-    /**
-     * Activate the action.
-     *
-     * This can be invoked by action views to enable default behaviors.
-     *
-     * By default, this does nothing.
-     *
-     * Version Added:
-     *     7.1
-     *
-     * Returns:
-     *     Promise<void>:
-     *     The promise for the activation.
-     */
-    async activate() {
-        // This can be overridden by subclasses for actions.
-    }
 }

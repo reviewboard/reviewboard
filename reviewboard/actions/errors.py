@@ -4,32 +4,8 @@ Version Added:
     6.0
 """
 
-from __future__ import annotations
 
-from housekeeping import ClassDeprecatedMixin
-
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
-
-
-class ActionError(Exception):
-    """Base class for action-related errors.
-
-    Version:
-        7.1
-    """
-
-
-class MissingActionRendererError(ActionError):
-    """An error indicating an action renderer could not be found.
-
-    Version:
-        7.1
-    """
-
-
-class DepthLimitExceededError(ClassDeprecatedMixin,
-                              ValueError,
-                              warning_cls=RemovedInReviewBoard90Warning):
+class DepthLimitExceededError(ValueError):
     """An error that occurs when the maximum depth limit is exceeded.
 
     Actions cannot be arbitrarily nested. For example, if the depth limit is 2,
@@ -45,10 +21,6 @@ class DepthLimitExceededError(ClassDeprecatedMixin,
            DepthTwoMenuAction(),  # This depth is acceptable.
            DepthThreeTooDeepAction(),  # This action is too deep.
        ])
-
-    Deprecated:
-        7.1:
-        This class is no longer used. It will be removed in Review Board 9.
 
     Version Added:
         6.0

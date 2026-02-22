@@ -38,5 +38,4 @@ import '../reviewboard/static/lib/css/3rdparty.less';
 import '../reviewboard/static/lib/css/jquery-ui-1.8.24.min.css';
 import '../reviewboard/static/lib/css/fontawesome.less';
 import '../reviewboard/static/rb/css/bundles/common.less';
-import '../reviewboard/static/rb/css/bundles/admin.less';
 import '../reviewboard/static/rb/css/bundles/reviews.less';

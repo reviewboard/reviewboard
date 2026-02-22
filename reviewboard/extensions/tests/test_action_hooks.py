@@ -4,11 +4,7 @@ from typing import Any, Dict, Type
 
 from django.template import Context, Template
 
-from reviewboard.actions import (AttachmentPoint,
-                                 BaseAction,
-                                 BaseMenuAction,
-                                 actions_registry)
-from reviewboard.actions.base import ActionPlacement
+from reviewboard.actions import BaseAction, BaseMenuAction, actions_registry
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.extensions.hooks import (ActionHook,
                                           DiffViewerActionHook,
@@ -39,11 +35,7 @@ class ActionHookTests(BaseExtensionHookTestCase):
     class _TestMenuInstance(BaseAction):
         action_id = 'test-menu-item'
         label = 'Test Menu Item'
-
-        placements = [
-            ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
-                            parent_id='test-menu'),
-        ]
+        parent_id = 'test-menu'
 
     def tearDown(self) -> None:
         """Tear down the test case."""
@@ -56,11 +48,6 @@ class ActionHookTests(BaseExtensionHookTestCase):
         test_menu_action = self._TestMenuAction()
         test_menu_instance = self._TestMenuInstance()
 
-        test_menu_action_placement = \
-            test_menu_action.get_placement('review-request')
-        test_menu_instance_placement = \
-            test_menu_instance.get_placement('review-request')
-
         hook = ActionHook(extension=self.extension, actions=[
             test_action,
             test_menu_action,
@@ -69,27 +56,27 @@ class ActionHookTests(BaseExtensionHookTestCase):
 
         try:
             self.assertEqual(
-                actions_registry.get_action('test'),
+                actions_registry.get('action_id', 'test'),
                 test_action)
             self.assertEqual(
-                actions_registry.get_action('test-menu'),
+                actions_registry.get('action_id', 'test-menu'),
                 test_menu_action)
             self.assertEqual(
-                actions_registry.get_action('test-menu-item'),
+                actions_registry.get('action_id', 'test-menu-item'),
                 test_menu_instance)
 
-            self.assertEqual(test_menu_instance_placement.parent_action,
+            self.assertEqual(test_menu_instance.parent_action,
                              test_menu_action)
-            self.assertEqual(test_menu_action_placement.child_actions,
+            self.assertEqual(test_menu_action.child_actions,
                              [test_menu_instance])
         finally:
             hook.disable_hook()
 
-        self.assertIsNone(actions_registry.get_action('test'))
-        self.assertIsNone(actions_registry.get_action('test-menu'))
-        self.assertIsNone(actions_registry.get_action('test-menu-item'))
-        self.assertIsNone(test_menu_instance_placement.parent_action)
-        self.assertEqual(test_menu_action_placement.child_actions, [])
+        self.assertIsNone(actions_registry.get('action_id', 'test'))
+        self.assertIsNone(actions_registry.get('action_id', 'test-menu'))
+        self.assertIsNone(actions_registry.get('action_id', 'test-menu-item'))
+        self.assertIsNone(test_menu_instance.parent_action)
+        self.assertEqual(test_menu_action.child_actions, [])
 
 
 class LegacyActionHookTests(BaseExtensionHookTestCase):
@@ -104,14 +91,6 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
     class _TestMenuAction(BaseReviewRequestMenuAction):
         action_id = 'test-menu-instance'
         label = 'Menu Instance'
-
-    def setUp(self) -> None:
-        """Set up the test case."""
-        super().setUp()
-
-        # Pre-populate this, so population side effects (e.g., warnings)
-        # won't interfere with any tests.
-        actions_registry.populate()
 
     def tearDown(self) -> None:
         """Tear down the test case."""
@@ -338,12 +317,9 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
 
         label = action['label']
         self.assertInHTML(
-            f"""
-            <a href="#" role="presentation" aria-label="{label}">
-             {label}
-             <span class="ink-i-dropdown"></span>
-            </a>
-            """,
+            f'<a href="#" role="presentation" aria-label="{label}">'
+            f'<label class="rb-c-actions__action-label">{label}</label>'
+            f'<span class="ink-i-dropdown"></span></a>',
             content)
 
     def _test_base_review_request_action_hook(
@@ -451,12 +427,9 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
 
             self.assertIn('Yes ID', content)
             self.assertInHTML(
-                f"""
-                <a href="#" role="presentation" aria-label="Menu Dict">
-                 Menu Dict
-                 {dropdown_icon_html}
-                </a>
-                """,
+                f'<a href="#" role="presentation" aria-label="Menu Dict">'
+                f'<label class="rb-c-actions__action-label">Menu Dict</label>'
+                f'{dropdown_icon_html}</a>',
                 content)
 
             self.assertIn('id="action-test-menu-dict"', content)
@@ -529,7 +502,7 @@ class HideActionHookTests(BaseExtensionHookTestCase):
         HideActionHook(extension=self.extension,
                        action_ids=['support-menu'])
 
-        action = actions_registry.get_action('support-menu')
+        action = actions_registry.get('action_id', 'support-menu')
 
         request = self.create_http_request()
         context = Context({

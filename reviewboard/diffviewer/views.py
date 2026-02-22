@@ -23,6 +23,7 @@ from django.urls import NoReverseMatch
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from django.views.generic.base import TemplateView, View
+from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.http import encode_etag, etag_if_none_match, set_etag
 from housekeeping import deprecate_non_keyword_only_args
 from pygments import highlight
@@ -30,21 +31,15 @@ from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 from typing_extensions import NotRequired, TypedDict
 
-from reviewboard.deprecation import (
-    RemovedInReviewBoard80Warning,
-    RemovedInReviewBoard90Warning,
-)
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.commit_utils import (
     SerializedCommitHistoryDiffEntry,
     diff_histories)
 from reviewboard.diffviewer.diffutils import get_diff_files
 from reviewboard.diffviewer.errors import PatchError, UserVisibleError
 from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
-from reviewboard.diffviewer.renderers import (
-    DiffRenderer,
-    get_diff_renderer,
-    get_diff_renderer_class,
-)
+from reviewboard.diffviewer.renderers import (get_diff_renderer,
+                                              get_diff_renderer_class)
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -566,17 +561,17 @@ class DiffFragmentView(View):
 
         try:
             renderer_settings = self._get_renderer_settings(**kwargs)
-            etag = self.make_etag(
-                request=request,
-                renderer_settings=renderer_settings,
-                **kwargs)
+            etag = self.make_etag(renderer_settings, **kwargs)
 
             if etag_if_none_match(request, etag):
                 return HttpResponseNotModified()
 
-            diff_info = self.process_diffset_info(
+            diff_info_or_response = self.process_diffset_info(
                 base_filediff_id=base_filediff_id,
                 **kwargs)
+
+            if isinstance(diff_info_or_response, HttpResponse):
+                return diff_info_or_response
         except Http404:
             raise
         except Exception as e:
@@ -593,16 +588,15 @@ class DiffFragmentView(View):
             return exception_traceback(self.request, e,
                                        self.error_template_name)
 
-        kwargs.update(diff_info)
+        kwargs.update(diff_info_or_response)
 
         try:
             context = self.get_context_data(**kwargs)
 
             renderer = self.create_renderer(
-                request=request,
                 context=context,
                 renderer_settings=renderer_settings,
-                **kwargs)
+                *args, **kwargs)
             response = renderer.render_to_response(request)
         except PatchError as e:
             logger.warning(
@@ -644,7 +638,7 @@ class DiffFragmentView(View):
                 template_name=self.patch_error_template_name,
                 context={
                     'bundle_url': bundle_url,
-                    'file': diff_info['diff_file'],
+                    'file': diff_info_or_response['diff_file'],
                     'filename': os.path.basename(e.filename),
                     'patch_output': e.error_output,
                     'rejects': mark_safe(rejects),
@@ -655,7 +649,7 @@ class DiffFragmentView(View):
                 template_name=self.error_template_name,
                 context={
                     'error': e,
-                    'file': diff_info['diff_file'],
+                    'file': diff_info_or_response['diff_file'],
                 },
                 request=request))
         except Exception as e:
@@ -672,7 +666,7 @@ class DiffFragmentView(View):
             return exception_traceback(
                 self.request, e, self.error_template_name,
                 extra_context={
-                    'file': diff_info['diff_file'],
+                    'file': diff_info_or_response['diff_file'],
                 })
 
         if response.status_code == 200:
@@ -680,22 +674,9 @@ class DiffFragmentView(View):
 
         return response
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-    def make_etag(
-        self,
-        *,
-        renderer_settings: Mapping[str, Any],
-        filediff_id: int,
-        interfilediff_id: (int | None) = None,
-        request: (HttpRequest | None) = None,
-        **kwargs,
-    ) -> str:
+    def make_etag(self, renderer_settings, filediff_id,
+                  interfilediff_id=None, **kwargs):
         """Return an ETag identifying this render.
-
-        Version Changed:
-            7.1.0:
-            * Deprecated non-keyword arguments.
-            * Added the ``request`` parameter.
 
         Args:
             renderer_settings (dict):
@@ -716,17 +697,11 @@ class DiffFragmentView(View):
                 :py:class:`~reviewboard.diffviewer.models.filediff.FileDiff` on
                 the other side of the diff revision, if viewing an interdiff.
 
-            request (django.http.HttpRequest, optional):
-                The request from the client.
-
-                Version Added:
-                    7.1.0
-
             **kwargs (dict):
                 Additional keyword arguments passed to the function.
 
-        Returns:
-            str:
+        Return:
+            unicode:
             The encoded ETag identifying this render.
         """
         return encode_etag(
@@ -740,11 +715,11 @@ class DiffFragmentView(View):
 
     def process_diffset_info(
         self,
-        diffset_or_id: DiffSet | int,
+        diffset_or_id: Union[DiffSet, int],
         filediff_id: int,
-        interfilediff_id: (int | None) = None,
-        interdiffset_or_id: (DiffSet | int | None) = None,
-        base_filediff_id: (int | None) = None,
+        interfilediff_id: Optional[int] = None,
+        interdiffset_or_id: Optional[Union[DiffSet, int]] = None,
+        base_filediff_id: Optional[int] = None,
         **kwargs,
     ) -> Mapping[str, Any]:
         """Process and return information on the desired diff.
@@ -752,6 +727,9 @@ class DiffFragmentView(View):
         The diff IDs and other data passed to the view can be processed and
         converted into DiffSets. A dictionary with the DiffSet and FileDiff
         information will be returned.
+
+        A subclass may instead return a HttpResponse to indicate an error
+        with the DiffSets.
 
         Args:
             diffset_or_id (reviewboard.diffviewer.models.diffset.DiffSet or
@@ -838,7 +816,8 @@ class DiffFragmentView(View):
                 raise UserVisibleError(_(
                     'The requested FileDiff (ID %s) is not a valid base '
                     'FileDiff for FileDiff %s.'
-                ) % (base_filediff_id, filediff_id))
+                    % (base_filediff_id, filediff_id)
+                ))
 
         assert diffset is not None
 
@@ -867,17 +846,9 @@ class DiffFragmentView(View):
             'diff_file': diff_file,
         }
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-    def create_renderer(
-        self,
-        *,
-        context: Mapping[str, Any],
-        renderer_settings: Mapping[str, Any],
-        diff_file: SerializedDiffFile,
-        request: HttpRequest,
-        **kwargs,
-    ) -> DiffRenderer:
-        """Create the renderer for the diff.
+    def create_renderer(self, context, renderer_settings, diff_file,
+                        *args, **kwargs):
+        """Creates the renderer for the diff.
 
         This calculates all the state and data needed for rendering, and
         constructs a DiffRenderer with that data. That renderer is then
@@ -886,34 +857,6 @@ class DiffFragmentView(View):
         If there's an error in looking up the necessary information, this
         may raise a UserVisibleError (best case), or some other form of
         Exception.
-
-        Version Changed:
-            7.1.0:
-            * Deprecated non-keyword arguments.
-            * Added the ``request`` parameter.
-
-        Args:
-            context (dict):
-                The template rendering context.
-
-            renderer_settings (dict):
-                The diff renderer settings.settings
-
-            diff_file (reviewboard.diffviewer.diffutils.SerializedDiffFile):
-                The information on the diff file to render.
-
-            request (django.http.HttpRequest):
-                The request from the client.
-
-                Version Added:
-                    7.1.0
-
-            **kwargs (dict):
-                Keyword arguments, for future expansion.
-
-        Returns:
-            reviewboard.diffviewer.renderers.DiffRenderer:
-            The resulting diff renderer.
         """
         return get_diff_renderer(
             diff_file,
@@ -1089,13 +1032,15 @@ class DownloadPatchErrorBundleView(DiffFragmentView):
         """
         try:
             renderer_settings = self._get_renderer_settings(**kwargs)
-            etag = self.make_etag(renderer_settings=renderer_settings,
-                                  request=request, **kwargs)
+            etag = self.make_etag(renderer_settings, **kwargs)
 
             if etag_if_none_match(request, etag):
                 return HttpResponseNotModified()
 
-            diff_info = self.process_diffset_info(**kwargs)
+            diff_info_or_response = self.process_diffset_info(**kwargs)
+
+            if isinstance(diff_info_or_response, HttpResponse):
+                return diff_info_or_response
         except Http404:
             return HttpResponseNotFound()
         except Exception as e:
@@ -1110,16 +1055,15 @@ class DownloadPatchErrorBundleView(DiffFragmentView):
                 extra={'request': request})
             return HttpResponseServerError()
 
-        kwargs.update(diff_info)
+        kwargs.update(diff_info_or_response)
 
         try:
             context = self.get_context_data(**kwargs)
 
             renderer = self.create_renderer(
-                request=request,
                 context=context,
                 renderer_settings=renderer_settings,
-                **kwargs)
+                *args, **kwargs)
             renderer.render_to_response(request)
         except PatchError as e:
             patch_error = e

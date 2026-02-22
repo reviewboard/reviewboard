@@ -219,7 +219,7 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self) -> None:
+        def initialize(self):
             TemplateHook(self,
                          name='base-after-nav',
                          template_name='myextension/after-nav.html',

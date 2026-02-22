@@ -1,82 +1,29 @@
-"""Utilities for WebHook handlers."""
-
-from __future__ import annotations
-
 import logging
 import re
-from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
-from housekeeping import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
 
 
 logger = logging.getLogger(__name__)
 
 
-def get_git_branch_name(
-    ref_name: str,
-) -> str:
-    """Return the branch name corresponding to the specified ref name.
+def get_git_branch_name(ref_name):
+    """Returns the branch name corresponding to the specified ref name."""
+    branch_ref_prefix = 'refs/heads/'
 
-    Args:
-        ref_name (str):
-            The name of the Git reference.
-
-    Returns:
-        str:
-        The isolated branch name.
-    """
-    if ref_name.startswith('refs/heads/'):
-        return ref_name[len('refs/heads/'):]
-    else:
-        return ref_name
+    if ref_name.startswith(branch_ref_prefix):
+        return ref_name[len(branch_ref_prefix):]
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-def get_repository_for_hook(
-    *,
-    repository_id: int,
-    hosting_service_id: str,
-    local_site_name: str | None,
-    hooks_uuid: (str | None) = None,
-) -> Repository:
-    """Return a Repository for the given hook parameters.
-
-    Version Changed:
-        7.1:
-        Made arguments keyword-only.
-
-    Args:
-        repository_id (int):
-            The ID of the repository.
-
-        hosting_service_id (str):
-            The name of the hosting service.
-
-        local_site_name (str):
-            The Local Site name, if available.
-
-        hooks_uuid (str, optional):
-            The UUID to use for WebHooks for this repository.
-
-    Returns:
-        reviewboard.scmtools.models.Repository:
-        The repository object.
-
-    Raises:
-        django.http.Http404:
-            A repository with the given parameters was not found.
-    """
+def get_repository_for_hook(repository_id, hosting_service_id,
+                            local_site_name, hooks_uuid=None):
+    """Returns a Repository for the given hook parameters."""
     q = (Q(pk=repository_id) &
          Q(hosting_account__service_name=hosting_service_id))
 
@@ -91,15 +38,9 @@ def get_repository_for_hook(
     return get_object_or_404(Repository, q)
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-def get_review_request_id(
-    *,
-    commit_message: str,
-    server_url: str,
-    commit_id: (str | None) = None,
-    repository: (Repository | None) = None,
-) -> int | None:
-    """Return the review request ID matching the pushed commit.
+def get_review_request_id(commit_message, server_url, commit_id=None,
+                          repository=None):
+    """Returns the review request ID matching the pushed commit.
 
     We first use a regex (that can be overridden in settings_local.py) to try
     to find a matching review request ID in the commit message. If no match is
@@ -108,31 +49,9 @@ def get_review_request_id(
 
     We assume there is at most one review request associated with each commit.
     If a matching review request cannot be found, we return None.
-
-    Version Changed:
-        7.1:
-        Made arguments keyword-only.
-
-    Args:
-        commit_message (str):
-            The commit message from the hosting service.
-
-        server_url (str):
-            The URL to the Review Board server.
-
-        commit_id (str):
-            The ID of the commit.
-
-        repository (reviewboard.scmtools.models.Repository):
-            The repository for the commit.
-
-    Returns:
-        int:
-        The ID of the review request that corresponds to the pushed commit. If
-        no review request could be found, this will be ``None``.
     """
     regex = settings.HOSTINGSVCS_HOOK_REGEX % {
-        'server_url': re.escape(server_url),
+        'server_url': server_url,
     }
 
     pattern = re.compile(regex, settings.HOSTINGSVCS_HOOK_REGEX_FLAGS)
@@ -160,29 +79,8 @@ def get_review_request_id(
     return review_request_id
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-def close_review_request(
-    *,
-    review_request: ReviewRequest,
-    review_request_id: int,
-    description: str,
-) -> None:
-    """Close the specified review request as submitted.
-
-    Version Changed:
-        7.1:
-        Made arguments keyword-only.
-
-    Args:
-        review_request (reviewboard.reviews.models.ReviewRequest):
-            The review request to close.
-
-        review_request_id (int):
-            The ID of the review request.
-
-        description (str):
-            The close description to use.
-    """
+def close_review_request(review_request, review_request_id, description):
+    """Closes the specified review request as submitted."""
     if review_request.status == ReviewRequest.SUBMITTED:
         logger.warning('Review request #%s is already submitted.',
                        review_request_id)
@@ -199,36 +97,13 @@ def close_review_request(
                  review_request_id, review_request.status)
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-def close_all_review_requests(
-    *,
-    review_request_id_to_commits: Mapping[int | None, Sequence[str]],
-    local_site_name: str | None,
-    repository: Repository,
-    hosting_service_id: str,
-) -> None:
-    """Close each review request in the given dictionary as submitted.
+def close_all_review_requests(review_request_id_to_commits, local_site_name,
+                              repository, hosting_service_id):
+    """Closes each review request in the given dictionary as submitted.
 
     The provided dictionary should map a review request ID (int) to commits
     associated with that review request ID (list of strings). Commits that are
     not associated with any review requests have the key None.
-
-    Version Changed:
-        7.1:
-        Made arguments keyword-only.
-
-    Args:
-        review_request_id_to_commits (dict):
-            A mapping from review request ID to a list of
-
-        local_site_name (str):
-            The Local Site name, if available.
-
-        repository (reviewboard.scmtools.models.Repository):
-            The repository for all review requests.
-
-        hosting_service_id (str):
-            The name of the hosting service.
     """
     if local_site_name:
         try:
@@ -265,10 +140,10 @@ def close_all_review_requests(
 
     # Check if there are any listed that we couldn't find, and log them.
     if len(review_request_ids) != len(review_requests):
-        id_to_review_request = {
-            review_request.display_id: review_request
+        id_to_review_request = dict(
+            (review_request.display_id, review_request)
             for review_request in review_requests
-        }
+        )
 
         for review_request_id in review_request_ids:
             if review_request_id not in id_to_review_request:
@@ -280,11 +155,8 @@ def close_all_review_requests(
     for review_request in review_requests:
         review_request_id = review_request.display_id
 
-        commits_info = ', '.join(
-            review_request_id_to_commits[review_request_id])
-
         close_review_request(
-            review_request=review_request,
-            review_request_id=review_request_id,
-            description=f'Pushed to {commits_info}',
-        )
+            review_request,
+            review_request_id,
+            ('Pushed to ' +
+             ', '.join(review_request_id_to_commits[review_request_id])))

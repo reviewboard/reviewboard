@@ -1,8 +1,3 @@
-"""Unit tests for reviewboard.notifications.webhooks."""
-
-from __future__ import annotations
-
-import logging
 from collections import OrderedDict
 from datetime import datetime
 from urllib.request import OpenerDirector
@@ -452,28 +447,17 @@ class WebHookDispatchTests(SpyAgency, TestCase):
                     owner=OpenerDirector,
                     call_fake=_urlopen)
 
-        with self.assertLogs(logger=webhooksLogger,
-                             level=logging.INFO) as cm:
-            dispatch_webhook_event(request=FakeHTTPRequest(None),
-                                   webhook_targets=[handler, handler],
-                                   event='my-event',
-                                   payload='{}')
+        dispatch_webhook_event(request=FakeHTTPRequest(None),
+                               webhook_targets=[handler, handler],
+                               event='my-event',
+                               payload='{}')
 
-        self.assertSpyCallCount(OpenerDirector.open, 2)
-
-        self.assertEqual(len(cm.records), 2)
-        self.assertRegex(
-            cm.output[0],
-            r'ERROR:reviewboard.notifications.webhooks:\[[a-z0-9-]+\] '
-            r'Could not dispatch WebHook to http://example.com/endpoint/:')
-        self.assertRegex(
-            cm.output[1],
-            r'ERROR:reviewboard.notifications.webhooks:\[[a-z0-9-]+\] '
-            r'Could not dispatch WebHook to http://example.com/endpoint/:')
-
-        # Typing for args prevents accessing by index. We're ignoring it here.
-        self.assertIsInstance(cm.records[0].args[2], IOError)  # type: ignore
-        self.assertIsInstance(cm.records[1].args[2], IOError)  # type: ignore
+        self.assertEqual(len(OpenerDirector.open.spy.calls), 2)
+        self.assertTrue(len(webhooksLogger.exception.spy.calls), 2)
+        self.assertIsInstance(webhooksLogger.exception.spy.calls[0].args[2],
+                              IOError)
+        self.assertIsInstance(webhooksLogger.exception.spy.calls[1].args[2],
+                              IOError)
 
     def test_with_site_domain(self):
         """Testing dispatch_webhook_event with site domain"""

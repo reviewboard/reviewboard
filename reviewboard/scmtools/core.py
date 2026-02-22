@@ -16,7 +16,6 @@ import importlib_metadata
 from django.utils.encoding import force_bytes, force_str
 from django.utils.functional import classproperty
 from django.utils.translation import gettext_lazy as _
-from djblets.log import log_timed
 from djblets.util.properties import TypedProperty
 from typing_extensions import TypeAlias
 
@@ -30,8 +29,7 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
     from django.http import HttpRequest
     from django.utils.functional import _StrOrPromise
-    from typelets.json import JSONDict
-
+    from djblets.util.typing import JSONDict
     from reviewboard.diffviewer.parser import BaseDiffParser
     from reviewboard.scmtools.certs import Certificate
     from reviewboard.scmtools.forms import (BaseSCMToolAuthForm,
@@ -1788,54 +1786,34 @@ class SCMClient:
                 Unexpected error in fetching the file. This may be an
                 unexpected HTTP status code.
         """
-        with log_timed(f'Performing HTTP GET file fetch at {url}',
-                       logger=logger) as log_timer:
-            try:
-                request = URLRequest(url)
+        logger.info('Fetching file from %s', url)
 
-                if self.username:
-                    credentials = f'{self.username}:{self.password}'
-                    auth_string = force_str(
-                        base64.b64encode(credentials.encode('utf-8')))
-                    request.add_header('Authorization',
-                                       f'Basic {auth_string}')
+        try:
+            request = URLRequest(url)
 
-                response = urlopen(request)
+            if self.username:
+                credentials = '%s:%s' % (self.username, self.password)
+                auth_string = \
+                    force_str(base64.b64encode(credentials.encode('utf-8')))
+                request.add_header(force_str('Authorization'),
+                                   force_str('Basic %s' % auth_string))
 
-                if (mime_type is None or
-                    response.info()['Content-Type'] == mime_type):
-                    return force_bytes(response.read())
+            response = urlopen(request)
 
-                return None
-            except HTTPError as e:
-                if e.code == 404:
-                    raise FileNotFoundError(path, revision)
+            if (mime_type is None or
+                response.info()['Content-Type'] == mime_type):
+                return force_bytes(response.read())
 
-                logger.error('[%s] HTTP error code %s when fetching '
-                             'file from %s: %s',
-                             log_timer.trace_id, e.code, url, e)
-
-                raise SCMError(
-                    _('Failed to fetch file at %(url)s. The repository '
-                      'returned HTTP error %(code)s. Administrators can '
-                      'find details in the Review Board server logs (error '
-                      'ID %(trace_id)s).')
-                    % {
-                        'code': e.code,
-                        'trace_id': log_timer.trace_id,
-                        'url': url,
-                    })
-            except Exception as e:
-                logger.exception('[%s] Unexpected error fetching file over '
-                                 'HTTP from %s: %s',
-                                 log_timer.trace_id, url, e)
-
-                raise SCMError(
-                    _('Unexpected error fetching file from %(url)s: '
-                      '%(error)s. Administrators can find details in the '
-                      'Review Board server logs (error ID %(trace_id)s).')
-                    % {
-                        'trace_id': log_timer.trace_id,
-                        'url': url,
-                        'error': e,
-                    })
+            return None
+        except HTTPError as e:
+            if e.code == 404:
+                raise FileNotFoundError(path, revision)
+            else:
+                msg = "HTTP error code %d when fetching file from %s: %s" % \
+                      (e.code, url, e)
+                logger.error(msg)
+                raise SCMError(msg)
+        except Exception as e:
+            msg = "Unexpected error fetching file from %s: %s" % (url, e)
+            logger.error(msg)
+            raise SCMError(msg)

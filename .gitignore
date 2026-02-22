@@ -48,8 +48,8 @@ temp
 bak
 reviewboard/scmtools/testdata/hg_repo/.hg/cache/branch2-served
 reviewboard/scmtools/testdata/hg_repo/.hg/cache/tags2-visible
-reviewboard/scmtools/testdata/hg_repo/.hg/cache/rbc-names-v*
-reviewboard/scmtools/testdata/hg_repo/.hg/cache/rbc-revs-v*
+reviewboard/scmtools/testdata/hg_repo/.hg/cache/rbc-names-v1
+reviewboard/scmtools/testdata/hg_repo/.hg/cache/rbc-revs-v1
 reviewboard/scmtools/testdata/hg_repo/.hg/wcache/
 reviewboard/scmtools/testdata/p4_repo/server.locks/
 reviewboard/scmtools/testdata/p4_repo/db.topology

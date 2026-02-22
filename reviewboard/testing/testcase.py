@@ -7,12 +7,11 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from typing import (Any, Callable, List, Optional, TYPE_CHECKING, Tuple, Type,
-                    Union)
+from typing import (Any, Callable, Dict, Iterator, List, Optional, Sequence,
+                    TYPE_CHECKING, Tuple, Type, Union)
 from uuid import uuid4
 
 import kgb
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.contrib.messages.middleware import MessageMiddleware
 from django.contrib.sessions.middleware import SessionMiddleware
@@ -26,7 +25,6 @@ from django.urls import ResolverMatch
 from django.utils.timezone import now
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
 from djblets.secrets.token_generators import token_generator_registry
-from housekeeping import func_deprecated
 from djblets.testing.testcases import (FixturesCompilerMixin,
                                        TestCase as DjbletsTestCase)
 from djblets.util.symbols import UNSET, Unsettable
@@ -42,7 +40,6 @@ from reviewboard.attachments.models import (FileAttachment,
 from reviewboard.certs.cert import (Certificate,
                                     CertificateBundle,
                                     CertificateFingerprints)
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import (DiffCommit, DiffSet, DiffSetHistory,
                                            FileDiff)
@@ -68,12 +65,9 @@ from reviewboard.testing.scmtool import (TestTool,
 from reviewboard.webapi.models import WebAPIToken
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
-    from contextlib import AbstractContextManager
-
     from django.http import HttpRequest
-    from django_assert_queries import ExpectedQuery
-    from typelets.json import JSONDict
+    from djblets.db.query_comparator import ExpectedQuery
+    from djblets.util.typing import JSONDict
 
     from reviewboard.changedescs.models import ChangeDescription
     from reviewboard.scmtools.core import FileLookupContext, RevisionID
@@ -598,24 +592,18 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             token_info=token_info,
             **kwargs)
 
-    @func_deprecated(
-        RemovedInReviewBoard90Warning,
-        message=(
-            'assertQueries() has been deprecated in favor of '
-            'django_assert_queries.assert_queries(), and will be removed in '
-            'Review Board 9.'
-        ),
-    )
+    @contextmanager
     def assertQueries(
         self,
-        queries: Sequence[ExpectedQuery | dict[str, Any]],
-        num_statements: (int | None) = None,
+        queries: Sequence[Union[ExpectedQuery,
+                                Dict[str, Any]]],
+        num_statements: Optional[int] = None,
         *,
         with_tracebacks: bool = False,
         traceback_size: int = 15,
-        check_join_types: bool = True,
-        check_subqueries: bool = True,
-    ) -> AbstractContextManager[None]:
+        check_join_types: Optional[bool] = True,
+        check_subqueries: Optional[bool] = True,
+    ) -> Iterator[None]:
         """Assert the number and complexity of queries.
 
         This is a wrapper around :py:meth:`assertQueries()
@@ -644,7 +632,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 If enabled, tracebacks for queries will be included in
                 results.
 
-            traceback_size (int, optional):
+            tracebacks_size (int, optional):
                 The size of any tracebacks, in number of lines.
 
                 The default is 15.
@@ -670,12 +658,13 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
                 The parameters passed, or the queries compared, failed
                 expectations.
         """
-        return assert_queries(queries=queries,
-                              num_statements=num_statements,
-                              with_tracebacks=with_tracebacks,
-                              traceback_size=traceback_size,
-                              check_join_types=check_join_types,
-                              check_subqueries=check_subqueries)
+        with super().assertQueries(queries=queries,
+                                   num_statements=num_statements,
+                                   with_tracebacks=with_tracebacks,
+                                   traceback_size=traceback_size,
+                                   check_join_types=check_join_types,
+                                   check_subqueries=check_subqueries):
+            yield
 
     @contextmanager
     def assert_warns(
@@ -703,6 +692,15 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             # Some warnings such as DeprecationWarning are filtered by
             # default, stop filtering them.
             warnings.simplefilter('always')
+
+            # Now that we've done that, some warnings may come in that we
+            # really don't want. We want to turn those back off.
+            try:
+                from django.utils.deprecation import RemovedInDjango20Warning
+                warnings.filterwarnings('ignore',
+                                        category=RemovedInDjango20Warning)
+            except ImportError:
+                pass
 
             self.assertEqual(len(w), 0)
 

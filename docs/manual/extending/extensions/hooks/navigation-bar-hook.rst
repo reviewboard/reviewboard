@@ -34,7 +34,7 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self) -> None:
+        def initialize(self):
             NavigationBarHook(
                 self,
                 entries = [

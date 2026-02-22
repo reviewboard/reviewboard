@@ -7,16 +7,11 @@ from typing import Iterable, List, Optional, TYPE_CHECKING, Union
 from django.http import HttpRequest
 from django.template import Context
 from django.utils.translation import gettext_lazy as _
-from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.actions import (ActionPlacement,
-                                 AttachmentPoint,
+from reviewboard.actions import (AttachmentPoint,
                                  BaseAction,
                                  BaseMenuAction,
                                  actions_registry)
-from reviewboard.actions.renderers import (BaseActionRenderer,
-                                           DetailedMenuActionGroupRenderer,
-                                           MenuActionGroupRenderer)
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.reviews.features import (general_comments_feature,
@@ -26,7 +21,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.urls import reviewable_url_names, review_request_url_names
 
 if TYPE_CHECKING:
-    from typelets.django.strings import StrOrPromise
+    from djblets.util.typing import StrOrPromise
 
 
 all_review_request_url_names = reviewable_url_names + review_request_url_names
@@ -85,14 +80,10 @@ class CloseCompletedAction(BaseAction):
     """
 
     action_id = 'close-completed'
+    parent_id = CloseMenuAction.action_id
     label = _('Completed')
     apply_to = all_review_request_url_names
-    js_model_class = 'RB.CloseCompletedAction'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
-                        parent_id=CloseMenuAction.action_id),
-    ]
+    js_view_class = 'RB.CloseCompletedActionView'
 
     def should_render(
         self,
@@ -129,14 +120,10 @@ class CloseDiscardedAction(BaseAction):
     """
 
     action_id = 'close-discarded'
+    parent_id = CloseMenuAction.action_id
     label = _('Discarded')
     apply_to = all_review_request_url_names
-    js_model_class = 'RB.CloseDiscardedAction'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
-                        parent_id=CloseMenuAction.action_id),
-    ]
+    js_view_class = 'RB.CloseDiscardedActionView'
 
 
 class DeleteAction(BaseAction):
@@ -147,14 +134,10 @@ class DeleteAction(BaseAction):
     """
 
     action_id = 'delete-review-request'
+    parent_id = CloseMenuAction.action_id
     label = _('Delete Permanently')
     apply_to = all_review_request_url_names
-    js_model_class = 'RB.DeleteAction'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
-                        parent_id=CloseMenuAction.action_id),
-    ]
+    js_view_class = 'RB.DeleteActionView'
 
     def should_render(
         self,
@@ -287,19 +270,6 @@ class DownloadDiffAction(BaseAction):
                 review_request.has_diffsets)
 
 
-class ReviewMenuActionRenderer(DetailedMenuActionGroupRenderer):
-    """Action renderer for the Review menu.
-
-    This renders as a detailed menu, but using a custom JavaScript view for
-    managing the menu.
-
-    Version Added:
-        7.1
-    """
-
-    js_view_class = 'RB.ReviewMenuActionView'
-
-
 class ReviewMenuAction(BaseMenuAction):
     """The "Review" menu on the unified banner.
 
@@ -309,17 +279,13 @@ class ReviewMenuAction(BaseMenuAction):
 
     action_id = 'review-menu'
     apply_to = all_review_request_url_names
-    default_renderer_cls = ReviewMenuActionRenderer
-    icon_class = 'rb-icon rb-icon-compose-review'
+    attachment = AttachmentPoint.UNIFIED_BANNER
     label = _('Review')
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER),
-    ]
+    icon_class = 'rb-icon rb-icon-compose-review'
+    js_view_class = 'RB.ReviewMenuActionView'
 
     def should_render(
         self,
-        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.
@@ -352,9 +318,10 @@ class CreateReviewAction(BaseAction):
     """
 
     action_id = 'create-review'
+    parent_id = 'review-menu'
     apply_to = all_review_request_url_names
-    label = _('Create Review')
-    verbose_label = _('Create a new review')
+    attachment = AttachmentPoint.UNIFIED_BANNER
+    label = _('Create a new review')
     description = [
         _('Your review will start off blank, but you can add text and '
           'general comments to it.'),
@@ -362,39 +329,8 @@ class CreateReviewAction(BaseAction):
           'create a new review for you.'),
     ]
     icon_class = 'rb-icon rb-icon-create-review'
-    js_model_class = 'RB.CreateReviewAction'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
-                        parent_id='review-menu'),
-        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
-    ]
-
-    def should_render(
-        self,
-        *,
-        context: Context,
-    ) -> bool:
-        """Return whether this action should render.
-
-        This menu only renders when the user is logged in and the unified
-        banner feature is enabled.
-
-        Args:
-            context (django.template.Context):
-                The current rendering context.
-
-        Returns:
-            bool:
-            ``True`` if the action should render.
-        """
-        request = context['request']
-        user = request.user
-
-        return (super().should_render(context=context) and
-                user.is_authenticated and
-                not is_site_read_only_for(user) and
-                unified_banner_feature.is_enabled(request=request))
+    js_view_class = 'RB.CreateReviewActionView'
+    template_name = 'actions/detailed_menuitem_action.html'
 
 
 class EditReviewAction(BaseAction):
@@ -405,46 +341,16 @@ class EditReviewAction(BaseAction):
     """
 
     action_id = 'edit-review'
+    parent_id = 'review-menu'
     apply_to = all_review_request_url_names
-    label = _('Edit Review')
-    verbose_label = _('Edit your review')
+    attachment = AttachmentPoint.UNIFIED_BANNER
+    label = _('Edit your review')
     description = [
         _('Edit your comments and publish your review.'),
     ]
     icon_class = 'rb-icon rb-icon-compose-review'
-    js_model_class = 'RB.EditReviewAction'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
-                        parent_id='review-menu'),
-        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
-    ]
-
-    def should_render(
-        self,
-        *,
-        context: Context,
-    ) -> bool:
-        """Return whether this action should render.
-
-        This menu only renders when the user is logged in and the unified
-        banner feature is enabled.
-
-        Args:
-            context (django.template.Context):
-                The current rendering context.
-
-        Returns:
-            bool:
-            ``True`` if the action should render.
-        """
-        request = context['request']
-        user = request.user
-
-        return (super().should_render(context=context) and
-                user.is_authenticated and
-                not is_site_read_only_for(user) and
-                unified_banner_feature.is_enabled(request=request))
+    js_view_class = 'RB.EditReviewActionView'
+    template_name = 'actions/detailed_menuitem_action.html'
 
 
 class AddGeneralCommentAction(BaseAction):
@@ -455,46 +361,17 @@ class AddGeneralCommentAction(BaseAction):
     """
 
     action_id = 'add-general-comment'
+    parent_id = 'review-menu'
     apply_to = all_review_request_url_names
-    label = _('Add General Comment')
-    verbose_label = _('Add a general comment')
+    attachment = AttachmentPoint.UNIFIED_BANNER
+    label = _('Add a general comment')
     description = [
         _('Add a new general comment about the change, not attached to '
           'any code or file attachments.'),
     ]
     icon_class = 'rb-icon rb-icon-edit'
-    js_model_class = 'RB.AddGeneralCommentAction'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
-                        parent_id='review-menu'),
-        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
-    ]
-
-    def should_render(
-        self,
-        *,
-        context: Context,
-    ) -> bool:
-        """Return whether this action should render.
-
-        Version Added:
-            7.1
-
-        Args:
-            context (django.template.Context):
-                The current rendering context.
-
-        Returns:
-            bool:
-            ``True`` if the action should render.
-        """
-        request = context['request']
-        user = request.user
-
-        return (super().should_render(context=context) and
-                user.is_authenticated and
-                not is_site_read_only_for(user))
+    js_view_class = 'RB.AddGeneralCommentActionView'
+    template_name = 'actions/detailed_menuitem_action.html'
 
 
 class ShipItAction(BaseAction):
@@ -505,9 +382,10 @@ class ShipItAction(BaseAction):
     """
 
     action_id = 'ship-it'
+    parent_id = 'review-menu'
     apply_to = all_review_request_url_names
-    label = _('Ship It!')
-    verbose_label = _('Ship it!')
+    attachment = AttachmentPoint.UNIFIED_BANNER
+    label = _('Ship it!')
     description = [
         _("You're happy with what you're seeing, and would like to "
           'approve it.'),
@@ -515,53 +393,12 @@ class ShipItAction(BaseAction):
           'a new review" above.'),
     ]
     icon_class = 'rb-icon rb-icon-shipit'
-    js_model_class = 'RB.ShipItAction'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.UNIFIED_BANNER,
-                        parent_id='review-menu'),
-        ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
-    ]
-
-    def should_render(
-        self,
-        *,
-        context: Context,
-    ) -> bool:
-        """Return whether this action should render.
-
-        Version Added:
-            7.1
-
-        Args:
-            context (django.template.Context):
-                The current rendering context.
-
-        Returns:
-            bool:
-            ``True`` if the action should render.
-        """
-        request = context['request']
-        user = request.user
-        review_request = context.get('review_request')
-        siteconfig = SiteConfiguration.objects.get_current()
-
-        return (
-            super().should_render(context=context) and
-            user.is_authenticated and
-            not is_site_read_only_for(user) and
-            review_request is not None and
-            (user.pk != review_request.submitter_id or
-             bool(siteconfig.get('reviews_allow_self_shipit')))
-        )
+    js_view_class = 'RB.ShipItActionView'
+    template_name = 'actions/detailed_menuitem_action.html'
 
 
 class LegacyAddGeneralCommentAction(BaseAction):
     """The action for adding a general comment.
-
-    Deprecated:
-        7.1:
-        This will be removed in Review Board 9.
 
     Version Added:
         6.0
@@ -606,10 +443,6 @@ class LegacyEditReviewAction(BaseAction):
     This exists within the review request actions area, and will be supplanted
     by the new action in the Review menu in the unified banner.
 
-    Deprecated:
-        7.1:
-        This will be removed in Review Board 9.
-
     Version Added:
         6.0
     """
@@ -651,10 +484,6 @@ class LegacyShipItAction(BaseAction):
 
     This exists within the review request actions area, and will be supplanted
     by the new action in the Review menu in the unified banner.
-
-    Deprecated:
-        7.1:
-        This will be removed in Review Board 9.
 
     Version Added:
         6.0
@@ -743,13 +572,9 @@ class UploadDiffAction(BaseAction):
     """
 
     action_id = 'upload-diff'
+    parent_id = UpdateMenuAction.action_id
     apply_to = all_review_request_url_names
-    js_model_class = 'RB.UpdateDiffAction'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
-                        parent_id=UpdateMenuAction.action_id),
-    ]
+    js_view_class = 'RB.UpdateDiffActionView'
 
     def get_label(
         self,
@@ -815,14 +640,10 @@ class UploadFileAction(BaseAction):
     """
 
     action_id = 'upload-file'
+    parent_id = UpdateMenuAction.action_id
     label = _('Add File')
     apply_to = all_review_request_url_names
-    js_model_class = 'RB.AddFileAction'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
-                        parent_id=UpdateMenuAction.action_id),
-    ]
+    js_view_class = 'RB.AddFileActionView'
 
     def should_render(
         self,
@@ -857,19 +678,6 @@ class UploadFileAction(BaseAction):
                   perms['reviews']['can_edit_reviewrequest'])))
 
 
-class StarActionRenderer(BaseActionRenderer):
-    """Action renderer for the starred action.
-
-    This provides a custom template used to render the action as a star,
-    which can be pressed to star or unstar the review request.
-
-    Version Added:
-        7.1
-    """
-
-    template_name = 'reviews/star_action.html'
-
-
 class StarAction(BaseAction):
     """The action to star a review request.
 
@@ -878,13 +686,10 @@ class StarAction(BaseAction):
     """
 
     action_id = 'star-review-request'
-    apply_to = all_review_request_url_names
-    default_renderer_cls = StarActionRenderer
+    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     label = ''
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT),
-    ]
+    template_name = 'reviews/star_action.html'
+    apply_to = all_review_request_url_names
 
     def should_render(
         self,
@@ -924,15 +729,11 @@ class ArchiveMenuAction(BaseMenuAction):
     """
 
     action_id = 'archive-menu'
-    default_renderer_cls = MenuActionGroupRenderer
+    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
+    label = ''
+    template_name = 'reviews/archive_menu_action.html'
+    js_view_class = 'RB.ArchiveMenuActionView'
     apply_to = all_review_request_url_names
-
-    icon_class = 'rb-icon rb-icon-archive-off'
-    verbose_label = _('Archive or Mute')
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT),
-    ]
 
     def should_render(
         self,
@@ -972,14 +773,13 @@ class ArchiveAction(BaseAction):
     """
 
     action_id = 'archive'
+    parent_id = ArchiveMenuAction.action_id
+    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
-    js_model_class = 'RB.ArchiveAction'
-    label = _('Toggle Archived')
+    js_view_class = 'RB.ArchiveActionView'
 
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT,
-                        parent_id=ArchiveMenuAction.action_id),
-    ]
+    # This is only shown on page load. It will be overridden at runtime.
+    label = _('Toggle Archived')
 
 
 class MuteAction(BaseAction):
@@ -990,14 +790,13 @@ class MuteAction(BaseAction):
     """
 
     action_id = 'mute'
+    parent_id = ArchiveMenuAction.action_id
+    attachment = AttachmentPoint.REVIEW_REQUEST_LEFT
     apply_to = all_review_request_url_names
-    js_model_class = 'RB.MuteAction'
-    label = _('Toggle Muted')
+    js_view_class = 'RB.MuteActionView'
 
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST_LEFT,
-                        parent_id=ArchiveMenuAction.action_id),
-    ]
+    # This is only shown on page load. It will be overridden at runtime.
+    label = _('Toggle Muted')
 
 
 class BaseReviewRequestAction(BaseAction):
@@ -1034,12 +833,10 @@ class BaseReviewRequestAction(BaseAction):
         6.0:
         New code should be written using
         :py:class:`reviewboard.actions.base.BaseAction`. This class will be
-        removed in 8.0.
+        removed in 7.0.
     """
 
     apply_to = all_review_request_url_names
-
-    _ignore_action_deprecations = True
 
     def __init__(self) -> None:
         """Initialize this action.
@@ -1052,10 +849,7 @@ class BaseReviewRequestAction(BaseAction):
             'reviewboard.actions.base.BaseAction')
 
         super().__init__()
-
-        self.placements = [
-            ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST),
-        ]
+        self._parent = None
 
     @property
     def max_depth(self) -> int:
@@ -1079,15 +873,6 @@ class BaseReviewRequestAction(BaseAction):
         """Reset the max_depth of this action and all its ancestors to zero."""
         # The max depth is now calculated on the fly, so this is a no-op.
         pass
-
-    def get_dom_element_id(self) -> str:
-        """Return the ID used for the DOM element for this action.
-
-        Returns:
-            str:
-            The ID used for the element.
-        """
-        return f'action-{self.action_id}'
 
     def get_extra_context(
         self,
@@ -1155,10 +940,8 @@ class BaseReviewRequestAction(BaseAction):
             DepthLimitExceededError:
                 The maximum depth limit is exceeded.
         """
-        if parent is not None:
-            assert self.placements
-
-            self.placements[0].parent_id = parent.action_id
+        if parent:
+            self.parent_id = parent.action_id
 
         actions_registry.register(self)
 
@@ -1184,12 +967,10 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
         6.0:
         New code should be written using
         :py:class:`reviewboard.actions.base.BaseMenuAction`. This class will be
-        removed in 8.0.
+        removed in 7.0.
     """
 
     apply_to = all_review_request_url_names
-
-    _ignore_action_deprecations = True
 
     def __init__(
         self,
@@ -1211,20 +992,7 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
         """
         super().__init__()
 
-        self.placements = [
-            ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST),
-        ]
-
         self._children = child_actions or []
-
-    def get_dom_element_id(self) -> str:
-        """Return the ID used for the DOM element for this action.
-
-        Returns:
-            str:
-            The ID used for the element.
-        """
-        return f'action-{self.action_id}'
 
     def copy_to_dict(
         self,
@@ -1314,18 +1082,13 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
             DepthLimitExceededError:
                 The maximum depth limit is exceeded.
         """
-        action_id = self.action_id
-
-        if parent is not None:
-            assert self.placements
-            self.placements[0].parent_id = parent.action_id
+        if parent:
+            self.parent_id = parent.action_id
 
         actions_registry.register(self)
 
         for child in self._children:
-            assert child.placements
-
-            child.placements[0].parent_id = action_id
+            child.parent_id = self.action_id
             child.register()
 
     def unregister(self) -> None:
@@ -1379,7 +1142,7 @@ def register_actions(
         'reviewboard.actions.actions_registry.')
 
     if parent_id:
-        parent = actions_registry.get_action(parent_id)
+        parent = actions_registry.get('action_id', parent_id)
     else:
         parent = None
 
@@ -1413,7 +1176,7 @@ def unregister_actions(
         'reviewboard.actions.actions_registry.')
 
     for action_id in action_ids:
-        action = actions_registry.get_action(action_id)
+        action = actions_registry.get('action_id', action_id)
         action.unregister()
 
 

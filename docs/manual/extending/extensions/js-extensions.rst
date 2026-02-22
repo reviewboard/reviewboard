@@ -1,8 +1,8 @@
 .. _js-extensions:
 
-=============================
-Writing JavaScript Extensions
-=============================
+=====================
+JavaScript Extensions
+=====================
 
 Extensions are not purely server-side. Often, they need to interact with some
 part of the client-side UI, whether that's to augment a dialog, dynamically

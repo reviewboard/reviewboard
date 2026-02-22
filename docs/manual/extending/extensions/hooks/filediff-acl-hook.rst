@@ -49,14 +49,9 @@ Example
 .. code-block:: python
 
     import logging
-    from typing import TYPE_CHECKING
 
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import FileDiffACLHook
-
-    if TYPE_CHECKING:
-        from django.contrib.auth.models import User
-        from reviewboard.diffviewer.models import DiffSet
 
 
     logger = logging.getLogger(__file__)
@@ -65,12 +60,7 @@ Example
     class PerforceACLHook(FileDiffACLHook):
         """Hook for checking access for Perforce repositories."""
 
-        def is_accessible(
-            self,
-            diffset: DiffSet,
-            user: User,
-            **kwargs,
-        ) -> bool:
+        def is_accessible(self, diffset, user, **kwargs):
             tool = diffset.repository.get_scmtool()
 
             # Allow normal access controls for non-Perforce repositories.
@@ -101,5 +91,5 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self) -> None:
+        def initialize(self):
             PerforceACLHook(extension=self)

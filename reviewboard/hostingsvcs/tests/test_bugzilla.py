@@ -1,23 +1,20 @@
 """Unit tests for the Bugzilla hosting service."""
 
-from __future__ import annotations
-
-from reviewboard.hostingsvcs.bugzilla import Bugzilla
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
-class BugzillaTests(HostingServiceTestCase[Bugzilla]):
+class BugzillaTests(HostingServiceTestCase):
     """Unit tests for the Bugzilla hosting service."""
 
     service_name = 'bugzilla'
     fixtures = ['test_scmtools']
 
-    def test_service_support(self) -> None:
+    def test_service_support(self):
         """Testing Bugzilla service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertFalse(self.service_class.supports_repositories)
 
-    def test_bug_tracker_field(self) -> None:
+    def test_bug_tracker_field(self):
         """Testing Bugzilla.get_bug_tracker_field"""
         self.assertFalse(
             self.service_class.get_bug_tracker_requires_username())

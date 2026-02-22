@@ -52,7 +52,6 @@ User Accounts
    reviewboard.accounts.testing
    reviewboard.accounts.testing.queries
    reviewboard.accounts.trophies
-   reviewboard.accounts.user_details
 
 
 Actions
@@ -65,7 +64,6 @@ Actions
    reviewboard.actions.base
    reviewboard.actions.errors
    reviewboard.actions.registry
-   reviewboard.actions.renderers
 
 
 Administration and Server
@@ -193,9 +191,6 @@ Extensions
    reviewboard.extensions.base
    reviewboard.extensions.hooks
    reviewboard.extensions.packaging
-   reviewboard.extensions.packaging.backend
-   reviewboard.extensions.packaging.setuptools_backend
-   reviewboard.extensions.packaging.static_media
    reviewboard.extensions.testing
    reviewboard.extensions.testing.testcases
 
@@ -212,7 +207,6 @@ Hosting Service Integration
    :toctree: python
 
    reviewboard.hostingsvcs.base
-   reviewboard.hostingsvcs.base.bug_tracker
    reviewboard.hostingsvcs.base.client
    reviewboard.hostingsvcs.base.forms
    reviewboard.hostingsvcs.base.hosting_service
@@ -248,23 +242,6 @@ Integrations
 .. seealso::
 
    :ref:`djblets.integrations <coderef-djblets-integrations>`
-
-
-Licensing
-=========
-
-.. autosummary::
-   :toctree: python
-
-   reviewboard.licensing
-   reviewboard.licensing.actions
-   reviewboard.licensing.errors
-   reviewboard.licensing.features
-   reviewboard.licensing.license
-   reviewboard.licensing.license_checks
-   reviewboard.licensing.provider
-   reviewboard.licensing.registry
-   reviewboard.licensing.views
 
 
 E-mail and WebHooks

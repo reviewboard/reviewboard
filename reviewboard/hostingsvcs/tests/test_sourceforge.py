@@ -1,22 +1,19 @@
 """Unit tests for the SourceForge hosting service."""
 
-from __future__ import annotations
-
-from reviewboard.hostingsvcs.sourceforge import SourceForge
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 
 
-class SourceForgeTests(HostingServiceTestCase[SourceForge]):
+class SourceForgeTests(HostingServiceTestCase):
     """Unit tests for the SourceForge hosting service."""
 
     service_name = 'sourceforge'
 
-    def test_service_support(self) -> None:
+    def test_service_support(self):
         """Testing SourceForge service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
 
-    def test_get_repository_fields_with_bazaar(self) -> None:
+    def test_get_repository_fields_with_bazaar(self):
         """Testing SourceForge.get_repository_fields for Bazaar"""
         self.assertEqual(
             self.get_repository_fields(
@@ -31,7 +28,7 @@ class SourceForgeTests(HostingServiceTestCase[SourceForge]):
                                 'myproj'),
             })
 
-    def test_get_repository_fields_with_cvs(self) -> None:
+    def test_get_repository_fields_with_cvs(self):
         """Testing SourceForge.get_repository_fields for CVS"""
         self.assertEqual(
             self.get_repository_fields(
@@ -46,7 +43,7 @@ class SourceForgeTests(HostingServiceTestCase[SourceForge]):
                 'mirror_path': 'myproj.cvs.sourceforge.net/cvsroot/myproj',
             })
 
-    def test_get_repository_fields_with_mercurial(self) -> None:
+    def test_get_repository_fields_with_mercurial(self):
         """Testing SourceForge.get_repository_fields for Mercurial"""
         self.assertEqual(
             self.get_repository_fields(
@@ -60,7 +57,7 @@ class SourceForgeTests(HostingServiceTestCase[SourceForge]):
                 'mirror_path': 'ssh://myproj.hg.sourceforge.net/hgroot/myproj',
             })
 
-    def test_get_repository_fields_with_svn(self) -> None:
+    def test_get_repository_fields_with_svn(self):
         """Testing SourceForge.get_repository_fields for Subversion"""
         self.assertEqual(
             self.get_repository_fields(

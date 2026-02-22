@@ -47,30 +47,29 @@ export class MenuActionView<
     protected onInitialRender() {
         const menuItems = new MenuItemsCollection();
         const page = RB.PageManager.getPage();
-        const attachmentPointID = this.attachmentPointID;
-        const children = this.model.get('children')[attachmentPointID] || [];
 
-        for (const childId of children) {
+        for (const childId of this.model.get('children')) {
             if (childId === '--') {
                 menuItems.add({
                     type: MenuItemType.SEPARATOR,
                 });
             } else {
-                const childActionView = page.getActionView(childId,
-                                                           attachmentPointID);
+                const childActionView = page.getActionView(childId);
 
                 if (childActionView) {
                     const childAction = childActionView.model;
                     const visible = childAction.get('visible');
+                    const domID = childAction.get('domID');
 
                     const onClick =
                         childActionView['activate']
                         ? () => childActionView.activate()
                         : null;
 
-                    if (childActionView.el.dataset.customRendered === 'true') {
+                    if (childAction.get('isCustomRendered')) {
                         menuItems.add({
                             childEl: childActionView.el,
+                            id: domID,
                             onClick: onClick,
                         });
 
@@ -101,6 +100,7 @@ export class MenuActionView<
 
                         const menuItem = menuItems.add({
                             iconName: childAction.get('iconClass'),
+                            id: domID,
                             label: childAction.get('label'),
                             onClick: onClick,
                             url: url,
@@ -129,8 +129,7 @@ export class MenuActionView<
                             });
                     }
                 } else {
-                    console.error('Unable to find action view for %s',
-                                  childId);
+                    console.error('Unable to find action for %s', childId);
                 }
             }
         }
@@ -172,38 +171,22 @@ export class MenuActionView<
      *     7.0.3
      */
     protected positionMenu() {
-        const $el = this.$el;
         const $menuEl = this.menu.$el;
         const menuWidth = $menuEl.width();
-        const windowWidth = $(window).outerWidth();
-        const elOffsetLeft = $el.offset().left;
+        const windowWidth = $(window).width();
+        const elOffsetLeft = this.$el.offset().left;
 
         let newMenuLeft: string | number = 'auto';
 
         if (elOffsetLeft + menuWidth > windowWidth) {
             /*
-             * The right side of the menu is being clipped. Try to right-align
-             * it with the handle first.
+             * The right side of the menu is being clipped. Move to the left
+             * so that the full menu fits on screen.
              */
-            let newMenuLeftNum = this.$el.width() - menuWidth;
-
-            if (newMenuLeftNum + menuWidth > windowWidth) {
-                /*
-                 * That was still off-screen (meaning the handle was likely
-                 * off-screen. Align this with the right edge of the viewport.
-                 */
-                newMenuLeftNum = windowWidth - menuWidth - elOffsetLeft;
-            }
-
-            if (newMenuLeftNum + elOffsetLeft < 0) {
-                /*
-                 * It's off the left of the screen. Align this with the
-                 * left edge of the viewport.
-                 */
-                newMenuLeftNum = -elOffsetLeft;
-            }
-
-            newMenuLeft = `${newMenuLeftNum}px`;
+            newMenuLeft = (
+                windowWidth -
+                (elOffsetLeft + Math.min(menuWidth, windowWidth))
+            );
         }
 
         $menuEl.css({
@@ -339,5 +322,12 @@ export class MenuItemActionView extends ActionView {
          * parent menu can close.
          */
         this.activate();
+    }
+
+    /**
+     * Activate the action.
+     */
+    activate() {
+        // This is expected to be overridden by subclasses.
     }
 }

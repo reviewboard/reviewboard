@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Max, Q
 from djblets.testing.decorators import add_fixtures
@@ -225,7 +224,7 @@ class BaseReviewRequestDetailsTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             attachments = review_request.get_file_attachments()
 
         self.assertListEqual(attachments, [active, active_2])
@@ -260,7 +259,7 @@ class BaseReviewRequestDetailsTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             attachments = review_request.get_file_attachments(sort=False)
 
         self.assertListEqual(attachments, [active, active_2])
@@ -359,7 +358,7 @@ class BaseReviewRequestDetailsTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             attachments = review_request.get_file_attachments()
 
         self.assertListEqual(attachments, [active, active_2])

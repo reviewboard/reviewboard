@@ -39,7 +39,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.utils.safestring import SafeText
-    from typelets.json import JSONDict
+    from djblets.util.typing import JSONDict
 
     from reviewboard.reviews.models import (
         ReviewRequest,
@@ -162,6 +162,21 @@ class ReviewUI(Generic[
     using :py:attr:`js_model_class` and :py:attr:`js_view_class`. The
     JavaScript side should interface with the API to create/update reviews and
     comments for the object being reviewed.
+
+    Attributes:
+        diff_against_obj (object):
+            The object being diffed against, if any.
+
+        obj (object):
+            The object being reviewed.
+
+        request (django.http.HttpRequest):
+            The HTTP request from the client. This is only set once
+            :py:meth:`render_to_string` is called.
+
+        review_request (reviewboard.reviews.models.review_request.
+                        ReviewRequest):
+            The review request containing the object being reviewed.
     """
 
     #: The display name for the Review UI.
@@ -203,18 +218,6 @@ class ReviewUI(Generic[
     #: Whether there's a file type mismatch when showing diffs.
     diff_type_mismatch: ClassVar[bool] = False
 
-    #: Whether to load the Review UI's static media when rendered inline.
-    #:
-    #: If the extension managing the Review UI already loads its static media
-    #: in the diff viewer page, then this should be set to ``False`` to
-    #: prevent duplicate loading. This is useful for ensuring that state set
-    #: by the static media gets shared amongst the extension instance and
-    #: any review UIs on the page instead of being overwritten.
-    #:
-    #: Version Added:
-    #:     7.1
-    load_static_media_inline: ClassVar[bool] = True
-
     ######################
     # Instance variables #
     ######################
@@ -226,15 +229,7 @@ class ReviewUI(Generic[
     diff_against_obj: Optional[ReviewableType]
 
     #: The current HTTP request.
-    #:
-    #: This is only set once :py:meth:`render_to_string` is called.
     request: Optional[HttpRequest]
-
-    #: Whether the Review UI is being rendered inline in the current request.
-    #:
-    #: Version Added:
-    #:     7.1
-    _inline: bool | None
 
     @property
     def js_model_class(self) -> str:
@@ -302,7 +297,6 @@ class ReviewUI(Generic[
         self.obj = obj
         self.diff_against_obj = None
         self.request = None
-        self._inline = None
 
     def set_diff_against(
         self,
@@ -410,7 +404,6 @@ class ReviewUI(Generic[
             The HTML for the Review UI.
         """
         self.request = request
-        self._inline = inline
 
         try:
             context = self.build_render_context(request, inline=inline)
@@ -452,7 +445,6 @@ class ReviewUI(Generic[
             The context to use in the template.
         """
         self.request = request
-        self._inline = inline
 
         review_request = self.review_request
         last_activity_time = \
@@ -472,8 +464,6 @@ class ReviewUI(Generic[
             'caption': caption,
             'comments': self.get_comments(),
             'last_activity_time': last_activity_time,
-            'skip_static_media':
-                self.request.GET.get('skip-static-media') == '1',
             'review_ui': self,
             'review_ui_uuid': str(uuid4()),
             self.object_key: self.obj,
@@ -485,9 +475,6 @@ class ReviewUI(Generic[
                 'base_template': 'reviews/ui/base_inline.html',
                 'review_ui_inline': True,
             })
-
-            if not self.load_static_media_inline:
-                context['skip_static_media'] = True
         else:
             context.update({
                 'base_template': 'reviews/ui/base.html',
@@ -728,9 +715,6 @@ class ReviewUI(Generic[
                 'state': state.value,
             })
 
-            if (inline := self._inline) is not None:
-                data['renderedInline'] = inline
-
             if obj.attachment_history is not None:
                 request = self.request
                 include_draft = (
@@ -787,12 +771,7 @@ class ReviewUI(Generic[
             dict:
             The options to pass to the view.
         """
-        data: dict[str, Any] = {}
-
-        if (inline := self._inline) is not None:
-            data['renderedInline'] = inline
-
-        return data
+        return {}
 
     def get_comments_json(self) -> str:
         """Return a JSON-serialized representation of comments for a template.

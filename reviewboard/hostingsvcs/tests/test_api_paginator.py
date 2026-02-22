@@ -109,10 +109,7 @@ class APIPaginatorTests(TestCase):
 
     def test_construct_initial_load(self):
         """Testing APIPaginator construction performs initial load"""
-        paginator = DummyAPIPaginator(
-            client=None,
-            url='http://example.com',
-            start=10)
+        paginator = DummyAPIPaginator(None, 'http://example.com', start=10)
         self.assertEqual(paginator.page_data, [1, 2, 3])
 
     def test_construct_with_start(self):

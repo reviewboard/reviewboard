@@ -1,9 +1,4 @@
-"""Hosting service for JIRA."""
-
-from __future__ import annotations
-
 import logging
-from typing import TYPE_CHECKING
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
@@ -15,19 +10,15 @@ except ImportError:
     has_jira = False
 
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
-from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
-from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
-from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-
-if TYPE_CHECKING:
-    from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
-    from reviewboard.scmtools.models import Repository
+from reviewboard.hostingsvcs.bugtracker import BugTracker
+from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.service import HostingService
 
 
 logger = logging.getLogger(__name__)
 
 
-class JIRAForm(BaseHostingServiceRepositoryForm):
+class JIRAForm(HostingServiceForm):
     jira_url = forms.CharField(
         label=_('JIRA URL'),
         max_length=64,
@@ -39,9 +30,7 @@ class JIRAForm(BaseHostingServiceRepositoryForm):
         return self.cleaned_data['jira_url'].rstrip('/ ')
 
 
-class JIRA(BaseHostingService, BaseBugTracker):
-    """Hosting service for JIRA."""
-
+class JIRA(HostingService, BugTracker):
     name = 'JIRA'
     hosting_service_id = 'jira'
     form = JIRAForm
@@ -53,25 +42,9 @@ class JIRA(BaseHostingService, BaseBugTracker):
 
         self.jira_client = None
 
-    def get_bug_info_uncached(
-        self,
-        repository: Repository,
-        bug_id: str,
-    ) -> BugInfo:
-        """Return the information for the specified bug.
-
-        Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository object.
-
-            bug_id (str):
-                The ID of the bug to fetch.
-
-        Returns:
-            reviewboard.hostingsvcs.base.bug_tracker.BugInfo:
-            Information about the bug.
-        """
-        result: BugInfo = {
+    def get_bug_info_uncached(self, repository, bug_id):
+        """Get the bug info from the server."""
+        result = {
             'summary': '',
             'description': '',
             'status': '',
@@ -86,8 +59,8 @@ class JIRA(BaseHostingService, BaseBugTracker):
                     }, max_retries=0)
                 except ValueError as e:
                     logger.warning(
-                        'Unable to initialize JIRAClient for server %s: %s',
-                        repository.extra_data['bug_tracker-jira_url'], e)
+                        'Unable to initialize JIRAClient for server %s: %s'
+                        % (repository.extra_data['bug_tracker-jira_url'], e))
                     return result
 
             try:

@@ -1,8 +1,5 @@
 """Unit tests for reviewboard.accounts.managers.ReviewRequestVisitManager."""
 
-from __future__ import annotations
-
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Q
 
@@ -52,7 +49,7 @@ class ReviewRequestVisitTests(TestCase):
             },
         ]
 
-        with assert_queries(queries, num_statements=4):
+        with self.assertQueries(queries, num_statements=4):
             visit = ReviewRequestVisit.objects.update_visibility(
                 review_request, user, ReviewRequestVisit.VISIBLE)
 

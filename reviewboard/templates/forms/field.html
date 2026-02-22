@@ -6,9 +6,7 @@
 {%  with field|form_field_has_label_first as label_first %}
 {%   definevar "post_field_html" spaceless %}
 {%    if field.help_text %}
-<div class="rb-c-form-field__help">
- <span>{{field.help_text|safe}}</span>
-</div>
+<div class="rb-c-form-field__help">{{field.help_text|safe}}</div>
 {%    endif %}
 {%    if form.disabled_reasons|default:''|contains:field.name %}
 <div class="rb-c-form-field__disabled-reason">{{form.disabled_reasons|getitem:field.name|safe}}</div>

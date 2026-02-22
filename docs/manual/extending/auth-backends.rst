@@ -308,14 +308,14 @@ For example::
             self.fields['auth_myauth_list'].initial = \
                 ','.join(self.siteconfig.get('auth_myauth_list'))
 
-            super().load()
+            super(MySettingsForm, self).load()
 
         def save(self):
             self.siteconfig.set(
                 'auth_myauth_list',
                 re.split(r',\*', self.cleaned_data['auth_myauth_list']))
 
-            super().save()
+            super(MySettingsForm, self).save()
 
 
 Disabling Fields
@@ -341,7 +341,7 @@ For example::
                 'You must do a handstand before you can enable this ' \
                 'authentication backend.'
 
-        super().load()
+        super(MySettingsForm, self).load()
 
 
 
@@ -393,12 +393,15 @@ Using Entry Points
 ------------------
 
 When extensions are, for some reason, not an ideal option, you can instead
-fall back on using Python entry point registration.
+fall back on using Python entry point registration. This is required
+if your authentication backend needs to work on versions of Review Board
+prior to 2.0.
 
 For entry point registration, your authentication backends will need to be
-packaged as a standard Python package. Generally, this looks something like::
+packaged as a standard Python egg module. Generally, this looks something
+like::
 
-    pyproject.toml
+    setup.py
     myauth/__init__.py
 
 The :file:`__init__.py` would contain your authentication backend's classes
@@ -409,13 +412,17 @@ You can of course split this up into separate files (such as
 settings form). This is entirely up to you. However, to be a proper Python
 module, you must have a :file:`__init__.py`, though it can be blank.
 
-:ref:`pyproject.toml` must define a :term:`Python Entry Point` for your module
-in order for Review Board to find it. For example:
+:file:`setup.py` must define an "entry point" for your module in order for
+Review Board to find it. This is done through the ``entry_points`` parameter
+passed to ``setup``. For example::
 
-.. code-block:: console
-
-    [project.entry-points."reviewboard.auth_backends"]
-    myauth = 'myauth:MyAuthBackend'
+    setup(...,
+          entry_points={
+              'reviewboard.auth_backends': [
+                  'myauth = myauth:MyAuthBackend',
+              ],
+          }
+    )
 
 Review Board will look in ``reviewboard.auth_backends`` for every module and
 attempt to load it. The module path specified must be the full Python module
@@ -423,5 +430,6 @@ path for your class. The ID (``myauth`` in the example above) can be anything,
 but generally should be consistent with your settings prefix for the settings
 form, and must not conflict with any other authentication modules.
 
-The authentication module can then be installed by building and installing
-your package.
+The authentication module can then be installed by typing (as root)::
+
+    $ python setup.py install

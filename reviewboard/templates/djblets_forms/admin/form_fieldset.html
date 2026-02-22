@@ -1,7 +1,1 @@
-{% load djblets_utils %}
-
-{% if fieldset.classes and fieldset.classes|contains:"wide" %}
-{%  definevar "extra_fieldset_classes" %}{{extra_fieldset_classes}} -is-wide{% enddefinevar %}
-{% endif %}
-
 {% include "forms/fieldset.html" %}

@@ -37,9 +37,7 @@ export interface AbstractReviewableAttrs extends ModelAttributes {
     /** The caption for the item being reviewed. */
     caption: string;
 
-    /**
-     * Whether the review UI is rendered inline.
-     */
+    /** Whether the review UI is rendered inline. */
     renderedInline: boolean;
 
     /** The review request. */

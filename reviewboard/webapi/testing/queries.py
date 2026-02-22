@@ -10,6 +10,7 @@ from typing import Optional, Set, TYPE_CHECKING, Type, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Count, Q
+from djblets.db.query_comparator import ExpectedQueries
 from oauth2_provider.models import AccessToken
 
 from reviewboard.accounts.testing.queries import get_user_profile_equeries
@@ -21,7 +22,6 @@ from reviewboard.testing.queries.http import get_http_request_user_equeries
 from reviewboard.webapi.models import WebAPIToken
 
 if TYPE_CHECKING:
-    from django_assert_queries.query_comparator import ExpectedQueries
     from django.db.models import Model
 
     from reviewboard.site.models import LocalSite

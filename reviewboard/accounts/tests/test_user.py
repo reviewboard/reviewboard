@@ -1,11 +1,8 @@
 """Unit tests for additions to django.contrib.auth.models.User."""
 
-from __future__ import annotations
-
 from uuid import UUID, uuid4
 
 import kgb
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
@@ -35,7 +32,7 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             new_profile = user.get_profile()
 
         self.assertEqual(new_profile, profile)
@@ -67,7 +64,7 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries, num_statements=4):
+        with self.assertQueries(queries, num_statements=4):
             new_profile = user.get_profile()
 
         self.assertIs(new_profile.user, user)
@@ -99,7 +96,7 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             user = list(
                 User.objects
                 .filter(username='test1')
@@ -130,7 +127,7 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             user = list(
                 User.objects
                 .filter(username='test1')
@@ -159,7 +156,7 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             with self.assertRaises(Profile.DoesNotExist):
                 user.get_profile(create_if_missing=False)
 
@@ -401,7 +398,7 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(site_admin.is_admin_for_user(site_user1))
 
         # A second call should reuse cached stats.
@@ -428,7 +425,7 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(site_admin.is_admin_for_user(site_user2))
 
     @add_fixtures(['test_site'])
@@ -481,7 +478,7 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(site1_admin.is_admin_for_user(site2_user1))
 
         # A second call should reuse cached stats.
@@ -508,7 +505,7 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(site1_admin.is_admin_for_user(site2_user2))
 
     def test_get_local_site_stats(self):
@@ -554,7 +551,7 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 user.get_local_site_stats(),
                 {
@@ -624,7 +621,7 @@ class UserTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 user.get_local_site_stats(),
                 {
@@ -638,7 +635,7 @@ class UserTests(kgb.SpyAgency, TestCase):
         LocalSite.objects.get_stats()
 
         # A second call should not hit cache.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 user.get_local_site_stats(),
                 {

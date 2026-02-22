@@ -835,14 +835,10 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
         try:
             review_request = \
                 resources.review_request.get_object(request, *args, **kwargs)
+            draft = review_request.draft.get()
         except ReviewRequest.DoesNotExist:
             return DOES_NOT_EXIST
-
-        # This explicitly does not pass the user in because we delete
-        # checking in has_modify_permissions.
-        draft = review_request.get_draft()
-
-        if draft is None:
+        except ReviewRequestDraft.DoesNotExist:
             return DOES_NOT_EXIST
 
         if not self.has_delete_permissions(request, draft, *args, **kwargs):

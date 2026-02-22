@@ -173,11 +173,8 @@
    *       <input type="button" id="btn-review-request-discard"
    *              value="Discard">
    *      </div>
-   *      <menu class="rb-c-unified-banner__review-actions rb-c-actions" ...>
-   *       ...
-   *      </menu>
-   *      <menu class="rb-c-unified-banner__quick-access-actions
-   *                   rb-c-actions" ...>
+   *      <menu class="rb-c-unified-banner__review-actions rb-c-actions"
+   *            role="menu">
    *       ...
    *      </menu>
    *     </div>
@@ -185,27 +182,11 @@
   &__controls {
     align-items: center;
     display: flex;
-    flex-wrap: wrap;
     gap: @banner-padding;
 
     > div:not(:empty) {
       margin-right: 1em;
     }
-  }
-
-  /**
-   * A drop-down menu for editing the Quick Access actions.
-   *
-   * Version Added:
-   *     7.1
-   *
-   * Structure:
-   *     <li class="rb-c-unified-banner__edit-quick-access">
-   *      <span class="ink-c-menu-label ...">...</span>
-   *     </li>
-   */
-  &__edit-quick-access {
-    margin-left: auto;
   }
 
   /**
@@ -288,10 +269,6 @@
    * The publish/discard buttons.
    */
   &__draft-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--ink-u-spacing-s);
-
     #rb-ns-pages.base.on-shell-mobile-mode({
       /**
        * On mobile the buttons might be squished up against the left side
@@ -305,28 +282,13 @@
    * The "Review" menu and other actions.
    */
   &__review-actions {
-    gap: var(--ink-u-spacing-s);
-  }
-
-  /**
-   * The Quick Access actions and control.
-   *
-   * Version Added:
-   *     7.1
-   *
-   * Structure:
-   *     <menu class="rb-c-unified-banner__quick-access-actions rb-c-actions"
-   *           role="menu">
-   *      <li class="rb-c-actions__action ..."...</li>  [0+]
-   *      <li class="rb-c-unified-banner__edit-quick-access"></li>
-   *     </menu>
-   */
-  &__quick-access-actions {
-    flex-grow: 1;
-    gap: var(--ink-u-spacing-s);
+    margin: 0;
+    padding: 0;
   }
 
   .rb-c-actions {
+    list-style: none;
+
     &__action a {
       display: flex;
       gap: var(--ink-u-spacing-s);
@@ -364,8 +326,7 @@
    * This makes sure that items in the review menu are clickable across
    * their entire breadth.
    */
-  #action-unified-banner-review-menu {
-    display: inline-block;
+  #action-review-menu {
     position: relative;
 
     #ink-ns-ui.base.customize-component(
@@ -400,7 +361,7 @@
    * Move the menu up one so that the top-level menu item's border will
    * overlap, making it appear seamless.
    */
-  #action-unified-banner-review-menu,
+  #action-review-menu,
   &__mode-selector {
     #ink-ns-ui.base.customize-component(
       @name: ink-c-menu;
@@ -414,7 +375,7 @@
   }
 
   /* Set up layout for the top-level menu item. */
-  #action-unified-banner-review-menu > a,
+  #action-review-menu > a,
   &__mode-selector &__menu &__mode {
     border-right: 1px transparent solid;
     box-sizing: border-box;
@@ -426,24 +387,24 @@
   }
 
   /* Increase the top level menu item's font size to be more header-sized. */
-  #action-unified-banner-review-menu .rb-c-unified-banner__menu-label,
+  #action-review-menu .rb-c-unified-banner__menu-label,
   &__mode-selector .rb-c-actions__action-label {
     font-size: var(--ink-u-font-sm);
   }
 
   /* Ensure the labels have menu background/border styling when open. */
-  #action-unified-banner-review-menu.-is-menu-open > a,
+  #action-review-menu.-is-menu-open > a,
   &__mode-selector &__menu.-is-menu-open &__mode {
     background: var(--ink-c-menu-bg);
     border-right: var(--ink-c-menu-border);
   }
 
   /* Give the review menu a left border to match the right. */
-  #action-unified-banner-review-menu > a {
+  #action-review-menu > a {
     border-left: 1px transparent solid;
   }
 
-  #action-unified-banner-review-menu.-is-menu-open > a {
+  #action-review-menu.-is-menu-open > a {
     border-left: var(--ink-c-menu-border);
   }
 

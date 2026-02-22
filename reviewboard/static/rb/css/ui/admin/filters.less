@@ -4,22 +4,7 @@
 @import (reference) "rb/css/defs.less";
 
 
-:root,
-.rb-c-admin-filters {
-  --rb-c-admin-filter-choice-border-width: 5px;
-  --rb-c-admin-filter-choice-padding-left: 10px;
-  --rb-c-admin-filter-choice-fg: var(--ink-p-grey-500);
-  --rb-c-admin-filter-choice-selected-fg: var(--ink-p-blue-500);
-}
-
-
 #rb-ns-admin() {
-  /*
-   * Legacy variable definitions.
-   *
-   * These are no longer used in this file, but might potentially be used in
-   * third-party code. These will be removed in Review Board 9.
-   */
   .filters() {
     @top: 4em;
     @width: 240px;
@@ -50,11 +35,8 @@
  */
 .rb-c-admin-filters {
   @_filters-vars: #rb-ns-admin.filters();
+  @_filter-vars: #rb-ns-admin.filter();
 
-  /*
-   * TODO: this doesn't actually align in many cases. This page should be
-   *       redone with CSS grid.
-   */
   position: absolute;
   top: @_filters-vars[@top];  /* Align with the datagrid. */
   right: 0;
@@ -76,8 +58,9 @@
   &__title {
     font-size: 110%;
     font-weight: bold;
-    padding: 0 0 0 calc(var(--rb-c-admin-filter-choice-padding-left) +
-                        var(--rb-c-admin-filter-choice-border-width));
+    color: #444;
+    padding: 0 0 0 (@_filter-vars[@choice-padding-left] +
+                    @_filter-vars[@choice-selected-border-width]);
     margin: 1em 0;
     text-transform: uppercase;
   }
@@ -94,9 +77,10 @@
  *     </div>
  */
 .rb-c-admin-filter {
-  --_rb-c-admin-filter-total-padding-left: calc(
-    var(--rb-c-admin-filter-choice-padding-left) +
-    var(--rb-c-admin-filter-choice-border-width));
+  @_filter-vars: #rb-ns-admin.filter();
+  @_choice-border-width: @_filter-vars[@choice-selected-border-width];
+  @_choice-padding-left: @_filter-vars[@choice-padding-left];
+  @_total-padding-left: (@_choice-padding-left + @_choice-border-width);
 
   margin: 2em 0 3em 0;
 
@@ -114,7 +98,7 @@
     line-height: 150%;
     list-style: none;
     margin: 0;
-    padding: 0 0 0 var(--rb-c-_admin-filter-total-padding-left);
+    padding: 0 0 0 @_total-padding-left;
   }
 
   /**
@@ -132,24 +116,24 @@
    */
   &__choice {
     margin: 0;
-    padding: 0 0 0 var(--rb-c-admin-filter-choice-padding-left);
-    border-left: var(--rb-c-admin-filter-choice-border-width) transparent solid;
-    margin-left: calc(-1 * var(--rb-c-_admin-filter-total-padding-left));
+    padding: 0 0 0 @_choice-padding-left;
+    border-left: @_choice-border-width transparent solid;
+    margin-left: -@_total-padding-left;
 
     &.-is-selected {
-      border-left-color: var(--rb-c-admin-filter-choice-selected-fg);
-      padding-left: var(--rb-c-admin-filter-choice-padding-left);
+      border-left-color: @_filter-vars[@choice-selected-border-color];
+      padding-left: @_choice-padding-left;
 
       a:link,
       a:visited {
-        color: var(--rb-c-admin-filter-choice-selected-fg);
+        color: @_filter-vars[@choice-selected-text-color];
       }
     }
 
     a:link,
     a:visited {
       display: block;
-      color: var(--rb-c-admin-filter-choice-fg);
+      color: @_filter-vars[@choice-text-color];
     }
   }
 
@@ -163,6 +147,6 @@
     font-size: 110%;
     font-weight: normal;
     margin: 0 0 1em 0;
-    padding: 0 0 0 var(--rb-c-_admin-filter-total-padding-left);
+    padding: 0 0 0 @_total-padding-left;
   }
 }

@@ -12,49 +12,20 @@
 @import (reference) "rb/css/ui/content-header.less";
 
 
-/**
- * Text areas and CodeMirror editors.
- */
-:root,
-.CodeMirror,
-.banner pre.field,
-.rb-c-unified-banner pre.field,
-.rb-c-review-request-field pre.field,
-.rb-c-review-request-changed-fields__value > pre,
-.rb-c-textarea {
-  --rb-c-textarea-font-family: var(--ink-ff-monospace);
-  --rb-c-textarea-font-size: var(--ink-u-font-m);
-  --rb-c-textarea-line-height: calc(var(--rb-c-textarea-font-size) + 0.25rem);
-  --rb-c-textarea-spacing: 10px;
-  --rb-c-textarea-margin: var(--rb-c-textarea-spacing) 0 0 0;
-}
-
-
-:root,
-.rb-c-form-field {
-  /** Form fields with errors. */
-  --rb-p-input-border-color-error: var(--ink-p-red-700);
-  --rb-p-input-label-color-error: var(--ink-p-red-500);
-
-  /** Required flag for fields. */
-  --rb-p-required-flag-color: var(--ink-p-red-500);
-  --rb-u-required-flag-font-size: var(--ink-u-font-xs);
-}
-
-
-:root,
-.rb-c-form-fieldset {
-  /** Fieldsets. */
-  --rb-c-form-fieldset-collapsed-bg: var(--ink-p-surface-dim-bg);
-  --rb-c-form-fieldset-border: var(--ink-g-border-container);
-}
-
-
 #rb-ns-ui() {
   .form() {
     @aligned-screen-min-width: 1024px;
     @aligned-label-width: 160px;
     @aligned-wide-label-width: 200px;
+
+    @standard-spacing: #rb-ns-ui.boxes[@padding];
+    @standard-padding: @standard-spacing;
+
+    @large-spacing: @standard-spacing * 2;
+    @small-spacing: (@standard-spacing / 2);
+
+    @action-font-size: #rb-ns-ui.buttons[@font-size];
+    @action-spacing: @standard-padding;
 
     /**
      * Apply rules to form elements that should line up with an input field.
@@ -93,85 +64,67 @@
         max-width: @width;
       }
     }
-
-    /*
-     * Legacy variable definitions.
-     *
-     * These are no longer used within Review Board, but might still be
-     * referenced by other consumers. These will be removed in Review Board 9.
-     */
-    @standard-spacing: #rb-ns-ui.boxes[@padding];
-    @standard-padding: @standard-spacing;
-    @action-font-size: #rb-ns-ui.buttons[@font-size];
-    @action-spacing: @standard-padding;
-    @large-spacing: @standard-spacing * 2;
-    @small-spacing: (@standard-spacing / 2);
   }
 
   .form-field() {
-    /*
-     * Legacy variable definitions.
-     *
-     * These are no longer used within Review Board, but might still be
-     * referenced by other consumers. These will be removed in Review Board 9.
-     */
     @_color-vars: #rb-ns-ui.colors();
-    @errors-input-border-color: @_color-vars[@red-50];
+
+    @required-flag-color: @_color-vars[@red-50];
+    @required-flag-font-size: 10px;
+
     @errors-label-color: @_color-vars[@red-50];
+    @errors-input-border-color: @_color-vars[@red-50];
+
+    @help-text-color: @_color-vars[@grey-30];
+    @help-text-font-size: 10px;
+    @help-text-padding-vert: 8px;
     @help-icon: @fa-var-question-circle;
     @help-icon-color: @_color-vars[@blue-30];
     @help-icon-size: 14px;
     @help-icon-margin: 4px;
-    @help-text-color: @_color-vars[@grey-30];
-    @help-text-font-size: 10px;
-    @help-text-padding-vert: 8px;
-    @input-border-color: @_color-vars[@grey-60];
+
     @input-border-size: 1px;
-    @input-border: @input-border-size @input-border-color solid;
+    @input-border-color: @_color-vars[@grey-60];
     @input-border-radius: @config-forms-text-field-border-radius;
+    @input-border: @input-border-size @input-border-color solid;
     @input-padding-vert: @config-forms-text-field-padding-vert;
     @input-padding-horiz: @config-forms-text-field-padding-horiz;
-    @required-flag-color: @_color-vars[@red-50];
-    @required-flag-font-size: 10px;
+
+    /*
+     * At least on Chrome, using points instead of pixels does not reliably
+     * result in identical sizings when there are elements positioned inside
+     * a <pre>. Pixels fixes this.
+     */
+    @textarea-font-size: 13px;
+    @textarea-font-family: var(--ink-ff-monospace);
     @textarea-border-color: @input-border-color;
-    @textarea-border-radius: @input-border-radius;
     @textarea-border-size: @input-border-size;
+    @textarea-border-radius: @input-border-radius;
     @textarea-border: @textarea-border-size @textarea-border-color solid;
+
     @textarea-editor-background: white;
     @textarea-editor-margin-top: 10px;
     @textarea-editor-margin: @textarea-editor-margin-top 0 0 0;
     @textarea-editor-padding: 10px;
-    @textarea-font-family: "SF Mono", SFMono-Regular, ui-monospace, Menlo, Monaco,
-                            Consolas, "Liberation Mono", "Courier New", monospace;
-    @textarea-font-size: 13px;
   }
 
   .form-fieldset() {
-    /*
-     * Legacy variable definitions.
-     *
-     * These are no longer used within Review Board, but might still be
-     * referenced by other consumers. These will be removed in Review Board 9.
-     */
     @_colors-vars: #rb-ns-ui.colors();
+
     @padding: #rb-ns-ui.form[@standard-padding];
     @spacing: #rb-ns-ui.form[@large-spacing];
-    @collapsed-bg: @_colors-vars[@grey-80];
     @separator-border-color: @_colors-vars[@grey-60];
-    @collapsed-border-color: @separator-border-color;
     @description-spacing-top: #rb-ns-ui.form[@standard-spacing];
     @description-spacing-bottom: #rb-ns-ui.form[@large-spacing];
     @name-spacing: #rb-ns-ui.form[@standard-spacing];
+
+    @collapsed-bg: @_colors-vars[@grey-80];
+    @collapsed-border-color: @separator-border-color;
+
     @toggle-font-size: 80%;
   }
 
   .form-row() {
-    /*
-     * Legacy variable definitions.
-     *
-     * These are no longer used within Review Board, but might still be
-     * referenced by other consumers. These will be removed in Review Board 9.
-     */
     @padding-horiz: 0;
     @padding-vert: #rb-ns-ui.form[@large-spacing];
   }
@@ -183,31 +136,34 @@ input[type=number],
 input[type=password],
 input[type=search],
 input[type=text],
-input[type=url],
-select {
+input[type=url] {
+  @_form-field-vars: #rb-ns-ui.form-field();
+
   background: var(--ink-p-input-bg);
   border: var(--ink-g-border-input);
-  border-radius: var(--ink-u-border-radius-input);
+  border-radius: @_form-field-vars[@input-border-radius];
   color: var(--ink-p-input-fg);
   box-sizing: border-box;
   font-size: inherit;
-  padding: var(--ink-u-spacing-xs) var(--ink-u-spacing-s);
+  padding: @_form-field-vars[@input-padding-vert]
+           @_form-field-vars[@input-padding-horiz];
 }
 
 textarea {
-  background: var(--ink-p-input-bg);
-  border: var(--ink-g-border-input);
-  border-radius: var(--ink-u-border-radius-input);
+  @_form-field-vars: #rb-ns-ui.form-field();
+
+  border: @_form-field-vars[@textarea-border];
+  border-radius: @_form-field-vars[@textarea-border-radius];
   box-sizing: border-box;
-  color: var(--ink-p-input-fg);
-  font-size: var(--rb-c-textarea-font-size);
-  padding: var(--rb-c-textarea-spacing);
+  font-size: @_form-field-vars[@textarea-font-size];
 }
 
 .CodeMirror {
+  @_form-field-vars: #rb-ns-ui.form-field();
+
   background: var(--rb-theme-rich-text-code-bg);
   border: var(--ink-g-border-input);
-  border-radius: var(--ink-u-border-radius-input);
+  border-radius: @_form-field-vars[@textarea-border-radius];
   color: var(--rb-theme-rich-text-code-fg);
   cursor: text;
 
@@ -245,7 +201,7 @@ textarea {
  *     </ul>
  */
 .errorlist {
-  color: var(--rb-p-input-label-error-color);
+  color: #DD0000;
   display: inline;
   font-weight: bold;
   margin: 0 0 0 15px;
@@ -285,6 +241,7 @@ textarea {
  */
 .rb-c-form {
   @_form-vars: #rb-ns-ui.form();
+  @_action-spacing: @_form-vars[@action-spacing];
 
   margin: 0;
   padding: 0;
@@ -353,7 +310,7 @@ textarea {
    */
   &__action {
     box-sizing: border-box;
-    font-size: var(--ink-u-font-m);
+    font-size: @_form-vars[@action-font-size];
     text-align: center;
 
     /*
@@ -361,9 +318,9 @@ textarea {
      * spacing around actions.
      */
     #rb-ns-pages.base.on-shell-desktop-mode({
-      margin: var(--ink-u-spacing-m) var(--ink-u-spacing-m) 0 0;
+      margin: @_action-spacing @_action-spacing 0 0;
     }, @else: {
-      margin: var(--ink-u-spacing-m) 0 0 0;
+      margin: @_action-spacing 0 0 0;
       width: 100%;
 
       /* Force one action per line. */
@@ -405,10 +362,9 @@ textarea {
      * on both sides.
      */
     #rb-ns-pages.base.on-shell-desktop-mode({
-      margin: var(--ink-u-spacing-m) 0
-              var(--ink-u-spacing-m) var(--ink-u-spacing-m);
+      margin: @_action-spacing 0 @_action-spacing @_action-spacing;
     }, @else: {
-      margin: var(--ink-u-spacing-m);
+      margin: @_action-spacing;
     });
   }
 
@@ -491,18 +447,22 @@ textarea {
  *     </div>
  */
 .rb-c-form-field {
-  margin-top: var(--ink-u-spacing-s);
+  @_form-vars: #rb-ns-ui.form();
+  @_form-field-vars: #rb-ns-ui.form-field();
+  @_small-spacing: @_form-vars[@small-spacing];
+  @_standard-spacing: @_form-vars[@standard-spacing];
+  @_large-spacing: @_form-vars[@large-spacing];
 
   &.-has-errors {
     .rb-c-form-field__label {
-      color: var(--rb-p-input-label-color-error);
+      color: @_form-field-vars[@errors-label-color];
     }
 
     .rb-c-form-field__input {
       input,
       select,
       textarea {
-        border-color: var(--rb-p-input-border-color-error);
+        border-color: @_form-field-vars[@errors-input-border-color];
       }
     }
   }
@@ -529,31 +489,10 @@ textarea {
 
   &.-is-required {
     .rb-c-form-field__label:after {
-      color: var(--rb-p-required-flag-color);
+      color: @_form-field-vars[@required-flag-color];
       content: ' *';
-      font-size: var(--ink-u-font-xs);
+      font-size: @_form-field-vars[@required-flag-font-size];
       font-weight: bold;
-    }
-  }
-
-  /**
-   * A label indicating why a field is disabled.
-   *
-   * Structure:
-   *     <div class="rb-c-form-field__disabled-reason">...</div>
-   */
-  &__disabled-reason {
-    color: var(--ink-p-fg-weak);
-    display: flex;
-    font-size: var(--ink-u-font-xs);
-    gap: var(--ink-u-spacing-s);
-    line-height: var(--ink-u-icon-std);
-
-    &:before {
-      #ink-ns-ui.icons.svg-icon(@icon: var(--ink-i-error));
-      color: var(--ink-p-red-700);
-      flex-grow: 0;
-      flex-shrink: 0;
     }
   }
 
@@ -595,20 +534,23 @@ textarea {
    *     </div>
    */
   &__help {
+    @_icon-size: @_form-field-vars[@help-icon-size];
+
     color: var(--ink-p-fg-weak);
-    display: flex;
-    font-size: var(--ink-u-font-xs);
-    gap: var(--ink-u-spacing-s);
-    line-height: var(--ink-u-icon-std);
+    font-size: @_form-field-vars[@help-text-font-size];
     margin: 0;
-    padding: var(--ink-u-spacing-m) 0;
+    padding: @_form-field-vars[@help-text-padding-vert] 0
+             @_form-field-vars[@help-text-padding-vert]
+             (@_icon-size + @_form-field-vars[@help-icon-margin]);
     position: relative;
 
     &:before {
-      #ink-ns-ui.icons.svg-icon(@icon: var(--ink-i-help));
-      color: var(--ink-p-blue-700);
-      flex-grow: 0;
-      flex-shrink: 0;
+      .fa-icon();
+      content: @_form-field-vars[@help-icon];
+      color: @_form-field-vars[@help-icon-color];
+      font-size: @_icon-size;
+      position: absolute;
+      left: 0;
     }
   }
 
@@ -647,7 +589,7 @@ textarea {
         padding: 0;
 
         + li {
-          margin-top: var(--ink-u-spacing-m);
+          margin-top: @_standard-spacing;
         }
       }
     }
@@ -668,7 +610,7 @@ textarea {
   &__label {
     display: block;
     font-weight: bold;
-    margin-bottom: var(--ink-u-spacing-s);
+    margin-bottom: @_small-spacing;
     vertical-align: top;
     word-wrap: break-word;
   }
@@ -763,10 +705,12 @@ textarea {
  *     </fieldset>
  */
 .rb-c-form-fieldset {
+  @_form-fieldset-vars: #rb-ns-ui.form-fieldset();
+
   border: 0;
-  border-top: var(--rb-c-form-fieldset-border);
+  border-top: 1px @_form-fieldset-vars[@separator-border-color] solid;
   margin: 0;
-  padding: 0 var(--ink-u-spacing-m);
+  padding: 0 @_form-fieldset-vars[@padding];
 
   &:first-of-type {
     margin-top: 0;
@@ -779,14 +723,14 @@ textarea {
 
   &.-can-collapse {
     .rb-c-form-fieldset__name {
-      margin: var(--ink-u-spacing-m) 0;
+      margin: @_form-fieldset-vars[@name-spacing] 0;
     }
   }
 
   &.-is-collapsed {
-    background: var(--rb-c-form-fieldset-collapsed-bg);
-    border-bottom: var(--rb-c-form-fieldset-border);
-    border-top: var(--rb-c-form-fieldset-border);
+    background: @_form-fieldset-vars[@collapsed-bg];
+    border-top: 1px @_form-fieldset-vars[@collapsed-border-color] solid;
+    border-bottom: 1px @_form-fieldset-vars[@collapsed-border-color] solid;
 
     & + .rb-c-form-fieldset {
       border-top: 0;
@@ -848,7 +792,8 @@ textarea {
    */
   &__description {
     padding: 0;
-    margin: var(--ink-u-spacing-m) 0 var(--ink-u-spacing-l) 0;
+    margin: @_form-fieldset-vars[@description-spacing-top] 0
+            @_form-fieldset-vars[@description-spacing-bottom] 0;
   }
 
   /**
@@ -861,7 +806,9 @@ textarea {
    *     </div>
    */
   &__fields {
-    margin: var(--ink-u-spacing-l) 0;
+    @_form-row-vars: #rb-ns-ui.form-row();
+
+    margin: @_form-row-vars[@padding-vert] 0;
   }
 
   /**
@@ -876,6 +823,8 @@ textarea {
    *     </legend>
    */
   &__name {
+    @_name-spacing: @_form-fieldset-vars[@name-spacing];
+
     #rb-ns-ui.content-header.add-title-styles();
 
     /*
@@ -886,7 +835,7 @@ textarea {
     float: left;
     .clearfix();
 
-    margin: var(--ink-u-spacing-m) 0 0 0;
+    margin: @_name-spacing 0 0 0;
     padding: 0;
     width: 100%;
   }
@@ -898,9 +847,9 @@ textarea {
    *     <a href="#" class="rb-c-form-fieldset__toggle">...</a>
    */
   &__toggle {
-    font-size: var(--ink-u-font-xs);
+    font-size: @_form-fieldset-vars[@toggle-font-size];
     font-weight: normal;
-    margin-left: var(--ink-u-spacing-m);
+    margin-left: @_form-fieldset-vars[@name-spacing];
   }
 }
 
@@ -917,7 +866,10 @@ textarea {
   &,
   .djblets-c-config-forms-page__content &.fields-row,
   .config-forms-page-content &.fields-row {
-    margin: var(--ink-u-spacing-ml) 0 0 0;
+    @_form-row-vars: #rb-ns-ui.form-row();
+
+    margin: @_form-row-vars[@padding-vert] @_form-row-vars[@padding-horiz]
+            0 @_form-row-vars[@padding-horiz];
     padding: 0;
   }
 }

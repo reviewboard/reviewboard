@@ -3,60 +3,37 @@ from __future__ import annotations
 import logging
 import uuid
 from itertools import chain
-from typing import (Any, Generic, Iterable, Mapping, Optional, Sequence,
-                    TYPE_CHECKING, cast)
+from typing import Any, Dict
 
+from django.contrib.auth.models import User
 from django.db import models
 from django.template.loader import get_template, render_to_string
 from django.urls import NoReverseMatch
 from django.utils.functional import cached_property
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import mark_safe
-from django.utils.translation import gettext, gettext_lazy as _
-from typing_extensions import TypeVar
+from django.utils.translation import gettext_lazy as _
 
-from reviewboard.accounts.models import User
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.deprecation import RemovedInReviewBoard80Warning
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
 from reviewboard.diffviewer.models import DiffCommit, DiffSet
 from reviewboard.reviews.fields import (BaseCommaEditableField,
                                         BaseEditableField,
                                         BaseReviewRequestField,
                                         BaseReviewRequestFieldSet,
-                                        BaseTextAreaField,
-                                        TFieldValue)
+                                        BaseTextAreaField)
 from reviewboard.reviews.models import (Group, ReviewRequest,
                                         ReviewRequestDraft,
                                         Screenshot)
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
 
-if TYPE_CHECKING:
-    from django.utils.safestring import SafeString
-    from djblets.webapi.responses import WebAPIResponsePayload
-
-    from reviewboard.changedescs.models import ChangeDescription
-    from reviewboard.reviews.detail import ReviewRequestPageData
-    from reviewboard.reviews.fields import ReviewRequestFieldChangeEntrySection
-    from reviewboard.reviews.models.base_review_request_details import \
-        BaseReviewRequestDetails
-
-    FieldMixinParent = BaseReviewRequestField
-else:
-    FieldMixinParent = Generic
-
 
 logger = logging.getLogger(__name__)
 
 
-#: A generic type for a model passed to a review request field.
-#:
-#: Version Added:
-#:     7.1
-TModel = TypeVar('TModel', bound=models.Model)
-
-
-class BuiltinFieldMixin(FieldMixinParent[TFieldValue]):
+class BuiltinFieldMixin(object):
     """Mixin for built-in fields.
 
     This overrides some functions to work with native fields on a
@@ -64,7 +41,7 @@ class BuiltinFieldMixin(FieldMixinParent[TFieldValue]):
     stored in extra_data.
     """
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs):
         """Initialize the field.
 
         Args:
@@ -74,24 +51,16 @@ class BuiltinFieldMixin(FieldMixinParent[TFieldValue]):
             **kwargs (dict):
                 Keyword arguments to pass through to the superclass.
         """
-        super().__init__(*args, **kwargs)
+        super(BuiltinFieldMixin, self).__init__(*args, **kwargs)
 
-        field_id = self.field_id
-        assert field_id is not None
-
-        review_request_details = self.review_request_details
-
-        if (not hasattr(review_request_details, field_id) and
-            isinstance(review_request_details, ReviewRequestDraft)):
+        if (not hasattr(self.review_request_details, self.field_id) and
+            isinstance(self.review_request_details, ReviewRequestDraft)):
             # This field only exists in ReviewRequest, and not in
             # the draft, so we're going to work there instead.
-            review_request_details = \
-                review_request_details.get_review_request()
+            self.review_request_details = \
+                self.review_request_details.get_review_request()
 
-    def load_value(
-        self,
-        review_request_details: BaseReviewRequestDetails,
-    ) -> Optional[TFieldValue]:
+    def load_value(self, review_request_details):
         """Load a value from the review request or draft.
 
         Args:
@@ -104,40 +73,31 @@ class BuiltinFieldMixin(FieldMixinParent[TFieldValue]):
             object:
             The loaded value.
         """
-        field_id = self.field_id
-        assert field_id
-
-        value = getattr(review_request_details, field_id)
+        value = getattr(review_request_details, self.field_id)
 
         if isinstance(value, models.Manager):
             value = list(value.all())
 
-        return cast(Optional[TFieldValue], value)
+        return value
 
-    def save_value(
-        self,
-        value: Optional[TFieldValue],
-    ) -> None:
+    def save_value(self, value):
         """Save the value in the review request or draft.
 
         Args:
             value (object):
                 The new value for the field.
         """
-        field_id = self.field_id
-        assert field_id
-
-        field = getattr(self.review_request_details, field_id)
+        field = getattr(self.review_request_details, self.field_id)
 
         # ManyRelatedManager cannot be set with a simple assignment, so we need
         # to use .set() for that. Other field types can use setattr.
         if isinstance(field, models.Manager):
             field.set(value)
         else:
-            setattr(self.review_request_details, field_id, value)
+            setattr(self.review_request_details, self.field_id, value)
 
 
-class BuiltinTextAreaFieldMixin(BuiltinFieldMixin[str]):
+class BuiltinTextAreaFieldMixin(BuiltinFieldMixin):
     """Mixin for built-in text area fields.
 
     This will ensure that the text is always rendered in Markdown,
@@ -146,14 +106,14 @@ class BuiltinTextAreaFieldMixin(BuiltinFieldMixin[str]):
     rendering.
     """
 
-    def get_data_attributes(self) -> dict[str, Any]:
+    def get_data_attributes(self):
         """Return any data attributes to include in the element.
 
         Returns:
             dict:
             The data attributes to include in the element.
         """
-        attrs = super().get_data_attributes()
+        attrs = super(BuiltinTextAreaFieldMixin, self).get_data_attributes()
 
         # This is already available in the review request state fed to the
         # page, so we don't need it in the data attributes as well.
@@ -162,7 +122,7 @@ class BuiltinTextAreaFieldMixin(BuiltinFieldMixin[str]):
         return attrs
 
 
-class ReviewRequestPageDataMixin(FieldMixinParent[TFieldValue]):
+class ReviewRequestPageDataMixin(object):
     """Mixin for internal fields needing access to the page data.
 
     These are used by fields that operate on state generated when creating the
@@ -178,22 +138,9 @@ class ReviewRequestPageDataMixin(FieldMixinParent[TFieldValue]):
     """
 
     #: Whether the field should be rendered.
-    should_render: bool = False
+    should_render = False
 
-    ######################
-    # Instance variables #
-    ######################
-
-    #: The data already queried for the review request page.
-    data: Optional[ReviewRequestPageData]
-
-    def __init__(
-        self,
-        review_request_details: BaseReviewRequestDetails,
-        data: Optional[ReviewRequestPageData] = None,
-        *args,
-        **kwargs,
-    ) -> None:
+    def __init__(self, review_request_details, data=None, *args, **kwargs):
         """Initialize the mixin.
 
         Args:
@@ -214,14 +161,12 @@ class ReviewRequestPageDataMixin(FieldMixinParent[TFieldValue]):
             **kwargs (dict):
                 Additional keyword arguments.
         """
-        super().__init__(review_request_details, *args, **kwargs)
+        super(ReviewRequestPageDataMixin, self).__init__(
+            review_request_details, *args, **kwargs)
 
         self.data = data
 
-    def load_value(
-        self,
-        review_request_details: BaseReviewRequestDetails,
-    ) -> Optional[TFieldValue]:
+    def load_value(self, review_request_details):
         """Load a value from the review request or draft.
 
         Args:
@@ -236,12 +181,7 @@ class ReviewRequestPageDataMixin(FieldMixinParent[TFieldValue]):
         """
         return None
 
-    def record_change_entry(
-        self,
-        changedesc: ChangeDescription,
-        old_value: Any,
-        new_value: Any,
-    ) -> None:
+    def record_change_entry(self, changedesc, old_value, new_value):
         """Record information on the changed values in a ChangeDescription.
 
         Args:
@@ -257,8 +197,7 @@ class ReviewRequestPageDataMixin(FieldMixinParent[TFieldValue]):
         pass
 
 
-class BaseCaptionsField(ReviewRequestPageDataMixin[str],
-                        BaseReviewRequestField[str]):
+class BaseCaptionsField(ReviewRequestPageDataMixin, BaseReviewRequestField):
     """Base class for rendering captions for attachments.
 
     This serves as a base for FileAttachmentCaptionsField and
@@ -266,15 +205,12 @@ class BaseCaptionsField(ReviewRequestPageDataMixin[str],
     for caption changes on file attachments or screenshots.
     """
 
-    obj_map_attr: Optional[str] = None
-    caption_object_field: Optional[str] = None
+    obj_map_attr = None
+    caption_object_field = None
 
     change_entry_renders_inline = False
 
-    def render_change_entry_html(
-        self,
-        info: object,
-    ) -> SafeString:
+    def render_change_entry_html(self, info):
         """Render a change entry to HTML.
 
         This function is expected to return safe, valid HTML. Any values
@@ -288,19 +224,11 @@ class BaseCaptionsField(ReviewRequestPageDataMixin[str],
                 contain ``added`` and ``removed`` keys as well.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The HTML representation of the change entry.
         """
-        assert isinstance(info, dict)
-
-        data = self.data
-        obj_map_attr = self.obj_map_attr
-
-        assert data is not None
-        assert obj_map_attr is not None
-
-        render_item = super().render_change_entry_html
-        obj_map = getattr(data, obj_map_attr)
+        render_item = super(BaseCaptionsField, self).render_change_entry_html
+        obj_map = getattr(self.data, self.obj_map_attr)
 
         s = ['<table class="caption-changed">']
 
@@ -318,12 +246,9 @@ class BaseCaptionsField(ReviewRequestPageDataMixin[str],
 
         s.append('</table>')
 
-        return mark_safe(''.join(s))
+        return ''.join(s)
 
-    def serialize_change_entry(
-        self,
-        changedesc: ChangeDescription,
-    ) -> Sequence[WebAPIResponsePayload]:
+    def serialize_change_entry(self, changedesc):
         """Serialize a change entry for public consumption.
 
         This will output a version of the change entry for use in the API.
@@ -341,32 +266,25 @@ class BaseCaptionsField(ReviewRequestPageDataMixin[str],
         """
         data = changedesc.fields_changed[self.field_id]
 
-        model = self.model
-        assert model is not None
-
         return [
             {
                 'old': data[str(obj.pk)]['old'][0],
                 'new': data[str(obj.pk)]['new'][0],
                 self.caption_object_field: obj,
             }
-            for obj in model.objects.filter(pk__in=data.keys())
+            for obj in self.model.objects.filter(pk__in=data.keys())
         ]
 
 
-class BaseModelListEditableField(BaseCommaEditableField[TModel]):
+class BaseModelListEditableField(BaseCommaEditableField):
     """Base class for editable comma-separated list of model instances.
 
     This is used for built-in classes that work with ManyToManyFields.
     """
 
-    model_name_attr: Optional[str] = None
+    model_name_attr = None
 
-    def has_value_changed(
-        self,
-        old_value: Sequence[TModel],
-        new_value: Sequence[TModel],
-    ) -> bool:
+    def has_value_changed(self, old_value, new_value):
         """Return whether the value has changed.
 
         Args:
@@ -380,17 +298,12 @@ class BaseModelListEditableField(BaseCommaEditableField[TModel]):
             bool:
             Whether the value of the field has changed.
         """
-        old_values = {obj.pk for obj in old_value}
-        new_values = {obj.pk for obj in new_value}
+        old_values = set([obj.pk for obj in old_value])
+        new_values = set([obj.pk for obj in new_value])
 
-        return old_values != new_values
+        return old_values.symmetric_difference(new_values)
 
-    def record_change_entry(
-        self,
-        changedesc: ChangeDescription,
-        old_value: Sequence[TModel],
-        new_value: Sequence[TModel],
-    ) -> None:
+    def record_change_entry(self, changedesc, old_value, new_value):
         """Record information on the changed values in a ChangeDescription.
 
         Args:
@@ -403,18 +316,10 @@ class BaseModelListEditableField(BaseCommaEditableField[TModel]):
             new_value (object):
                 The new value of the field.
         """
-        assert self.field_id
+        changedesc.record_field_change(self.field_id, old_value, new_value,
+                                       self.model_name_attr)
 
-        changedesc.record_field_change(field=self.field_id,
-                                       old_value=old_value,
-                                       new_value=new_value,
-                                       name_field=self.model_name_attr)
-
-    def render_change_entry_item_html(
-        self,
-        info: object,
-        item: tuple[str, str, int],
-    ) -> SafeString:
+    def render_change_entry_item_html(self, info, item):
         """Render an item for change description HTML.
 
         Args:
@@ -425,33 +330,27 @@ class BaseModelListEditableField(BaseCommaEditableField[TModel]):
                 The value of the item.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered change entry.
         """
         label, url, pk = item
 
         if url:
-            return format_html('<a href="{}">{}</a>', url, label)
+            return '<a href="%s">%s</a>' % (escape(url), escape(label))
         else:
             return escape(label)
 
-    def save_value(
-        self,
-        value: Optional[Sequence[TModel]],
-    ) -> None:
+    def save_value(self, value):
         """Save the value in the review request or draft.
 
         Args:
             value (object):
                 The new value for the field.
         """
-        assert self.field_id
-
-        setattr(self.review_request_details, self.field_id, value)
+        setattr(self, self.field_id, value)
 
 
-class StatusField(BuiltinFieldMixin[str],
-                  BaseReviewRequestField[str]):
+class StatusField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Status field on a review request."""
 
     field_id = 'status'
@@ -461,22 +360,11 @@ class StatusField(BuiltinFieldMixin[str],
     #: Whether the field should be rendered.
     should_render = False
 
-    def get_change_entry_sections_html(
-        self,
-        info: object,
-    ) -> Sequence[ReviewRequestFieldChangeEntrySection]:
+    def get_change_entry_sections_html(self, info):
         """Return sections of change entries with titles and rendered HTML.
 
         Because the status field is specially handled, this just returns an
         empty list.
-
-        Args:
-            info (dict, unused):
-                A dictionary describing how the field has changed.
-
-        Returns:
-            list:
-            An empty list.
         """
         return []
 
@@ -503,15 +391,8 @@ class DescriptionField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
     #: The class name for the JavaScript view representing this field.
     js_view_class = 'RB.ReviewRequestFields.DescriptionFieldView'
 
-    def is_text_markdown(
-        self,
-        value: Optional[str],
-    ) -> bool:
+    def is_text_markdown(self, value):
         """Return whether the description uses Markdown.
-
-        Args:
-            value (str, unused):
-                The field's text.
 
         Returns:
             bool:
@@ -529,15 +410,8 @@ class TestingDoneField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
     #: The class name for the JavaScript view representing this field.
     js_view_class = 'RB.ReviewRequestFields.TestingDoneFieldView'
 
-    def is_text_markdown(
-        self,
-        value: Optional[str],
-    ) -> bool:
+    def is_text_markdown(self, value):
         """Return whether the description uses Markdown.
-
-        Args:
-            value (str, unused):
-                The field's text.
 
         Returns:
             bool:
@@ -546,8 +420,7 @@ class TestingDoneField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
         return self.review_request_details.testing_done_rich_text
 
 
-class OwnerField(BuiltinFieldMixin[User],
-                 BaseEditableField[User]):
+class OwnerField(BuiltinFieldMixin, BaseEditableField):
     """The Owner field on a review request."""
 
     field_id = 'submitter'
@@ -559,75 +432,42 @@ class OwnerField(BuiltinFieldMixin[User],
     #: The class name for the JavaScript view representing this field.
     js_view_class = 'RB.ReviewRequestFields.OwnerFieldView'
 
-    def render_value(
-        self,
-        value: Optional[User],
-    ) -> SafeString:
+    def render_value(self, user):
         """Render the value in the field.
 
         Args:
-            value (django.contrib.auth.models.User):
+            user (django.contrib.auth.models.User):
                 The value to render.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered value.
         """
-        assert value is not None
-
-        user = value
-        request = self.request
-        review_request_details = self.review_request_details
-
-        assert request is not None
-        assert review_request_details is not None
-
         return format_html(
             '<a class="user" href="{0}">{1}</a>',
             local_site_reverse(
                 'user',
-                local_site=review_request_details.local_site,
+                local_site=self.review_request_details.local_site,
                 args=[user]),
-            user.get_profile().get_display_name(request.user))
+            user.get_profile().get_display_name(self.request.user))
 
-    def record_change_entry(
-        self,
-        changedesc: ChangeDescription,
-        old_value: User,
-        new_value: User,
-    ) -> None:
+    def record_change_entry(self, changedesc, old_value, new_value):
         """Record information on the changed values in a ChangeDescription.
 
         Args:
             changedesc (reviewboard.changedescs.models.ChangeDescription):
                 The change description to record the entry in.
 
-            old_value (django.contrib.auth.models.User):
+            old_value (object):
                 The old value of the field.
 
-            new_value (django.contrib.auth.models.User):
+            new_value (object):
                 The new value of the field.
         """
-        field_id = self.field_id
-        assert field_id
+        changedesc.record_field_change(self.field_id, old_value, new_value,
+                                       self.model_name_attr)
 
-        changedesc.record_field_change(
-            field=field_id,
-            old_value=old_value,
-            new_value=new_value,
-            name_field=self.model_name_attr,
-            build_url_func=lambda user: local_site_reverse(
-                'user',
-                local_site=self.review_request_details.local_site,
-                kwargs={
-                    'username': user.username,
-                }))
-
-    def render_change_entry_value_html(
-        self,
-        info: object,
-        value: tuple[str, str, int],
-    ) -> SafeString:
+    def render_change_entry_value_html(self, info, item):
         """Render the value for a change description string to HTML.
 
         Args:
@@ -638,20 +478,17 @@ class OwnerField(BuiltinFieldMixin[User],
                 The value of the field.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered change entry.
         """
-        label, url, pk = value
+        label, url, pk = item
 
         if url:
-            return format_html('<a href="{}">{}</a>', url, label)
+            return '<a href="%s">%s</a>' % (escape(url), escape(label))
         else:
             return escape(label)
 
-    def serialize_change_entry(
-        self,
-        changedesc: ChangeDescription,
-    ) -> WebAPIResponsePayload:
+    def serialize_change_entry(self, changedesc):
         """Serialize a change entry for public consumption.
 
         This will output a version of the change entry for use in the API.
@@ -667,8 +504,7 @@ class OwnerField(BuiltinFieldMixin[User],
             dict:
             An appropriate serialization for the field.
         """
-        entry = super().serialize_change_entry(changedesc)
-        assert isinstance(entry, dict)
+        entry = super(OwnerField, self).serialize_change_entry(changedesc)
 
         return {
             key: value[0]
@@ -676,8 +512,7 @@ class OwnerField(BuiltinFieldMixin[User],
         }
 
 
-class RepositoryField(BuiltinFieldMixin[Repository],
-                      BaseReviewRequestField[Repository]):
+class RepositoryField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Repository field on a review request."""
 
     field_id = 'repository'
@@ -685,15 +520,14 @@ class RepositoryField(BuiltinFieldMixin[Repository],
     model = Repository
 
     @property
-    def should_render(self) -> bool:
+    def should_render(self):
         """Whether the field should be rendered."""
         review_request = self.review_request_details.get_review_request()
 
         return review_request.repository_id is not None
 
 
-class BranchField(BuiltinFieldMixin[str],
-                  BaseEditableField[str]):
+class BranchField(BuiltinFieldMixin, BaseEditableField):
     """The Branch field on a review request."""
 
     field_id = 'branch'
@@ -703,8 +537,7 @@ class BranchField(BuiltinFieldMixin[str],
     js_view_class = 'RB.ReviewRequestFields.BranchFieldView'
 
 
-class BugsField(BuiltinFieldMixin[Sequence[str]],
-                BaseCommaEditableField[str]):
+class BugsField(BuiltinFieldMixin, BaseCommaEditableField):
     """The Bugs field on a review request."""
 
     field_id = 'bugs_closed'
@@ -715,10 +548,7 @@ class BugsField(BuiltinFieldMixin[Sequence[str]],
     #: The class name for the JavaScript view representing this field.
     js_view_class = 'RB.ReviewRequestFields.BugsFieldView'
 
-    def load_value(
-        self,
-        review_request_details: BaseReviewRequestDetails,
-    ) -> Sequence[str]:
+    def load_value(self, review_request_details):
         """Load a value from the review request or draft.
 
         Args:
@@ -733,28 +563,18 @@ class BugsField(BuiltinFieldMixin[Sequence[str]],
         """
         return review_request_details.get_bug_list()
 
-    def save_value(
-        self,
-        value: Optional[Sequence[str]],
-    ) -> None:
+    def save_value(self, value):
         """Save the value in the review request or draft.
 
         Args:
             value (object):
                 The new value for the field.
         """
-        assert self.field_id
+        serialized_value = ', '.join(value)
+        serialized_value = serialized_value.replace('\n', '').replace('\r', '')
+        setattr(self.review_request_details, self.field_id, serialized_value)
 
-        setattr(self.review_request_details, self.field_id, (
-            ', '.join(value or [])
-            .replace('\n', '')
-            .replace('\r', '')
-        ))
-
-    def render_item(
-        self,
-        item: str,
-    ) -> SafeString:
+    def render_item(self, bug_id):
         """Render an item from the list.
 
         Args:
@@ -762,23 +582,18 @@ class BugsField(BuiltinFieldMixin[Sequence[str]],
                 The item to render.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered item.
         """
-        bug_url = self._get_bug_url(item)
+        bug_url = self._get_bug_url(bug_id)
 
         if bug_url:
             return format_html('<a class="bug" href="{url}">{id}</a>',
-                               url=bug_url,
-                               id=item)
+                               url=bug_url, id=bug_id)
         else:
-            return escape(item)
+            return escape(bug_id)
 
-    def render_change_entry_item_html(
-        self,
-        info: object,
-        item: tuple[str, str, int],
-    ) -> SafeString:
+    def render_change_entry_item_html(self, info, item):
         """Render an item for change description HTML.
 
         Args:
@@ -789,30 +604,26 @@ class BugsField(BuiltinFieldMixin[Sequence[str]],
                 The value of the item.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered change entry.
         """
         return self.render_item(item[0])
 
-    def _get_bug_url(
-        self,
-        bug_id: str,
-    ) -> Optional[str]:
+    def _get_bug_url(self, bug_id):
         """Return the URL to link to a specific bug.
 
         Args:
-            bug_id (str):
+            bug_id (unicode):
                 The ID of the bug to link to.
 
         Returns:
-            str:
+            unicode:
             The link to view the bug in the bug tracker, if available.
         """
-        review_request_details = self.review_request_details
-        review_request = review_request_details.get_review_request()
-        repository = review_request_details.repository
-        local_site_name: Optional[str] = None
-        bug_url: Optional[str] = None
+        review_request = self.review_request_details.get_review_request()
+        repository = self.review_request_details.repository
+        local_site_name = None
+        bug_url = None
 
         if review_request.local_site:
             local_site_name = review_request.local_site.name
@@ -830,8 +641,7 @@ class BugsField(BuiltinFieldMixin[Sequence[str]],
         return bug_url
 
 
-class DependsOnField(BuiltinFieldMixin[Sequence[ReviewRequest]],
-                     BaseModelListEditableField[ReviewRequest]):
+class DependsOnField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Depends On field on a review request."""
 
     field_id = 'depends_on'
@@ -842,11 +652,7 @@ class DependsOnField(BuiltinFieldMixin[Sequence[ReviewRequest]],
     #: The class name for the JavaScript view representing this field.
     js_view_class = 'RB.ReviewRequestFields.DependsOnFieldView'
 
-    def render_change_entry_item_html(
-        self,
-        info: object,
-        item: tuple[str, str, int],
-    ) -> SafeString:
+    def render_change_entry_item_html(self, info, item):
         """Render an item for change description HTML.
 
         Args:
@@ -857,27 +663,24 @@ class DependsOnField(BuiltinFieldMixin[Sequence[ReviewRequest]],
                 The value of the item.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered change entry.
         """
-        obj = ReviewRequest.objects.get(pk=item[2])
+        item = ReviewRequest.objects.get(pk=item[2])
 
         rendered_item = format_html(
             '<a href="{url}">{id} - {summary}</a>',
-            url=obj.get_absolute_url(),
-            id=obj.pk,
-            summary=obj.summary)
+            url=item.get_absolute_url(),
+            id=item.pk,
+            summary=item.summary)
 
-        if obj.status in (ReviewRequest.SUBMITTED,
-                          ReviewRequest.DISCARDED):
-            rendered_item = format_html('<s>{}</s>', rendered_item)
+        if item.status in (ReviewRequest.SUBMITTED,
+                           ReviewRequest.DISCARDED):
+            return '<s>%s</s>' % rendered_item
+        else:
+            return rendered_item
 
-        return rendered_item
-
-    def render_item(
-        self,
-        item: ReviewRequest,
-    ) -> SafeString:
+    def render_item(self, item):
         """Render an item from the list.
 
         Args:
@@ -885,7 +688,7 @@ class DependsOnField(BuiltinFieldMixin[Sequence[ReviewRequest]],
                 The item to render.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered item.
         """
         rendered_item = format_html(
@@ -897,23 +700,19 @@ class DependsOnField(BuiltinFieldMixin[Sequence[ReviewRequest]],
 
         if item.status in (ReviewRequest.SUBMITTED,
                            ReviewRequest.DISCARDED):
-            rendered_item = format_html('<s>{}</s>', rendered_item)
+            return '<s>%s</s>' % rendered_item
+        else:
+            return rendered_item
 
-        return rendered_item
 
-
-class BlocksField(BuiltinFieldMixin[Sequence[ReviewRequest]],
-                  BaseReviewRequestField[Sequence[ReviewRequest]]):
+class BlocksField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Blocks field on a review request."""
 
     field_id = 'blocks'
     label = _('Blocks')
     model = ReviewRequest
 
-    def load_value(
-        self,
-        review_request_details: BaseReviewRequestDetails,
-    ) -> Optional[Sequence[ReviewRequest]]:
+    def load_value(self, review_request_details):
         """Load a value from the review request or draft.
 
         Args:
@@ -929,14 +728,11 @@ class BlocksField(BuiltinFieldMixin[Sequence[ReviewRequest]],
         return review_request_details.get_review_request().get_blocks()
 
     @property
-    def should_render(self) -> bool:
+    def should_render(self):
         """Whether the field should be rendered."""
-        return bool(self.value)
+        return len(self.value) > 0
 
-    def render_value(
-        self,
-        value: Optional[Sequence[ReviewRequest]],
-    ) -> SafeString:
+    def render_value(self, blocks):
         """Render the value in the field.
 
         Args:
@@ -944,7 +740,7 @@ class BlocksField(BuiltinFieldMixin[Sequence[ReviewRequest]],
                 The value to render.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered value.
         """
         return format_html_join(
@@ -952,12 +748,11 @@ class BlocksField(BuiltinFieldMixin[Sequence[ReviewRequest]],
             '<a href="{0}" class="review-request-link">{1}</a>',
             [
                 (item.get_absolute_url(), item.display_id)
-                for item in (value or [])
+                for item in blocks
             ])
 
 
-class ChangeField(BuiltinFieldMixin[str],
-                  BaseReviewRequestField[str]):
+class ChangeField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Change field on a review request.
 
     This is shown for repositories supporting changesets. The change
@@ -972,10 +767,7 @@ class ChangeField(BuiltinFieldMixin[str],
     field_id = 'changenum'
     label = _('Change')
 
-    def load_value(
-        self,
-        review_request_details: BaseReviewRequestDetails,
-    ) -> str:
+    def load_value(self, review_request_details):
         """Load a value from the review request or draft.
 
         Args:
@@ -985,44 +777,38 @@ class ChangeField(BuiltinFieldMixin[str],
                 The review request or draft.
 
         Returns:
-            str:
+            object:
             The loaded value.
         """
         return review_request_details.get_review_request().changenum
 
     @property
-    def should_render(self) -> bool:
+    def should_render(self):
         """Whether the field should be rendered."""
         return bool(self.value)
 
-    def render_value(
-        self,
-        value: Optional[str],
-    ) -> SafeString:
+    def render_value(self, changenum):
         """Render the value in the field.
 
         Args:
-            changenum (str):
+            changenum (unicode):
                 The value to render.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered value.
         """
         review_request = self.review_request_details.get_review_request()
 
-        is_pending, changenum = review_request.changeset_is_pending(value)
+        is_pending, changenum = review_request.changeset_is_pending(changenum)
 
         if is_pending:
-            fmt = gettext('{} (pending)')
+            return escape(_('%s (pending)') % changenum)
         else:
-            fmt = '{}'
-
-        return format_html(fmt, changenum)
+            return changenum
 
 
-class CommitField(BuiltinFieldMixin[str],
-                  BaseReviewRequestField[str]):
+class CommitField(BuiltinFieldMixin, BaseReviewRequestField):
     """The Commit field on a review request.
 
     This displays the ID of the commit the review request is representing.
@@ -1038,43 +824,34 @@ class CommitField(BuiltinFieldMixin[str],
     tag_name = 'span'
 
     @property
-    def should_render(self) -> bool:
+    def should_render(self):
         """Whether the field should be rendered."""
         return (bool(self.value) and
                 not self.review_request_details.get_review_request().changenum)
 
-    def render_value(
-        self,
-        value: Optional[str],
-    ) -> SafeString:
+    def render_value(self, commit_id):
         """Render the value in the field.
 
         Args:
-            commit_id (str):
+            commit_id (unicode):
                 The value to render.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered value.
         """
-        assert value is not None
-
         # Abbreviate SHA-1s
-        commit_id = value
-
         if len(commit_id) == 40:
             abbrev_commit_id = commit_id[:7] + '...'
 
-            return format_html('<span title="{}">{}</span>',
-                               commit_id,
-                               abbrev_commit_id)
+            return '<span title="%s">%s</span>' % (escape(commit_id),
+                                                   escape(abbrev_commit_id))
         else:
             return escape(commit_id)
 
 
-class DiffField(ReviewRequestPageDataMixin[DiffSet],
-                BuiltinFieldMixin[DiffSet],
-                BaseReviewRequestField[DiffSet]):
+class DiffField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
+                BaseReviewRequestField):
     """Represents a newly uploaded diff on a review request.
 
     This is not shown as an actual displayable field on the review request
@@ -1089,10 +866,7 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
 
     MAX_FILES_PREVIEW = 8
 
-    def render_change_entry_html(
-        self,
-        info: object,
-    ) -> SafeString:
+    def render_change_entry_html(self, info):
         """Render a change entry to HTML.
 
         This function is expected to return safe, valid HTML. Any values
@@ -1106,30 +880,25 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
                 contain ``added`` and ``removed`` keys as well.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The HTML representation of the change entry.
         """
-        assert isinstance(info, dict)
-
         added_diff_info = info['added'][0]
         review_request = self.review_request_details.get_review_request()
 
-        data = self.data
-        assert data is not None
-
         try:
-            diffset = data.diffsets_by_id[added_diff_info[2]]
+            diffset = self.data.diffsets_by_id[added_diff_info[2]]
         except KeyError:
             # If a published revision of a diff has been deleted from the
             # database, this will explode. Just return a blank string for this,
             # so that it doesn't show a traceback.
-            return mark_safe('')
+            return ''
 
         diff_revision = diffset.revision
         past_revision = diff_revision - 1
         diff_url = added_diff_info[1]
 
-        s: list[SafeString] = []
+        s = []
 
         # Fetch the total number of inserts/deletes. These will be shown
         # alongside the diff revision.
@@ -1187,8 +956,8 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
             # Begin displaying the list of files modified in this diff.
             # It will be capped at a fixed number (MAX_FILES_PREVIEW).
             s += [
-                mark_safe('<div class="diff-index">'),
-                mark_safe(' <table>'),
+                '<div class="diff-index">',
+                ' <table>',
             ]
 
             # We want a sorted list of filediffs, but tagged with the order in
@@ -1231,17 +1000,13 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
                     text=_('%s more') % num_remaining))
 
             s += [
-                mark_safe(' </table>'),
-                mark_safe('</div>'),
+                ' </table>',
+                '</div>',
             ]
 
-        return mark_safe(''.join(s))
+        return ''.join(s)
 
-    def has_value_changed(
-        self,
-        old_value: Optional[DiffSet],
-        new_value: Optional[DiffSet],
-    ) -> bool:
+    def has_value_changed(self, old_value, new_value):
         """Return whether the value has changed.
 
         Args:
@@ -1259,10 +1024,7 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
         # the test.
         return new_value is not None
 
-    def load_value(
-        self,
-        review_request_details: BaseReviewRequestDetails,
-    ) -> Optional[DiffSet]:
+    def load_value(self, review_request_details):
         """Load a value from the review request or draft.
 
         Args:
@@ -1279,10 +1041,7 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
         # ReviewRequestDraft if a new diff was attached.
         return getattr(review_request_details, 'diffset', None)
 
-    def save_value(
-        self,
-        value: Optional[DiffSet],
-    ) -> None:
+    def save_value(self, value):
         """Save the value in the review request or draft.
 
         Args:
@@ -1293,12 +1052,7 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
         # request, so it deosn't make sense to save.
         pass
 
-    def record_change_entry(
-        self,
-        changedesc: ChangeDescription,
-        old_value: DiffSet,
-        new_value: DiffSet,
-    ) -> None:
+    def record_change_entry(self, changedesc, unused, diffset):
         """Record information on the changed values in a ChangeDescription.
 
         Args:
@@ -1311,8 +1065,6 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
             new_value (object):
                 The new value of the field.
         """
-        diffset = new_value
-
         review_request = self.review_request_details.get_review_request()
 
         url = local_site_reverse(
@@ -1324,14 +1076,11 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
             'added': [(
                 _('Diff r%s') % diffset.revision,
                 url,
-                diffset.pk,
+                diffset.pk
             )]
         }
 
-    def serialize_change_entry(
-        self,
-        changedesc,
-    ) -> WebAPIResponsePayload:
+    def serialize_change_entry(self, changedesc):
         """Serialize a change entry for public consumption.
 
         This will output a version of the change entry for use in the API.
@@ -1370,11 +1119,8 @@ class FileAttachmentCaptionsField(BaseCaptionsField):
     caption_object_field = 'file_attachment'
 
 
-class FileAttachmentsField(
-    ReviewRequestPageDataMixin[Sequence[FileAttachment]],
-    BuiltinFieldMixin[Sequence[FileAttachment]],
-    BaseCommaEditableField[FileAttachment],
-):
+class FileAttachmentsField(ReviewRequestPageDataMixin, BuiltinFieldMixin,
+                           BaseCommaEditableField):
     """Renders removed or added file attachments.
 
     This is not shown as an actual displayable field on the review request
@@ -1389,10 +1135,7 @@ class FileAttachmentsField(
 
     thumbnail_template = 'reviews/changedesc_file_attachment.html'
 
-    def get_change_entry_sections_html(
-        self,
-        info: Mapping[str, Any],
-    ) -> Sequence[ReviewRequestFieldChangeEntrySection]:
+    def get_change_entry_sections_html(self, info):
         """Return sections of change entries with titles and rendered HTML.
 
         Args:
@@ -1405,9 +1148,7 @@ class FileAttachmentsField(
             list of dict:
             A list of the change entry sections.
         """
-        assert isinstance(info, dict)
-
-        sections: list[ReviewRequestFieldChangeEntrySection] = []
+        sections = []
 
         if 'removed' in info:
             sections.append({
@@ -1425,10 +1166,7 @@ class FileAttachmentsField(
 
         return sections
 
-    def render_change_entry_html(
-        self,
-        info: Sequence[tuple[str, str, int]],
-    ) -> SafeString:
+    def render_change_entry_html(self, values):
         """Render a change entry to HTML.
 
         This function is expected to return safe, valid HTML. Any values
@@ -1442,7 +1180,7 @@ class FileAttachmentsField(
                 file attachment in the database.
 
         Returns:
-            django.utils.safestring.SafeString:
+            django.utils.safestring.SafeText:
             The HTML representation of the change entry.
         """
         # Fetch the template ourselves only once and render it for each item,
@@ -1450,16 +1188,12 @@ class FileAttachmentsField(
         # have to locate and parse/fetch from cache for every item.
 
         template = get_template(self.thumbnail_template)
+        items = []
 
-        data = self.data
-        assert data is not None
-
-        items: list[SafeString] = []
-
-        for caption, filename, pk in info:
-            try:
-                attachment = data.file_attachments_by_id[pk]
-            except KeyError:
+        for caption, filename, pk in values:
+            if pk in self.data.file_attachments_by_id:
+                attachment = self.data.file_attachments_by_id[pk]
+            else:
                 try:
                     attachment = FileAttachment.objects.get(pk=pk)
                 except FileAttachment.DoesNotExist:
@@ -1471,7 +1205,7 @@ class FileAttachmentsField(
             }))
 
         if not items:
-            return mark_safe('')
+            return ''
 
         return format_html(
             '<div class="rb-c-file-attachments">{}</div>',
@@ -1481,7 +1215,7 @@ class FileAttachmentsField(
         self,
         attachment: FileAttachment,
         draft: bool = False,
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """Return attributes for the RB.FileAttachment JavaScript model.
 
         This will determine the right attributes to pass to an instance
@@ -1554,7 +1288,7 @@ class ScreenshotCaptionsField(BaseCaptionsField):
     caption_object_field = 'screenshot'
 
 
-class ScreenshotsField(BaseCommaEditableField[Screenshot]):
+class ScreenshotsField(BaseCommaEditableField):
     """Renders removed or added screenshots.
 
     This is not shown as an actual displayable field on the review request
@@ -1568,8 +1302,7 @@ class ScreenshotsField(BaseCommaEditableField[Screenshot]):
     model = Screenshot
 
 
-class TargetGroupsField(BuiltinFieldMixin[Sequence[Group]],
-                        BaseModelListEditableField[Group]):
+class TargetGroupsField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Target Groups field on a review request."""
 
     field_id = 'target_groups'
@@ -1580,27 +1313,22 @@ class TargetGroupsField(BuiltinFieldMixin[Sequence[Group]],
     #: The class name for the JavaScript view representing this field.
     js_view_class = 'RB.ReviewRequestFields.TargetGroupsFieldView'
 
-    def render_item(
-        self,
-        item: Group,
-    ) -> SafeString:
+    def render_item(self, group):
         """Render an item from the list.
 
         Args:
-            item (reviewboard.reviews.models.group.Group):
+            item (object):
                 The item to render.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered item.
         """
-        return format_html('<a href="{}">{}</a>',
-                           item.get_absolute_url(),
-                           item.name)
+        return '<a href="%s">%s</a>' % (escape(group.get_absolute_url()),
+                                        escape(group.name))
 
 
-class TargetPeopleField(BuiltinFieldMixin[Sequence[User]],
-                        BaseModelListEditableField[User]):
+class TargetPeopleField(BuiltinFieldMixin, BaseModelListEditableField):
     """The Target People field on a review request."""
 
     field_id = 'target_people'
@@ -1611,22 +1339,18 @@ class TargetPeopleField(BuiltinFieldMixin[Sequence[User]],
     #: The class name for the JavaScript view representing this field.
     js_view_class = 'RB.ReviewRequestFields.TargetPeopleFieldView'
 
-    def render_item(
-        self,
-        item: User,
-    ) -> SafeString:
+    def render_item(self, user):
         """Render an item from the list.
 
         Args:
-            item (django.contrib.auth.models.User):
+            item (object):
                 The item to render.
 
         Returns:
-            django.utils.safestring.SafeString:
+            unicode:
             The rendered item.
         """
-        user = item
-        extra_classes: list[str] = ['user']
+        extra_classes = ['user']
 
         if not user.is_active:
             extra_classes.append('inactive')
@@ -1641,8 +1365,7 @@ class TargetPeopleField(BuiltinFieldMixin[Sequence[User]],
             user.username)
 
 
-class CommitListField(ReviewRequestPageDataMixin[DiffSet],
-                      BaseReviewRequestField[DiffSet]):
+class CommitListField(ReviewRequestPageDataMixin, BaseReviewRequestField):
     """The list of commits for a review request."""
 
     field_id = 'commit_list'
@@ -1653,7 +1376,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
     js_view_class = 'RB.ReviewRequestFields.CommitListFieldView'
 
     @cached_property
-    def review_request_created_with_history(self) -> bool:
+    def review_request_created_with_history(self):
         """Whether the associated review request was created with history."""
         return (
             self.review_request_details
@@ -1662,7 +1385,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
         )
 
     @property
-    def should_render(self) -> bool:
+    def should_render(self):
         """Whether or not the field should be rendered.
 
         This field will only be rendered when the review request was created
@@ -1677,7 +1400,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
                 url_name not in diffviewer_url_names)
 
     @property
-    def can_record_change_entry(self) -> bool:
+    def can_record_change_entry(self):
         """Whether or not the field can record a change entry.
 
         The field can only record a change entry when the review request has
@@ -1685,10 +1408,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
         """
         return self.review_request_created_with_history
 
-    def load_value(
-        self,
-        review_request_details: BaseReviewRequestDetails,
-    ) -> DiffSet:
+    def load_value(self, review_request_details):
         """Load a value from the review request or draft.
 
         Args:
@@ -1703,10 +1423,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
         """
         return review_request_details.get_latest_diffset()
 
-    def save_value(
-        self,
-        value: Optional[DiffSet],
-    ) -> None:
+    def save_value(self, value):
         """Save a value to the review request.
 
         This is intentionally a no-op.
@@ -1717,24 +1434,25 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
         """
         pass
 
-    def render_value(
-        self,
-        value: Optional[DiffSet],
-    ) -> SafeString:
+    def render_value(self, value):
         """Render the field for the given value.
 
         Args:
-            value (reviewboard.diffviewer.models.diffset.DiffSet):
-                The loaded diffset.
+            value (int):
+                The diffset primary key.
 
         returns:
-            django.utils.safestring.SafeString:
+            django.utils.safestring.SafeText:
             The rendered value.
         """
         if not value:
-            return mark_safe('')
+            return ''
 
-        commits = list(value.commits.order_by('pk'))
+        commits = list(
+            DiffCommit.objects
+            .filter(diffset_id=value)
+            .order_by('id')
+        )
         context = self._get_common_context(commits)
         context['commits'] = commits
 
@@ -1743,20 +1461,16 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
             request=self.request,
             context=context)
 
-    def has_value_changed(
-        self,
-        old_value: Optional[DiffSet],
-        new_value: Optional[DiffSet],
-    ) -> bool:
+    def has_value_changed(self, old_value, new_value):
         """Return whether or not the value has changed.
 
         Args:
             old_value (reviewboard.diffviewer.models.diffset.DiffSet):
-                The :py:class:`~reviewboard.diffviewer.
+                The primary key of the :py:class:`~reviewboard.diffviewer.
                 models.diffset.DiffSet` from the review_request.
 
             new_value (reviewboard.diffviewer.models.diffset.DiffSet):
-                The :py:class:`~reviewboard.diffviewer.
+                The primary key of the :py:class:`~reviewboard.diffviewer.
                 models.diffset.DiffSet` from the draft.
 
         Returns:
@@ -1765,12 +1479,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
         """
         return new_value is not None
 
-    def record_change_entry(
-        self,
-        changedesc: ChangeDescription,
-        old_value: Optional[DiffSet],
-        new_value: DiffSet,
-    ) -> None:
+    def record_change_entry(self, changedesc, old_value, new_value):
         """Record the old and new values for this field into the changedesc.
 
         Args:
@@ -1790,10 +1499,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
             'new': new_value.pk,
         }
 
-    def render_change_entry_html(
-        self,
-        info: Mapping[str, Any],
-    ) -> SafeString:
+    def render_change_entry_html(self, info):
         """Render the change entry HTML for this field.
 
         Args:
@@ -1802,13 +1508,10 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
                 :py:meth:`record_change_entry` for the format.
 
         Returns:
-            django.utils.safestring.SafeString:
+            django.utils.safestring.SafeText:
             The rendered HTML.
         """
-        data = self.data
-        assert data is not None
-
-        commits = data.commits_by_diffset_id
+        commits = self.data.commits_by_diffset_id
 
         if info['old']:
             old_commits = commits[info['old']]
@@ -1828,10 +1531,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
             request=self.request,
             context=context)
 
-    def serialize_change_entry(
-        self,
-        changedesc: ChangeDescription,
-    ) -> WebAPIResponsePayload:
+    def serialize_change_entry(self, changedesc):
         """Serialize the changed field entry for the web API.
 
         Args:
@@ -1859,10 +1559,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
             for key in ('old', 'new')
         }
 
-    def _get_common_context(
-        self,
-        commits: Iterable[DiffCommit],
-    ) -> dict[str, Any]:
+    def _get_common_context(self, commits):
         """Return common context for rending both change entries and the field.
 
         Args:
@@ -1874,11 +1571,9 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
             dict:
             A dictionary of context.
         """
-        review_request_details = self.review_request_details
-
-        submitter_name = review_request_details.submitter.get_full_name()
+        submitter_name = self.review_request_details.submitter.get_full_name()
         include_author_name = not submitter_name
-        to_expand: set[int] = set()
+        to_expand = set()
 
         for commit in commits:
             if commit.author_name != submitter_name:
@@ -1889,7 +1584,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
 
         return {
             'include_author_name': include_author_name,
-            'to_expand': list(to_expand),
+            'to_expand': to_expand,
         }
 
 

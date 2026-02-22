@@ -16,8 +16,7 @@ from reviewboard.certs.cert import CertDataFormat
 from reviewboard.certs.errors import CertificateNotFoundError
 
 if TYPE_CHECKING:
-    from typelets.django.strings import StrOrPromise
-
+    from djblets.util.typing import StrOrPromise
     from reviewboard.certs.cert import (Certificate,
                                         CertificateBundle,
                                         CertificateFingerprints)

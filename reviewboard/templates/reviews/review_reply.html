@@ -15,7 +15,6 @@
     <div class="rb-icon rb-icon-new-updates" title="{% trans 'New reply' %}"></div>
 {% endif %}
     <a href="{% url 'user' reply_user %}" class="user">{% user_profile_display_name reply_user %}</a>
-    {% user_badges reply_user %}
     <a href="#{{anchor_name}}" class="timestamp">
      {% localtime on %}{% blocktrans with timestamp as timestamp and timestamp|date:"c" as timestamp_raw %}<time class="timesince" datetime="{{timestamp_raw}}">{{timestamp}}</time>{% endblocktrans %}{% endlocaltime %}</a>
    </div>

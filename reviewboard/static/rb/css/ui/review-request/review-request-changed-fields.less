@@ -185,7 +185,7 @@
     background-color: var(--ink-p-input-bg);
     border: var(--ink-g-border-input);
     color: var(--ink-p-input-fg);
-    padding: var(--rb-c-textarea-spacing);
+    padding: @textarea-editor-padding;
     font-size: inherit;
     white-space: pre-wrap;
   }
@@ -242,7 +242,7 @@
   /* The "Change Summary" section. */
   .changedesc-text {
     margin: 0;
-    padding: var(--rb-c-textarea-spacing);
+    padding: @textarea-editor-padding;
     overflow: hidden;
     width: 100%;
 
@@ -282,7 +282,7 @@
     }
 
     td {
-      font-family: var(--rb-c-textarea-font-family);
+      font-family: @textarea-font-family;
       padding: 0 4px;
       vertical-align: top;
       white-space: pre-wrap;
@@ -304,11 +304,11 @@
         }
 
         &.codehilite-multiline-start {
-          border-top: var(--rb-g-code-block-border);
+          border-top: var(--rb-p-code-block-border);
         }
 
         &.codehilite-multiline-end {
-          border-bottom: var(--rb-g-code-block-border);
+          border-bottom: var(--rb-p-code-block-border);
         }
 
         pre:empty {
@@ -369,8 +369,8 @@
     .marker {
       background: var(--rb-theme-diff-equals-linenum-bg);
       color: var(--rb-theme-diff-equals-linenum-fg);
-      font-family: var(--rb-c-textarea-font-family);
-      font-size: var(--rb-c-textarea-font-size);
+      font-family: @textarea-font-family;
+      font-size: @textarea-font-size;
       font-weight: bold;
       text-align: center;
     }

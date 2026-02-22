@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from typing import List, Optional, TYPE_CHECKING, Union
 
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Count, Q
 from djblets.testing.decorators import add_fixtures
@@ -19,7 +18,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing.queries.http import get_http_request_start_equeries
 
 if TYPE_CHECKING:
-    from django_assert_queries.query_comparator import ExpectedQueries
+    from djblets.db.query_comparator import ExpectedQueries
 
 
 class UsersDataGridTests(BaseViewTestCase):
@@ -211,7 +210,7 @@ class UsersDataGridTests(BaseViewTestCase):
             local_sites_in_db=False,
             has_pending_count_column=False)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             response = self.client.get('/users/?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -261,7 +260,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2],
             has_pending_count_column=False)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 '/s/local-site-2/users/?columns=fullname')
 
@@ -334,7 +333,7 @@ class UsersDataGridTests(BaseViewTestCase):
             local_sites_in_db=local_sites_in_db,
             user_pks=[1, 2, 3, 4, 5, 6, 7, 8, 9])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 self.get_datagrid_url(local_site=local_site))
 
@@ -420,7 +419,7 @@ class UsersDataGridTests(BaseViewTestCase):
             ],
             query=Q(username__istartswith='A'))
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             response = self.client.get(
                 '%s?letter=A' % self.get_datagrid_url(local_site=local_site))
 
@@ -487,7 +486,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2, 3, 4],
             has_pending_count_column=False)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -555,7 +554,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2, 3, 4],
             has_pending_count_column=False)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -640,7 +639,7 @@ class UsersDataGridTests(BaseViewTestCase):
             },
         ]
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -736,7 +735,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2, 3, 4],
             has_pending_count_column=False)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -823,7 +822,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2, 3, 4],
             has_pending_count_column=False)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)
@@ -891,7 +890,7 @@ class UsersDataGridTests(BaseViewTestCase):
             user_pks=[1, 2, 3, 4],
             has_pending_count_column=False)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             response = self.client.get(f'{datagrid_url}?columns=fullname')
 
         self.assertEqual(response.status_code, 200)

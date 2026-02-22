@@ -34,17 +34,12 @@
 #
 #    See COMPANY below.
 #
-# 5. Go through the optional services and decide which ones to keep.
-#
-#    Any service with "[Optional]" at the beginning of its description is
-#    optional and can be removed if you don't want it.
-#
-# 6. Go through this file and search for "CHANGEME" for other settings you
+# 5. Go through this file and search for "CHANGEME" for other settings you
 #    may want to change.
 #
-# 7. Run: docker-compose up
+# 6. Run: docker-compose up
 #
-# 8. Access http://<hostname>/
+# 7. Access http://<hostname>/
 #
 #
 # Data Storage
@@ -200,99 +195,6 @@ services:
     volumes:
       - sitedir:/var/www/reviewboard
       - ./nginx_templates:/etc/nginx/templates
-
-
-  # [Optional] The message broker for communication between Review Board and
-  #            certain services.
-  #
-  # RabbitMQ is recommended, but any Celery compatible message broker will
-  # work. This is an optional service that's only needed if you are using
-  # at least one of the following services:
-  #
-  # * Doc Converter, a document conversion service for Power Pack's Document
-  #   Review feature.
-  #   https://www.reviewboard.org/docs/powerpack/latest/features/doc-review/
-  #
-  # A default user can be configured below for services. If you have multiple
-  # services that will connect to this message broker, you will likely need a
-  # separate user for each service. See your message broker's documentation
-  # for adding additional users.
-  rabbitmq:
-    image: rabbitmq:3-management
-    restart: always
-
-    # The hostname for the RabbitMQ container.
-    #
-    # This will be used in the broker URL.
-    hostname: rabbitmq
-    environment:
-      # The RabbitMQ default virtual host.
-      #
-      # CHANGEME: Set this to an appropriate name for one service. In this
-      #           example, we'll set it for Doc Converter.
-      - RABBITMQ_DEFAULT_VHOST=docconverter-vhost
-
-      # The RabbitMQ default user.
-      #
-      # CHANGEME: Set this to an appropriate name for one service. In this
-      #           example, we'll set it for Doc Converter.
-      - RABBITMQ_DEFAULT_USER=docconverter
-
-      # The RabbitMQ default user password to use for Doc Converter.
-      #
-      # CHANGEME: Set this to an appropriate password for one service. In
-      #           this example, we'll set it for Doc Converter.
-      #
-      #           Use a strong password!
-      - RABBITMQ_DEFAULT_PASS=pass123
-
-      # The RabbitMQ Erlang cookie to use for services.
-      #
-      # CHANGEME: Use a secret string of up to 255 alphanumeric characters.
-      - RABBITMQ_ERLANG_COOKIE=somecookie
-
-    ports:
-      # The port for connecting to the RabbitMQ service.
-      #
-      # This will be used in the broker URL.
-      - 5672:5672
-
-      # The port for RabbitMQ's management plugin.
-      - 15672:15672
-
-    healthcheck:
-      test: ['CMD', 'rabbitmqctl', 'status']
-      interval: 5s
-      timeout: 20s
-      retries: 5
-
-
-  # [Optional] Doc Converter, a document conversion service for Power Pack's
-  #            Document Review feature.
-  #
-  # This is needed if your server has Power Pack and will be using Document
-  # Review.
-  #
-  # You could also launch Doc Converter and/or a message broker separately.
-  # See the documentation for full details on the different ways Doc Converter
-  # can be set up:
-  #
-  # https://www.reviewboard.org/docs/powerpack/latest/features/doc-review/
-  docconverter:
-    image: beanbag/docconverter:latest
-    restart: always
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-
-    environment:
-      # The broker URL for connecting to the message broker.
-      #
-      # CHANGEME: Change this according to your message broker hostname
-      #           and port above, and the configured user. The URL should be
-      #           in the following format:
-      #           amqp://[user]:[password]@[hostname]:[port]/[vhost]
-      - BROKER_URL=amqp://docconverter:pass123@rabbitmq:5672/docconverter-vhost
 
 
 volumes:

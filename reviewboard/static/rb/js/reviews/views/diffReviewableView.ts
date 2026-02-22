@@ -163,13 +163,10 @@ export class DiffReviewableView extends AbstractReviewableView<
         });
 
         const file = this.model.get('file');
+        const extra = file.get('extra');
 
-        if (file) {
-            const extra = file.get('extra');
-
-            if (extra?.tab_size) {
-                this.$el.css('tab-size', `${extra.tab_size}`);
-            }
+        if (extra?.tab_size) {
+            this.$el.css('tab-size', `${extra.tab_size}`);
         }
 
         this._precalculateContentWidths();

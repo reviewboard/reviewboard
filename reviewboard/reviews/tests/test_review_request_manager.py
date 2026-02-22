@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import kgb
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
 from djblets.testing.decorators import add_fixtures
 
@@ -309,7 +308,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
         # Check public() with a viewing user and a default status of 'P'.
         equeries = get_review_requests_accessible_equeries(user=user1)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user1)),
                 [
@@ -321,7 +320,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             user=AnonymousUser(),
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(status=None)),
                 [
@@ -336,7 +335,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             user=user2,
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user2,
                                                   status=None)),
@@ -356,7 +355,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             show_all_unpublished=True,
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(status=None,
                                                   show_all_unpublished=True)),
@@ -400,7 +399,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             has_local_sites_in_db=True,
             accessible_repository_ids=[repository.pk])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user,
                                                   local_site=local_site)),
@@ -428,7 +427,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
 
         equeries = get_review_requests_accessible_equeries(user=user)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user)),
                 [])
@@ -464,7 +463,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             local_site=local_site,
             has_local_sites_in_db=True)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user,
                                                   local_site=local_site)),
@@ -493,7 +492,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             user=user,
             accessible_repository_ids=[repository.pk])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user)),
                 [
@@ -533,7 +532,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             has_local_sites_in_db=True,
             accessible_repository_ids=[repository.pk])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user,
                                                   local_site=local_site)),
@@ -569,7 +568,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             accessible_repository_ids=[repository.pk],
             accessible_review_group_ids=[group.pk])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user)),
                 [
@@ -615,7 +614,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             has_local_sites_in_db=True,
             accessible_repository_ids=[repository.pk])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user,
                                                   local_site=local_site)),
@@ -640,7 +639,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
 
         equeries = get_review_requests_accessible_equeries(user=user)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user)),
                 [])
@@ -667,7 +666,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             user=user,
             accessible_review_group_ids=[group.pk])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user)),
                 [
@@ -706,7 +705,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             has_local_sites_in_db=True,
             accessible_review_group_ids=[group.pk])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user,
                                                   local_site=local_site)),
@@ -737,7 +736,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             user=user,
             accessible_review_group_ids=[group.pk])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user)),
                 [])
@@ -767,7 +766,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             user=user,
             accessible_repository_ids=[repository.pk])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user)),
                 [])
@@ -790,7 +789,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
 
         equeries = get_review_requests_accessible_equeries(user=user)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user)),
                 [
@@ -827,7 +826,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             local_site=local_site,
             has_local_sites_in_db=True)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user,
                                                   local_site=local_site)),
@@ -853,7 +852,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
 
         equeries = get_review_requests_accessible_equeries(user=user)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user)),
                 [
@@ -889,7 +888,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             local_site=local_site,
             has_local_sites_in_db=True)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user,
                                                   local_site=local_site)),
@@ -917,7 +916,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
 
         equeries = get_review_requests_accessible_equeries(user=user)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user)),
                 [])
@@ -940,7 +939,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
 
         equeries = get_review_requests_accessible_equeries(user=user)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user)),
                 [
@@ -977,7 +976,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             local_site=local_site,
             has_local_sites_in_db=True)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.public(user=user,
                                                   local_site=local_site)),
@@ -1017,7 +1016,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             user=AnonymousUser(),
             to_group_name='privgroup')
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_group('privgroup',
                                                     local_site=None)),
@@ -1031,7 +1030,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             to_group_name='privgroup',
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_group('privgroup',
                                                     local_site=None,
@@ -1086,7 +1085,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             to_user_profile=profile1,
             target_groups=[group1])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_user_groups('doc',
                                                           local_site=None)),
@@ -1103,7 +1102,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             target_groups=[group1],
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_user_groups('doc',
                                                           status=None,
@@ -1121,7 +1120,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             to_user_profile=profile2,
             target_groups=[group2])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_user_groups('grumpy',
                                                           user=user2,
@@ -1200,7 +1199,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             to_or_from_user_profile=profile1,
             target_groups=[group1])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_or_from_user('doc',
                                                            local_site=None)),
@@ -1217,7 +1216,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             to_or_from_user_profile=profile2,
             target_groups=[group2])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_or_from_user('grumpy',
                                                            local_site=None)),
@@ -1234,7 +1233,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             target_groups=[group1],
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_or_from_user('doc',
                                                            status=None,
@@ -1255,7 +1254,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             target_groups=[group1],
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_or_from_user('doc',
                                                            user=user2,
@@ -1279,7 +1278,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             target_groups=[group1],
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_or_from_user('doc',
                                                            user=user1,
@@ -1346,7 +1345,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             to_user='doc',
             to_user_profile=profile1)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_user_directly('doc',
                                                             local_site=None)),
@@ -1361,7 +1360,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             to_user_profile=profile1,
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_user_directly('doc',
                                                             status=None)),
@@ -1377,7 +1376,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             to_user_profile=profile1,
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_user_directly('doc',
                                                             user=user2,
@@ -1417,7 +1416,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             user=AnonymousUser(),
             from_user='doc')
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.from_user('doc', local_site=None)),
                 [
@@ -1430,7 +1429,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             status=None,
             from_user='doc')
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.from_user('doc',
                                                      status=None,
@@ -1446,7 +1445,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             status=None,
             from_user='doc')
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.from_user('doc',
                                                      user=user1,
@@ -1511,7 +1510,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             to_user_profile=profile1,
             target_groups=[group1])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_user('doc', local_site=None)),
                 [
@@ -1527,7 +1526,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             target_groups=[group1],
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_user('doc',
                                                    status=None,
@@ -1546,7 +1545,7 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             target_groups=[group1],
             status=None)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertEqual(
                 list(ReviewRequest.objects.to_user('doc',
                                                    user=user2,

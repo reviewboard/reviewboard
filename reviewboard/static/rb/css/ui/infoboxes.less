@@ -43,7 +43,7 @@
     color: inherit;
     font-size: @infobox-header-font-size;
     font-weight: bold;
-    margin: 0;
+    margin: 0 0 0.5em 0;
     padding: 0;
     vertical-align: top;
 
@@ -58,14 +58,6 @@
   }
 }
 
-.infobox-content {
-  width: 100%;
-}
-
-.infobox-details {
-  display: flex;
-}
-
 .infobox-extra {
   box-sizing: border-box;
   padding: 0.5em;
@@ -74,6 +66,8 @@
 
 .infobox-hover-item,
 .infobox-item {
+  margin: 0.5em 0;
+
   .fa {
     min-width: @infobox-item-small-icon-size;
     text-align: right;
@@ -140,6 +134,9 @@
 }
 
 .infobox-pic {
+  display: inline-block;
+  vertical-align: top;
+
   img {
     border-radius: @infobox-inner-border-radius 0
                    0 @infobox-inner-border-radius;
@@ -185,9 +182,7 @@
 
 .infobox-text {
   box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  gap: var(--ink-u-spacing-s) 0;
+  display: inline-block;
   padding: @infobox-padding;
   position: relative;
   vertical-align: top;
@@ -230,14 +225,14 @@
   }
 
   .infobox-text {
+    min-height: @user-infobox-avatar-size;
     min-width: 20em;
     max-width: 40em;
     width: auto;
 
     .infobox-links {
-      align-content: end;
-      flex-grow: 1;
-      padding-top: var(--ink-u-spacing-l);
+      position: absolute;
+      bottom: @infobox-padding;
     }
   }
 
@@ -272,7 +267,6 @@
 
 .review-request-infobox {
   .infobox-pic {
-    display: inline-block;
     border-radius: 0;
     vertical-align: middle;
   }

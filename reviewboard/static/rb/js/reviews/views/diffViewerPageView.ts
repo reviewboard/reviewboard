@@ -120,25 +120,6 @@ export class DiffViewerPageView extends ReviewablePageView<
     _$anchors: JQuery;
     _commitListView: RB.DiffCommitListView = null;
     _diffReviewableViews: DiffReviewableView[] = [];
-
-    /**
-     * A set of CSS bundle names that have been loaded onto the page.
-     *
-     * Whenever a file attachment review UI gets rendered onto the page,
-     * it's CSS bundle names will be added here. This is used to make sure
-     * we only load CSS static media once per review UI type.
-     */
-    _renderedCSSMedia: Set<string> = null;
-
-    /**
-     * A set of JS bundle names and URLs that have been loaded onto the page.
-     *
-     * Whenever a file attachment review UI gets rendered onto the page,
-     * it's JS bundle names and URLs will be added here. This is used to make
-     * sure we only load JS static media once per review UI type.
-     */
-    _renderedJSMedia: Set<string> = null;
-
     _selectedAnchorIndex = -1;
     router: Router;
 
@@ -177,13 +158,6 @@ export class DiffViewerPageView extends ReviewablePageView<
         const diffQueue = $.funcQueue('diff_files');
 
         this.listenTo(this.model.diffReviewables, 'populating', () => {
-            /*
-             * Emit this event so that any FileAttachmentReviewableViews that
-             * have been injected into the DOM by binary files can clean
-             * themselves up.
-             */
-            this.trigger('clearingDiffReviewables');
-
             this._diffReviewableViews.forEach(view => view.remove());
             this._diffReviewableViews = [];
             this.#diffFileIndexView.clear();
@@ -194,13 +168,6 @@ export class DiffViewerPageView extends ReviewablePageView<
         });
         this.listenTo(this.model.diffReviewables, 'populated',
                       () => diffQueue.start());
-
-        /*
-         * Track the static media that has been added to the page
-         * by rendered DiffReviewables.
-         */
-        this._renderedJSMedia = new Set();
-        this._renderedCSSMedia = new Set();
 
         this.router = new Router();
         this.router.route(
@@ -551,20 +518,11 @@ export class DiffViewerPageView extends ReviewablePageView<
      *     showDeleted (boolean, optional):
      *         Determines whether or not we want to requeue the corresponding
      *         diff in order to show its deleted content.
-     *
-     *     skipStaticMedia (boolean):
-     *         For files that are rendered through a review UI, whether to
-     *         exclude the review UI's static media in the rendered output.
-     *
-     *         Version Added:
-     *             7.1
-     *
      */
     queueLoadDiff(
         diffReviewable: DiffReviewable,
         options: {
             showDeleted?: boolean,
-            skipStaticMedia?: boolean,
         } = {},
     ) {
         $.funcQueue('diff_files').add(async () => {
@@ -584,32 +542,6 @@ export class DiffViewerPageView extends ReviewablePageView<
                 const prefix = (options.showDeleted
                                 ? '#file'
                                 : '#file_container_');
-                const diffFile = diffReviewable.get('file');
-
-                if (diffFile.get('binary')) {
-                    /*
-                     * Check if the reviewable's static media has already been
-                     * added to the page. We want to make sure static media is
-                     * only added once when there are multiple review UIs
-                     * on the page loading the same media.
-                     */
-                    const renderedJSMedia = this._renderedJSMedia;
-                    const renderedCSSMedia = this._renderedCSSMedia;
-                    const diffFileJSMedia = diffFile.get('jsMedia');
-                    const diffFileCSSMedia = diffFile.get('cssMedia');
-
-                    if (diffFileJSMedia.size || diffFileCSSMedia.size) {
-                        if (diffFileJSMedia.isSubsetOf(renderedJSMedia) &&
-                            diffFileCSSMedia.isSubsetOf(renderedCSSMedia)) {
-                            options.skipStaticMedia = true;
-                        } else {
-                            this._renderedJSMedia = renderedJSMedia.union(
-                                diffFileJSMedia);
-                            this._renderedCSSMedia = renderedCSSMedia.union(
-                                diffFileCSSMedia);
-                        }
-                    }
-                }
 
                 const html = await diffReviewable.getRenderedDiff(options);
                 const $container = $(prefix + fileDiffID)

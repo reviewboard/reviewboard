@@ -1,12 +1,9 @@
-{% load djblets_extensions djblets_utils features i18n log rbadmintags %}
+{% load djblets_extensions djblets_utils i18n log rbadmintags %}
 
 <li class="rb-c-sidebar__section">
  <header class="rb-c-sidebar__section-header">{% trans "Administration" %}</header>
  <ul class="rb-c-sidebar__items">
 {% admin_subnav "admin-dashboard" _("Dashboard") %}
-{% if_feature_enabled "licensing" %}
-{%  admin_subnav "admin-licenses" _("Licenses") %}
-{% endif_feature_enabled %}
 {% admin_subnav "admin-security-checks" _("Security Center") %}
 {% admin_subnav "extension-list" _("Extensions") %}
 {% admin_subnav "integration-list" _("Integrations") %}
@@ -21,7 +18,6 @@
 {% admin_subnav "settings-authentication" _("Authentication") %}
 {% admin_subnav "settings-avatars" _("Avatars") %}
 {% admin_subnav "settings-email" _("E-Mail") %}
-{% admin_subnav "settings-reviews" _("Review Workflow") %}
 {% admin_subnav "settings-diffs" _("Diff Viewer") %}
 {% admin_subnav "settings-logging" _("Logging") %}
 {% admin_subnav "settings-ssh" _("SSH")  %}

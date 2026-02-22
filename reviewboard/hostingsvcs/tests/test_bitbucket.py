@@ -1,16 +1,13 @@
 """Unit tests for the Bitbucket hosting service."""
 
-from __future__ import annotations
-
 import json
-from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.test.client import RequestFactory
 from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 
-from reviewboard.hostingsvcs.bitbucket import Bitbucket, BitbucketAuthForm
+from reviewboard.hostingsvcs.bitbucket import BitbucketAuthForm
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
 from reviewboard.hostingsvcs.hook_utils import logger
@@ -23,11 +20,8 @@ from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
-if TYPE_CHECKING:
-    from django.test.client import _MonkeyPatchedWSGIResponse
 
-
-class BitbucketTestCase(HostingServiceTestCase[Bitbucket]):
+class BitbucketTestCase(HostingServiceTestCase):
     """Base class for Bitbucket test suites."""
 
     service_name = 'bitbucket'
@@ -45,12 +39,12 @@ class BitbucketTestCase(HostingServiceTestCase[Bitbucket]):
 class BitbucketTests(BitbucketTestCase):
     """Unit tests for the Bitbucket hosting service."""
 
-    def test_service_support(self) -> None:
+    def test_service_support(self):
         """Testing Bitbucket service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
 
-    def test_get_repository_fields_with_git_and_personal_plan(self) -> None:
+    def test_get_repository_fields_with_git_and_personal_plan(self):
         """Testing Bitbucket.get_repository_fields for Git and plan=personal"""
         self.assertEqual(
             self.get_repository_fields(
@@ -66,7 +60,7 @@ class BitbucketTests(BitbucketTestCase):
                                 'myrepo.git'),
             })
 
-    def test_get_repository_fields_with_git_and_team_plan(self) -> None:
+    def test_get_repository_fields_with_git_and_team_plan(self):
         """Testing Bitbucket.get_repository_fields for Git and plan=team"""
         self.assertEqual(
             self.get_repository_fields(
@@ -83,7 +77,7 @@ class BitbucketTests(BitbucketTestCase):
                                 'myrepo.git'),
             })
 
-    def test_get_repository_fields_with_git_and_other_user_plan(self) -> None:
+    def test_get_repository_fields_with_git_and_other_user_plan(self):
         """Testing Bitbucket.get_repository_fields for Git and plan=other-user
         """
         self.assertEqual(
@@ -101,7 +95,7 @@ class BitbucketTests(BitbucketTestCase):
                                 'myrepo.git'),
             })
 
-    def test_get_bug_tracker_field_with_personal_plan(self) -> None:
+    def test_get_bug_tracker_field_with_personal_plan(self):
         """Testing Bitbucket.get_bug_tracker_field with plan=personal"""
         self.assertTrue(self.service_class.get_bug_tracker_requires_username(
             plan='personal'))
@@ -114,7 +108,7 @@ class BitbucketTests(BitbucketTestCase):
                 }),
             'https://bitbucket.org/myuser/myrepo/issue/%s/')
 
-    def test_get_bug_tracker_field_with_team_plan(self) -> None:
+    def test_get_bug_tracker_field_with_team_plan(self):
         """Testing Bitbucket.get_bug_tracker_field with plan=team"""
         self.assertFalse(self.service_class.get_bug_tracker_requires_username(
             plan='team'))
@@ -127,7 +121,7 @@ class BitbucketTests(BitbucketTestCase):
                 }),
             'https://bitbucket.org/myteam/myrepo/issue/%s/')
 
-    def test_get_bug_tracker_field_with_other_user_plan(self) -> None:
+    def test_get_bug_tracker_field_with_other_user_plan(self):
         """Testing Bitbucket.get_bug_tracker_field with plan=other-user"""
         self.assertFalse(self.service_class.get_bug_tracker_requires_username(
             plan='other-user'))
@@ -140,7 +134,7 @@ class BitbucketTests(BitbucketTestCase):
                 }),
             'https://bitbucket.org/someuser/myrepo/issue/%s/')
 
-    def test_get_repository_hook_instructions(self) -> None:
+    def test_get_repository_hook_instructions(self):
         """Testing BitBucket.get_repository_hook_instructions"""
         account = self.create_hosting_account()
         repository = self.create_repository(hosting_account=account)
@@ -165,7 +159,7 @@ class BitbucketTests(BitbucketTestCase):
         self.assertIn('Review Board supports closing', content)
         self.assertIn('<code>Review Board</code>', content)
 
-    def test_check_repository_with_personal_plan(self) -> None:
+    def test_check_repository_with_personal_plan(self):
         """Testing Bitbucket.check_repository with plan=personal"""
         with self.setup_http_test(payload=b'{"scm": "git"}',
                                   expected_http_calls=1) as ctx:
@@ -178,7 +172,7 @@ class BitbucketTests(BitbucketTestCase):
             url=('https://bitbucket.org/api/2.0/repositories/myuser/myrepo'
                  '?fields=scm'))
 
-    def test_check_repository_with_team_plan(self) -> None:
+    def test_check_repository_with_team_plan(self):
         """Testing Bitbucket.check_repository with plan=team"""
         with self.setup_http_test(payload=b'{"scm": "git"}',
                                   expected_http_calls=1) as ctx:
@@ -192,7 +186,7 @@ class BitbucketTests(BitbucketTestCase):
             url=('https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
                  '?fields=scm'))
 
-    def test_check_repository_with_other_user_plan(self) -> None:
+    def test_check_repository_with_other_user_plan(self):
         """Testing Bitbucket.check_repository with plan=other-user"""
         with self.setup_http_test(payload=b'{"scm": "git"}',
                                   expected_http_calls=1) as ctx:
@@ -207,7 +201,7 @@ class BitbucketTests(BitbucketTestCase):
             url=('https://bitbucket.org/api/2.0/repositories/someuser/myrepo'
                  '?fields=scm'))
 
-    def test_check_repository_with_slash(self) -> None:
+    def test_check_repository_with_slash(self):
         """Testing Bitbucket.check_repository with /"""
         expected_message = \
             'Please specify just the name of the repository, not a path.'
@@ -219,7 +213,7 @@ class BitbucketTests(BitbucketTestCase):
                     bitbucket_team_repo_name='myteam/myrepo',
                     plan='team')
 
-    def test_check_repository_with_dot_git(self) -> None:
+    def test_check_repository_with_dot_git(self):
         """Testing Bitbucket.check_repository with .git"""
         expected_message = \
             'Please specify just the name of the repository without ".git".'
@@ -231,7 +225,7 @@ class BitbucketTests(BitbucketTestCase):
                     bitbucket_team_repo_name='myrepo.git',
                     plan='team')
 
-    def test_check_repository_with_type_mismatch(self) -> None:
+    def test_check_repository_with_type_mismatch(self):
         """Testing Bitbucket.check_repository with type mismatch"""
         error_message = (
             'The Bitbucket repository being configured does not match the '
@@ -253,7 +247,7 @@ class BitbucketTests(BitbucketTestCase):
             url=('https://bitbucket.org/api/2.0/repositories/myteam/myrepo'
                  '?fields=scm'))
 
-    def test_authorize(self) -> None:
+    def test_authorize(self):
         """Testing Bitbucket.authorize"""
         hosting_account = self.create_hosting_account(data={})
 
@@ -276,7 +270,7 @@ class BitbucketTests(BitbucketTestCase):
             username='myuser',
             password='abc123')
 
-    def test_authorize_with_bad_credentials(self) -> None:
+    def test_authorize_with_bad_credentials(self):
         """Testing Bitbucket.authorize with bad credentials"""
         hosting_account = self.create_hosting_account(data={})
         expected_message = (
@@ -304,7 +298,7 @@ class BitbucketTests(BitbucketTestCase):
             username='myuser',
             password='abc123')
 
-    def test_get_file_with_git_and_base_commit_id(self) -> None:
+    def test_get_file_with_git_and_base_commit_id(self):
         """Testing Bitbucket.get_file with Git and base commit ID"""
         self._test_get_file(
             tool_name='Git',
@@ -312,7 +306,7 @@ class BitbucketTests(BitbucketTestCase):
             base_commit_id='456',
             expected_revision='456')
 
-    def test_get_file_with_git_and_revision(self) -> None:
+    def test_get_file_with_git_and_revision(self):
         """Testing Bitbucket.get_file with Git and revision"""
         with self.assertRaises(FileNotFoundError):
             self._test_get_file(tool_name='Git',
@@ -320,7 +314,7 @@ class BitbucketTests(BitbucketTestCase):
                                 base_commit_id=None,
                                 expected_revision='123')
 
-    def test_get_file_exists_with_git_and_base_commit_id(self) -> None:
+    def test_get_file_exists_with_git_and_base_commit_id(self):
         """Testing Bitbucket.get_file_exists with Git and base commit ID"""
         self._test_get_file_exists(
             tool_name='Git',
@@ -329,7 +323,7 @@ class BitbucketTests(BitbucketTestCase):
             expected_revision='456',
             expected_found=True)
 
-    def test_get_file_exists_with_git_and_revision(self) -> None:
+    def test_get_file_exists_with_git_and_revision(self):
         """Testing Bitbucket.get_file_exists with Git and revision"""
         self._test_get_file_exists(
             tool_name='Git',
@@ -339,7 +333,7 @@ class BitbucketTests(BitbucketTestCase):
             expected_found=False,
             expected_http_called=False)
 
-    def test_get_file_exists_with_git_and_404(self) -> None:
+    def test_get_file_exists_with_git_and_404(self):
         """Testing BitBucket.get_file_exists with Git and a 404 error"""
         self._test_get_file_exists(
             tool_name='Git',
@@ -348,7 +342,7 @@ class BitbucketTests(BitbucketTestCase):
             expected_revision='456',
             expected_found=False)
 
-    def test_get_branches(self) -> None:
+    def test_get_branches(self):
         """Testing Bitbucket.get_branches"""
         branches_api_response_1 = self.dump_json({
             'next': ('https://bitbucket.org/api/2.0/repositories/myuser/'
@@ -447,7 +441,7 @@ class BitbucketTests(BitbucketTestCase):
                        commit='d286691517e6325fea5c7a21d5e44568f7d33647'),
             ])
 
-    def test_get_commits(self) -> None:
+    def test_get_commits(self):
         """Testing Bitbucket.get_commits"""
         payload = self.dump_json({
             'size': 2,
@@ -512,7 +506,7 @@ class BitbucketTests(BitbucketTestCase):
         for commit in commits:
             self.assertIsNone(commit.diff)
 
-    def test_get_commits_with_start(self) -> None:
+    def test_get_commits_with_start(self):
         """Testing Bitbucket.get_commits with start="""
         payload = self.dump_json({
             'size': 2,
@@ -579,7 +573,7 @@ class BitbucketTests(BitbucketTestCase):
         for commit in commits:
             self.assertIsNone(commit.diff)
 
-    def test_get_commits_with_branch(self) -> None:
+    def test_get_commits_with_branch(self):
         """Testing Bitbucket.get_commits with branch="""
         payload = self.dump_json({
             'size': 2,
@@ -645,7 +639,7 @@ class BitbucketTests(BitbucketTestCase):
         for commit in commits:
             self.assertIsNone(commit.diff)
 
-    def test_get_commits_with_start_and_branch(self) -> None:
+    def test_get_commits_with_start_and_branch(self):
         """Testing Bitbucket.get_commits with start= and branch="""
         payload = self.dump_json({
             'size': 2,
@@ -713,7 +707,7 @@ class BitbucketTests(BitbucketTestCase):
         for commit in commits:
             self.assertIsNone(commit.diff)
 
-    def test_get_change(self) -> None:
+    def test_get_change(self):
         """Testing BitBucket.get_change"""
         commit_sha = '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
         parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
@@ -760,26 +754,21 @@ class BitbucketTests(BitbucketTestCase):
                    parent=parent_sha))
         self.assertEqual(commit.diff, b'This is a test \xc7.\n')
 
-    def _test_get_file(
-        self,
-        tool_name: str,
-        revision: str,
-        base_commit_id: str,
-        expected_revision: str,
-    ) -> None:
+    def _test_get_file(self, tool_name, revision, base_commit_id,
+                       expected_revision):
         """Test file fetching.
 
         Args:
-            tool_name (str):
+            tool_name (unicode):
                 The name of the SCM Tool to test with.
 
-            revision (str):
+            revision (unicode, optional):
                 The revision to check.
 
-            base_commit_id (str):
+            base_commit_id (unicode, optional):
                 The base commit to fetch against.
 
-            expected_revision (str):
+            expected_revision (unicode, optional):
                 The revision expected in the payload.
         """
         with self.setup_http_test(payload=b'My data',
@@ -799,31 +788,25 @@ class BitbucketTests(BitbucketTestCase):
         self.assertIsInstance(result, bytes)
         self.assertEqual(result, b'My data')
 
-    def _test_get_file_exists(
-        self,
-        tool_name: str,
-        revision: str,
-        base_commit_id: str,
-        expected_revision: str,
-        expected_found: bool,
-        expected_http_called: bool = True,
-    ) -> None:
+    def _test_get_file_exists(self, tool_name, revision, base_commit_id,
+                              expected_revision, expected_found,
+                              expected_http_called=True):
         """Test file existence checks.
 
         Args:
-            tool_name (str):
+            tool_name (unicode):
                 The name of the SCM Tool to test with.
 
-            revision (str):
+            revision (unicode, optional):
                 The revision to check.
 
-            base_commit_id (str):
+            base_commit_id (unicode, optional):
                 The base commit to fetch against.
 
-            expected_revision (str):
+            expected_revision (unicode, optional):
                 The revision expected in the payload.
 
-            expected_found (bool):
+            expected_found (bool, optional):
                 Whether a truthy response should be expected.
 
             expected_http_called (bool, optional):
@@ -864,7 +847,7 @@ class BitbucketTests(BitbucketTestCase):
 class BitbucketAuthFormTests(BitbucketTestCase):
     """Unit tests for BitbucketAuthForm."""
 
-    def test_clean_hosting_account_username_with_username(self) -> None:
+    def test_clean_hosting_account_username_with_username(self):
         """Testing BitbucketAuthForm.clean_hosting_account_username with
         username
         """
@@ -877,7 +860,7 @@ class BitbucketAuthFormTests(BitbucketTestCase):
 
         self.assertTrue(form.is_valid())
 
-    def test_clean_hosting_account_username_with_email(self) -> None:
+    def test_clean_hosting_account_username_with_email(self):
         """Testing BitbucketAuthForm.clean_hosting_account_username with
         e-mail address
         """
@@ -903,17 +886,17 @@ class CloseSubmittedHookTests(BitbucketTestCase):
     COMMITS_URL = ('/api/2.0/repositories/test/test/commits'
                    '?exclude=abc123&include=def123')
 
-    def test_close_submitted_hook(self) -> None:
+    def test_close_submitted_hook(self):
         """Testing BitBucket close_submitted hook"""
         self._test_post_commit_hook()
 
     @add_fixtures(['test_site'])
-    def test_close_submitted_hook_with_local_site(self) -> None:
+    def test_close_submitted_hook_with_local_site(self):
         """Testing BitBucket close_submitted hook with a Local Site"""
         self._test_post_commit_hook(
             LocalSite.objects.get(name=self.local_site_name))
 
-    def test_close_submitted_hook_with_truncated_commits(self) -> None:
+    def test_close_submitted_hook_with_truncated_commits(self):
         """Testing BitBucket close_submitted hook with truncated list of
         commits
         """
@@ -1005,7 +988,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         changedesc = review_request2.changedescs.get()
         self.assertEqual(changedesc.text, 'Pushed to master (9fad897)')
 
-    def test_close_submitted_hook_with_truncated_commits_limits(self) -> None:
+    def test_close_submitted_hook_with_truncated_commits_limits(self):
         """Testing BitBucket close_submitted hook with truncated list of
         commits obeys limits
         """
@@ -1077,7 +1060,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                          review_request1.PENDING_REVIEW)
         self.assertEqual(review_request2.changedescs.count(), 0)
 
-    def test_close_submitted_hook_with_truncated_and_auth_error(self) -> None:
+    def test_close_submitted_hook_with_truncated_and_auth_error(self):
         """Testing BitBucket close_submitted hook with truncated list of
         commits and authentication error talking to Bitbucket
         """
@@ -1135,7 +1118,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                          review_request1.PENDING_REVIEW)
         self.assertEqual(review_request2.changedescs.count(), 0)
 
-    def test_close_submitted_hook_with_too_many_login_failures(self) -> None:
+    def test_close_submitted_hook_with_too_many_login_failures(self):
         """Testing BitBucket close_submitted hook with truncated list of
         commits and too many login failures talking to Bitbucket
         """
@@ -1201,7 +1184,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
                          review_request1.PENDING_REVIEW)
         self.assertEqual(review_request2.changedescs.count(), 0)
 
-    def test_close_submitted_hook_with_invalid_repo(self) -> None:
+    def test_close_submitted_hook_with_invalid_repo(self):
         """Testing BitBucket close_submitted hook with invalid repository"""
         repository = self.create_repository()
 
@@ -1229,7 +1212,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         self.assertEqual(review_request.changedescs.count(), 0)
 
     @add_fixtures(['test_site'])
-    def test_close_submitted_hook_with_invalid_site(self) -> None:
+    def test_close_submitted_hook_with_invalid_site(self):
         """Testing BitBucket close_submitted hook with invalid Local Site"""
         local_site = LocalSite.objects.get(name=self.local_site_name)
         account = self.create_hosting_account(local_site=local_site)
@@ -1262,7 +1245,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    def test_close_submitted_hook_with_invalid_service_id(self) -> None:
+    def test_close_submitted_hook_with_invalid_service_id(self):
         """Testing BitBucket close_submitted hook with invalid hosting
         service ID
         """
@@ -1296,7 +1279,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    def test_close_submitted_hook_with_invalid_review_request(self) -> None:
+    def test_close_submitted_hook_with_invalid_review_request(self):
         """Testing BitBucket close_submitted hook with invalid review request
         """
         self.spy_on(logger.error)
@@ -1331,10 +1314,7 @@ class CloseSubmittedHookTests(BitbucketTestCase):
             'close_all_review_requests: Review request #%s does not exist.',
             9999))
 
-    def _test_post_commit_hook(
-        self,
-        local_site: (LocalSite | None) = None,
-    ) -> None:
+    def _test_post_commit_hook(self, local_site=None):
         """Testing posting to a commit hook.
 
         This will simulate pushing a commit and posting the resulting webhook
@@ -1375,19 +1355,15 @@ class CloseSubmittedHookTests(BitbucketTestCase):
         changedesc = review_request.changedescs.get()
         self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
 
-    def _post_commit_hook_payload(
-        self,
-        post_url: str,
-        review_request_url: str,
-        truncated: bool = False,
-    ) -> _MonkeyPatchedWSGIResponse:
+    def _post_commit_hook_payload(self, post_url, review_request_url,
+                                  truncated=False):
         """Post a payload for a hook for testing.
 
         Args:
-            post_url (str):
+            post_url (unicode):
                 The URL to post to.
 
-            review_request_url (str):
+            review_request_url (unicode):
                 The URL of the review request being represented in the
                 payload.
 

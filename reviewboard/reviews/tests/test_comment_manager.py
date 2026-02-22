@@ -4,9 +4,6 @@ Version Added:
     5.0
 """
 
-from __future__ import annotations
-
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, Permission, User
 from django.db.models import Q, Value
 from djblets.testing.decorators import add_fixtures
@@ -134,7 +131,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries_anonymous):
+        with self.assertQueries(queries_anonymous):
             # Testing that anonymous users can only access publicly-accessible
             # comments.
             self.assertQuerySetEqual(
@@ -256,7 +253,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries_user):
+        with self.assertQueries(queries_user):
             # Testing that the user can only access publicly-accessible
             # comments and comments from reviews that they own.
             self.assertQuerySetEqual(
@@ -288,7 +285,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries_superuser):
+        with self.assertQueries(queries_superuser):
             # Testing that superusers can access any comments.
             self.assertQuerySetEqual(
                 GeneralComment.objects.accessible(superuser),
@@ -413,7 +410,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries_anonymous):
+        with self.assertQueries(queries_anonymous):
             # Testing that anonymous users can only access comments
             # from publicly-accessible repositories.
             self.assertQuerySetEqual(
@@ -538,7 +535,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries_user):
+        with self.assertQueries(queries_user):
             # Testing that the user can only access comments
             # from repositories that they have access to.
             self.assertQuerySetEqual(
@@ -570,7 +567,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries_superuser):
+        with self.assertQueries(queries_superuser):
             # Testing that superusers can access comments from any repository.
             self.assertQuerySetEqual(
                 GeneralComment.objects.accessible(superuser),
@@ -662,7 +659,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries_anonymous):
+        with self.assertQueries(queries_anonymous):
             # Testing that anonymous users can only access comments
             # from review requests that target public review groups.
             self.assertQuerySetEqual(
@@ -788,7 +785,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries_user):
+        with self.assertQueries(queries_user):
             # Testing that the user can only access comments
             # from review requests that target them directly or target
             # review groups they have access to.
@@ -821,7 +818,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries_superuser):
+        with self.assertQueries(queries_superuser):
             # Testing that superusers can access any comments associated to
             # any review groups.
             self.assertQuerySetEqual(
@@ -1009,7 +1006,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries_user):
+        with self.assertQueries(queries_user):
             # Testing that the comments from other local sites or the global
             # site do not leak into the results from the given local site.
             self.assertQuerySetEqual(
@@ -1183,7 +1180,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries_user):
+        with self.assertQueries(queries_user):
             # Testing that passing LocalSite.ALL returns reviews from all local
             # sites and the global site.
             #
@@ -1321,7 +1318,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             # Testing that only comments matching the extra query are returned.
             self.assertQuerySetEqual(
                 GeneralComment.objects.accessible(user,
@@ -1366,7 +1363,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             # Testing that only comments from the given user are returned.
             self.assertQuerySetEqual(
                 GeneralComment.objects.from_user(user),
@@ -1416,7 +1413,7 @@ class CommentManagerTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             # Testing that only comments from published reviews by the given
             # user are returned.
             self.assertQuerySetEqual(

@@ -12,11 +12,9 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard import get_manual_url
-from reviewboard.actions import (ActionPlacement,
-                                 AttachmentPoint,
+from reviewboard.actions import (AttachmentPoint,
                                  BaseAction,
                                  BaseMenuAction)
-from reviewboard.actions.renderers import MenuActionGroupRenderer
 
 
 if TYPE_CHECKING:
@@ -34,7 +32,6 @@ class LoggedInUserMixin(MixinParent):
 
     def should_render(
         self,
-        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.
@@ -52,19 +49,6 @@ class LoggedInUserMixin(MixinParent):
                 request.user.is_authenticated)
 
 
-class AccountMenuActionRenderer(MenuActionGroupRenderer):
-    """Action renderer for the My Account menu.
-
-    This provides a custom template used to render the menu for display
-    in the page header, using the username and avatar.
-
-    Version Added:
-        7.1
-    """
-
-    template_name = 'accounts/account_menu_action.html'
-
-
 class AccountMenuAction(LoggedInUserMixin, BaseMenuAction):
     """A menu for account-related actions.
 
@@ -73,12 +57,9 @@ class AccountMenuAction(LoggedInUserMixin, BaseMenuAction):
     """
 
     action_id = 'account-menu'
-    default_renderer_cls = AccountMenuActionRenderer
+    attachment = AttachmentPoint.HEADER
     label = ''
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER),
-    ]
+    template_name = 'accounts/account_menu_action.html'
 
 
 class LoginAction(BaseAction):
@@ -90,14 +71,10 @@ class LoginAction(BaseAction):
 
     action_id = 'login'
     label = _('Log in')
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER),
-    ]
+    attachment = AttachmentPoint.HEADER
 
     def get_url(
         self,
-        *,
         context: Context,
     ) -> str:
         """Return the URL for the action.
@@ -115,7 +92,6 @@ class LoginAction(BaseAction):
 
     def should_render(
         self,
-        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.
@@ -141,13 +117,10 @@ class LogoutAction(LoggedInUserMixin, BaseAction):
     """
 
     action_id = 'logout'
+    parent_id = 'account-menu'
     label = _('Log out')
+    attachment = AttachmentPoint.HEADER
     url_name = 'logout'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=AccountMenuAction.action_id),
-    ]
 
 
 class AdminAction(BaseAction):
@@ -158,17 +131,13 @@ class AdminAction(BaseAction):
     """
 
     action_id = 'admin'
+    parent_id = 'account-menu'
     label = _('Admin')
+    attachment = AttachmentPoint.HEADER
     url_name = 'admin-dashboard'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=AccountMenuAction.action_id),
-    ]
 
     def should_render(
         self,
-        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.
@@ -194,13 +163,10 @@ class MyAccountAction(LoggedInUserMixin, BaseAction):
     """
 
     action_id = 'my-account'
+    parent_id = 'account-menu'
     label = _('My account')
+    attachment = AttachmentPoint.HEADER
     url_name = 'user-preferences'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=AccountMenuAction.action_id),
-    ]
 
 
 class SupportMenuAction(BaseMenuAction):
@@ -212,10 +178,7 @@ class SupportMenuAction(BaseMenuAction):
 
     action_id = 'support-menu'
     label = _('Support')
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER),
-    ]
+    attachment = AttachmentPoint.HEADER
 
 
 class DocumentationAction(BaseAction):
@@ -226,16 +189,12 @@ class DocumentationAction(BaseAction):
     """
 
     action_id = 'documentation'
+    parent_id = 'support-menu'
     label = _('Documentation')
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=SupportMenuAction.action_id),
-    ]
+    attachment = AttachmentPoint.HEADER
 
     def get_url(
         self,
-        *,
         context: Context,
     ) -> str:
         """Return the URL for the action.
@@ -259,13 +218,10 @@ class SupportAction(BaseAction):
     """
 
     action_id = 'support'
+    parent_id = 'support-menu'
     label = _('Get Support')
+    attachment = AttachmentPoint.HEADER
     url_name = 'support'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=SupportMenuAction.action_id),
-    ]
 
 
 class FollowMenuAction(BaseMenuAction):
@@ -277,14 +233,10 @@ class FollowMenuAction(BaseMenuAction):
 
     action_id = 'follow-menu'
     label = _('Follow')
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER),
-    ]
+    attachment = AttachmentPoint.HEADER
 
     def should_render(
         self,
-        *,
         context: Context,
     ) -> bool:
         """Return whether this action should render.
@@ -309,14 +261,11 @@ class FollowNewsAction(BaseAction):
     """
 
     action_id = 'follow-rss'
+    parent_id = 'follow-menu'
     label = _('Review Board News')
     icon_class = 'rb-icon-rss'
     url = 'https://www.reviewboard.org/news/'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=FollowMenuAction.action_id),
-    ]
+    attachment = AttachmentPoint.HEADER
 
 
 class FollowBlueSkyAction(BaseAction):
@@ -327,14 +276,11 @@ class FollowBlueSkyAction(BaseAction):
     """
 
     action_id = 'follow-bluesky'
+    parent_id = 'follow-menu'
     label = _('BlueSky')
     icon_class = 'rb-icon-brand-bluesky'
     url = 'https://bsky.app/profile/reviewboard.bsky.social'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=FollowMenuAction.action_id),
-    ]
+    attachment = AttachmentPoint.HEADER
 
 
 class FollowLinkedInAction(BaseAction):
@@ -345,14 +291,11 @@ class FollowLinkedInAction(BaseAction):
     """
 
     action_id = 'follow-linkedin'
+    parent_id = 'follow-menu'
     label = _('LinkedIn')
     icon_class = 'rb-icon-brand-linkedin'
     url = 'https://www.linkedin.com/company/reviewboard/'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=FollowMenuAction.action_id),
-    ]
+    attachment = AttachmentPoint.HEADER
 
 
 class FollowMastodonAction(BaseAction):
@@ -363,14 +306,11 @@ class FollowMastodonAction(BaseAction):
     """
 
     action_id = 'follow-mastodon'
+    parent_id = 'follow-menu'
     label = _('Mastodon')
     icon_class = 'rb-icon-brand-mastodon'
     url = 'https://mastodon.online/@reviewboard'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=FollowMenuAction.action_id),
-    ]
+    attachment = AttachmentPoint.HEADER
 
 
 class FollowTwitterAction(BaseAction):
@@ -381,14 +321,11 @@ class FollowTwitterAction(BaseAction):
     """
 
     action_id = 'follow-twitter'
+    parent_id = 'follow-menu'
     label = _('Twitter')
     icon_class = 'rb-icon-brand-twitter'
     url = 'https://twitter.com/reviewboard/'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=FollowMenuAction.action_id),
-    ]
+    attachment = AttachmentPoint.HEADER
 
 
 class FollowFacebookAction(BaseAction):
@@ -399,14 +336,11 @@ class FollowFacebookAction(BaseAction):
     """
 
     action_id = 'follow-facebook'
+    parent_id = 'follow-menu'
     label = _('Facebook')
     icon_class = 'rb-icon-brand-facebook'
     url = 'https://facebook.com/reviewboard.org'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=FollowMenuAction.action_id),
-    ]
+    attachment = AttachmentPoint.HEADER
 
 
 class FollowRedditAction(BaseAction):
@@ -417,14 +351,11 @@ class FollowRedditAction(BaseAction):
     """
 
     action_id = 'follow-reddit'
+    parent_id = 'follow-menu'
     label = _('Reddit')
     icon_class = 'rb-icon-brand-reddit'
     url = 'https://reddit.com/r/reviewboard'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=FollowMenuAction.action_id),
-    ]
+    attachment = AttachmentPoint.HEADER
 
 
 class FollowYouTubeAction(BaseAction):
@@ -435,11 +366,8 @@ class FollowYouTubeAction(BaseAction):
     """
 
     action_id = 'follow-youtube'
+    parent_id = 'follow-menu'
     label = _('YouTube')
     icon_class = 'rb-icon-brand-youtube'
     url = 'https://www.youtube.com/channel/UCTnwzlRTtx8wQOmyXiA_iCg'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.HEADER,
-                        parent_id=FollowMenuAction.action_id),
-    ]
+    attachment = AttachmentPoint.HEADER

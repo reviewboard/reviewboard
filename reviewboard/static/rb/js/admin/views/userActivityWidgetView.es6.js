@@ -80,9 +80,6 @@ RB.Admin.UserActivityWidgetView = RB.Admin.WidgetView.extend({
                 },
             ],
             {
-                legend: {
-                    backgroundColor: 'transparent',
-                },
                 series: {
                     pie: {
                         show: true,
@@ -92,7 +89,8 @@ RB.Admin.UserActivityWidgetView = RB.Admin.WidgetView.extend({
                             background: {
                                 opacity: 0.8,
                             },
-                            formatter: this._formatPieSlideLabel,
+                            formatter: (label, series) =>
+                                `<div>${Math.round(series.percent)}%</div>`,
                         },
                     },
                 },
@@ -100,30 +98,5 @@ RB.Admin.UserActivityWidgetView = RB.Admin.WidgetView.extend({
         );
 
         this.trigger('sizeChanged');
-    },
-
-    /**
-     * Return the label for a slice in the pie chart.
-     *
-     * Version Added:
-     *     7.1
-     *
-     * Args:
-     *     label (string, unused):
-     *         The original legend-based label text.
-     *
-     *     series (object):
-     *         The series information.
-     *
-     * Returns:
-     *     string:
-     *     The label to use.
-     */
-    _formatPieSlideLabel(label, series) {
-        return dedent`
-            <div class="rb-c-admin-user-activity-widget__slice-label">
-             ${Math.round(series.percent)}%
-            </div>
-        `;
     },
 });

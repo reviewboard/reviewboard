@@ -1,7 +1,6 @@
 /**
  * Styles and variables for the change list page.
  */
-@import (reference) "@beanbag/ink/ink.less";
 @import (reference) "rb/css/ui/buttons.less";
 @import (reference) "rb/css/ui/admin/filters.less";
 
@@ -64,25 +63,25 @@
    *     </div>
    */
   &__item-actions {
-    display: flex;
-    gap: var(--ink-u-spacing-m);
-    justify-content: end;
+    text-align: right;
     white-space: nowrap;
   }
 
   /**
    * An action item for a row.
    *
-   * This is expected to be mixed in or to contain a bug.
-   *
-   * Version Changed:
-   *     7.1:
-   *     This no longer has a button appearance, and instead depends on
-   *     ``ink-c-button`` or other action classes for appearance.
+   * This will be displayed as a button.
    *
    * Structure:
    *     <a class="rb-c-admin-change-list__item-action" href="...">...</a>
    */
   &__item-action {
+    .btn();
+    font-size: inherit;
+    margin-left: 0.5em;
+
+    &:first-child {
+      margin-left: 0;
+    }
   }
 }

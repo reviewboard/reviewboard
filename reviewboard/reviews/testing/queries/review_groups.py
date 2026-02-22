@@ -10,6 +10,7 @@ from typing import Dict, Set, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
+from djblets.db.query_comparator import ExpectedQueries
 
 from reviewboard.accounts.testing.queries import (
     get_user_local_site_profile_equeries,
@@ -21,8 +22,6 @@ from reviewboard.site.testing.queries import \
     get_local_site_is_mutable_by_equeries
 
 if TYPE_CHECKING:
-    from django_assert_queries.query_comparator import ExpectedQueries
-
     from reviewboard.site.models import AnyOrAllLocalSites
     from reviewboard.testing.queries.base import ExpectedQResult
 

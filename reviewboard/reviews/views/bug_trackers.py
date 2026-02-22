@@ -1,9 +1,7 @@
 """Views for interacting with bug trackers."""
 
-from __future__ import annotations
-
 import re
-from typing import TYPE_CHECKING
+from typing import Any, Dict
 
 from django.http import (HttpRequest,
                          HttpResponse,
@@ -13,13 +11,10 @@ from django.utils.safestring import SafeString, mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import TemplateView, View
 
-from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
+from reviewboard.hostingsvcs.bugtracker import BugTracker
 from reviewboard.reviews.markdown_utils import render_markdown
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
-
-if TYPE_CHECKING:
-    from typing import Any
 
 
 class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
@@ -81,7 +76,7 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
             return HttpResponseNotFound(
                 _('Unable to find bug tracker service'))
 
-        if not isinstance(bug_tracker, BaseBugTracker):
+        if not isinstance(bug_tracker, BugTracker):
             return HttpResponseNotFound(
                 _('Bug tracker %s does not support metadata')
                 % bug_tracker.name)
@@ -103,7 +98,7 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
     def get_context_data(
         self,
         **kwargs,
-    ) -> dict[str, Any]:
+    ) -> Dict[str, Any]:
         """Return context data for the template.
 
         Args:
@@ -121,7 +116,6 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
 
         bug_url = local_site_reverse(
             'bug_url',
-            local_site=self.local_site,
             args=[self.review_request.display_id, self.bug_id])
 
         context_data = super().get_context_data(**kwargs)

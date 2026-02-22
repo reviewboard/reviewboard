@@ -18,72 +18,21 @@ It includes compatibility imports for:
 from __future__ import annotations
 
 import logging
+from typing import List, Optional, Type
 
-from housekeeping import ClassMovedMixin, func_moved
-
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
-from reviewboard.hostingsvcs.base import client, http
-from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-from reviewboard.hostingsvcs.base.registry import hosting_service_registry
+from reviewboard.hostingsvcs.base import (
+    BaseHostingService as HostingService,
+    HostingServiceClient,
+    HostingServiceHTTPRequest,
+    HostingServiceHTTPResponse,
+    hosting_service_registry)
 from reviewboard.hostingsvcs.base.registry import HostingServiceRegistry
 
 
 logger = logging.getLogger(__name__)
 
 
-class HostingService(ClassMovedMixin,
-                     BaseHostingService,
-                     warning_cls=RemovedInReviewBoard90Warning):
-    """An interface to a hosting service for repositories and bug trackers.
-
-    Deprecated:
-        7.1:
-        This has been moved to :py:class:`reviewboard.hostingsvcs.base.
-        hosting_service.BaseHostingService`. The legacy import will be removed
-        in Review Board 9.
-    """
-
-
-class HostingServiceClient(ClassMovedMixin,
-                           client.HostingServiceClient,
-                           warning_cls=RemovedInReviewBoard90Warning):
-    """Client for communicating with a hosting service's API.
-
-    Deprecated:
-        7.1:
-        This has been moved to :py:class:`reviewboard.hostingsvcs.base.client.
-        HostingServiceClient`. The legacy import will be removed in Review
-        Board 9.
-    """
-
-
-class HostingServiceHTTPRequest(ClassMovedMixin,
-                                http.HostingServiceHTTPRequest,
-                                warning_cls=RemovedInReviewBoard90Warning):
-    """A request that can use any HTTP method.
-
-    Deprecated:
-        7.1:
-        This has been moved to :py:class:`reviewboard.hostingsvcs.base.http.
-        HostingServiceHTTPRequest`. The legacy import will be removed in Review
-        Board 9.
-    """
-
-
-class HostingServiceHTTPResponse(ClassMovedMixin,
-                                 http.HostingServiceHTTPResponse,
-                                 warning_cls=RemovedInReviewBoard90Warning):
-    """An HTTP response from the server.
-
-    Deprecated:
-        7.1:
-        This has been moved to :py:class:`reviewboard.hostingsvcs.base.http.
-        HostingServiceHTTPRequest`. The legacy import will be removed in Review
-        Board 9.
-    """
-
-
-def get_hosting_services() -> list[type[BaseHostingService]]:
+def get_hosting_services() -> List[Type[HostingService]]:
     """Return the list of hosting services.
 
     Returns:
@@ -94,11 +43,9 @@ def get_hosting_services() -> list[type[BaseHostingService]]:
     return list(hosting_service_registry)
 
 
-@func_moved(RemovedInReviewBoard90Warning,
-            new_func=hosting_service_registry.get_hosting_service)
 def get_hosting_service(
     name: str,
-) -> type[BaseHostingService] | None:
+) -> Optional[Type[HostingService]]:
     """Return the hosting service with the given name.
 
     If the hosting service is not found, None will be returned.
@@ -114,11 +61,9 @@ def get_hosting_service(
     return hosting_service_registry.get_hosting_service(name)
 
 
-@func_moved(RemovedInReviewBoard90Warning,
-            new_func=hosting_service_registry.register)
 def register_hosting_service(
     name: str,
-    cls: type[BaseHostingService],
+    cls: Type[HostingService],
 ) -> None:
     """Register a custom hosting service class.
 
@@ -145,8 +90,6 @@ def register_hosting_service(
     hosting_service_registry.register(cls)
 
 
-@func_moved(RemovedInReviewBoard90Warning,
-            new_func=hosting_service_registry.unregister_by_id)
 def unregister_hosting_service(
     name: str,
 ) -> None:

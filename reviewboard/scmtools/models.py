@@ -40,8 +40,7 @@ from reviewboard.site.models import LocalSite
 if TYPE_CHECKING:
     from django.contrib.auth.models import AnonymousUser
     from django.http import HttpRequest
-    from typelets.funcs import KwargsDict
-    from typelets.django.strings import StrPromise
+    from djblets.util.typing import KwargsDict, StrPromise
 
     from reviewboard.scmtools.core import Branch, Commit, SCMTool
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
@@ -856,12 +855,10 @@ class Repository(models.Model):
         def _get_branches() -> Sequence[Branch]:
             hosting_service = self.hosting_service
 
-            with log_timed(f'Fetching branches from {self}',
-                           logger=logger):
-                if hosting_service:
-                    return hosting_service.get_branches(self)
-                else:
-                    return self.get_scmtool().get_branches()
+            if hosting_service:
+                return hosting_service.get_branches(self)
+            else:
+                return self.get_scmtool().get_branches()
 
         cache_key = make_cache_key(f'repository-branches:{self.pk}')
 
@@ -942,13 +939,10 @@ class Repository(models.Model):
                 'start': start,
             }
 
-            with log_timed(f'Fetching commits (branch={branch}, '
-                           f'start={start} from {self}',
-                           logger=logger):
-                if hosting_service:
-                    return hosting_service.get_commits(self, **commits_kwargs)
-                else:
-                    return self.get_scmtool().get_commits(**commits_kwargs)
+            if hosting_service:
+                return hosting_service.get_commits(self, **commits_kwargs)
+            else:
+                return self.get_scmtool().get_commits(**commits_kwargs)
 
         # We cache both the entire list for 'start', as well as each individual
         # commit. This allows us to reduce API load when people are looking at
@@ -1000,12 +994,10 @@ class Repository(models.Model):
         """
         hosting_service = self.hosting_service
 
-        with log_timed(f'Fetching change {revision} from {self}',
-                       logger=logger):
-            if hosting_service:
-                return hosting_service.get_change(self, revision)
-            else:
-                return self.get_scmtool().get_change(revision)
+        if hosting_service:
+            return hosting_service.get_change(self, revision)
+        else:
+            return self.get_scmtool().get_change(revision)
 
     @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def normalize_patch(
@@ -1316,38 +1308,38 @@ class Repository(models.Model):
                            context=context)
 
         if base_commit_id:
-            timer_msg = (
-                f'Fetching file "{path}" r{revision} (base commit ID '
-                f'{base_commit_id}) from {self}'
-            )
+            timer_msg = "Fetching file '%s' r%s (base commit ID %s) from %s" \
+                        % (path, revision, base_commit_id, self)
         else:
-            timer_msg = f'Fetching file "{path}" r{revision} from {self}'
+            timer_msg = "Fetching file '%s' r%s from %s" \
+                        % (path, revision, self)
 
-        with log_timed(timer_msg,
-                       logger=logger,
-                       request=request):
-            hosting_service = self.hosting_service
+        log_timer = log_timed(timer_msg, request=request)
 
-            if hosting_service:
-                data = hosting_service.get_file(
-                    self,
-                    path,
-                    revision,
-                    base_commit_id=base_commit_id,
-                    context=context)
+        hosting_service = self.hosting_service
 
-                assert isinstance(data, bytes), (
-                    '%s.get_file() must return a byte string, not %s'
-                    % (type(hosting_service).__name__, type(data)))
-            else:
-                tool = self.get_scmtool()
-                data = tool.get_file(path, revision,
-                                     base_commit_id=base_commit_id,
-                                     context=context)
+        if hosting_service:
+            data = hosting_service.get_file(
+                self,
+                path,
+                revision,
+                base_commit_id=base_commit_id,
+                context=context)
 
-                assert isinstance(data, bytes), (
-                    '%s.get_file() must return a byte string, not %s'
-                    % (type(tool).__name__, type(data)))
+            assert isinstance(data, bytes), (
+                '%s.get_file() must return a byte string, not %s'
+                % (type(hosting_service).__name__, type(data)))
+        else:
+            tool = self.get_scmtool()
+            data = tool.get_file(path, revision,
+                                 base_commit_id=base_commit_id,
+                                 context=context)
+
+            assert isinstance(data, bytes), (
+                '%s.get_file() must return a byte string, not %s'
+                % (type(tool).__name__, type(data)))
+
+        log_timer.done()
 
         fetched_file.send(sender=self,
                           path=path,
@@ -1424,32 +1416,18 @@ class Repository(models.Model):
 
             hosting_service = self.hosting_service
 
-            if base_commit_id:
-                timer_msg = (
-                    f'Checking file existence for "{path}" r{revision} '
-                    f'(base commit ID {base_commit_id}) from {self}'
-                )
+            if hosting_service:
+                exists = hosting_service.get_file_exists(
+                    self,
+                    path,
+                    revision,
+                    base_commit_id=base_commit_id,
+                    context=context)
             else:
-                timer_msg = (
-                    f'Checking file existence for "{path}" r{revision} '
-                    f'from {self}'
-                )
-
-            with log_timed(timer_msg,
-                           logger=logger,
-                           request=request):
-                if hosting_service:
-                    exists = hosting_service.get_file_exists(
-                        self,
-                        path,
-                        revision,
-                        base_commit_id=base_commit_id,
-                        context=context)
-                else:
-                    tool = self.get_scmtool()
-                    exists = tool.file_exists(path, revision,
-                                              base_commit_id=base_commit_id,
-                                              context=context)
+                tool = self.get_scmtool()
+                exists = tool.file_exists(path, revision,
+                                          base_commit_id=base_commit_id,
+                                          context=context)
 
             checked_file_exists.send(sender=self,
                                      path=path,

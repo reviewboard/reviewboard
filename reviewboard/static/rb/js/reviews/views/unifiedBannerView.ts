@@ -2,7 +2,6 @@
  * The unified banner view.
  */
 import {
-    type MenuLabelView,
     MenuButtonView,
     MenuItem,
     MenuItemType,
@@ -11,8 +10,6 @@ import {
     craft,
     paint,
     renderInto,
-    showConfirmDialog,
-    showErrorDialog,
 } from '@beanbag/ink';
 import {
     type EventsHash,
@@ -398,14 +395,6 @@ export class UnifiedBannerView extends FloatingBannerView<
     /** The container for all draft action buttons/menus. */
     #$draftActions: JQuery;
 
-    /**
-     * The menu label handle for the Edit Quick Access menu.
-     *
-     * Version Added:
-     *     7.1
-     */
-    #editQuickAccessMenuLabelView: MenuLabelView;
-
     /** The link for accessing the interdiff for a new draft diff. */
     #$interdiffLink: JQuery;
 
@@ -547,8 +536,6 @@ export class UnifiedBannerView extends FloatingBannerView<
                 </Ink.Button>
             `)
             .appendTo(this.#$draftActions);
-
-        this.#setupQuickAccess();
 
         const reviewRequestEditor = model.get('reviewRequestEditor');
         const reviewRequest = model.get('reviewRequest');
@@ -747,105 +734,6 @@ export class UnifiedBannerView extends FloatingBannerView<
     }
 
     /**
-     * Build and populate the Quick Access bar and configuration menu.
-     *
-     * Version Added:
-     *     7.1
-     */
-    #setupQuickAccess() {
-        const parentEl = this.$('.rb-c-unified-banner__edit-quick-access')[0];
-
-        if (!parentEl) {
-            /*
-             * We're probably running in a unit test. Don't build any of
-             * this state.
-             */
-            return;
-        }
-
-        const menuLabelView = craft<MenuLabelView>`
-            <Ink.MenuLabel
-              iconName="ink-i-settings"
-              dropDownIconName=""
-              menuLabel="${_`Customize quick access buttons`}">
-             <Ink.MenuLabel.Header>
-              Pinned Actions
-             </Ink.MenuLabel.Header>
-            </Ink.MenuLabel>
-        `;
-
-        this.#editQuickAccessMenuLabelView = menuLabelView;
-
-        /*
-         * Go through all the Quick Access actions and add them to the menu.
-         */
-        let optionsDirty = false;
-        const pageView = RB.PageManager.getPage();
-        const actionViews = pageView.getActionViews('quick-access');
-
-        const menuItemsByActionID: Record<string, MenuItem> = {};
-        const enabledQuickAccessIDs = new Set(
-            UserSession.instance.get('quickAccessActionIDs') || []);
-
-        menuLabelView.menuItems.add(actionViews.map(actionView => {
-            const action = actionView.model;
-
-            /* Build the menu item. */
-            const menuItem = new MenuItem({
-                checked: enabledQuickAccessIDs.has(action.id),
-                label: action.get('label'),
-                type: MenuItemType.CHECKBOX_ITEM,
-            });
-
-            /* Connect events for the quick access area. */
-            function onQuickAccessEnabledChanged() {
-                if (menuItem.get('checked')) {
-                    actionView.show();
-                } else {
-                    actionView.hide();
-                }
-            }
-
-            this.listenTo(menuItem, 'change:checked', () => {
-                onQuickAccessEnabledChanged();
-                optionsDirty = true;
-            });
-
-            onQuickAccessEnabledChanged();
-
-            menuItemsByActionID[action.id] = menuItem;
-
-            return menuItem;
-        }));
-
-        /* Render the menu. */
-        menuLabelView.renderInto(
-            this.$('.rb-c-unified-banner__edit-quick-access'));
-
-        /* Update settings after the menu closes, if options have changed. */
-        this.listenTo(menuLabelView.menuView, 'closed', async () => {
-            if (optionsDirty) {
-                const session = UserSession.instance;
-                const newActionIDs: string[] = [];
-
-                for (const actionView of actionViews) {
-                    const actionID = actionView.model.id;
-                    const menuItem = menuItemsByActionID[actionID];
-
-                    if (menuItem.get('checked')) {
-                        newActionIDs.push(actionID);
-                    }
-                }
-
-                session.set('quickAccessActionIDs', newActionIDs);
-                await session.storeSettings(['quickAccessActionIDs']);
-
-                optionsDirty = false;
-            }
-        });
-    }
-
-    /**
      * Run the publish batch operation.
      *
      * Args:
@@ -913,10 +801,6 @@ export class UnifiedBannerView extends FloatingBannerView<
      * Depending on the selected view mode, this will either discard the
      * pending review, discard the current review request draft, or close the
      * (unpublished) review request as discarded.
-     *
-     * Returns:
-     *     Promise<void>:
-     *     The promise for the discard operation.
      */
     private async _discardDraft() {
         const model = this.model;
@@ -927,74 +811,95 @@ export class UnifiedBannerView extends FloatingBannerView<
 
         ClientCommChannel.getInstance().reload();
 
-        if (draftMode.hasReview) {
-            /* Confirm and then discard the review. */
-            const pendingReview = model.get('pendingReview');
+        try {
+            if (await this._confirmDiscard(draftMode) === false) {
+                return;
+            }
 
-            const confirmed = await showConfirmDialog({
-                isDangerous: true,
-                title: _`Are you sure you want to discard this review?`,
+            if (draftMode.hasReview) {
+                const pendingReview = model.get('pendingReview');
+                await pendingReview.destroy();
 
-                body: _`
+                RB.navigateTo(reviewRequest.get('reviewURL'));
+            } else if (draftMode.hasReviewRequest) {
+                if (!reviewRequest.get('public')) {
+                    await reviewRequest.close({
+                        type: ReviewRequest.CLOSE_DISCARDED,
+                    });
+                } else if (!reviewRequest.draft.isNew()) {
+                    await reviewRequest.draft.destroy();
+                }
+
+                RB.navigateTo(reviewRequest.get('reviewURL'));
+            } else if (draftMode.singleReviewReply !== undefined) {
+                const reviewReplyDrafts = model.get('reviewReplyDrafts');
+                const reply = reviewReplyDrafts[draftMode.singleReviewReply];
+
+                await reply.destroy();
+            } else {
+                console.error('Discard reached with no active drafts.');
+            }
+        } catch(err) {
+            alert(err.xhr.errorText);
+        }
+    }
+
+    /**
+     * Ask the user to confirm a discard operation.
+     *
+     * Args:
+     *     draftMode (DraftMode):
+     *         The current draft mode being discarded.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves to either ``true`` (proceed) or ``false``
+     *     (cancel).
+     */
+    private _confirmDiscard(
+        draftMode: DraftMode,
+    ): Promise<boolean> {
+        return new Promise(resolve => {
+            const text = draftMode.hasReview
+                ? _`
                     If you discard this review, all unpublished comments
                     will be deleted.
-                `,
-                confirmButtonText: _`Discard the review`,
-                onConfirm: async () => {
-                    try {
-                        await pendingReview.destroy();
-                    } catch (err) {
-                        showErrorDialog({
-                            error: err.xhr.errorText,
-                            title: 'Error discarding the reply',
-                        });
+                `
+                : _`
+                    If you discard this review request draft, all unpublished
+                    data will be deleted.
+                `;
+            const title = draftMode.hasReview
+                ? _`Are you sure you want to discard this review?`
+                : _`
+                    Are you sure you want to discard this review request
+                    draft?
+                `;
 
-                        return false;
-                    }
-                },
-            });
-
-            if (confirmed) {
-                RB.navigateTo(reviewRequest.get('reviewURL'));
+            function resolveAndClose(result: boolean) {
+                resolve(result);
+                $dlg.modalBox('destroy');
             }
-        } else if (draftMode.hasReviewRequest) {
-            if (reviewRequest.get('public')) {
-                /* Confirm and then discard the review request draft. */
-                await this.#reviewRequestEditorView.discardDraft();
-            } else {
-                /* Confirm and then Close -> Discard the review request. */
-                await this.#reviewRequestEditorView.closeDiscarded();
-            }
-        } else if (draftMode.singleReviewReply !== undefined) {
-            /* Confirm and then discard the single reply. */
-            const reviewReplyDrafts = model.get('reviewReplyDrafts');
-            const reply = reviewReplyDrafts[draftMode.singleReviewReply];
 
-            await showConfirmDialog({
-                isDangerous: true,
-                title: _`Are you sure you want to discard this reply?`,
-
-                body: _`
-                    If you discard this reply, all unpublished comments
-                    will be deleted.
-                `,
-                confirmButtonText: _`Discard the reply`,
-                onConfirm: async () => {
-                    try {
-                        await reply.destroy();
-                    } catch (err) {
-                        showErrorDialog({
-                            error: err.xhr.errorText,
-                            title: 'Error discarding the reply',
-                        });
-
-                        return false;
-                    }
-                },
-            });
-        } else {
-            console.error('Discard reached with no active drafts.');
-        }
+            const $dlg = $('<p>')
+                .text(text)
+                .modalBox({
+                    buttons: paint<HTMLButtonElement[]>`
+                        <Ink.Button onClick=${() => resolveAndClose(false)}>
+                         ${_`Cancel`}
+                        </Ink.Button>
+                        <Ink.Button type="danger"
+                                    onClick=${() => resolveAndClose(true)}>
+                         ${_`Discard`}
+                        </Ink.Button>
+                    `,
+                    title: title,
+                })
+                .on('close', () => {
+                    $dlg.modalBox('destroy');
+                    resolve(false);
+                });
+        });
     }
 
     /**

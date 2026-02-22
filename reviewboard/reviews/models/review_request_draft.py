@@ -362,8 +362,6 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     # new, there's no point in doing that.
                     getattr(draft, rel_field).add(*items)
 
-        review_request._draft = draft
-
         return draft
 
     def publish(

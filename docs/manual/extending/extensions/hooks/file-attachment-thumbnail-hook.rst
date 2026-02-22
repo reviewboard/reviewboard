@@ -21,7 +21,6 @@ Example
 .. code-block:: python
 
     import logging
-    from typing import TYPE_CHECKING
 
     import pygments
     from django.utils.encoding import force_unicode
@@ -30,15 +29,12 @@ Example
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import FileAttachmentThumbnailHook
 
-    if TYPE_CHECKING:
-        from django.utils.safestring import SafeString
-
 
     class XMLMimetype(MimetypeHandler):
         # Generate thumbnails for these mimetypes
         supported_mimetypes = ['application/xml', 'text/xml']
 
-        def get_thumbnail(self) -> SafeString:
+        def get_thumbnail(self):
             # This renders the XML using pygments to syntax highlight it. The
             # HTML will then be stuck inside the thumbnail element styled to
             # use a small font and clipped to the size of the thumbnail box.
@@ -51,8 +47,8 @@ Example
             except (ValueError, IOError), e:
                 logging.error('Failed to read from file attachment %s: %s'
                               % (self.attachment.pk, e))
-            finally:
-                f.close()
+
+            f.close()
 
             html = pygments.highlight(force_unicode(data_string),
                                       pygments.lexers.XmlLexer(),
@@ -63,5 +59,5 @@ Example
 
 
     class XMLThumbnailExtension(Extension):
-        def initialize(self) -> None:
+        def initialize(self):
             FileAttachmentThumbnailHook(self, [XMLMimetype])

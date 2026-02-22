@@ -1,11 +1,4 @@
-"""Unit tests for reviewboard.reviews.models.review_request."""
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
 import kgb
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.db.models import Max, Q, Value
 from django.utils import timezone
@@ -23,9 +16,6 @@ from reviewboard.reviews.signals import (review_request_reopened,
                                          review_request_reopening)
 from reviewboard.scmtools.core import ChangeSet
 from reviewboard.testing import TestCase
-
-if TYPE_CHECKING:
-    from django_assert_queries.query_comparator import ExpectedQueries
 
 
 class ReviewRequestTests(kgb.SpyAgency, TestCase):
@@ -62,53 +52,6 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
         with self.assertNumQueries(1):
             self.assertFalse(review_request.can_add_default_reviewers())
 
-    def test_get_blocks(self) -> None:
-        """Testing ReviewRequest.get_blocks"""
-        review_request1 = self.create_review_request(
-            publish=True,
-            summary='Review request 1')
-
-        review_request2 = self.create_review_request(
-            publish=True,
-            summary='Review request 2')
-        review_request2.depends_on.add(review_request1)
-
-        review_request3 = self.create_review_request(
-            publish=True,
-            summary='Review request 3')
-        review_request3.depends_on.add(review_request1)
-
-        queries: ExpectedQueries = [
-            {
-                'join_types': {
-                    'reviews_reviewrequest_depends_on': 'INNER JOIN',
-                },
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'reviews_reviewrequest',
-                    'reviews_reviewrequest_depends_on',
-                },
-                'where': Q(depends_on__id=1),
-            }
-        ]
-
-        with assert_queries(queries):
-            self.assertEqual(review_request1.get_blocks(),
-                             [review_request3, review_request2])
-
-        # A second query should use the cache.
-        with self.assertNumQueries(0):
-            self.assertEqual(review_request1.get_blocks(),
-                             [review_request3, review_request2])
-
-        # A cache clear should reset that.
-        review_request1.clear_local_caches()
-
-        with assert_queries(queries):
-            self.assertEqual(review_request1.get_blocks(),
-                             [review_request3, review_request2])
-
     def test_get_close_info_returns_correct_information(self):
         """Testing ReviewRequest.get_close_info returns all necessary
         information
@@ -139,196 +82,6 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
         difference = review.timestamp.date() - close_info['timestamp'].date()
         self.assertEqual(difference.days, 10)
         self.assertEqual(past_close_info['timestamp'], close_info['timestamp'])
-
-    @add_fixtures(['test_scmtools'])
-    def test_get_diffsets(self) -> None:
-        """Testing ReviewRequest.get_diffsets"""
-        review_request = self.create_review_request(create_repository=True)
-
-        diffset1 = self.create_diffset(review_request)
-        filediff1 = self.create_filediff(diffset1)
-        filediff2 = self.create_filediff(diffset1)
-
-        diffset2 = self.create_diffset(review_request)
-        filediff3 = self.create_filediff(diffset2)
-
-        queries: ExpectedQueries = [
-            {
-                'model': DiffSet,
-                'where': Q(history__pk=1),
-            },
-            {
-                'model': FileDiff,
-                'where': Q(diffset__in=[diffset1, diffset2]),
-            },
-        ]
-
-        with assert_queries(queries):
-            diffsets = review_request.get_diffsets()
-
-            self.assertEqual(diffsets, [diffset1, diffset2])
-            self.assertEqual(list(diffsets[0].files.all()),
-                             [filediff1, filediff2])
-            self.assertEqual(list(diffsets[1].files.all()), [filediff3])
-
-        # A second query should use the cache.
-        with self.assertNumQueries(0):
-            diffsets = review_request.get_diffsets()
-
-            self.assertEqual(diffsets, [diffset1, diffset2])
-            self.assertEqual(list(diffsets[0].files.all()),
-                             [filediff1, filediff2])
-            self.assertEqual(list(diffsets[1].files.all()), [filediff3])
-
-        # A cache clear should reset that.
-        review_request.clear_local_caches()
-
-        with assert_queries(queries):
-            diffsets = review_request.get_diffsets()
-
-            self.assertEqual(diffsets, [diffset1, diffset2])
-            self.assertEqual(list(diffsets[0].files.all()),
-                             [filediff1, filediff2])
-            self.assertEqual(list(diffsets[1].files.all()), [filediff3])
-
-    @add_fixtures(['test_scmtools'])
-    def test_get_diffsets_with_filediffs_false(self) -> None:
-        """Testing ReviewRequest.get_diffsets with with_filediffs=False"""
-        review_request = self.create_review_request(create_repository=True)
-
-        diffset1 = self.create_diffset(review_request)
-        filediff1 = self.create_filediff(diffset1)
-        filediff2 = self.create_filediff(diffset1)
-
-        diffset2 = self.create_diffset(review_request)
-        filediff3 = self.create_filediff(diffset2)
-
-        queries: ExpectedQueries = [
-            {
-                'model': DiffSet,
-                'where': Q(history__pk=1),
-            },
-            {
-                'model': FileDiff,
-                'where': Q(diffset=diffset1),
-            },
-            {
-                'model': FileDiff,
-                'where': Q(diffset=diffset2),
-            },
-        ]
-
-        with assert_queries(queries):
-            diffsets = review_request.get_diffsets(with_filediffs=False)
-
-            self.assertEqual(diffsets, [diffset1, diffset2])
-
-            self.assertEqual(list(diffsets[0].files.all()),
-                             [filediff1, filediff2])
-            self.assertEqual(list(diffsets[1].files.all()), [filediff3])
-
-    @add_fixtures(['test_scmtools'])
-    def test_get_diffsets_with_filediffs_true_after_false(self) -> None:
-        """Testing ReviewRequest.get_diffsets with with_filediffs=True after
-        cached with_filediffs=False
-        """
-        review_request = self.create_review_request(create_repository=True)
-
-        diffset1 = self.create_diffset(review_request)
-        filediff1 = self.create_filediff(diffset1)
-        filediff2 = self.create_filediff(diffset1)
-
-        diffset2 = self.create_diffset(review_request)
-        filediff3 = self.create_filediff(diffset2)
-
-        queries: ExpectedQueries = [
-            {
-                'model': DiffSet,
-                'where': Q(history__pk=1),
-            },
-        ]
-
-        with assert_queries(queries):
-            diffsets = review_request.get_diffsets(with_filediffs=False)
-
-            self.assertEqual(diffsets, [diffset1, diffset2])
-
-        queries: ExpectedQueries = [
-            {
-                'model': FileDiff,
-                'where': Q(diffset__in=[diffset1, diffset2])
-            },
-        ]
-
-        with assert_queries(queries):
-            diffsets = review_request.get_diffsets(with_filediffs=True)
-
-            self.assertEqual(diffsets, [diffset1, diffset2])
-            self.assertEqual(list(diffsets[0].files.all()),
-                             [filediff1, filediff2])
-            self.assertEqual(list(diffsets[1].files.all()), [filediff3])
-
-    @add_fixtures(['test_scmtools'])
-    def test_get_latest_diffset(self) -> None:
-        """Testing ReviewRequest.get_latest_diffset"""
-        review_request = self.create_review_request(create_repository=True)
-
-        self.create_diffset(review_request,
-                            revision=1)
-        diffset2 = self.create_diffset(review_request,
-                                       revision=2)
-
-        queries: ExpectedQueries = [
-            {
-                'model': DiffSet,
-                'where': Q(history__pk=1),
-            },
-        ]
-
-        with assert_queries(queries):
-            self.assertEqual(review_request.get_latest_diffset(), diffset2)
-
-        # A second query should use the cache.
-        with self.assertNumQueries(0):
-            self.assertEqual(review_request.get_latest_diffset(), diffset2)
-
-        # A cache clear should reset that.
-        review_request.clear_local_caches()
-
-        with assert_queries(queries):
-            self.assertEqual(review_request.get_latest_diffset(), diffset2)
-
-    @add_fixtures(['test_scmtools'])
-    def test_get_latest_diffset_after_get_diffsets(self) -> None:
-        """Testing ReviewRequest.get_latest_diffset after get_diffsets"""
-        review_request = self.create_review_request(create_repository=True)
-
-        self.create_diffset(review_request,
-                            revision=1)
-        diffset2 = self.create_diffset(review_request,
-                                       revision=2)
-
-        review_request.get_diffsets()
-
-        with self.assertNumQueries(0):
-            self.assertEqual(review_request.get_latest_diffset(), diffset2)
-
-        # A second query should use the cache.
-        with self.assertNumQueries(0):
-            self.assertEqual(review_request.get_latest_diffset(), diffset2)
-
-        # A cache clear should reset that.
-        review_request.clear_local_caches()
-
-        queries: ExpectedQueries = [
-            {
-                'model': DiffSet,
-                'where': Q(history__pk=1),
-            },
-        ]
-
-        with assert_queries(queries):
-            self.assertEqual(review_request.get_latest_diffset(), diffset2)
 
     def test_public_with_discard_reopen_submitted(self):
         """Testing ReviewRequest.public when discarded, reopened, submitted"""
@@ -868,23 +621,6 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
         with self.assertNumQueries(0):
             self.assertTrue(review_request.has_diffsets)
 
-        # A cache clear should reset that.
-        review_request.clear_local_caches()
-
-        queries: ExpectedQueries = [
-            {
-                'annotations': {
-                    'a': Value(1),
-                },
-                'limit': 1,
-                'model': DiffSet,
-                'where': Q(history=review_request.diffset_history),
-            },
-        ]
-
-        with assert_queries(queries):
-            self.assertTrue(review_request.has_diffsets)
-
     @add_fixtures(['test_scmtools'])
     def test_has_diffsets_prefetched(self) -> None:
         """Testing ReviewRequest.has_diffsets with prefetched diffsets"""
@@ -951,7 +687,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             diffsets = review_request.get_diffsets()
             self.assertTrue(diffsets)
             self.assertNotEqual(list(diffsets[0].files.all()), [])
@@ -982,7 +718,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             diffsets = review_request.get_diffsets()
             self.assertTrue(diffsets)
             self.assertNotEqual(list(diffsets[0].files.all()), [])
@@ -1012,7 +748,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(review_request.has_diffsets)
 
         review_request = self.create_review_request(create_repository=True)
@@ -1036,7 +772,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(review_request.has_diffsets)
 
     @add_fixtures(['test_scmtools'])
@@ -1058,7 +794,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(review_request.has_diffsets)
 
         review_request = self.create_review_request(create_repository=True)
@@ -1078,7 +814,7 @@ class ReviewRequestTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(review_request.has_diffsets)
 
 
@@ -1552,7 +1288,7 @@ class IssueCounterTests(TestCase):
         self.review_request.save()
 
 
-class ApprovalTests(kgb.SpyAgency, TestCase):
+class ApprovalTests(TestCase):
     """Unit tests for ReviewRequest approval logic."""
 
     fixtures = ['test_users']
@@ -1606,35 +1342,6 @@ class ApprovalTests(kgb.SpyAgency, TestCase):
         self.assertEqual(self.review_request.approval_failure,
                          'The review request has unverified issues.')
 
-    def test_caching(self) -> None:
-        """Testing ReviewRequest approval caching"""
-        review_request = self.review_request
-
-        self.spy_on(review_request._calculate_approval)
-
-        self.assertFalse(review_request.approved)
-        self.assertEqual(review_request.approval_failure,
-                         'The review request has not been marked "Ship It!"')
-
-        self.assertSpyCallCount(review_request._calculate_approval, 1)
-
-        # A second call should use the cache. We'll test with new state.
-        review_request.shipit_count = 1
-
-        self.assertFalse(review_request.approved)
-        self.assertEqual(review_request.approval_failure,
-                         'The review request has not been marked "Ship It!"')
-
-        self.assertSpyCallCount(review_request._calculate_approval, 1)
-
-        # A cache clear should reset that.
-        review_request.clear_local_caches()
-
-        self.assertIsNone(review_request.approval_failure)
-        self.assertTrue(review_request.approved)
-
-        self.assertSpyCallCount(review_request._calculate_approval, 2)
-
 
 class GetFileAttachmentsDataTests(TestCase):
     """Unit tests for ReviewRequest.get_file_attachments_data"""
@@ -1649,35 +1356,36 @@ class GetFileAttachmentsDataTests(TestCase):
             create_repository=True,
             publish=True)
 
-    def test_get_file_attachments_data(self) -> None:
+    def test_get_file_attachments_data(self):
         """Testing ReviewRequest.get_file_attachments_data"""
-        review_request = self.review_request
-
         active = self.create_file_attachment(
-            review_request)
+            self.review_request)
         active_2 = self.create_file_attachment(
-            review_request)
+            self.review_request)
         inactive = self.create_file_attachment(
-            review_request,
+            self.review_request,
             active=False)
         draft_active = self.create_file_attachment(
-            review_request,
+            self.review_request,
             draft=True)
         draft_inactive = self.create_file_attachment(
-            review_request,
+            self.review_request,
             draft=True,
             active=False)
         draft_inactive_2 = self.create_file_attachment(
-            review_request,
+            self.review_request,
             draft=True,
             active=False)
 
-        draft = review_request.get_draft()
-        assert draft is not None
+        draft = self.review_request.get_draft()
 
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 5 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch inactive file attachments
+        # 3. Fetch the review request draft
+        # 4. Fetch active draft file attachments
+        # 5. Fetch the inactive draft file attachments
         equeries = [
             {
                 'join_types': {
@@ -1689,7 +1397,7 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_file_attachments',
                 },
-                'where': Q(review_request__id=review_request.pk),
+                'where': Q(review_request__id=self.review_request.pk),
             },
             {
                 'join_types': {
@@ -1702,11 +1410,11 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_inactive_file_attachments',
                 },
-                'where': Q(inactive_review_request__id=review_request.pk),
+                'where': Q(inactive_review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'join_types': {
@@ -1736,7 +1444,7 @@ class GetFileAttachmentsDataTests(TestCase):
             },
         ]
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,
@@ -1777,44 +1485,21 @@ class GetFileAttachmentsDataTests(TestCase):
                     draft_inactive_2.pk,
                 })
 
-        # A cache clear should reset that.
-        review_request.clear_local_caches()
-
-        with assert_queries(equeries):
-            self._assert_data_equals(
-                active_ids={
-                    active.pk,
-                    active_2.pk,
-                },
-                inactive_ids={
-                    inactive.pk,
-                },
-                draft_active_ids={
-                    active.pk,
-                    active_2.pk,
-                    draft_active.pk
-                },
-                draft_inactive_ids={
-                    inactive.pk,
-                    draft_inactive.pk,
-                    draft_inactive_2.pk,
-                })
-
-    def test_get_file_attachments_data_no_drafts(self) -> None:
+    def test_get_file_attachments_data_no_drafts(self):
         """Testing ReviewRequest.get_file_attachments_data with no
         review request draft
         """
-        review_request = self.review_request
-
         active = self.create_file_attachment(
-            review_request)
+            self.review_request)
         inactive = self.create_file_attachment(
             self.review_request,
             active=False)
 
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 3 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch inactive file attachments
+        # 3. Fetch the review request draft
         queries = [
             {
                 'join_types': {
@@ -1826,7 +1511,7 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_file_attachments',
                 },
-                'where': Q(review_request__id=review_request.pk),
+                'where': Q(review_request__id=self.review_request.pk),
             },
             {
                 'join_types': {
@@ -1839,15 +1524,15 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_inactive_file_attachments',
                 },
-                'where': Q(inactive_review_request__id=review_request.pk),
+                'where': Q(inactive_review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,
@@ -1856,25 +1541,24 @@ class GetFileAttachmentsDataTests(TestCase):
                     inactive.pk,
                 })
 
-    def test_get_file_attachments_data_multiple_review_requests(self) -> None:
+    def test_get_file_attachments_data_multiple_review_requests(self):
         """Testing ReviewRequest.get_file_attachments_data when file
         attachments from other review requests exist
         """
-        review_request = self.review_request
-
         review_request_2 = self.create_review_request(
-            repository=review_request.repository,
+            repository=self.review_request.repository,
             publish=True)
 
-        active = self.create_file_attachment(review_request)
+        active = self.create_file_attachment(
+            self.review_request)
         inactive = self.create_file_attachment(
-            review_request,
+            self.review_request,
             active=False)
         draft_active = self.create_file_attachment(
-            review_request,
+            self.review_request,
             draft=True)
         draft_inactive = self.create_file_attachment(
-            review_request,
+            self.review_request,
             draft=True,
             active=False)
 
@@ -1891,12 +1575,15 @@ class GetFileAttachmentsDataTests(TestCase):
             draft=True,
             active=False)
 
-        draft = review_request.get_draft()
-        assert draft is not None
+        draft = self.review_request.get_draft()
 
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 5 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch inactive file attachments
+        # 3. Fetch the review request draft
+        # 4. Fetch active draft file attachments
+        # 5. Fetch the inactive draft file attachments
         queries = [
             {
                 'join_types': {
@@ -1908,7 +1595,7 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_file_attachments',
                 },
-                'where': Q(review_request__id=review_request.pk),
+                'where': Q(review_request__id=self.review_request.pk),
             },
             {
                 'join_types': {
@@ -1921,11 +1608,11 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_inactive_file_attachments',
                 },
-                'where': Q(inactive_review_request__id=review_request.pk),
+                'where': Q(inactive_review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'join_types': {
@@ -1955,7 +1642,7 @@ class GetFileAttachmentsDataTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,
@@ -1972,35 +1659,44 @@ class GetFileAttachmentsDataTests(TestCase):
                     draft_inactive.pk,
                 })
 
-    def test_get_file_attachments_data_legacy(self) -> None:
+    def test_get_file_attachments_data_legacy(self):
         """Testing ReviewRequest.get_file_attachments_data with legacy
         file attachments that don't have attachment histories
         """
-        review_request = self.review_request
 
         active = self.create_file_attachment(
-            review_request,
+            self.review_request,
             with_history=False)
         inactive = self.create_file_attachment(
-            review_request,
+            self.review_request,
             active=False,
             with_history=False)
         draft_active = self.create_file_attachment(
-            review_request,
+            self.review_request,
             draft=True,
             with_history=False)
         draft_inactive = self.create_file_attachment(
-            review_request,
+            self.review_request,
             draft=True,
             active=False,
             with_history=False)
 
-        draft = review_request.get_draft()
-        assert draft is not None
+        draft = self.review_request.get_draft()
 
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 13 queries:
+        #
+        #    1. Fetch active file attachments
+        #  2-5. Create a FileAttachmentHistory for the active file attachments.
+        #       This happens because we don't automatically create a history
+        #       for test file attachments. These queries won't happen in
+        #       practice
+        #    6. Fetch inactive file attachments
+        #    7. Fetch the review request draft
+        #    8. Fetch active draft file attachments
+        # 9-12. Create a FileAttachmentHistory for the active draft file
+        #       attachments. Same as above, these queries won't happen in
+        #       practice
+        #   13. Fetch the inactive draft file attachments
         equeries = [
             {
                 'join_types': {
@@ -2012,7 +1708,7 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_file_attachments',
                 },
-                'where': Q(review_request__id=review_request.pk),
+                'where': Q(review_request__id=self.review_request.pk),
             },
             {
                 'join_types': {
@@ -2028,7 +1724,7 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachmenthistory',
                     'reviews_reviewrequest_file_attachment_histories',
                 },
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'model': FileAttachmentHistory,
@@ -2054,11 +1750,11 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_inactive_file_attachments',
                 },
-                'where': Q(inactive_review_request__id=review_request.pk),
+                'where': Q(inactive_review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'join_types': {
@@ -2087,7 +1783,7 @@ class GetFileAttachmentsDataTests(TestCase):
                     'attachments_fileattachmenthistory',
                     'reviews_reviewrequest_file_attachment_histories',
                 },
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'model': FileAttachmentHistory,
@@ -2117,7 +1813,7 @@ class GetFileAttachmentsDataTests(TestCase):
             },
         ]
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self._assert_data_equals(
                 active_ids={
                     active.pk,
@@ -2187,14 +1883,16 @@ class GetFileAttachmentStateTests(TestCase):
             create_repository=True,
             publish=True)
 
-    def test_get_file_attachment_state_published(self) -> None:
+    def test_get_file_attachment_state_published(self):
         """Testing ReviewRequest.get_file_attachment_state with a published
         file attachment
         """
-        review_request = self.review_request
+        published = self.create_file_attachment(self.review_request)
 
-        published = self.create_file_attachment(review_request)
-
+        # 2 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch the review request draft
         queries = [
             {
                 'join_types': {
@@ -2206,33 +1904,33 @@ class GetFileAttachmentStateTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_file_attachments',
                 },
-                'where': Q(review_request__id=review_request.pk),
+                'where': Q(review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
-                review_request.get_file_attachment_state(published),
+                self.review_request.get_file_attachment_state(published),
                 FileAttachmentState.PUBLISHED)
 
-    def test_get_file_attachment_state_published_while_draft(self) -> None:
+    def test_get_file_attachment_state_published_while_draft(self):
         """Testing ReviewRequest.get_file_attachment_state with a published
         file attachment and while the review request is a draft
         """
-        review_request = self.review_request
+        published = self.create_file_attachment(self.review_request)
 
-        published = self.create_file_attachment(review_request)
+        review_request_draft = \
+            self.create_review_request_draft(self.review_request)
 
-        review_request_draft = self.create_review_request_draft(review_request)
-        assert review_request_draft is not None
-
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 3 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch the review request draft
+        # 3. Fetch the active draft file attachments
         queries = [
             {
                 'join_types': {
@@ -2244,11 +1942,11 @@ class GetFileAttachmentStateTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_file_attachments',
                 },
-                'where': Q(review_request__id=review_request.pk),
+                'where': Q(review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'join_types': {
@@ -2265,28 +1963,28 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
-                review_request.get_file_attachment_state(published),
+                self.review_request.get_file_attachment_state(published),
                 FileAttachmentState.PUBLISHED)
 
-    def test_get_file_attachment_state_draft(self) -> None:
+    def test_get_file_attachment_state_draft(self):
         """Testing ReviewRequest.get_file_attachment_state with a draft
         file attachment
         """
-        review_request = self.review_request
-
         draft = self.create_file_attachment(
-            review_request,
+            self.review_request,
             caption='Original Caption',
             draft_caption='New Caption')
 
-        review_request_draft = self.create_review_request_draft(review_request)
-        assert review_request_draft is not None
+        review_request_draft = \
+            self.create_review_request_draft(self.review_request)
 
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 3 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch the review request draft
+        # 3. Fetch active draft file attachments
         queries = [
             {
                 'join_types': {
@@ -2298,11 +1996,11 @@ class GetFileAttachmentStateTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_file_attachments',
                 },
-                'where': Q(review_request__id=review_request.pk),
+                'where': Q(review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'join_types': {
@@ -2319,24 +2017,24 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
-            self.assertEqual(review_request.get_file_attachment_state(draft),
-                             FileAttachmentState.DRAFT)
+        with self.assertQueries(queries):
+            self.assertEqual(
+                self.review_request.get_file_attachment_state(draft),
+                FileAttachmentState.DRAFT)
 
-    def test_get_file_attachment_state_deleted(self) -> None:
+    def test_get_file_attachment_state_deleted(self):
         """Testing ReviewRequest.get_file_attachment_state with a deleted
         file attachment
         """
-        review_request = self.review_request
+        deleted = self.create_file_attachment(self.review_request)
 
-        deleted = self.create_file_attachment(review_request)
+        self.review_request.inactive_file_attachments.add(deleted)
+        self.review_request.file_attachments.remove(deleted)
 
-        review_request.inactive_file_attachments.add(deleted)
-        review_request.file_attachments.remove(deleted)
-
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 2 queries:
+        #
+        # 1. Fetch inactive file attachments
+        # 2. Fetch the review request draft
         queries = [
             {
                 'join_types': {
@@ -2349,35 +2047,35 @@ class GetFileAttachmentStateTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_inactive_file_attachments',
                 },
-                'where': Q(inactive_review_request__id=review_request.pk),
+                'where': Q(inactive_review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
-                review_request.get_file_attachment_state(deleted),
+                self.review_request.get_file_attachment_state(deleted),
                 FileAttachmentState.DELETED)
 
-    def test_get_file_attachment_state_deleted_with_while_draft(self) -> None:
+    def test_get_file_attachment_state_deleted_with_while_draft(self):
         """Testing ReviewRequest.get_file_attachment_state with a deleted
         file attachment and while the review request is a draft
         """
-        review_request = self.review_request
+        deleted = self.create_file_attachment(self.review_request)
 
-        deleted = self.create_file_attachment(review_request)
+        self.review_request.inactive_file_attachments.add(deleted)
+        self.review_request.file_attachments.remove(deleted)
 
-        review_request.inactive_file_attachments.add(deleted)
-        review_request.file_attachments.remove(deleted)
+        review_request_draft = \
+            self.create_review_request_draft(self.review_request)
 
-        review_request_draft = self.create_review_request_draft(review_request)
-
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 2 queries:
+        #
+        # 1. Fetch inactive file attachments
+        # 2. Fetch the review request draft
         queries = [
             {
                 'join_types': {
@@ -2390,11 +2088,11 @@ class GetFileAttachmentStateTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_inactive_file_attachments',
                 },
-                'where': Q(inactive_review_request__id=review_request.pk),
+                'where': Q(inactive_review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'join_types': {
@@ -2411,27 +2109,28 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
-                review_request.get_file_attachment_state(deleted),
+                self.review_request.get_file_attachment_state(deleted),
                 FileAttachmentState.DELETED)
 
-    def test_get_file_attachment_state_pending_deletion(self) -> None:
+    def test_get_file_attachment_state_pending_deletion(self):
         """Testing ReviewRequest.get_file_attachment_state with a file
         attachment that's pending deletion
         """
-        review_request = self.review_request
+        pending_deletion = self.create_file_attachment(self.review_request)
 
-        pending_deletion = self.create_file_attachment(review_request)
-
-        review_request_draft = self.create_review_request_draft(review_request)
+        review_request_draft = \
+            self.create_review_request_draft(self.review_request)
 
         review_request_draft.inactive_file_attachments.add(pending_deletion)
         review_request_draft.file_attachments.remove(pending_deletion)
 
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 2 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch the review request draft
+        # 3. Fetch inactive draft file attachments
         queries = [
             {
                 'join_types': {
@@ -2443,11 +2142,11 @@ class GetFileAttachmentStateTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_file_attachments',
                 },
-                'where': Q(review_request__id=review_request.pk),
+                'where': Q(review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'join_types': {
@@ -2464,31 +2163,30 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
-                review_request.get_file_attachment_state(pending_deletion),
+                self.review_request.get_file_attachment_state(
+                    pending_deletion),
                 FileAttachmentState.PENDING_DELETION)
 
-    def test_get_file_attachment_state_new(self) -> None:
+    def test_get_file_attachment_state_new(self):
         """Testing ReviewRequest.get_file_attachment_state with a new
         file attachment
         """
-        review_request = self.review_request
-
         new = self.create_file_attachment(
-            review_request,
+            self.review_request,
             draft=True)
 
-        review_request_draft = review_request.get_draft()
-        assert review_request_draft is not None
+        review_request_draft = self.review_request.get_draft()
 
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 2 queries:
+        #
+        # 1. Fetch the review request draft
+        # 2. Fetch active file attachments
         queries = [
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'join_types': {
@@ -2505,30 +2203,31 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
-                review_request.get_file_attachment_state(new),
+                self.review_request.get_file_attachment_state(
+                    new),
                 FileAttachmentState.NEW)
 
-    def test_get_file_attachment_state_new_revision(self) -> None:
+    def test_get_file_attachment_state_new_revision(self):
         """Testing ReviewRequest.get_file_attachment_state with a new
         revision of a file attachment
         """
-        review_request = self.review_request
-        published = self.create_file_attachment(review_request)
+        published = self.create_file_attachment(self.review_request)
 
         new_revision = self.create_file_attachment(
-            review_request,
+            self.review_request,
             attachment_history=published.attachment_history,
             attachment_revision=published.attachment_revision + 1,
             draft=True)
 
-        review_request_draft = review_request.get_draft()
-        assert review_request_draft is not None
+        review_request_draft = self.review_request.get_draft()
 
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 3 queries:
+        #
+        # 1. Fetch the review request draft
+        # 2. Fetch active file attachments
+        # 3. Fetch active draft file attachments
         queries = [
             {
                 'join_types': {
@@ -2540,11 +2239,11 @@ class GetFileAttachmentStateTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_file_attachments',
                 },
-                'where': Q(review_request__id=review_request.pk),
+                'where': Q(review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'join_types': {
@@ -2561,53 +2260,57 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
-                review_request.get_file_attachment_state(new_revision),
+                self.review_request.get_file_attachment_state(
+                    new_revision),
                 FileAttachmentState.NEW_REVISION)
 
         with self.assertNumQueries(0):
             self.assertEqual(
-                review_request.get_file_attachment_state(published),
+                self.review_request.get_file_attachment_state(
+                    published),
                 FileAttachmentState.PUBLISHED)
 
-    def test_get_file_attachment_state_all(self) -> None:
+    def test_get_file_attachment_state_all(self):
         """Testing ReviewRequest.get_file_attachment_state with one
         file attachment of each state on a review request
         """
-        review_request = self.review_request
-
-        published = self.create_file_attachment(review_request)
+        published = self.create_file_attachment(self.review_request)
 
         draft = self.create_file_attachment(
-            review_request,
+            self.review_request,
             caption='Original Caption',
             draft_caption='New Caption')
 
-        deleted = self.create_file_attachment(review_request)
-        review_request.inactive_file_attachments.add(deleted)
-        review_request.file_attachments.remove(deleted)
+        deleted = self.create_file_attachment(
+            self.review_request)
+        self.review_request.inactive_file_attachments.add(deleted)
+        self.review_request.file_attachments.remove(deleted)
 
         new = self.create_file_attachment(
-            review_request,
+            self.review_request,
             draft=True)
 
         new_revision = self.create_file_attachment(
-            review_request,
+            self.review_request,
             attachment_history=published.attachment_history,
             attachment_revision=published.attachment_revision + 1,
             draft=True)
 
-        review_request_draft = review_request.get_draft()
-        assert review_request_draft is not None
+        review_request_draft = self.review_request.get_draft()
 
-        pending_deletion = self.create_file_attachment(review_request)
+        pending_deletion = self.create_file_attachment(self.review_request)
         review_request_draft.inactive_file_attachments.add(pending_deletion)
         review_request_draft.file_attachments.remove(pending_deletion)
 
-        # Clear the review request's caches so we'll re-fetch the draft.
-        review_request.clear_local_caches()
-
+        # 5 queries:
+        #
+        # 1. Fetch active file attachments
+        # 2. Fetch inactive file attachments
+        # 3. Fetch the review request draft
+        # 4. Fetch active draft file attachments
+        # 5. Fetch the inactive draft file attachments
         queries = [
             {
                 'join_types': {
@@ -2619,7 +2322,7 @@ class GetFileAttachmentStateTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_file_attachments',
                 },
-                'where': Q(review_request__id=review_request.pk),
+                'where': Q(review_request__id=self.review_request.pk),
             },
             {
                 'join_types': {
@@ -2632,11 +2335,11 @@ class GetFileAttachmentStateTests(TestCase):
                     'attachments_fileattachment',
                     'reviews_reviewrequest_inactive_file_attachments',
                 },
-                'where': Q(inactive_review_request__id=review_request.pk),
+                'where': Q(inactive_review_request__id=self.review_request.pk),
             },
             {
                 'model': ReviewRequestDraft,
-                'where': Q(review_request=review_request),
+                'where': Q(review_request=self.review_request),
             },
             {
                 'join_types': {
@@ -2666,32 +2369,38 @@ class GetFileAttachmentStateTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
-                review_request.get_file_attachment_state(published),
+                self.review_request.get_file_attachment_state(
+                    published),
                 FileAttachmentState.PUBLISHED)
 
         with self.assertNumQueries(0):
             self.assertEqual(
-                review_request.get_file_attachment_state(draft),
+                self.review_request.get_file_attachment_state(
+                    draft),
                 FileAttachmentState.DRAFT)
 
         with self.assertNumQueries(0):
             self.assertEqual(
-                review_request.get_file_attachment_state(deleted),
+                self.review_request.get_file_attachment_state(
+                    deleted),
                 FileAttachmentState.DELETED)
 
         with self.assertNumQueries(0):
             self.assertEqual(
-                review_request.get_file_attachment_state(pending_deletion),
+                self.review_request.get_file_attachment_state(
+                    pending_deletion),
                 FileAttachmentState.PENDING_DELETION)
 
         with self.assertNumQueries(0):
             self.assertEqual(
-                review_request.get_file_attachment_state(new),
+                self.review_request.get_file_attachment_state(
+                    new),
                 FileAttachmentState.NEW)
 
         with self.assertNumQueries(0):
             self.assertEqual(
-                review_request.get_file_attachment_state(new_revision),
+                self.review_request.get_file_attachment_state(
+                    new_revision),
                 FileAttachmentState.NEW_REVISION)

@@ -51,6 +51,6 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self) -> None:
+        def initialize(self):
             ReviewRequestFieldsHook(self, 'info', [MilestoneField])
             ReviewRequestFieldsHook(self, 'main', [NotesField])

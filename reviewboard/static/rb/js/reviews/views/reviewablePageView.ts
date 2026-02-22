@@ -2,13 +2,8 @@
  * A page managing reviewable content for a review request.
  */
 import {
-    type DialogView,
-    type ShowConfirmDialogResult,
-    DialogActionType,
     craft,
-    paint,
     renderInto,
-    showConfirmDialog,
 } from '@beanbag/ink';
 import {
     type EventsHash,
@@ -594,17 +589,9 @@ export class ReviewablePageView<
      * Confirms that the user wants to post the review, and then posts it
      * and reloads the page.
      *
-     * Version Changed:
-     *     7.1:
-     *     This function is now asynchronous, returning a Promise.
-     *
      * Args:
      *     e (JQuery.ClickEvent, optional):
      *         The event which triggered the action, if available.
-     *
-     * Returns:
-     *     Promise<void>:
-     *     A promise for the operation.
      */
     async shipIt(e?: JQuery.ClickEvent) {
         if (e) {
@@ -612,67 +599,14 @@ export class ReviewablePageView<
             e.stopPropagation();
         }
 
-        const session = UserSession.instance;
+        if (confirm(_`Are you sure you want to post this review?`)) {
+            await this.model.markShipIt();
 
-        if (session.get('confirmShipIt')) {
-            await showConfirmDialog({
-                canSuppress: true,
-                id: `confirm-ship-it-dialog-${this.cid}`,
-                title: _`Are you sure you want to post this Ship It! review?`,
-
-                body: [
-                    _`
-                        This review will tell the author that you approve
-                        of their review request.
-                    `,
-
-                    paint<HTMLElement>`
-                        <p>
-                         <strong>${_`Tip:`} </strong>
-                         ${_`
-                             You can revoke this Ship It! or publish new
-                             reviews after this is published.
-                         `}
-                        </p>
-                   `,
-                ],
-                confirmButtonText: _`Post the review`,
-
-                onConfirm: async (
-                    result: ShowConfirmDialogResult,
-                ) => {
-                    if (result.suppressed) {
-                        session.set('confirmShipIt', false);
-                        await session.storeSettings(['confirmShipIt']);
-                    }
-
-                    await this.#postShipItReview();
-                },
-            });
-        } else {
-            await this.#postShipItReview();
+            const reviewRequest = this.model.get('reviewRequest');
+            RB.navigateTo(reviewRequest.get('reviewURL'));
         }
-    }
 
-    /**
-     * Post a Ship-It! review.
-     *
-     * After posting, this will navigate to the review request page.
-     *
-     * Version Added:
-     *     7.1
-     *
-     * Returns:
-     *     Promise<void>:
-     *     The promise for the operation.
-     */
-    async #postShipItReview() {
-        const model = this.model;
-
-        await model.markShipIt();
-
-        const reviewRequest = model.get('reviewRequest');
-        RB.navigateTo(reviewRequest.get('reviewURL'));
+        return false;
     }
 
     /**

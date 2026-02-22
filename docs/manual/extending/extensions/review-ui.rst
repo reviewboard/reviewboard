@@ -1,8 +1,7 @@
 .. _extension-review-ui-integration:
 
-==========================================
-Adding UIs for New File Types (Review UIs)
-==========================================
+Review UI Integration
+=====================
 
 Review UIs are used in reviewing file attachments of particular mimetypes. For
 example, an Image Review UI is used to render image files and allow comments to
@@ -16,26 +15,23 @@ the hook registers its list of Review UIs. Likewise, the hook unregisters these
 Review UIs when the extension is disabled.
 
 We use a simple XMLReviewUI that performs syntax highlighting as an example to
-demonstrate the key anatomical points for integrating Review UIs through
+demonstrate the key anatomical points for integrating ReviewUIs through
 extensions.
 
 
 .. _extension-subclassing-review-ui-hook:
 
-ReviewUIHook
-============
+Subclassing ReviewUIHook
+------------------------
 
-:file:`extension.py` must use a
-:py:class:`~reviewboard.extensions.hooks.ReviewUIHook` to register its list of
-Review UIs. :py:class:`~reviewboard.extensions.hooks.ReviewUIHook` expects a
-list of Review UIs as argument in addition to the extension instance.
+:file:`extension.py` must use a Review UI Hook to register its list of Review
+UIs.  This can be using :py:class:`reviewboard.extensions.hooks.ReviewUIHook`
+directly, using a subclass of it. :py:class:`ReviewUIHook` expects a list of
+Review UIs as argument in addition to the extension instance.
 
 Since you will be writing custom JavaScript and, likely, custom CSS, you will
 also need to define some :ref:`static media bundles <extension-static-files>`
-to load. There's no need to set ``apply_to`` for these. Instead you'll set
-:py:attr:`~reviewboard.reviews.ui.base.ReviewUI.js_bundle_names` and
-:py:attr:`~reviewboard.reviews.ui.base.ReviewUI.css_bundle_names` which will
-automatically load the bundles whenever the Review UI is rendered onto a page.
+to load.
 
 Example: **XMLReviewUIExtension**:
 
@@ -68,15 +64,11 @@ Example: **XMLReviewUIExtension**:
 .. _extension-review-ui-class:
 
 ReviewUI Class
-==============
+--------------
 
 Each Review UI must be defined by its own ReviewUI class that subclasses
-:py:class:`reviewboard.reviews.ui.base.ReviewUI`. Review UIs that support
-:py:class:`file attachments <reviewboard.attachments.models.FileAttachment>`
-should subclass :py:class:`reviewboard.reviews.ui.base.FileAttachmentReviewUI`
-instead.
-
-It must also define the following class variables and properties:
+:py:class:`reviewboard.reviews.ui.base.ReviewUI`. It must also
+define the following class variables and properties:
 
 *
     **name**: The name for the review UI.
@@ -84,6 +76,10 @@ It must also define the following class variables and properties:
 *
     **supported_mimetypes**: a list of mimetypes of the files that this Review
     UI will be responsible for rendering.
+
+*
+    **supports_file_attachments**: A flag indicating that the ReviewUI should
+    be used for file attachments.
 
 *
     **js_model_class**: The JavaScript model name that will store information
@@ -100,28 +96,6 @@ It must also define the following class variables and properties:
 *
     **js_bundle_names**: A list of JavaScript bundles defined by your
     extension that the page will include.
-
-It can also define the following optional class variables:
-
-*
-    **allow_inline**: A flag indicating whether the Review UI can be rendered
-    inline in diffs and other places. If set, the Review UI will be able to
-    be displayed within the diff viewer (and potentially other locations).
-
-*
-    **load_static_media_inline**: A flag indicating whether to load the
-    Review UI's static media when rendered inline.
-
-    If the extension managing the Review UI already loads its static media
-    in the diff viewer page or any other page where a Review UI might be
-    rendered, then this should be set to ``False`` to prevent duplicate
-    loading. This is useful for ensuring that state set in static media
-    gets shared among the extension instance and any review UIs on the page
-    instead of being overwritten.
-
-*
-    **supports_diffing**: A flag indicating whether the Review UI supports
-    diffing two objects.
 
 
 Example: **XMLReviewUI**:
@@ -147,7 +121,7 @@ Example: **XMLReviewUI**:
         js_view_class = 'MyVendor.XMLReviewableView'
 
         def __init__(self, review_request, obj):
-            super().__init__(review_request, obj)
+            super(XMLReviewUI, self).__init__(review_request, obj)
 
             from xmlreview.reviewui import XMLReviewUIExtension
             self.extension = XMLReviewUIExtension.instance
@@ -172,7 +146,7 @@ For example:
 .. code-block:: python
 
     def get_js_model_data(self):
-        data = super().get_js_model_data()
+        data = super(XMLReviewUI, self).get_js_model_data()
 
         data_string = ""
 
@@ -198,7 +172,7 @@ There are a number of functions you may want to override, all documented in
 
 
 ReviewUI JavaScript
-===================
+-------------------
 
 Here are the corresponding JavaScript used in the above extension.
 
@@ -211,7 +185,7 @@ Here are the corresponding JavaScript used in the above extension.
      */
     MyVendor.XMLReviewable = RB.FileAttachmentReviewable.extend({
         defaults: _.defaults({
-            xmlContent: '',
+            xmlContent: ''
         }, RB.FileAttachmentReviewable.prototype.defaults)
     });
 
@@ -229,16 +203,16 @@ Here are the corresponding JavaScript used in the above extension.
         /*
          * Renders the view.
          */
-        renderContent() {
+        renderContent: function() {
             this.$el.html(this.model.get('xmlContent'));
 
             return this;
-        },
+        }
     });
 
 
 File Attachment Thumbnails
-==========================
+--------------------------
 
 Most extensions that add Review UIs will also want to render custom thumbnails
 for the attachments on the review request page. See

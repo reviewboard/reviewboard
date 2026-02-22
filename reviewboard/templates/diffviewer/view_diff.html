@@ -6,14 +6,6 @@
 {% block title %}{{review_request_details.summary}} | {% trans "Diff Viewer" %}{% endblock %}
 
 
-{% block extrahead %}
-{{block.super}}
-{%  if interdiffset %}
-<meta name="robots" content="nofollow,noindex">
-{%  endif %}
-{% endblock extrahead %}
-
-
 {% block css %}
 {{block.super}}
 

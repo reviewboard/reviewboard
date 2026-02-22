@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from django.db.models import Q
     from django.http import HttpRequest
     from djblets.siteconfig.forms import SiteSettingsForm
-    from typelets.django.strings import StrOrPromise
+    from djblets.util.typing import StrOrPromise
 
 
 class BaseAuthBackend:

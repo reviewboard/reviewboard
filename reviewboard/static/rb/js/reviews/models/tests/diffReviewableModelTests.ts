@@ -186,32 +186,5 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             expect($.ajax).toHaveBeenCalled();
             expect(html).toEqual('abc');
         });
-
-        it('With skipStaticMedia=true', async () => {
-            const diffReviewable = new DiffReviewable({
-                file: new DiffFile({
-                    index: 4,
-                }),
-                fileDiffID: 3,
-                reviewRequest: reviewRequest,
-                revision: 2,
-            });
-
-            spyOn($, 'ajax').and.callFake(request => {
-                expect(request.type).toBe('GET');
-                expect(request.url).toBe(
-                    '/r/1/diff/2/fragment/3/?index=4&' +
-                    'skip-static-media=1&_=' +
-                    TEMPLATE_SERIAL);
-
-                request.complete({ responseText: 'abc' });
-            });
-
-            const html = await diffReviewable.getRenderedDiff({
-                skipStaticMedia: true,
-            });
-            expect($.ajax).toHaveBeenCalled();
-            expect(html).toEqual('abc');
-        });
     });
 });

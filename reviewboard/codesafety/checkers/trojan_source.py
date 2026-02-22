@@ -9,7 +9,8 @@ from __future__ import annotations
 import logging
 import unicodedata
 from itertools import chain
-from typing import Tuple, TYPE_CHECKING
+from typing import (Dict, Iterable, Iterator, List, Optional, Sequence,
+                    Set, Tuple)
 
 from django.utils.html import format_html
 from django.utils.safestring import SafeString, mark_safe
@@ -19,10 +20,6 @@ from typing_extensions import TypeAlias
 from reviewboard.codesafety.checkers.base import (BaseCodeSafetyChecker,
                                                   CodeSafetyCheckResults,
                                                   CodeSafetyContentItem)
-
-if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, Sequence
-    from typing import ClassVar
 
 
 logger = logging.getLogger(__name__)
@@ -95,7 +92,7 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
         5.0
     """
 
-    checker_id: ClassVar[str] = 'trojan_source'
+    checker_id = 'trojan_source'
     summary = _('Possible "Trojan Source" code')
 
     file_alert_html_template_name = 'codesafety/trojan_source_alert.html'
@@ -106,9 +103,9 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
         'zws': _('Zero-width space characters (CVE-2021-42574)'),
     }
 
-    _unsafe_unicode_check_map: (Mapping[_UnicodeRange, str] | None) = None
+    _unsafe_unicode_check_map: Optional[Dict[_UnicodeRange, str]] = None
 
-    _check_unicode_ranges: Mapping[str, _UnicodeRanges] = {
+    _check_unicode_ranges = {
         'bidi': BIDI_UNICODE_RANGES,
         'zws': ZERO_WIDTH_UNICODE_CHAR_RANGES,
     }
@@ -130,10 +127,10 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
 
     def check_content(
         self,
-        content_items: Sequence[CodeSafetyContentItem],
+        content_items: List[CodeSafetyContentItem],
         *,
         check_confusables: bool = True,
-        confusable_aliases_allowed: (Sequence[str] | None) = None,
+        confusable_aliases_allowed: List[str] = [],
         **kwargs,
     ) -> CodeSafetyCheckResults:
         """Check content for possible Trojan Source code.
@@ -165,9 +162,6 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
                     A list of Unicode warning IDs, local to this safety
                     checker.
         """
-        if confusable_aliases_allowed is None:
-            confusable_aliases_allowed = []
-
         num_possible_warnings = len(self.result_labels)
         warnings = set()
 
@@ -192,7 +186,7 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
             check_confusables=check_confusables,
             confusable_aliases_allowed=confusable_aliases_allowed)
 
-        for _i, _c, _codepoint, check_name in unsafe_chars_iter:
+        for i, c, codepoint, check_name in unsafe_chars_iter:
             warnings.add(check_name)
 
             if len(warnings) == num_possible_warnings:
@@ -211,7 +205,7 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
         result_ids: Sequence[str],
         *,
         check_confusables: bool = True,
-        confusable_aliases_allowed: (Sequence[str] | None) = None,
+        confusable_aliases_allowed: List[str] = [],
         **kwargs,
     ) -> SafeString:
         """Update the rendered diff HTML for a line.
@@ -241,9 +235,6 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
             django.utils.safestring.SafeString:
             The updated HTML.
         """
-        if confusable_aliases_allowed is None:
-            confusable_aliases_allowed = []
-
         result = []
         last_append_i = 0
 
@@ -252,7 +243,7 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
             check_confusables=check_confusables,
             confusable_aliases_allowed=confusable_aliases_allowed)
 
-        for i, c, codepoint, _check_name in unsafe_chars_iter:
+        for i, c, codepoint, check_name in unsafe_chars_iter:
             result.append(line_html[last_append_i:i])
 
             # If it looks like a DUC and quacs like a DUC, then it's a
@@ -269,7 +260,7 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
             result.append(format_html(
                 '<span class="rb-o-duc" data-codepoint="{codepoint}"'
                 ' data-char="&#x{codepoint};" title="{title}"></span>',
-                codepoint=f'{codepoint:X}',
+                codepoint='%X' % codepoint,
                 title=(
                     _('Unicode Character: %s')
                     % char_name
@@ -285,8 +276,8 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
         chars: Iterable[str],
         *,
         check_confusables: bool,
-        confusable_aliases_allowed: Sequence[str],
-    ) -> Iterator[tuple[int, str, int, str]]:
+        confusable_aliases_allowed: List[str],
+    ) -> Iterator[Tuple[int, str, int, str]]:
         """Iterate through a string, yielding unsafe characters.
 
         Args:
@@ -326,7 +317,7 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
         )
 
         confusables_map: ConfusablesMap = {}
-        confusables_lang_ids_allowed: set[int] = set()
+        confusables_lang_ids_allowed: Set[int] = set()
 
         if check_confusables:
             confusables_map = COMMON_CONFUSABLES_MAP
@@ -355,7 +346,7 @@ class TrojanSourceCodeSafetyChecker(BaseCodeSafetyChecker):
                         break
 
     @classmethod
-    def _get_unsafe_unicode_check_map(cls) -> Mapping[_UnicodeRange, str]:
+    def _get_unsafe_unicode_check_map(cls) -> Dict[_UnicodeRange, str]:
         """Return a range check map for matching unsafe Unicode characters.
 
         This is cached for all future instances.

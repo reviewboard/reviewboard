@@ -1,23 +1,20 @@
 """Unit tests for the Trac hosting service."""
 
-from __future__ import annotations
-
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
-from reviewboard.hostingsvcs.trac import Trac
 
 
-class TracTests(HostingServiceTestCase[Trac]):
+class TracTests(HostingServiceTestCase):
     """Unit tests for the Trac hosting service."""
 
     service_name = 'trac'
     fixtures = ['test_scmtools']
 
-    def test_service_support(self) -> None:
+    def test_service_support(self):
         """Testing Trac service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertFalse(self.service_class.supports_repositories)
 
-    def test_get_bug_tracker_field(self) -> None:
+    def test_get_bug_tracker_field(self):
         """Testing Trac.get_bug_tracker_field"""
         self.assertFalse(
             self.service_class.get_bug_tracker_requires_username())

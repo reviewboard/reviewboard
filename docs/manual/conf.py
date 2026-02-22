@@ -68,7 +68,6 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx_tabs.tabs',
     'beanbag_docutils.sphinx.ext.autodoc_utils',
-    'beanbag_docutils.sphinx.ext.collect_files',
     'beanbag_docutils.sphinx.ext.django_utils',
     'beanbag_docutils.sphinx.ext.extlinks',
     'beanbag_docutils.sphinx.ext.http_role',
@@ -378,11 +377,6 @@ webapi_docname_map = {
     'o-auth-application': 'oauth-application',
     'o-auth-token': 'oauth-token',
 }
-
-
-collect_file_patterns = [
-    'redirects.json',
-]
 
 
 def linkcode_resolve(domain, info):

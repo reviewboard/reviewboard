@@ -73,15 +73,15 @@ Example
        (and therefore not returned by the API) unless specified otherwise.
        """
 
-       def get_extra_data_state(
-           self,
-           key_path: str,
-       ) -> int | None:
-           return super().get_extra_data_state(key_path) or None
+       def get_extra_data_state(self, key_path):
+           return (
+               super(CustomAccessHook, self).get_extra_data_state(key_path) or
+               None
+           )
 
 
    class SampleExtension(Extension):
-       def initialize(self) -> None:
+       def initialize(self):
            # Imagine a review request with an extra_data like this:
            #
            # review_request.extra_data = {

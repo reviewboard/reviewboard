@@ -48,7 +48,7 @@ class BaseViewTestCase(TestCase):
         self.siteconfig.set('auth_require_sitewide_login', False)
         self.siteconfig.save()
 
-        # This is a very temporary hack to work around some assert_queries
+        # This is a very temporary hack to work around some assertQueries
         # comparisons that fail due to our improper use of a nested query.
         # It will be removed as soon as this issue is fixed.
         self._old_queryset_eq = QuerySet.__eq__

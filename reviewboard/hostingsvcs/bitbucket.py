@@ -1,11 +1,6 @@
-"""Hosting service for Bitbucket."""
-
-from __future__ import annotations
-
 import json
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING
 from urllib.error import HTTPError
 from urllib.parse import quote
 
@@ -18,24 +13,20 @@ from django.template.loader import render_to_string
 from django.urls import path
 from django.utils.translation import gettext_lazy as _, gettext
 from django.views.decorators.http import require_POST
-from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import build_server_url, get_server_url
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
-from reviewboard.hostingsvcs.base.forms import (
-    BaseHostingServiceAuthForm,
-    BaseHostingServiceRepositoryForm,
-)
-from reviewboard.hostingsvcs.base.client import HostingServiceClient
-from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             HostingServiceError,
                                             InvalidPlanError,
                                             RepositoryError)
+from reviewboard.hostingsvcs.forms import (HostingServiceAuthForm,
+                                           HostingServiceForm)
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
+from reviewboard.hostingsvcs.service import (HostingService,
+                                             HostingServiceClient)
 from reviewboard.hostingsvcs.utils.paginator import APIPaginator
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
@@ -43,14 +34,11 @@ from reviewboard.scmtools.errors import (FileNotFoundError,
                                          RepositoryNotFoundError)
 from reviewboard.site.urlresolvers import local_site_reverse
 
-if TYPE_CHECKING:
-    from django.http import HttpRequest
-
 
 logger = logging.getLogger(__name__)
 
 
-class BitbucketAuthForm(BaseHostingServiceAuthForm):
+class BitbucketAuthForm(HostingServiceAuthForm):
     """Authentication form for linking a Bitbucket account."""
 
     def clean_hosting_account_username(self):
@@ -96,7 +84,7 @@ class BitbucketAuthForm(BaseHostingServiceAuthForm):
         }
 
 
-class BitbucketPersonalForm(BaseHostingServiceRepositoryForm):
+class BitbucketPersonalForm(HostingServiceForm):
     bitbucket_repo_name = forms.CharField(
         label=_('Repository name'),
         max_length=64,
@@ -107,7 +95,7 @@ class BitbucketPersonalForm(BaseHostingServiceRepositoryForm):
                     '&lt;username&gt;/&lt;repo_name&gt;/'))
 
 
-class BitbucketOtherUserForm(BaseHostingServiceRepositoryForm):
+class BitbucketOtherUserForm(HostingServiceForm):
     bitbucket_other_user_username = forms.CharField(
         label=_('Username'),
         max_length=64,
@@ -129,7 +117,7 @@ class BitbucketOtherUserForm(BaseHostingServiceRepositoryForm):
                     '&lt;repo_name&gt;/'))
 
 
-class BitbucketTeamForm(BaseHostingServiceRepositoryForm):
+class BitbucketTeamForm(HostingServiceForm):
     bitbucket_team_name = forms.CharField(
         label=_('Team name'),
         max_length=64,
@@ -155,38 +143,32 @@ class BitbucketHookViews(object):
 
     @staticmethod
     @require_POST
-    def post_receive_hook_close_submitted(
-        request: HttpRequest,
-        local_site_name: (str | None) = None,
-        repository_id: (int | None) = None,
-        hosting_service_id: (str | None) = None,
-        hooks_uuid: (str | None) = None,
-    ) -> HttpResponse:
+    def post_receive_hook_close_submitted(request, local_site_name=None,
+                                          repository_id=None,
+                                          hosting_service_id=None,
+                                          hooks_uuid=None):
         """Close review requests as submitted automatically after a push.
 
         Args:
             request (django.http.HttpRequest):
                 The request from the Bitbucket webhook.
 
-            local_site_name (str, optional):
+            local_site_name (unicode, optional):
                 The local site name, if available.
 
             repository_id (int, optional):
                 The pk of the repository, if available.
 
-            hosting_service_id (str, optional):
+            hosting_service_id (unicode, optional):
                 The name of the hosting service.
 
-            hooks_uuid (str, optional):
+            hooks_uuid (unicode, optional):
                 The UUID of the configured webhook.
 
         Returns:
             django.http.HttpResponse:
             A response for the request.
         """
-        assert repository_id is not None
-        assert hosting_service_id is not None
-
         repository = get_repository_for_hook(
             repository_id=repository_id,
             hosting_service_id=hosting_service_id,
@@ -214,11 +196,9 @@ class BitbucketHookViews(object):
                 'repository on Review Board.')
 
         if review_request_id_to_commits:
-            close_all_review_requests(
-                review_request_id_to_commits=review_request_id_to_commits,
-                local_site_name=local_site_name,
-                repository=repository,
-                hosting_service_id=hosting_service_id)
+            close_all_review_requests(review_request_id_to_commits,
+                                      local_site_name, repository,
+                                      hosting_service_id)
 
         return HttpResponse()
 
@@ -842,7 +822,7 @@ class BitbucketClient(HostingServiceClient):
                    quote(path)))
 
 
-class Bitbucket(BaseHostingService):
+class Bitbucket(HostingService):
     """Hosting service support for Bitbucket.
 
     Bitbucket is a hosting service that supports Git and Mercurial
@@ -954,14 +934,8 @@ class Bitbucket(BaseHostingService):
 
     DEFAULT_PLAN = 'personal'
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-    def check_repository(
-        self,
-        *,
-        plan: str = DEFAULT_PLAN,
-        tool_name: (str | None) = None,
-        **kwargs,
-    ) -> None:
+    def check_repository(self, plan=DEFAULT_PLAN, tool_name=None,
+                         *args, **kwargs):
         """Check the validity of a repository configuration.
 
         This will ensure that the configuration data being provided by the
@@ -973,17 +947,16 @@ class Bitbucket(BaseHostingService):
         the repository was not found, or does not match the expected
         repository type, and return cleanly if it was found.
 
-        Version Changed:
-            7.1:
-            Made arguments keyword-only.
-
         Args:
-            plan (str, optional):
+            plan (unicode, optional):
                 The configured repository plan.
 
-            tool_name (str, optional):
+            tool_name (unicode, optional):
                 The name of the tool selected to communicate with the
                 repository.
+
+            *args (tuple, unused):
+                Unused positional arguments.
 
             **kwargs (dict, unused):
                 Additional information passed by the repository form.
@@ -1026,14 +999,7 @@ class Bitbucket(BaseHostingService):
                 gettext('The Bitbucket repository being configured does not '
                         'match the type of repository you have selected.'))
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-    def authorize(
-        self,
-        *,
-        username: str | None,
-        password: str | None,
-        **kwargs,
-    ) -> None:
+    def authorize(self, username, password, *args, **kwargs):
         """Authorize an account on Bitbucket.
 
         This will attempt to access the user session resource using the
@@ -1046,16 +1012,15 @@ class Bitbucket(BaseHostingService):
 
         If successful, the password is stored in an encrypted form.
 
-        Version Changed:
-            7.1:
-            Made arguments keyword-only.
-
         Args:
-            username (str):
+            username (unicode):
                 The username for the account.
 
-            password (str):
+            password (unicode):
                 The user's password or app password.
+
+            *args (tuple, unused):
+                Unused positional arguments.
 
             **kwargs (dict, unused):
                 Unused keyword arguments.

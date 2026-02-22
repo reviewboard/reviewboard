@@ -1,10 +1,5 @@
-"""Management hook to set up a SiteConfiguration during install/upgrade."""
-
-from __future__ import annotations
-
 from django.conf import settings
 from django.contrib.sites.models import Site
-from django.utils import timezone
 from django.utils.translation import gettext as _
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -12,7 +7,7 @@ from reviewboard import get_version_string
 from reviewboard.admin.siteconfig import settings_map, defaults
 
 
-def init_siteconfig() -> SiteConfiguration:
+def init_siteconfig():
     """Initialize the site configuration.
 
     This will create a SiteConfiguration object if one does not exist, or
@@ -26,12 +21,10 @@ def init_siteconfig() -> SiteConfiguration:
         site=Site.objects.get_current())
 
     new_version = get_version_string()
-    now = timezone.now().isoformat()
 
     if is_new:
         migrate_settings(siteconfig)
 
-        siteconfig.set('first_install_timestamp', now)
         siteconfig.version = new_version
         siteconfig.save()
     elif siteconfig.version != new_version:
@@ -43,9 +36,8 @@ def init_siteconfig() -> SiteConfiguration:
                 'old_version': siteconfig.version,
                 'new_version': new_version,
             })
-        siteconfig.set('last_upgrade_timestamp', now)
         siteconfig.version = new_version
-        siteconfig.save()
+        siteconfig.save(update_fields=('version',))
 
     return siteconfig
 

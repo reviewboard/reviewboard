@@ -91,7 +91,7 @@ export interface FileAttachmentAttrs extends BaseResourceAttrs {
      * Version Added:
      *     7.0.3
      */
-    canAccessReviewUI: boolean;
+    canAccessReviewUI: string;
 
     /** The file attachment's latest published caption. */
     publishedCaption: string;

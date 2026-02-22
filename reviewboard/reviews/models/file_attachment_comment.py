@@ -12,12 +12,9 @@ from django.utils.translation import gettext_lazy as _
 from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.reviews.managers import FileAttachmentCommentManager
 from reviewboard.reviews.models.base_comment import BaseComment
 
 if TYPE_CHECKING:
-    from typing import ClassVar
-
     from django.utils.safestring import SafeText
 
     from reviewboard.diffviewer.models import DiffSet, FileDiff
@@ -71,24 +68,21 @@ class FileAttachmentCommentRevisionInfo(TypedDict):
 class FileAttachmentComment(BaseComment):
     """A comment on a file attachment."""
 
-    anchor_prefix = 'fcomment'
-    comment_type = 'file'
+    anchor_prefix = "fcomment"
+    comment_type = "file"
 
     file_attachment = models.ForeignKey(
         FileAttachment,
         on_delete=models.CASCADE,
         verbose_name=_('file attachment'),
-        related_name='comments')
+        related_name="comments")
     diff_against_file_attachment = models.ForeignKey(
         FileAttachment,
         on_delete=models.CASCADE,
         verbose_name=_('diff against file attachment'),
-        related_name='diffed_against_comments',
+        related_name="diffed_against_comments",
         null=True,
         blank=True)
-
-    objects: ClassVar[FileAttachmentCommentManager] = \
-        FileAttachmentCommentManager()
 
     @cached_property
     def review_ui(self) -> Optional[ReviewUI]:

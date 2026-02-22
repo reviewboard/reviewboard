@@ -5,7 +5,6 @@ from __future__ import annotations
 import os
 
 import kgb
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser
 from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.db.models import Q
@@ -651,7 +650,7 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             repository = Repository.objects.create(name='test-repo',
                                                    tool=tool)
 
@@ -691,7 +690,7 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             repository = (
                 Repository.objects.filter(pk=repository.pk)
                 .only('pk', 'name')
@@ -712,7 +711,7 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertIsNone(repository.scmtool_id)
 
     def test_scmtool_class_with_unset_scmtool_id_on_new_repo(self):
@@ -746,8 +745,10 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with self.assertLogs(logger) as logs, assert_queries(queries):
-            repository = Repository.objects.create(name='test-repo', tool=tool)
+        with self.assertLogs(logger) as logs:
+            with self.assertQueries(queries):
+                repository = Repository.objects.create(name='test-repo',
+                                                       tool=tool)
 
         self.assertEqual(logs.output, [
             'ERROR:reviewboard.scmtools.signal_handlers:Attempted to upgrade '
@@ -762,9 +763,9 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
             'packages and extensions are installed.'
         )
 
-        with self.assertNumQueries(0), \
-             self.assertRaisesMessage(ImproperlyConfigured, message):
-            repository.scmtool_class
+        with self.assertNumQueries(0):
+            with self.assertRaisesMessage(ImproperlyConfigured, message):
+                repository.scmtool_class
 
         self.assertIsNone(repository.scmtool_id)
 
@@ -793,7 +794,7 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             repository = Repository.objects.create(name='test-repo',
                                                    tool=tool,
                                                    scmtool_id='xxxtool')

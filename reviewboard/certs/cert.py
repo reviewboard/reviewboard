@@ -31,8 +31,8 @@ from reviewboard.certs.errors import (CertificateNotFoundError,
                                       InvalidCertificateFormatError)
 
 if TYPE_CHECKING:
-    from typelets.django.json import (SerializableDjangoJSONDict,
-                                      SerializableDjangoJSONDictImmutable)
+    from djblets.util.typing import (SerializableJSONDict,
+                                     SerializableJSONDictImmutable)
 
 
 logger = logging.getLogger(__name__)
@@ -109,7 +109,7 @@ class CertificateFingerprints:
     @classmethod
     def from_json(
         cls,
-        data: SerializableDjangoJSONDictImmutable,
+        data: SerializableJSONDictImmutable,
     ) -> Self:
         """Return a new instance from a serialized JSON payload.
 
@@ -185,7 +185,7 @@ class CertificateFingerprints:
         self.sha1 = sha1
         self.sha256 = sha256
 
-    def to_json(self) -> SerializableDjangoJSONDictImmutable:
+    def to_json(self) -> SerializableJSONDictImmutable:
         """Serialize the fingerprints to a JSON payload.
 
         Returns:
@@ -204,7 +204,7 @@ class CertificateFingerprints:
             These keys will only be present if there are fingerprints
             available.
         """
-        data: SerializableDjangoJSONDict = {}
+        data: SerializableJSONDict = {}
 
         if self.sha1:
             data['sha1'] = self.sha1
@@ -723,7 +723,7 @@ class Certificate:
         """
         return '*' in self.hostname
 
-    def to_json(self) -> SerializableDjangoJSONDictImmutable:
+    def to_json(self) -> SerializableJSONDictImmutable:
         """Serialize the certificate to data ready to be serialized to JSON.
 
         Returns:

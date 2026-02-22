@@ -1,7 +1,3 @@
-"""WebHook dispatching logic."""
-
-from __future__ import annotations
-
 import hashlib
 import hmac
 import logging
@@ -23,7 +19,6 @@ from django.utils.text import get_text_list
 from django.utils.translation import gettext as _
 from django.template import Context, Template
 from django.template.base import Lexer, Parser
-from djblets.log import log_timed
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.encoders import (BasicAPIEncoder, JSONEncoderAdapter,
                                      ResourceAPIEncoder, XMLEncoderAdapter)
@@ -401,33 +396,32 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                               hashlib.sha1)
             headers['X-Hub-Signature'] = 'sha1=%s' % signer.hexdigest()
 
-        with log_timed(f'Dispatching webhook for event {event} to '
-                       f'{webhook_target.url}',
-                       logger=logger,
-                       request=request) as log_timer:
-            try:
-                url = webhook_target.url
-                url_parts = urlsplit(url)
+        logger.info('Dispatching webhook for event %s to %s',
+                    event, webhook_target.url,
+                    extra={'request': request})
 
-                if url_parts.username or url_parts.password:
-                    credentials, netloc = url_parts.netloc.split('@', 1)
-                    url = urlunsplit(
-                        (url_parts.scheme, netloc, url_parts.path,
-                         url_parts.query, url_parts.fragment))
-                    headers['Authorization'] = \
-                        'Basic %s' % b64encode(credentials.encode('utf-8'))
+        try:
+            url = webhook_target.url
+            url_parts = urlsplit(url)
 
-                urlopen(Request(url, body, headers))
-            except Exception as e:
-                logger.exception('[%s] Could not dispatch WebHook to %s: %s',
-                                 log_timer.trace_id, webhook_target.url, e,
-                                 extra={'request': request})
+            if url_parts.username or url_parts.password:
+                credentials, netloc = url_parts.netloc.split('@', 1)
+                url = urlunsplit(
+                    (url_parts.scheme, netloc, url_parts.path,
+                     url_parts.query, url_parts.fragment))
+                headers['Authorization'] = \
+                    'Basic %s' % b64encode(credentials.encode('utf-8'))
 
-                if isinstance(e, HTTPError):
-                    logger.info('[%s] Error response from %s: %s %s\n%s',
-                                log_timer.trace_id, webhook_target.url,
-                                e.code, e.reason, e.read(),
-                                extra={'request': request})
+            urlopen(Request(url, body, headers))
+        except Exception as e:
+            logger.exception('Could not dispatch WebHook to %s: %s',
+                             webhook_target.url, e,
+                             extra={'request': request})
+
+            if isinstance(e, HTTPError):
+                logger.info('Error response from %s: %s %s\n%s',
+                            webhook_target.url, e.code, e.reason, e.read(),
+                            extra={'request': request})
 
 
 def _serialize_review(review, request):

@@ -1,9 +1,3 @@
-"""API resource for managing repositories."""
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models import Q
 from djblets.registries.errors import ItemLookupError
@@ -35,14 +29,6 @@ from reviewboard.webapi.errors import (BAD_HOST_KEY,
                                        UNVERIFIED_HOST_KEY)
 from reviewboard.webapi.mixins import UpdateFormMixin
 from reviewboard.webapi.resources import resources
-
-if TYPE_CHECKING:
-    from typing import Any
-
-    from django.http import HttpRequest
-    from djblets.webapi.resources.base import WebAPIResourceHandlerResult
-
-    from reviewboard.site.models import LocalSite
 
 
 class RepositoryResource(UpdateFormMixin, WebAPIResource):
@@ -716,15 +702,8 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
         },
         allow_unknown=True
     )
-    def update(
-        self,
-        request: HttpRequest,
-        local_site: LocalSite | None,
-        parsed_request_fields: dict[str, Any],
-        archive_name: (bool | None) = None,
-        *args,
-        **kwargs,
-    ) -> WebAPIResourceHandlerResult:
+    def update(self, request, local_site, parsed_request_fields,
+               archive_name=None, *args, **kwargs):
         """Updates a repository.
 
         This will update the information on a repository. If the path,
@@ -744,26 +723,15 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
         if not self.has_modify_permissions(request, repository):
             return self.get_no_access_error(request)
 
-        if archive_name and len(parsed_request_fields) == 1:
-            # The only thing we're doing is archiving. We don't want to worry
-            # about saving the repository form, because if that fails for any
-            # reason (such as an inaccessible repository), we won't be able to
-            # archive.
-            repository.archive()
+        form_data = parsed_request_fields.copy()
+        form_data['tool'] = repository.tool.name
 
-            return 200, {
-                self.item_result_key: repository,
-            }
-        else:
-            form_data = parsed_request_fields.copy()
-            form_data['tool'] = repository.tool.name
-
-            return self._create_or_update(repository=repository,
-                                          form_data=form_data,
-                                          request=request,
-                                          local_site=local_site,
-                                          archive=archive_name,
-                                          **kwargs)
+        return self._create_or_update(repository=repository,
+                                      form_data=form_data,
+                                      request=request,
+                                      local_site=local_site,
+                                      archive=archive_name,
+                                      **kwargs)
 
     @webapi_check_local_site
     @webapi_login_required
@@ -799,15 +767,8 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
 
         return 204, {}
 
-    def _create_or_update(
-        self,
-        form_data: dict[str, Any],
-        request: HttpRequest,
-        local_site: LocalSite | None,
-        repository: (Repository | None) = None,
-        archive: (bool | None) = False,
-        **kwargs,
-    ) -> WebAPIResourceHandlerResult:
+    def _create_or_update(self, form_data, request, local_site,
+                          repository=None, archive=False, **kwargs):
         """Create or update a repository.
 
         Args:
@@ -832,7 +793,7 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
                 the API resource.
 
         Returns:
-            djblets.webapi.resources.base.WebAPIResourceHandlerResult:
+            tuple or django.http.HttpResponse:
             The response to send back to the client.
         """
         # Try to determine what we need to set bug_tracker_type to, based on
@@ -906,13 +867,7 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
         except ImportExtraDataError as e:
             return e.error_payload
 
-    def save_form(
-        self,
-        form: RepositoryForm,
-        archive: (bool | None) = None,
-        extra_fields: (dict[str, Any] | None) = None,
-        **kwargs,
-    ) -> Repository:
+    def save_form(self, form, archive=None, extra_fields=None, **kwargs):
         """Save the form.
 
         This will save the repository instance and then optionally archive
@@ -937,7 +892,8 @@ class RepositoryResource(UpdateFormMixin, WebAPIResource):
             reviewboard.scmtools.models.Repository:
             The saved repository.
         """
-        repository = super().save_form(form=form, **kwargs)
+        repository = super(RepositoryResource, self).save_form(form=form,
+                                                               **kwargs)
 
         # Any errors from this will be caught in _create_or_update.
         if extra_fields:

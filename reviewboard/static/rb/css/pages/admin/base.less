@@ -13,8 +13,15 @@
 }
 
 
-.admin-page {
+.admin {
   --ink-p-header-bg:
     var(--if-light, var(--ink-p-yellow-300))
-    var(--if-dark, var(--ink-p-cool-grey-300));
+    var(--if-dark, var(--ink-p-mustard-200));
+  --ink-p-header-fg: var(--ink-p-fg);
+
+  .page-colors(@topbar-bg: #rb-ns-ui.page-colors.admin[@topbar-bg]);
+
+  h1.title {
+    text-transform: uppercase;
+  }
 }

@@ -1,7 +1,7 @@
-from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+from reviewboard.hostingsvcs.service import HostingService
 
 
-class FakeHostingService(BaseHostingService):
+class FakeHostingService(HostingService):
     """A hosting service that is not provided by Review Board.
 
     Fake hosting services are intended to be used to advertise for Beanbag,

@@ -19,7 +19,7 @@ from reviewboard.scmtools.testing.queries import \
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
-    from django_assert_queries.query_comparator import ExpectedQueries
+    from djblets.db.query_comparator import ExpectedQueries
     from typing_extensions import NotRequired, TypedDict, Unpack
 
     from reviewboard.site.models import AnyOrAllLocalSites

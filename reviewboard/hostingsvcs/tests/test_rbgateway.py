@@ -1,10 +1,7 @@
 """Unit tests for the ReviewBoardGateway hosting service."""
 
-from __future__ import annotations
-
 import hashlib
 import hmac
-from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.test.client import RequestFactory
@@ -12,7 +9,6 @@ from django.utils.safestring import SafeText
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.hostingsvcs.hook_utils import logger
-from reviewboard.hostingsvcs.rbgateway import ReviewBoardGateway
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.core import Branch, Commit
@@ -22,14 +18,8 @@ from reviewboard.scmtools.errors import RepositoryNotFoundError
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
-if TYPE_CHECKING:
-    from django.test.client import _MonkeyPatchedWSGIResponse
 
-    from reviewboard.hostingsvcs.base.hosting_service import \
-        HostingServiceCredentials
-
-
-class ReviewBoardGatewayTestCase(HostingServiceTestCase[ReviewBoardGateway]):
+class ReviewBoardGatewayTestCase(HostingServiceTestCase):
     """Base test case for the ReviewBoardGateway hosting service."""
 
     service_name = 'rbgateway'
@@ -39,24 +29,21 @@ class ReviewBoardGatewayTestCase(HostingServiceTestCase[ReviewBoardGateway]):
         'private_token': encrypt_password('abc123'),
     }
 
+    default_http_credentials = {
+        'headers': {
+            'PRIVATE-TOKEN': 'abc123',
+        },
+    }
+
     default_repository_extra_data = {
         'rbgateway_repo_name': 'myrepo',
     }
-
-    @property
-    def default_http_credentials(self) -> HostingServiceCredentials:
-        """The default credentials sent in HTTP requests."""
-        return {
-            'headers': {
-                'PRIVATE-TOKEN': 'abc123',
-            },
-        }
 
 
 class ReviewBoardGatewayClientTests(ReviewBoardGatewayTestCase):
     """Unit tests for ReviewBoardGatewayClient."""
 
-    def test_request_includes_private_token(self) -> None:
+    def test_request_includes_private_token(self):
         """Testing ReviewBoardGatewayClient API requests include PRIVATE-TOKEN
         header
         """
@@ -72,14 +59,14 @@ class ReviewBoardGatewayClientTests(ReviewBoardGatewayTestCase):
 class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
     """Unit tests for the ReviewBoardGateway hosting service."""
 
-    def test_service_support(self) -> None:
+    def test_service_support(self):
         """Testing ReviewBoardGateway service support capabilities"""
         self.assertTrue(self.service_class.supports_repositories)
         self.assertTrue(self.service_class.supports_post_commit)
         self.assertFalse(self.service_class.supports_bug_trackers)
         self.assertFalse(self.service_class.supports_ssh_key_association)
 
-    def test_repo_field_values(self) -> None:
+    def test_repo_field_values(self):
         """Testing ReviewBoardGateway.get_repository_fields for Git"""
         self.assertEqual(
             self.get_repository_fields(
@@ -93,7 +80,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
                 'path': 'https://example.com/repos/myrepo/path',
             })
 
-    def test_get_repository_hook_instructions(self) -> None:
+    def test_get_repository_hook_instructions(self):
         """Testing ReviewBoardGateway.get_repository_hook_instructions"""
         account = self.create_hosting_account()
         repository = self.create_repository(hosting_account=account)
@@ -116,7 +103,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
             content)
         self.assertIn('Review Board supports closing', content)
 
-    def test_authorize(self) -> None:
+    def test_authorize(self):
         """Testing ReviewBoardGateway.authorize"""
         hosting_account = self.create_hosting_account(data={})
         self.assertFalse(hosting_account.is_authorized)
@@ -146,7 +133,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
                 'Content-Length': '0',
             })
 
-    def test_check_repository(self) -> None:
+    def test_check_repository(self):
         """Testing ReviewBoardGateway.check_repository"""
         paths = {
             '/repos/myrepo/path': {
@@ -163,7 +150,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
             url='https://example.com/repos/myrepo/path',
             headers=None)
 
-    def test_check_repository_with_invalid_repo(self) -> None:
+    def test_check_repository_with_invalid_repo(self):
         """Testing ReviewBoardGateway.check_repository with invalid
         repository
         """
@@ -177,7 +164,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
             url='https://example.com/repos/invalid/path',
             headers=None)
 
-    def test_get_branches_git(self) -> None:
+    def test_get_branches_git(self):
         """Testing ReviewBoardGateway.get_branches for a Git repository"""
         payload = self.dump_json([
             {
@@ -210,7 +197,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
                        commit='83904e6acb60e7ec0dcaae6c09a579ab44d0cf38'),
             ])
 
-    def test_get_branches_hg(self) -> None:
+    def test_get_branches_hg(self):
         """Testing ReviewBoardGateway.get_branches for an Hg repository"""
         payload = self.dump_json([
             {
@@ -243,7 +230,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
                        commit='0731875ed7a14bdd53503b27b30a08a0452068cf'),
             ])
 
-    def test_get_commits(self) -> None:
+    def test_get_commits(self):
         """Testing ReviewBoardGateway.get_commits"""
         payload = self.dump_json([
             {
@@ -305,7 +292,7 @@ class ReviewBoardGatewayTests(ReviewBoardGatewayTestCase):
         for commit in commits:
             self.assertIsNone(commit.diff)
 
-    def test_get_change(self) -> None:
+    def test_get_change(self):
         """Testing ReviewBoardGateway.get_change"""
         diff = (
             'diff --git a/test b/test\n'
@@ -356,20 +343,20 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
 
     fixtures = ['test_users', 'test_scmtools']
 
-    def test_close_submitted_hook_git(self) -> None:
+    def test_close_submitted_hook_git(self):
         """Testing the ReviewBoardGateway close-submitted hook with a Git
         repository
         """
         self._test_post_commit_hook(tool_name='Git')
 
-    def test_close_submiteed_hook_git_unpublished(self) -> None:
+    def test_close_submiteed_hook_git_unpublished(self):
         """Testing the ReviewBoardGateway close-submitted hook with an
         unpublished review request in a Git repository
         """
         self._test_post_commit_hook(tool_name='Git', publish=False)
 
     @add_fixtures(['test_site'])
-    def test_close_submiteed_hook_git_local_site_unpublished(self) -> None:
+    def test_close_submiteed_hook_git_local_site_unpublished(self):
         """Testing the ReviewBoardGateway close-submitted hook with an
         unpublished review request in a Git repository on a Local Site
         """
@@ -378,7 +365,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             local_site=LocalSite.objects.get(name=self.local_site_name),
             publish=False)
 
-    def test_close_submitted_hook_git_tag_target(self) -> None:
+    def test_close_submitted_hook_git_tag_target(self):
         """Testing the ReviewBoardGateway close-submitted hook with an
         Git repository and a tag target
         """
@@ -387,7 +374,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             expected_close_msg='Pushed to release-1.0.7 (bbbbbbb)',
             target_tags=['release-1.0.7', 'some-tag'])
 
-    def test_close_submitted_hook_git_no_target(self) -> None:
+    def test_close_submitted_hook_git_no_target(self):
         """Testing the ReviewBoardGateway close-submitted hook with an
         Git repository and no target information
         """
@@ -396,14 +383,14 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             expected_close_msg='Pushed to bbbbbbb',
             target_branch=None)
 
-    def test_close_submitted_hook_hg(self) -> None:
+    def test_close_submitted_hook_hg(self):
         """Testing the ReviewBoardGateway close-submitted hook with an
         Mercurial repository
         """
         self._test_post_commit_hook(tool_name='Mercurial')
 
     @add_fixtures(['test_site'])
-    def test_close_submitted_hook_hg_local_site(self) -> None:
+    def test_close_submitted_hook_hg_local_site(self):
         """Testing the ReviewBoardGateway close-submitted hook with an
         Mercurial repository on a Local Site
         """
@@ -411,14 +398,14 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             tool_name='Mercurial',
             local_site=LocalSite.objects.get(name=self.local_site_name))
 
-    def test_close_submitted_hook_hg_unpublished(self) -> None:
+    def test_close_submitted_hook_hg_unpublished(self):
         """Testing the ReviewBoardGateway close-submitted hook with an
         unpublished review request in a Mercurial repository
         """
         self._test_post_commit_hook(tool_name='Mercurial', publish=False)
 
     @add_fixtures(['test_site'])
-    def test_close_submitted_hook_hg_local_site_unpublished(self) -> None:
+    def test_close_submitted_hook_hg_local_site_unpublished(self):
         """Testing the ReviewBoardGateway close-submitted hook with an
         unpublished review request in a Mercurial repository on a Local Site
         """
@@ -427,7 +414,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             local_site=LocalSite.objects.get(name=self.local_site_name),
             publish=False)
 
-    def test_close_submitted_hook_hg_bookmark_target(self) -> None:
+    def test_close_submitted_hook_hg_bookmark_target(self):
         """Testing the ReviewBoardGateway close-submitted hook with an
         Mercurial repository and a bookmark target
         """
@@ -436,7 +423,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             expected_close_msg='Pushed to dev-work (bbbbbbb)',
             target_bookmarks=['dev-work'])
 
-    def test_close_submitted_hook_hg_tag_target(self) -> None:
+    def test_close_submitted_hook_hg_tag_target(self):
         """Testing the ReviewBoardGateway close-submitted hook with an
         Mercurial repository and a tag target
         """
@@ -446,7 +433,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             target_branch='default',
             target_tags=['@', 'tip'])
 
-    def test_close_submitted_hook_hg_no_target(self) -> None:
+    def test_close_submitted_hook_hg_no_target(self):
         """Testing the ReviewBoardGateway close-submitted hook with an
         Mercurial repository and no target information
         """
@@ -455,7 +442,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             expected_close_msg='Pushed to bbbbbbb',
             target_branch=None)
 
-    def test_close_submitted_hook_invalid_signature(self) -> None:
+    def test_close_submitted_hook_invalid_signature(self):
         """Testing the ReviewBoardGateway close-submitted hook with an invalid
         signature
         """
@@ -490,7 +477,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
         self.assertEqual(rsp.status_code, 400)
         self.assertEqual(rsp.content, b'Bad signature.')
 
-    def test_close_submitted_hook_malformed_payload(self) -> None:
+    def test_close_submitted_hook_malformed_payload(self):
         """Testing the ReviewBoardGateway close-submitted hook with a malformed
         signature
         """
@@ -522,7 +509,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
         self.assertEqual(rsp.status_code, 400)
         self.assertEqual(rsp.content, b'Invalid payload format.')
 
-    def test_close_submitted_hook_incomplete_payload(self) -> None:
+    def test_close_submitted_hook_incomplete_payload(self):
         account = self.create_hosting_account()
         repository = self.create_repository(tool_name='Git',
                                             hosting_account=account)
@@ -553,7 +540,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
         self.assertEqual(rsp.status_code, 400)
         self.assertEqual(rsp.content, b'Invalid payload; expected "commits".')
 
-    def test_close_submitted_hook_invalid_event(self) -> None:
+    def test_close_submitted_hook_invalid_event(self):
         """Testing the ReviewBoardGateway close-submitted hook endpoint with an
         invalid event
         """
@@ -589,7 +576,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
         self.assertEqual(rsp.content,
                          b'Only "ping" and "push" events are supported.')
 
-    def test_close_submitted_hook_with_invalid_review_request(self) -> None:
+    def test_close_submitted_hook_with_invalid_review_request(self):
         """Testing the ReviewBoardGateway close-submitted hook endpoint with an
         invalid review request
         """
@@ -626,7 +613,7 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             'close_all_review_requests: Review request #%s does not exist.',
             9999))
 
-    def test_ping_event(self) -> None:
+    def test_ping_event(self):
         """Testing the ReviewBoardGateway close submitted hook endpoint with
         event=ping
         """
@@ -661,34 +648,23 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
         self.assertEqual(rsp.status_code, 200)
         self.assertEqual(rsp.content, b'')
 
-    def _test_post_commit_hook(
-        self,
-        tool_name: str,
-        local_site: (LocalSite | None) = None,
-        publish: bool = True,
-        expected_close_msg: str = 'Pushed to master (bbbbbbb)',
-        **kwargs,
-    ) -> None:
+    def _test_post_commit_hook(self, tool_name, local_site=None, publish=True,
+                               expected_close_msg='Pushed to master (bbbbbbb)',
+                               **kwargs):
         """Testing posting to a commit hook.
 
         This will simulate pushing a commit and posting the resulting webhook
         payload from RB Gateway to the handler for the hook.
 
         Args:
-            tool_name (str):
+            tool_name (unicode):
                 The name of the SCM tool to use.
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site owning the review request.
 
-            publish (bool, optional):
+            publish (bool):
                 Whether or not to use a published review request.
-
-            expected_close_msg (str, optional):
-                The expected message for the close operation.
-
-            **kwargs (dict):
-                Additional keyword arguments to pass to the commit hook.
         """
         account = self.create_hosting_account(local_site=local_site)
         repository = self.create_repository(tool_name=tool_name,
@@ -715,7 +691,6 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
             repository_name=repository.name,
             secret=repository.get_or_create_hooks_uuid(),
             **kwargs)
-        assert response is not None
         self.assertEqual(response.status_code, 200)
 
         review_request = ReviewRequest.objects.get(pk=review_request.pk)
@@ -726,43 +701,36 @@ class CloseSubmittedHookTests(ReviewBoardGatewayTestCase):
         changedesc = review_request.changedescs.get()
         self.assertEqual(changedesc.text, expected_close_msg)
 
-    def _post_commit_hook_payload(
-        self,
-        post_url: str,
-        repository_name: str,
-        review_request_url: str,
-        secret: str,
-        event: str = 'push',
-        target_branch: (str | None) = 'master',
-        target_bookmarks: (str | None) = None,
-        target_tags: (str | None) = None,
-    ) -> _MonkeyPatchedWSGIResponse:
+    def _post_commit_hook_payload(self, post_url, repository_name,
+                                  review_request_url, secret,
+                                  event='push', target_branch='master',
+                                  target_bookmarks=None, target_tags=None):
         """Post a payload for a hook for testing.
 
         Args:
-            post_url (str):
+            post_url (unicode):
                 The URL to post to.
 
-            repository_name (str):
+            repository_name (unicode):
                 The name of the repository.
 
-            review_request_url (str):
+            review_request_url (unicode):
                 The URL of the review request being represented in the
                 payload.
 
-            secret (str):
+            secret (unicode):
                 The HMAC secret for the message.
 
-            event (str, optional):
+            event (unicode, optional):
                 The webhook event.
 
-            target_branch (str, optional):
+            target_branch (unicode, optional):
                 The target branch to include in the payload.
 
-            target_bookmarks (str, optional):
+            target_bookmarks (unicode, optional):
                 The target Mercurial bookmarks to include in the payload.
 
-            target_tags (str, optional):
+            target_tags (unicode, optional):
                 The target tags to include in the payload.
 
         Results:

@@ -1,8 +1,5 @@
 """Unit tests for reviewboard.accounts.models.Profile."""
 
-from __future__ import annotations
-
-from django_assert_queries.testing import assert_queries
 from django.core.cache import cache
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Count, Q, Value
@@ -149,7 +146,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             profile.star_review_group(group2)
 
         self.assertEqual(list(profile.starred_groups.order_by('pk')),
@@ -183,7 +180,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -216,7 +213,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 1)
 
         with self.assertNumQueries(0):
@@ -244,7 +241,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 0)
@@ -259,7 +256,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -272,7 +269,7 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the global site.
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 2)
 
         with self.assertNumQueries(0):
@@ -316,7 +313,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -349,7 +346,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 1)
@@ -380,7 +377,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 0)
 
         with self.assertNumQueries(0):
@@ -394,7 +391,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -407,7 +404,7 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the LocalSite.
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 2)
@@ -447,7 +444,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             profile.unstar_review_group(group)
 
         self.assertFalse(profile.starred_groups.exists())
@@ -483,7 +480,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -516,7 +513,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 2)
 
         with self.assertNumQueries(0):
@@ -543,7 +540,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 0)
@@ -559,7 +556,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -572,7 +569,7 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the global site.
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 1)
 
         with self.assertNumQueries(0):
@@ -619,7 +616,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -652,7 +649,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 2)
@@ -683,7 +680,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 0)
 
         with self.assertNumQueries(0):
@@ -695,7 +692,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -708,7 +705,7 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the LocalSite.
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 1)
@@ -744,7 +741,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             profile.star_review_request(review_request2)
 
         self.assertEqual(list(profile.starred_review_requests.order_by('pk')),
@@ -772,7 +769,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             profile.star_review_request(review_request2)
 
         self.assertEqual(list(profile.starred_review_requests.order_by('pk')),
@@ -815,7 +812,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             profile.star_review_request(review_request2)
 
         self.assertEqual(list(profile.starred_review_requests.order_by('pk')),
@@ -859,7 +856,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             profile.star_review_request(review_request2)
 
         self.assertEqual(list(profile.starred_review_requests.order_by('pk')),
@@ -894,7 +891,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -927,7 +924,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 1)
 
         with self.assertNumQueries(0):
@@ -954,7 +951,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -970,7 +967,7 @@ class ProfileTests(TestCase):
         profile.star_review_request(self.create_review_request(publish=True))
 
         # Fetch the count for cross-sites.
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -983,7 +980,7 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the global site.
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 2)
 
         with self.assertNumQueries(0):
@@ -1027,7 +1024,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -1060,7 +1057,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -1093,7 +1090,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 0)
 
         with self.assertNumQueries(0):
@@ -1107,7 +1104,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -1120,7 +1117,7 @@ class ProfileTests(TestCase):
                 2)
 
         # Fetch the count for the LocalSite.
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -1164,7 +1161,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             profile.unstar_review_request(review_request)
 
         self.assertFalse(profile.starred_review_requests.exists())
@@ -1196,7 +1193,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             profile.unstar_review_request(review_request)
 
         self.assertFalse(profile.starred_review_requests.exists())
@@ -1243,7 +1240,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             profile.unstar_review_request(review_request)
 
         self.assertFalse(profile.starred_review_requests.exists())
@@ -1293,7 +1290,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             profile.unstar_review_request(review_request)
 
         self.assertFalse(profile.starred_review_requests.exists())
@@ -1330,7 +1327,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -1363,7 +1360,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 2)
 
         with self.assertNumQueries(0):
@@ -1390,7 +1387,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -1406,7 +1403,7 @@ class ProfileTests(TestCase):
         profile.unstar_review_request(review_request2)
 
         # Fetch the count for cross-sites.
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -1419,7 +1416,7 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the global site.
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 1)
 
         with self.assertNumQueries(0):
@@ -1467,7 +1464,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -1500,7 +1497,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -1533,7 +1530,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(global_site_queries):
+        with self.assertQueries(global_site_queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 0)
 
         with self.assertNumQueries(0):
@@ -1545,7 +1542,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # Fetch the count for cross-sites.
-        with assert_queries(cross_site_queries):
+        with self.assertQueries(cross_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -1558,7 +1555,7 @@ class ProfileTests(TestCase):
                 1)
 
         # Fetch the count for the LocalSite.
-        with assert_queries(local_site_queries):
+        with self.assertQueries(local_site_queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -1596,7 +1593,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 0)
 
         # A second call should hit the cache.
@@ -1611,7 +1608,7 @@ class ProfileTests(TestCase):
         self.assertFalse(LocalSite.objects.has_local_sites())
 
         # This should now be 2.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 2)
 
         # A second call should hit the cache.
@@ -1651,7 +1648,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 0)
 
         # A second call should hit the cache.
@@ -1668,7 +1665,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be 2.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_groups_count(), 2)
 
         # A second call should hit the cache.
@@ -1708,7 +1705,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 0)
@@ -1730,7 +1727,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be 1.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(local_site=local_site),
                 1)
@@ -1762,7 +1759,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -1784,7 +1781,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be 1.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_groups_count(
                     local_site=LocalSite.ALL),
@@ -1819,7 +1816,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 0)
 
         # A second call should hit the cache.
@@ -1835,7 +1832,7 @@ class ProfileTests(TestCase):
         self.assertFalse(LocalSite.objects.has_local_sites())
 
         # This should now be 2.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 2)
 
         # A second call should hit the cache.
@@ -1875,7 +1872,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 0)
 
         # A second call should hit the cache.
@@ -1892,7 +1889,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be 2.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(profile.get_starred_review_requests_count(), 2)
 
         # A second call should hit the cache.
@@ -1933,7 +1930,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -1956,7 +1953,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be 1.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=local_site),
@@ -1990,7 +1987,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -2011,7 +2008,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be 1.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 profile.get_starred_review_requests_count(
                     local_site=LocalSite.ALL),
@@ -2046,7 +2043,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(profile.has_starred_review_groups())
 
         # A second call should hit the cache.
@@ -2062,7 +2059,7 @@ class ProfileTests(TestCase):
         self.assertFalse(LocalSite.objects.has_local_sites())
 
         # This should now be True.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.has_starred_review_groups())
 
         # A second call should hit the cache.
@@ -2102,7 +2099,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(profile.has_starred_review_groups())
 
         # A second call should hit the cache.
@@ -2120,7 +2117,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be True.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.has_starred_review_groups())
 
         # A second call should hit the cache.
@@ -2160,7 +2157,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(
                 profile.has_starred_review_groups(local_site=local_site))
 
@@ -2180,7 +2177,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be True.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(
                 profile.has_starred_review_groups(local_site=local_site))
 
@@ -2210,7 +2207,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(
                 profile.has_starred_review_groups(local_site=LocalSite.ALL))
 
@@ -2228,7 +2225,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be True.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(
                 profile.has_starred_review_groups(local_site=LocalSite.ALL))
 
@@ -2259,7 +2256,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(profile.has_starred_review_requests())
 
         # A second call should hit the cache.
@@ -2275,7 +2272,7 @@ class ProfileTests(TestCase):
         self.assertFalse(LocalSite.objects.has_local_sites())
 
         # This should now be True.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.has_starred_review_requests())
 
         # A second call should hit the cache.
@@ -2315,7 +2312,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(profile.has_starred_review_requests())
 
         # A second call should hit the cache.
@@ -2332,7 +2329,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be True.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.has_starred_review_requests())
 
         # A second call should hit the cache.
@@ -2372,7 +2369,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(
                 profile.has_starred_review_requests(local_site=local_site))
 
@@ -2391,7 +2388,7 @@ class ProfileTests(TestCase):
         self.assertTrue(LocalSite.objects.has_local_sites())
 
         # This should now be True.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(
                 profile.has_starred_review_requests(local_site=local_site))
 
@@ -2421,7 +2418,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(
                 profile.has_starred_review_requests(local_site=LocalSite.ALL))
 
@@ -2438,7 +2435,7 @@ class ProfileTests(TestCase):
         cache.clear()
 
         # This should now be True.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(
                 profile.has_starred_review_requests(local_site=LocalSite.ALL))
 
@@ -2468,7 +2465,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(profile.is_review_request_starred(review_request))
 
         # A second call should hit the cache.
@@ -2502,7 +2499,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_request_starred(review_request))
 
         # A second call will still perform the starred_review_requests lookup.
@@ -2518,7 +2515,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_request_starred(review_request))
 
     @add_fixtures(['test_site'])
@@ -2553,7 +2550,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(profile.is_review_request_starred(review_request))
 
         # A second call should hit the cache.
@@ -2595,7 +2592,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_request_starred(review_request))
 
         # A second call will still perform the starred_review_requests lookup.
@@ -2611,7 +2608,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_request_starred(review_request))
 
     def test_is_review_group_starred(self):
@@ -2635,7 +2632,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(profile.is_review_group_starred(review_group))
 
         # A second call should hit the cache.
@@ -2669,7 +2666,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_group_starred(review_group))
 
         # A second call will still perform the starred_groups lookup.
@@ -2685,7 +2682,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_group_starred(review_group))
 
     @add_fixtures(['test_site'])
@@ -2719,7 +2716,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(profile.is_review_group_starred(review_group))
 
         # A second call should hit the cache.
@@ -2761,7 +2758,7 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_group_starred(review_group))
 
         # A second call will still perform the starred_groups lookup.
@@ -2777,5 +2774,5 @@ class ProfileTests(TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(profile.is_review_group_starred(review_group))

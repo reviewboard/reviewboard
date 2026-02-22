@@ -1,10 +1,7 @@
 """Unit tests for the GitHub hosting service."""
 
-from __future__ import annotations
-
 import hashlib
 import hmac
-from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -15,7 +12,6 @@ from djblets.testing.decorators import add_fixtures
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.github import GitHub
 from reviewboard.hostingsvcs.hook_utils import logger
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
@@ -26,16 +22,8 @@ from reviewboard.scmtools.errors import SCMError
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
-if TYPE_CHECKING:
-    from collections.abc import Mapping
-    from typing import Any
 
-    from django.test.client import _MonkeyPatchedWSGIResponse
-
-    from reviewboard.hostingsvcs.testing.testcases import HttpTestPath
-
-
-class GitHubTestCase(HostingServiceTestCase[GitHub]):
+class GitHubTestCase(HostingServiceTestCase):
     """Base class for GitHub test suites."""
 
     service_name = 'github'
@@ -53,13 +41,13 @@ class GitHubTestCase(HostingServiceTestCase[GitHub]):
 class GitHubTests(GitHubTestCase):
     """Unit tests for the GitHub hosting service."""
 
-    def test_service_support(self) -> None:
+    def test_service_support(self):
         """Testing GitHub service support capabilities"""
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
         self.assertFalse(self.service_class.supports_ssh_key_association)
 
-    def test_get_repository_fields_with_public_plan(self) -> None:
+    def test_get_repository_fields_with_public_plan(self):
         """Testing GitHub.get_repository_fields with the public plan"""
         self.assertEqual(
             self.get_repository_fields(
@@ -74,7 +62,7 @@ class GitHubTests(GitHubTestCase):
                 'mirror_path': 'git@github.com:myuser/myrepo.git',
             })
 
-    def test_get_repository_fields_with_public_org_plan(self) -> None:
+    def test_get_repository_fields_with_public_org_plan(self):
         """Testing GitHub.get_repository_fields with the public-org plan"""
         self.assertEqual(
             self.get_repository_fields(
@@ -90,7 +78,7 @@ class GitHubTests(GitHubTestCase):
                 'mirror_path': 'git@github.com:myorg/myrepo.git',
             })
 
-    def test_get_repository_fields_with_private_plan(self) -> None:
+    def test_get_repository_fields_with_private_plan(self):
         """Testing GitHub.get_repository_fields with the private plan"""
         self.assertEqual(
             self.get_repository_fields(
@@ -105,7 +93,7 @@ class GitHubTests(GitHubTestCase):
                 'mirror_path': '',
             })
 
-    def test_get_repository_fields_with_private_org_plan(self) -> None:
+    def test_get_repository_fields_with_private_org_plan(self):
         """Testing GitHub.get_repository_fields with the private-org plan"""
         self.assertEqual(
             self.get_repository_fields(
@@ -121,14 +109,14 @@ class GitHubTests(GitHubTestCase):
                 'mirror_path': '',
             })
 
-    def test_get_repo_api_url_with_public_plan(self) -> None:
+    def test_get_repo_api_url_with_public_plan(self):
         """Testing GitHub._get_repo_api_url with the public plan"""
         url = self._get_repo_api_url('public', {
             'github_public_repo_name': 'testrepo',
         })
         self.assertEqual(url, 'https://api.github.com/repos/myuser/testrepo')
 
-    def test_get_repo_api_url_with_public_org_plan(self) -> None:
+    def test_get_repo_api_url_with_public_org_plan(self):
         """Testing GitHub._get_repo_api_url with the public-org plan"""
         url = self._get_repo_api_url('public-org', {
             'github_public_org_name': 'myorg',
@@ -136,14 +124,14 @@ class GitHubTests(GitHubTestCase):
         })
         self.assertEqual(url, 'https://api.github.com/repos/myorg/testrepo')
 
-    def test_get_repo_api_url_with_private_plan(self) -> None:
+    def test_get_repo_api_url_with_private_plan(self):
         """Testing GitHub._get_repo_api_url with the private plan"""
         url = self._get_repo_api_url('private', {
             'github_private_repo_name': 'testrepo',
         })
         self.assertEqual(url, 'https://api.github.com/repos/myuser/testrepo')
 
-    def test_get_repo_api_url_with_private_org_plan(self) -> None:
+    def test_get_repo_api_url_with_private_org_plan(self):
         """Testing GitHub._get_repo_api_url with the private-org plan"""
         url = self._get_repo_api_url('private-org', {
             'github_private_org_name': 'myorg',
@@ -151,7 +139,7 @@ class GitHubTests(GitHubTestCase):
         })
         self.assertEqual(url, 'https://api.github.com/repos/myorg/testrepo')
 
-    def test_get_bug_tracker_field_with_public_plan(self) -> None:
+    def test_get_bug_tracker_field_with_public_plan(self):
         """Testing GitHub.get_bug_tracker_field with the public plan"""
         self.assertTrue(
             self.service_class.get_bug_tracker_requires_username('public'))
@@ -162,7 +150,7 @@ class GitHubTests(GitHubTestCase):
             }),
             'http://github.com/myuser/myrepo/issues#issue/%s')
 
-    def test_get_bug_tracker_field_with_public_org_plan(self) -> None:
+    def test_get_bug_tracker_field_with_public_org_plan(self):
         """Testing GitHub.get_bug_tracker_field with the public-org plan"""
         self.assertFalse(
             self.service_class.get_bug_tracker_requires_username('public-org'))
@@ -173,7 +161,7 @@ class GitHubTests(GitHubTestCase):
             }),
             'http://github.com/myorg/myrepo/issues#issue/%s')
 
-    def test_get_bug_tracker_field_with_private_plan(self) -> None:
+    def test_get_bug_tracker_field_with_private_plan(self):
         """Testing GitHub.get_bug_tracker_field with the private plan"""
         self.assertTrue(
             self.service_class.get_bug_tracker_requires_username('private'))
@@ -184,7 +172,7 @@ class GitHubTests(GitHubTestCase):
             }),
             'http://github.com/myuser/myrepo/issues#issue/%s')
 
-    def test_get_bug_tracker_field_with_private_org_plan(self) -> None:
+    def test_get_bug_tracker_field_with_private_org_plan(self):
         """Testing GitHub.get_bug_tracker_field with the private-org plan"""
         self.assertFalse(self.service_class.get_bug_tracker_requires_username(
             'private-org'))
@@ -195,7 +183,7 @@ class GitHubTests(GitHubTestCase):
             }),
             'http://github.com/myorg/myrepo/issues#issue/%s')
 
-    def test_get_repository_hook_instructions(self) -> None:
+    def test_get_repository_hook_instructions(self):
         """Testing GitHub.get_repository_hook_instructions"""
         account = self.create_hosting_account()
         repository = self.create_repository(hosting_account=account)
@@ -220,31 +208,31 @@ class GitHubTests(GitHubTestCase):
             content)
         self.assertIn('Review Board supports closing', content)
 
-    def test_check_repository_public(self) -> None:
+    def test_check_repository_public(self):
         """Testing GitHub.check_repository with public repository"""
         self._test_check_repository(plan='public',
                                     github_public_repo_name='myrepo')
 
-    def test_check_repository_private(self) -> None:
+    def test_check_repository_private(self):
         """Testing GitHub.check_repository with private repository"""
         self._test_check_repository(plan='private',
                                     github_private_repo_name='myrepo')
 
-    def test_check_repository_public_org(self) -> None:
+    def test_check_repository_public_org(self):
         """Testing GitHub.check_repository with public org repository"""
         self._test_check_repository(plan='public-org',
                                     github_public_org_name='myorg',
                                     github_public_org_repo_name='myrepo',
                                     expected_owner='myorg')
 
-    def test_check_repository_private_org(self) -> None:
+    def test_check_repository_private_org(self):
         """Testing GitHub.check_repository with private org repository"""
         self._test_check_repository(plan='private-org',
                                     github_private_org_name='myorg',
                                     github_private_org_repo_name='myrepo',
                                     expected_owner='myorg')
 
-    def test_check_repository_public_not_found(self) -> None:
+    def test_check_repository_public_not_found(self):
         """Testing GitHub.check_repository with not found error and public
         repository
         """
@@ -257,7 +245,7 @@ class GitHubTests(GitHubTestCase):
             expected_error='A repository with this name was not found, '
                            'or your user may not own it.')
 
-    def test_check_repository_private_not_found(self) -> None:
+    def test_check_repository_private_not_found(self):
         """Testing GitHub.check_repository with not found error and private
         repository
         """
@@ -270,7 +258,7 @@ class GitHubTests(GitHubTestCase):
             expected_error='A repository with this name was not found, '
                            'or your user may not own it.')
 
-    def test_check_repository_public_org_not_found(self) -> None:
+    def test_check_repository_public_org_not_found(self):
         """Testing GitHub.check_repository with not found error and
         public organization repository
         """
@@ -284,7 +272,7 @@ class GitHubTests(GitHubTestCase):
             expected_error='A repository with this organization or name '
                            'was not found.')
 
-    def test_check_repository_private_org_not_found(self) -> None:
+    def test_check_repository_private_org_not_found(self):
         """Testing GitHub.check_repository with not found error and
         private organization repository
         """
@@ -299,7 +287,7 @@ class GitHubTests(GitHubTestCase):
                            'was not found, or your user may not have access '
                            'to it.')
 
-    def test_check_repository_public_plan_private_repo(self) -> None:
+    def test_check_repository_public_plan_private_repo(self):
         """Testing GitHub.check_repository with public plan and
         private repository
         """
@@ -312,7 +300,7 @@ class GitHubTests(GitHubTestCase):
             expected_error='This is a private repository, but you have '
                            'selected a public plan.')
 
-    def test_check_repository_private_plan_public_repo(self) -> None:
+    def test_check_repository_private_plan_public_repo(self):
         """Testing GitHub.check_repository with private plan and
         public repository
         """
@@ -325,7 +313,7 @@ class GitHubTests(GitHubTestCase):
             expected_error='This is a public repository, but you have '
                            'selected a private plan.')
 
-    def test_check_repository_public_org_plan_private_repo(self) -> None:
+    def test_check_repository_public_org_plan_private_repo(self):
         """Testing GitHub.check_repository with public organization plan and
         private repository
         """
@@ -339,7 +327,7 @@ class GitHubTests(GitHubTestCase):
             expected_error='This is a private repository, but you have '
                            'selected a public plan.')
 
-    def test_check_repository_private_org_plan_public_repo(self) -> None:
+    def test_check_repository_private_org_plan_public_repo(self):
         """Testing GitHub.check_repository with private organization plan and
         public repository
         """
@@ -353,12 +341,12 @@ class GitHubTests(GitHubTestCase):
             expected_error='This is a public repository, but you have '
                            'selected a private plan.')
 
-    def test_authorize(self) -> None:
+    def test_authorize(self):
         """Testing GitHub.authorize"""
-        paths: dict[str | None, HttpTestPath] = {
+        paths = {
             '/user': {
                 'headers': {
-                    'X-OAuth-Scopes': 'user, repo, admin:repo_hook',
+                    str('X-OAuth-Scopes'): str('user, repo, admin:repo_hook'),
                 },
                 'payload': b'{}',
             },
@@ -389,12 +377,12 @@ class GitHubTests(GitHubTestCase):
             decrypt_password(hosting_account.data['personal_token']),
             'abcde12345abcde12345abcde12345abcde12345')
 
-    def test_authorize_with_missing_scopes(self) -> None:
+    def test_authorize_with_missing_scopes(self):
         """Testing GitHub.authorize with missing scopes"""
         paths = {
             '/user': {
                 'headers': {
-                    'X-OAuth-Scopes': 'user, foobar',
+                    str('X-OAuth-Scopes'): str('user, foobar'),
                 },
                 'payload': b'{}',
             },
@@ -428,14 +416,14 @@ class GitHubTests(GitHubTestCase):
         self.assertNotIn('personal_token', hosting_account.data)
         self.assertNotIn('authorizations', hosting_account.data)
 
-    def test_is_authorized_with_personal_token(self) -> None:
+    def test_is_authorized_with_personal_token(self):
         """Testing GitHub.is_authorized with personal access token"""
         hosting_account = self.create_hosting_account(data={
             'personal_token': encrypt_password('abc123'),
         })
         self.assertTrue(hosting_account.is_authorized)
 
-    def test_is_authorized_with_legacy_authorization(self) -> None:
+    def test_is_authorized_with_legacy_authorization(self):
         """Testing GitHub.is_authorized with legacy authorization token"""
         hosting_account = self.create_hosting_account(data={
             'authorization': {
@@ -444,14 +432,14 @@ class GitHubTests(GitHubTestCase):
         })
         self.assertTrue(hosting_account.is_authorized)
 
-    def test_is_authorized_without_tokens(self) -> None:
+    def test_is_authorized_without_tokens(self):
         """Testing GitHub.is_authorized with legacy authorization token"""
         hosting_account = self.create_hosting_account(data={
             'authorizations': {},
         })
         self.assertFalse(hosting_account.is_authorized)
 
-    def test_api_with_personal_accesstoken(self) -> None:
+    def test_api_with_personal_accesstoken(self):
         """Testing GitHub API access with personal access token"""
         with self.setup_http_test(payload=b'{}',
                                   expected_http_calls=1) as ctx:
@@ -466,7 +454,7 @@ class GitHubTests(GitHubTestCase):
             username='myuser',
             password='my-personal-token')
 
-    def test_api_with_legacy_auth_token(self) -> None:
+    def test_api_with_legacy_auth_token(self):
         """Testing GitHub API access with legacy auth tokens"""
         with self.setup_http_test(payload=b'{}',
                                   expected_http_calls=1) as ctx:
@@ -483,7 +471,7 @@ class GitHubTests(GitHubTestCase):
             username='myuser',
             password='my-legacy-token')
 
-    def test_get_branches(self) -> None:
+    def test_get_branches(self):
         """Testing GitHub.get_branches"""
         payload = self.dump_json([
             {
@@ -537,7 +525,7 @@ class GitHubTests(GitHubTestCase):
                        default=False),
             ])
 
-    def test_get_branches_master_default(self) -> None:
+    def test_get_branches_master_default(self):
         """Testing GitHub.get_branches master default"""
         payload = self.dump_json([
             {
@@ -576,7 +564,7 @@ class GitHubTests(GitHubTestCase):
                        default=True),
             ])
 
-    def test_get_branches_main_default(self) -> None:
+    def test_get_branches_main_default(self):
         """Testing GitHub.get_branches main default"""
         payload = self.dump_json([
             {
@@ -615,7 +603,7 @@ class GitHubTests(GitHubTestCase):
                        default=True),
             ])
 
-    def test_get_branches_default_fallback(self) -> None:
+    def test_get_branches_default_fallback(self):
         """Testing GitHub.get_branches default fallback"""
         payload = self.dump_json([
             {
@@ -654,7 +642,7 @@ class GitHubTests(GitHubTestCase):
                        default=False),
             ])
 
-    def test_get_commits(self) -> None:
+    def test_get_commits(self):
         """Testing GitHub.get_commits"""
         payload = self.dump_json([
             {
@@ -732,13 +720,13 @@ class GitHubTests(GitHubTestCase):
         for commit in commits:
             self.assertIsNone(commit.diff)
 
-    def test_get_change(self) -> None:
+    def test_get_change(self):
         """Testing GitHub.get_change"""
         commit_sha = '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
         parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
         tree_sha = '56e25e58380daf9b4dfe35677ae6043fe1743922'
 
-        paths: dict[str | None, HttpTestPath] = {
+        paths = {
             '/repos/myuser/myrepo/commits': {
                 'payload': self.dump_json([
                     {
@@ -898,7 +886,7 @@ class GitHubTests(GitHubTestCase):
             b'- foo\n'
             b'+ bar\n')
 
-    def test_get_change_with_not_found(self) -> None:
+    def test_get_change_with_not_found(self):
         """Testing GitHub.get_change with commit not found"""
         with self.setup_http_test(status_code=404,
                                   payload=b'{"message": "Not Found"}',
@@ -916,12 +904,12 @@ class GitHubTests(GitHubTestCase):
             username='myuser',
             password='abc123')
 
-    def test_get_remote_repositories_with_owner(self) -> None:
+    def test_get_remote_repositories_with_owner(self):
         """Testing GitHub.get_remote_repositories with requesting
         authenticated user's repositories
         """
         base_url = 'https://api.github.com/user/repos'
-        paths: dict[str | None, HttpTestPath] = {
+        paths = {
             '/user/repos': {
                 'payload': self.dump_json([
                     {
@@ -936,7 +924,7 @@ class GitHubTests(GitHubTestCase):
                     },
                 ]),
                 'headers': {
-                    'Link': f'<{base_url}?page=2>; rel="next"',
+                    str('Link'): str('<%s?page=2>; rel="next"' % base_url),
                 },
             },
             '/user/repos?page=2': {
@@ -953,7 +941,7 @@ class GitHubTests(GitHubTestCase):
                     },
                 ]),
                 'headers': {
-                    'Link': f'<{base_url}?page=1>; rel="prev"',
+                    str('Link'): str('<%s?page=1>; rel="prev"' % base_url),
                 },
             },
         }
@@ -1004,7 +992,7 @@ class GitHubTests(GitHubTestCase):
         self.assertEqual(repo.path, 'myrepo_path2')
         self.assertEqual(repo.mirror_path, 'myrepo_mirror2')
 
-    def test_get_remote_repositories_with_other_user(self) -> None:
+    def test_get_remote_repositories_with_other_user(self):
         """Testing GitHub.get_remote_repositories with requesting user's
         repositories
         """
@@ -1022,8 +1010,10 @@ class GitHubTests(GitHubTestCase):
         ])
 
         headers = {
-            'Link': '<https://api.github.com/users/other/repos'
-                    '?page=2>; rel="next"',
+            str('Link'): str(
+                '<https://api.github.com/users/other/repos'
+                '?page=2>; rel="next"'
+            ),
         }
 
         with self.setup_http_test(payload=repos1,
@@ -1047,7 +1037,7 @@ class GitHubTests(GitHubTestCase):
         self.assertEqual(public_repo.path, 'myrepo_path')
         self.assertEqual(public_repo.mirror_path, 'myrepo_mirror')
 
-    def test_get_remote_repositories_with_org(self) -> None:
+    def test_get_remote_repositories_with_org(self):
         """Testing GitHub.get_remote_repositories with requesting
         organization's repositories
         """
@@ -1104,7 +1094,7 @@ class GitHubTests(GitHubTestCase):
         self.assertEqual(private_repo.path, 'myrepo_path2')
         self.assertEqual(private_repo.mirror_path, 'myrepo_mirror2')
 
-    def test_get_remote_repositories_with_defaults(self) -> None:
+    def test_get_remote_repositories_with_defaults(self):
         """Testing GitHub.get_remote_repositories with default values"""
         with self.setup_http_test(payload=b'{}',
                                   expected_http_calls=1) as ctx:
@@ -1116,7 +1106,7 @@ class GitHubTests(GitHubTestCase):
             username='myuser',
             password='abc123')
 
-    def test_get_remote_repositories_with_filter(self) -> None:
+    def test_get_remote_repositories_with_filter(self):
         """Testing GitHub.get_remote_repositories with ?filter-type="""
         with self.setup_http_test(payload=b'[]',
                                   expected_http_calls=1) as ctx:
@@ -1129,7 +1119,7 @@ class GitHubTests(GitHubTestCase):
             username='myuser',
             password='abc123')
 
-    def test_get_remote_repository(self) -> None:
+    def test_get_remote_repository(self):
         """Testing GitHub.get_remote_repository"""
         payload = self.dump_json({
             'id': 1,
@@ -1161,7 +1151,7 @@ class GitHubTests(GitHubTestCase):
         self.assertEqual(remote_repository.path, 'myrepo_path')
         self.assertEqual(remote_repository.mirror_path, 'myrepo_mirror')
 
-    def test_get_remote_repository_invalid(self) -> None:
+    def test_get_remote_repository_invalid(self):
         """Testing GitHub.get_remote_repository with invalid repository ID"""
         with self.setup_http_test(status_code=404,
                                   payload=b'{"message": "Not Found"}',
@@ -1175,15 +1165,11 @@ class GitHubTests(GitHubTestCase):
             username='myuser',
             password='abc123')
 
-    def _test_check_repository(
-        self,
-        expected_owner: str = 'myuser',
-        **kwargs,
-    ) -> None:
+    def _test_check_repository(self, expected_owner='myuser', **kwargs):
         """Test checking for a repository.
 
         Args:
-            expected_owner (str, optional):
+            expected_owner (unicode):
                 The expected owner of the repository.
 
             **kwargs (dict):
@@ -1201,14 +1187,8 @@ class GitHubTests(GitHubTestCase):
             username='myuser',
             password='abc123')
 
-    def _test_check_repository_error(
-        self,
-        http_status: int,
-        payload: bytes,
-        expected_url: str,
-        expected_error: str,
-        **kwargs,
-    ) -> None:
+    def _test_check_repository_error(self, http_status, payload, expected_url,
+                                     expected_error, **kwargs):
         """Test error conditions when checking for a repository.
 
         Args:
@@ -1218,10 +1198,10 @@ class GitHubTests(GitHubTestCase):
             payload (bytes):
                 The payload to return, if ``http_status`` is 200.
 
-            expected_url (str):
+            expected_url (unicode):
                 The expected URL accessed (minus any query strings).
 
-            expected_error (str):
+            expected_error (unicode):
                 The expected error message from a raised exception.
 
             **kwargs (dict):
@@ -1244,22 +1224,18 @@ class GitHubTests(GitHubTestCase):
             username='myuser',
             password='abc123')
 
-    def _get_repo_api_url(
-        self,
-        plan: str,
-        fields: Mapping[str, Any],
-    ) -> str:
+    def _get_repo_api_url(self, plan, fields):
         """Return the base API URL for a repository.
 
         Args:
-            plan (str):
+            plan (unicode):
                 The name of the plan.
 
             fields (dict):
                 Fields containing repository information.
 
         Returns:
-            str:
+            unicode:
             The API URL for the repository.
         """
         account = self.create_hosting_account()
@@ -1281,12 +1257,12 @@ class CloseSubmittedHookTests(GitHubTestCase):
 
     fixtures = ['test_users', 'test_scmtools']
 
-    def test_close_submitted_hook(self) -> None:
+    def test_close_submitted_hook(self):
         """Testing GitHub close_submitted hook with event=push"""
         self._test_post_commit_hook()
 
     @add_fixtures(['test_site'])
-    def test_close_submitted_hook_with_local_site(self) -> None:
+    def test_close_submitted_hook_with_local_site(self):
         """Testing GitHub close_submitted hook with event=push and using a
         Local Site
         """
@@ -1294,15 +1270,13 @@ class CloseSubmittedHookTests(GitHubTestCase):
             LocalSite.objects.get(name=self.local_site_name))
 
     @add_fixtures(['test_site'])
-    def test_close_submitted_hook_with_unpublished_review_request(
-        self,
-    ) -> None:
+    def test_close_submitted_hook_with_unpublished_review_request(self):
         """Testing GitHub close_submitted hook with event=push and an
         un-published review request
         """
         self._test_post_commit_hook(publish=False)
 
-    def test_close_submitted_hook_ping(self) -> None:
+    def test_close_submitted_hook_ping(self):
         """Testing GitHub close_submitted hook with event=ping"""
         account = self.create_hosting_account()
         repository = self.create_repository(hosting_account=account)
@@ -1331,7 +1305,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    def test_close_submitted_hook_with_invalid_repo(self) -> None:
+    def test_close_submitted_hook_with_invalid_repo(self):
         """Testing GitHub close_submitted hook with event=push and invalid
         repository
         """
@@ -1360,7 +1334,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    def test_close_submitted_hook_with_invalid_site(self) -> None:
+    def test_close_submitted_hook_with_invalid_site(self):
         """Testing GitHub close_submitted hook with event=push and invalid
         Local Site
         """
@@ -1391,7 +1365,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    def test_close_submitted_hook_with_invalid_service_id(self) -> None:
+    def test_close_submitted_hook_with_invalid_service_id(self):
         """Testing GitHub close_submitted hook with event=push and invalid
         hosting service ID
         """
@@ -1425,7 +1399,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    def test_close_submitted_hook_with_invalid_event(self) -> None:
+    def test_close_submitted_hook_with_invalid_event(self):
         """Testing GitHub close_submitted hook with invalid event"""
         account = self.create_hosting_account()
         repository = self.create_repository(hosting_account=account)
@@ -1453,7 +1427,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    def test_close_submitted_hook_with_invalid_signature(self) -> None:
+    def test_close_submitted_hook_with_invalid_signature(self):
         """Testing GitHub close_submitted hook with invalid signature"""
         account = self.create_hosting_account()
         repository = self.create_repository(hosting_account=account)
@@ -1480,7 +1454,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
         self.assertEqual(review_request.status, review_request.PENDING_REVIEW)
         self.assertEqual(review_request.changedescs.count(), 0)
 
-    def test_close_submitted_hook_with_invalid_review_requests(self) -> None:
+    def test_close_submitted_hook_with_invalid_review_requests(self):
         """Testing GitHub close_submitted hook with event=push and invalid
         review requests
         """
@@ -1516,11 +1490,7 @@ class CloseSubmittedHookTests(GitHubTestCase):
             'close_all_review_requests: Review request #%s does not exist.',
             9999))
 
-    def _test_post_commit_hook(
-        self,
-        local_site: (LocalSite | None) = None,
-        publish: bool = True,
-    ) -> None:
+    def _test_post_commit_hook(self, local_site=None, publish=True):
         """Testing posting to a commit hook.
 
         This will simulate pushing a commit and posting the resulting webhook
@@ -1564,27 +1534,22 @@ class CloseSubmittedHookTests(GitHubTestCase):
         changedesc = review_request.changedescs.get()
         self.assertEqual(changedesc.text, 'Pushed to master (1c44b46)')
 
-    def _post_commit_hook_payload(
-        self,
-        post_url: str,
-        review_request_url: str,
-        secret: str,
-        event: str = 'push',
-    ) -> _MonkeyPatchedWSGIResponse:
+    def _post_commit_hook_payload(self, post_url, review_request_url, secret,
+                                  event='push'):
         """Post a payload for a hook for testing.
 
         Args:
-            post_url (str):
+            post_url (unicode):
                 The URL to post to.
 
-            review_request_url (str):
+            review_request_url (unicode):
                 The URL of the review request being represented in the
                 payload.
 
-            secret (str):
+            secret (unicode):
                 The HMAC secret for the message.
 
-            event (str, optional):
+            event (unicode, optional):
                 The webhook event.
 
         Results:

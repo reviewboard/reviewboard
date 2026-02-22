@@ -24,7 +24,7 @@ RB.DiffRevisionLabelView = Backbone.View.extend({
     _oldHeaderTemplate: _.template(gettext('Diff Revision <%- revision %>')),
     _oldDetailTemplate: _.template(
         /* Translators: This string should be valid HTML (including any necessary escaping for entities). */
-        gettext('This is not the most recent revision of the diff. The <a href="#" class="select-latest">latest diff</a> is revision <%- latestRevision %>. <a href="#" class="select-changed" rel="nofollow noindex">See what\'s changed.</a>')),
+        gettext('This is not the most recent revision of the diff. The <a href="#" class="select-latest">latest diff</a> is revision <%- latestRevision %>. <a href="#" class="select-changed">See what\'s changed.</a>')),
 
     /**
      * Initialize the view.

@@ -17,5 +17,3 @@ __all__ = [
     'LegacyFileDiffData',
     'RawFileDiffData',
 ]
-
-__autodoc_excludes__ = __all__

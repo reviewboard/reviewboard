@@ -10,12 +10,12 @@ from typing import Dict, Set, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.db.models import Q
+from djblets.db.query_comparator import ExpectedQueries
 
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
-    from django_assert_queries.query_comparator import ExpectedQueries
     from django.contrib.auth.models import AnonymousUser
 
     from reviewboard.site.models import AnyOrAllLocalSites

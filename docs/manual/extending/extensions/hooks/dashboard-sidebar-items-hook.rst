@@ -24,21 +24,16 @@ Example
 
 .. code-block:: python
 
-    from typing import TYPE_CHECKING
-
     from reviewboard.datagrids.sidebar import (BaseSidebarSection,
                                                SidebarNavItem)
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import DashboardSidebarItemsHook
 
-    if TYPE_CHECKING:
-        from collections.abc import Sequence
-
 
     class SampleSidebarSection(BaseSidebarSection):
         label = 'My Links'
 
-        def get_items(self) -> Sequence[SidebarNavItem]:
+        def get_items(self):
             return [
                 SidebarNavItem(label='Link 1',
                                url_name='myvendor_url_name_1',
@@ -49,5 +44,5 @@ Example
 
 
     class SampleExtension(Extension):
-        def initialize(self) -> None:
+        def initialize(self):
             DashboardSidebarItemsHook(self, [SampleSidebarSection])

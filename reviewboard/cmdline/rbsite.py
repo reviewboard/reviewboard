@@ -401,7 +401,7 @@ class Site(object):
             fp.write('\n'.join(media_htaccess))
             fp.write('\n')
 
-    def setup_settings(self) -> None:
+    def setup_settings(self):
         """Set up the environment for running django management commands."""
         # Make sure that we have our settings_local.py in our path for when
         # we need to run manager commands.
@@ -423,24 +423,8 @@ class Site(object):
             },
         }
 
-        try:
-            import django
-            django.setup()
-        except Exception as e:
-            assert console is not None
-
-            console.print()
-            console.error(
-                'There was an error setting up the environment. You can try '
-                'to correct the error and re-run this command.\n'
-                '\n'
-                'Please contact Beanbag Support (support@beanbaginc.com) '
-                'if you need help.'
-                '\n'
-                'Details: %s'
-                % e)
-
-            sys.exit(1)
+        import django
+        django.setup()
 
     def generate_cron_files(self):
         """Generate sample crontab for this site."""
@@ -2644,10 +2628,10 @@ class InstallCommand(Command):
 
         console.header('Get more out of Review Board')
         console.print(
-            'To enable PDF and Office document review, code review reports, '
-            'better scalability, and support for GitHub Enterprise, '
-            'Bitbucket Server, AWS CodeCommit, Team Foundation Server, and '
-            'more, install Power Pack at:'
+            'To enable PDF document review, code review reports, enhanced '
+            'scalability, and support for GitHub Enterprise, Bitbucket '
+            'Server, AWS CodeCommit, Team Foundation Server, and more, '
+            'install Power Pack at:'
             '\n'
             'https://www.reviewboard.org/powerpack/'
             '\n'

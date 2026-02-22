@@ -8,11 +8,10 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Type
 
 from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
-from typelets.runtime import raise_invalid_type
 
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
@@ -22,9 +21,7 @@ from reviewboard.scmtools.forms import (BaseRepositoryAuthSubForm,
                                         BaseRepositoryInfoSubForm)
 
 if TYPE_CHECKING:
-    from typelets.funcs import KwargsDict
-    from typelets.json import JSONDict
-
+    from djblets.util.typing import JSONDict, KwargsDict
     from reviewboard.hostingsvcs.base import BaseHostingService
     from reviewboard.hostingsvcs.base.hosting_service import \
         HostingServiceCredentials
@@ -58,12 +55,12 @@ class _HostingServiceSubFormMixin:
     #:
     #: Type:
     #:     type
-    hosting_service_cls: type[BaseHostingService]
+    hosting_service_cls: Type[BaseHostingService]
 
     def __init__(
         self,
         *args,
-        hosting_service_cls: type[BaseHostingService],
+        hosting_service_cls: Type[BaseHostingService],
         **kwargs,
     ) -> None:
         """Initialize the authentication form.
@@ -85,8 +82,7 @@ class _HostingServiceSubFormMixin:
                 message.
         """
         if not hosting_service_cls:
-            raise_invalid_type(hosting_service_cls,
-                               'hosting_service_cls cannot be None.')
+            raise ValueError('hosting_service_cls cannot be None.')
 
         self.hosting_service_cls = hosting_service_cls
 
@@ -190,12 +186,12 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
     #:
     #: Type:
     #:     reviewboard.hostingsvcs.models.HostingServiceAccount
-    hosting_account: HostingServiceAccount | None
+    hosting_account: Optional[HostingServiceAccount]
 
     def __init__(
         self,
         *args,
-        hosting_account: (HostingServiceAccount | None) = None,
+        hosting_account: Optional[HostingServiceAccount] = None,
         **kwargs,
     ) -> None:
         """Initialize the authentication form.
@@ -316,7 +312,7 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
         self,
         allow_authorize: bool = True,
         force_authorize: bool = False,
-        extra_authorize_kwargs: (KwargsDict | None) = None,
+        extra_authorize_kwargs: Optional[KwargsDict] = None,
         trust_host: bool = False,
         save: bool = True,
     ) -> HostingServiceAccount:
@@ -389,7 +385,7 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
 
         hosting_account = self.hosting_account
         hosting_service_id = self.hosting_service_cls.hosting_service_id
-        hosting_url: (str | None) = self.cleaned_data.get('hosting_url')
+        hosting_url: Optional[str] = self.cleaned_data.get('hosting_url')
 
         assert hosting_service_id
 
@@ -425,7 +421,7 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
             self.hosting_service_cls.needs_authorization and
             (not hosting_account.is_authorized or force_authorize)):
             # Attempt to authorize the account.
-            local_site_name: (str | None) = None
+            local_site_name: Optional[str] = None
 
             if self.local_site:
                 local_site_name = self.local_site.name
@@ -462,8 +458,8 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
         self,
         hosting_account: HostingServiceAccount,
         hosting_service_id: str,
-        username: (str | None) = None,
-        local_site_name: (str | None) = None,
+        username: Optional[str] = None,
+        local_site_name: Optional[str] = None,
         **kwargs,
     ) -> None:
         """Authorize the service.
@@ -520,7 +516,7 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
             # Re-raise the error.
             raise
 
-    def clean_hosting_url(self) -> str | None:
+    def clean_hosting_url(self) -> Optional[str]:
         """Clean the hosting URL field.
 
         Returns:
@@ -613,7 +609,7 @@ class BaseHostingServiceRepositoryForm(_HostingServiceSubFormMixin,
 
     def load(
         self,
-        repository: (Repository | None) = None,
+        repository: Optional[Repository] = None,
         **kwargs,
     ) -> None:
         """Load information for the form.
@@ -628,15 +624,12 @@ class BaseHostingServiceRepositoryForm(_HostingServiceSubFormMixin,
 
                 This is scheduled to be deprecated. Subclasses should use the
                 :py:attr:`repository` attribute instead.
-
-            **kwargs (dict, unused):
-                Unused keyword arguments.
         """
         super().load()
 
     def save(
         self,
-        repository: (Repository | None) = None,
+        repository: Optional[Repository] = None,
         **kwargs,
     ) -> None:
         """Save information from the form back to the repository.
@@ -650,9 +643,6 @@ class BaseHostingServiceRepositoryForm(_HostingServiceSubFormMixin,
 
                 This is scheduled to be deprecated. Subclasses should use the
                 :py:attr:`repository` attribute instead.
-
-            **kwargs (dict, unused):
-                Unused keyword arguments.
         """
         if repository is None:
             repository = self.repository

@@ -1,11 +1,9 @@
 {% load djblets_utils i18n static %}
-{% url 'root' as root_url %}
-{% trans 'Home' as home_text %}
 
 {% definevar "logo_png" %}{% static "rb/images/logo.png" %}{% enddefinevar %}
 
 <div class="rb-c-topbar__product-info" id="rbinfo">
- <a href="{{root_url}}" aria-label="{{home_text}}">
+ <a href="{% url 'root' %}" aria-label="{% trans 'Home' %}">
   <img class="rb-c-topbar__product-logo"
        id="logo"
        aria-hidden="true"
@@ -17,12 +15,8 @@
        height="57">
  </a>
  <h1 class="rb-c-topbar__product-name" id="title">
-  <a href="{{root_url}}" aria-label="{{home_text}}">
-   {{PRODUCT_NAME}}
-   <span class="rb-c-topbar__product-suffix">
-    {{settings.PRODUCT_SUFFIX}}
-   </span>
-  </a>
+  <a href="{% url 'root' %}"
+     aria-label="{% trans 'Home' %}">{{PRODUCT_NAME}}</a>
   <span class="rb-c-topbar__product-version">
    {{version}}
    {% if section_title %} - <strong>{{section_title}}</strong>{% endif %}

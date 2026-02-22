@@ -10,15 +10,13 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
-from django.db.models import Q, prefetch_related_objects
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.db.fields import (CounterField, ModificationTimestampField,
                                RelationCounterField)
-from djblets.db.query import get_object_cached_field, get_object_or_none
-from djblets.log import log_timed
-from djblets.util.symbols import UNSET
+from djblets.db.query import get_object_or_none
 from typing_extensions import TypedDict
 
 from reviewboard.admin.read_only import is_site_read_only_for
@@ -52,7 +50,6 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
     from django.db.models import QuerySet
     from django.http import HttpRequest
-    from djblets.util.symbols import Unsettable
 
     from reviewboard.attachments.models import FileAttachmentSequence
     from reviewboard.reviews.models import (Review,
@@ -458,42 +455,6 @@ class ReviewRequest(BaseReviewRequestDetails):
     local_id = models.IntegerField('site-local ID', blank=True, null=True)
 
     objects: ClassVar[ReviewRequestManager] = ReviewRequestManager()
-
-    ######################
-    # Instance variables #
-    ######################
-
-    #: The cached list of diffsets associated with this review request.
-    #:
-    #: This is purely internal and should never be accessed directly by any
-    #: extension authors. Please us :py:meth:`get_diffsets` directly.
-    _diffsets: Sequence[DiffSet]
-
-    #: Whether the cached diffsets have filediffs pre-fetched.
-    #:
-    #: This is purely internal and should never be accessed directly by any
-    #: extension authors. Please us :py:meth:`get_diffsets` directly.
-    #:
-    #: Version Added:
-    #:     7.1
-    _diffsets_with_filediffs: bool
-
-    #: The cached review request draft.
-    #:
-    #: This is purely internal and should never be accessed directly by any
-    #: extension authors. Please us :py:meth:`get_draft` directly.
-    #:
-    #: Note that this draft may not be accessible by the given user.
-    _draft: Optional[ReviewRequestDraft]
-
-    #: The cached latest diffset for the review request.
-    #:
-    #: This is purely internal and should never be accessed directly by any
-    #: extension authors. Please us :py:meth:`get_latest_diffset` directly.
-    #:
-    #: Version Added:
-    #:     7.1
-    _latest_diffset: Optional[DiffSet]
 
     @staticmethod
     def status_to_string(
@@ -963,13 +924,6 @@ class ReviewRequest(BaseReviewRequestDetails):
         If a user is specified, then the draft will be returned only if it is
         accessible by the user. Otherwise, ``None`` will be returned.
 
-        The result is cached on this object to avoid performance issues or
-        inconsistencies in repeated calls.
-
-        Version Changed:
-            7.1:
-            The result of this is now cached by this object.
-
         Version Changed:
             7.0.2:
             Changed the behavior of the ``user`` argument to check if the draft
@@ -983,35 +937,15 @@ class ReviewRequest(BaseReviewRequestDetails):
             reviewboard.reviews.models.review_request_draft.ReviewRequestDraft:
             The draft of the review request or None.
         """
-        draft: Optional[ReviewRequestDraft] = None
+        draft = get_object_or_none(self.draft)
 
-        if user is None or user.is_authenticated:
-            try:
-                draft = self._draft
-            except AttributeError:
-                cached_draft = get_object_cached_field(self, 'draft')
+        if (user is None or
+            (user.is_authenticated and
+             draft is not None and
+             draft.is_accessible_by(user))):
+            return draft
 
-                if cached_draft is UNSET:
-                    try:
-                        draft = self.draft.get()
-                    except ObjectDoesNotExist:
-                        draft = None
-                else:
-                    draft = cached_draft
-
-                self._draft = draft
-
-            if (user is not None and
-                draft is not None and
-                not draft.is_accessible_by(user)):
-                # The user can't see this draft, so clear this for the final
-                # result.
-                draft = None
-
-        if draft is not None:
-            assert draft.pk is not None
-
-        return draft
+        return None
 
     def get_pending_review(
         self,
@@ -1195,18 +1129,10 @@ class ReviewRequest(BaseReviewRequestDetails):
             local_site_name=local_site_name,
             kwargs={'review_request_id': self.display_id})
 
-    def get_diffsets(
-        self,
-        *,
-        with_filediffs: bool = True,
-    ) -> Sequence[DiffSet]:
+    def get_diffsets(self) -> Sequence[DiffSet]:
         """Return a list of all diffsets on this review request.
 
         This will also fetch all associated FileDiffs.
-
-        Version Changed:
-            7.1:
-            Added the ``with_filediffs`` argument.
 
         Version Changed:
             7.0.3:
@@ -1220,17 +1146,6 @@ class ReviewRequest(BaseReviewRequestDetails):
             7.0:
             Made this pre-fetch the related DiffCommit objects.
 
-        Args:
-            with_filediffs (bool, optional):
-                Whether to pre-fetch filediffs associated with each diffset.
-
-                If diffsets are already cached with files, this will have
-                no effect. If they're cached without files pre-fetched,
-                this will update the cache with the pre-fetched files.
-
-                Version Added:
-                    7.1
-
         Returns:
             list of reviewboard.diffviewer.models.DiffSet:
             The list of all diffsets on the review request.
@@ -1238,11 +1153,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         if not self.repository_id:
             return []
 
-        if hasattr(self, '_diffsets'):
-            if with_filediffs and not self._diffsets_with_filediffs:
-                prefetch_related_objects(self._diffsets, 'files')
-                self._diffsets_with_filediffs = True
-        else:
+        if not hasattr(self, '_diffsets'):
             # If we've prefetched anything, we can hopefully skip a new
             # query.
             diffsets_result: Optional[list[DiffSet]] = None
@@ -1250,10 +1161,12 @@ class ReviewRequest(BaseReviewRequestDetails):
                 self._state.fields_cache.get('diffset_history')
 
             if diffset_history is not None:
-                diffsets: Unsettable[Sequence[DiffSet]] = \
-                    get_object_cached_field(diffset_history, 'diffsets')
+                diffsets: Optional[Sequence[DiffSet]] = (
+                    getattr(diffset_history, '_prefetched_objects_cache', {})
+                    .get('diffsets')
+                )
 
-                if diffsets is not UNSET:
+                if diffsets is not None:
                     # We know we've fetched diffsets. We can now see if
                     # there's anything we want to reuse.
                     diffsets = list(diffsets)
@@ -1262,65 +1175,41 @@ class ReviewRequest(BaseReviewRequestDetails):
                         # We know there are no diffsets. The result will be
                         # an empty list.
                         diffsets_result = []
-                    elif (not with_filediffs or
-                          get_object_cached_field(diffsets[0],
-                                                  'files') is not UNSET):
-                        # We have the full prefetched chain with everything
-                        # we need (well, assuming no .only() or anything).
-                        # Trust it and return it.
-                        diffsets_result = list(diffsets)
+                    else:
+                        diffset_cache = \
+                            getattr(diffsets[0], '_prefetched_objects_cache',
+                                    {})
+
+                        if 'files' in diffset_cache:
+                            # We have the full prefetched chain with everything
+                            # we need (well, assuming no .only() or anything).
+                            # Trust it and return it.
+                            diffsets_result = list(diffsets)
 
             if diffsets_result is None:
                 # We don't have a result we can work with. We'll want to
                 # query from scratch.
-                queryset = (
+                diffsets_result = list(
                     DiffSet.objects
                     .filter(history__pk=self.diffset_history_id)
-                )
-
-                if with_filediffs:
-                    queryset = queryset.prefetch_related('files')
-
-                diffsets_result = list(queryset)
+                    .prefetch_related('files'))
 
             self._diffsets = diffsets_result
-            self._diffsets_with_filediffs = with_filediffs
 
         return self._diffsets
 
     def get_latest_diffset(self) -> Optional[DiffSet]:
         """Return the latest diffset for this review request.
 
-        The result is cached on this object for future calls.
-
-        Version Changed:
-            7.1:
-            The result is now cached.
-
         Returns:
             reviewboard.diffviewer.models.DiffSet:
             The latest published DiffSet, if present.
         """
         try:
-            diffset = self._latest_diffset
-        except AttributeError:
-            diffset: Optional[DiffSet]
-
-            diffsets = self.get_diffsets(with_filediffs=False)
-
-            if diffsets:
-                assert isinstance(DiffSet._meta.get_latest_by, str)
-                latest_by = DiffSet._meta.get_latest_by
-
-                diffset = max(
-                    diffsets,
-                    key=lambda diffset: getattr(diffset, latest_by))
-            else:
-                diffset = None
-
-            self._latest_diffset = diffset
-
-        return diffset
+            return DiffSet.objects.filter(
+                history=self.diffset_history_id).latest()
+        except DiffSet.DoesNotExist:
+            return None
 
     @property
     def has_diffsets(self) -> bool:
@@ -1594,10 +1483,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             ``True`` if the review request is not yet public, or if there is a
             draft present.
         """
-        return (
-            not self.public or
-            self.get_draft() is not None
-        )
+        return not self.public or get_object_or_none(self.draft) is not None
 
     def can_add_default_reviewers(self) -> bool:
         """Return whether default reviewers can be added to the review request.
@@ -1686,7 +1572,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             description=description,
             rich_text=rich_text)
 
-        draft = self.get_draft()
+        draft = get_object_or_none(self.draft)
 
         if self.status != close_type:
             if (draft is not None and
@@ -1830,12 +1716,8 @@ class ReviewRequest(BaseReviewRequestDetails):
         if not self.is_mutable_by(user):
             raise PermissionError
 
-        # We need to ensure we have the latest content for the draft from
-        # the database.
-        self.clear_local_caches()
-
+        draft = get_object_or_none(self.draft)
         old_submitter = self.submitter
-        draft = self.get_draft()
 
         if (draft is not None and
             draft.owner is not None and
@@ -1871,69 +1753,62 @@ class ReviewRequest(BaseReviewRequestDetails):
             # a profile.
             old_submitter.get_site_profile(self.local_site)
 
-        with log_timed(f'Publishing review request {self.pk}',
-                       logger=logger):
-            review_request_publishing.send(sender=self.__class__, user=user,
-                                           review_request_draft=draft)
+        review_request_publishing.send(sender=self.__class__, user=user,
+                                       review_request_draft=draft)
 
-            # Decrement the counts on everything. We'll increment the resulting
-            # set during _update_counts() (called from ReviewRequest.save()).
-            # This must be done before the draft is published, or we'll end up
-            # with bad counts.
-            #
-            # Once the draft is published, the target people and groups will be
-            # updated with new values.
-            if self.public:
-                self._decrement_reviewer_counts()
+        # Decrement the counts on everything. We'll increment the resulting
+        # set during _update_counts() (called from ReviewRequest.save()).
+        # This must be done before the draft is published, or we'll end up
+        # with bad counts.
+        #
+        # Once the draft is published, the target people and groups will be
+        # updated with new values.
+        if self.public:
+            self._decrement_reviewer_counts()
 
-            # Calculate the timestamp once and use it for all things that are
-            # considered as happening now. If we do not do this, there will be
-            # millisecond timestamp differences between review requests and
-            # their changedescs, diffsets, and reviews.
-            #
-            # Keeping them in sync means that get_last_activity() can work as
-            # intended. Otherwise, the review request will always have the most
-            # recent timestamp since it gets saved last.
-            timestamp = timezone.now()
+        # Calculate the timestamp once and use it for all things that are
+        # considered as happening now. If we do not do this, there will be
+        # millisecond timestamp differences between review requests and their
+        # changedescs, diffsets, and reviews.
+        #
+        # Keeping them in sync means that get_last_activity() can work as
+        # intended. Otherwise, the review request will always have the most
+        # recent timestamp since it gets saved last.
+        timestamp = timezone.now()
 
-            if draft is not None:
-                # This will in turn save the review request, so we'll be done.
-                try:
-                    changes = draft.publish(self,
-                                            send_notification=False,
-                                            user=user,
-                                            validate_fields=validate_fields,
-                                            timestamp=timestamp)
-                except Exception:
-                    # The draft failed to publish, for one reason or another.
-                    # Check if we need to re-increment those counters we
-                    # previously decremented.
-                    if self.public:
-                        self._increment_reviewer_counts()
+        if draft is not None:
+            # This will in turn save the review request, so we'll be done.
+            try:
+                changes = draft.publish(self,
+                                        send_notification=False,
+                                        user=user,
+                                        validate_fields=validate_fields,
+                                        timestamp=timestamp)
+            except Exception:
+                # The draft failed to publish, for one reason or another.
+                # Check if we need to re-increment those counters we
+                # previously decremented.
+                if self.public:
+                    self._increment_reviewer_counts()
 
-                    raise
+                raise
 
-                draft.delete()
-            else:
-                changes = None
+            draft.delete()
+        else:
+            changes = None
 
-            if not self.public and not self.changedescs.exists():
-                # This is a brand new review request that we're publishing
-                # for the first time. Set the creation timestamp to now.
-                self.time_added = timestamp
+        if not self.public and not self.changedescs.exists():
+            # This is a brand new review request that we're publishing
+            # for the first time. Set the creation timestamp to now.
+            self.time_added = timestamp
 
-            self.public = True
-            self.last_updated = timestamp
-            self.save(update_counts=True, old_submitter=old_submitter)
+        self.public = True
+        self.last_updated = timestamp
+        self.save(update_counts=True, old_submitter=old_submitter)
 
-            review_request_published.send(sender=self.__class__,
-                                          user=user,
-                                          review_request=self,
-                                          trivial=trivial,
-                                          changedesc=changes)
-
-        # Once again, clear the cache.
-        self.clear_local_caches()
+        review_request_published.send(sender=self.__class__, user=user,
+                                      review_request=self, trivial=trivial,
+                                      changedesc=changes)
 
         return changes
 
@@ -2181,34 +2056,6 @@ class ReviewRequest(BaseReviewRequestDetails):
             This object.
         """
         return self
-
-    def clear_local_caches(self) -> None:
-        """Clear all caches for locally-computed state.
-
-        This will force the following operations to re-fetch state:
-
-        * :py:attr:`approval_failure`
-        * :py:attr:`approved`
-        * :py:meth:`get_blocks`
-        * :py:meth:`get_diffsets`
-        * :py:meth:`get_draft`
-        * :py:meth:`get_file_attachments_data`
-        * :py:meth:`get_latest_diffset`
-
-        Version Added:
-            7.1
-        """
-        d = self.__dict__
-
-        for key in ('_approval_failure',
-                    '_approved',
-                    '_blocks',
-                    '_diffsets',
-                    '_diffsets_with_filediffs',
-                    '_draft',
-                    '_file_attachments_data',
-                    '_latest_diffset'):
-            d.pop(key, None)
 
     def _is_diffset_accessible_by(
         self,

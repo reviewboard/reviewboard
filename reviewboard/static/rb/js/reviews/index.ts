@@ -24,19 +24,6 @@ export {
 } from './models/fileAttachmentReviewableModel';
 export { ImageReviewable } from './models/imageReviewableModel';
 export { RegionCommentBlock } from './models/regionCommentBlockModel';
-export {
-    AddFileAction,
-    AddGeneralCommentAction,
-    ArchiveAction,
-    CloseCompletedAction,
-    CloseDiscardedAction,
-    CreateReviewAction,
-    DeleteAction,
-    EditReviewAction,
-    MuteAction,
-    ShipItAction,
-    UpdateDiffAction,
-} from './models/reviewRequestActionModels';
 export { ReviewRequestEditor } from './models/reviewRequestEditorModel';
 export { ReviewablePage } from './models/reviewablePageModel';
 export { ScreenshotCommentBlock } from './models/screenshotCommentBlockModel';

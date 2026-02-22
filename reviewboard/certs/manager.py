@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import os
 import ssl
-from typing import Final, Optional, TYPE_CHECKING, cast
+from typing import Optional, TYPE_CHECKING, cast
 from urllib.parse import urlparse
 
 from django.core.cache import cache
@@ -23,24 +23,22 @@ from django.utils.translation import gettext as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import safe_join
-from typing_extensions import TypedDict
+from djblets.util.typing import (KwargsDict,
+                                 SerializableJSONDictImmutable)
+from typing_extensions import Final, NotRequired, TypeAlias, TypedDict
 
 from reviewboard.admin.server import get_data_dir
 from reviewboard.certs.cert import CertificateFingerprints
 from reviewboard.certs.errors import (CertificateNotFoundError,
                                       InvalidCertificateError)
 from reviewboard.certs.storage import cert_storage_backend_registry
+from reviewboard.certs.storage.base import (BaseCertificateStorageBackend,
+                                            BaseStoredCertificate,
+                                            BaseStoredCertificateBundle,
+                                            BaseStoredCertificateFingerprints)
 
 if TYPE_CHECKING:
-    from typelets.funcs import KwargsDict
-    from typelets.django.json import SerializableDjangoJSONDictImmutable
-    from typing_extensions import NotRequired, TypeAlias
-
     from reviewboard.certs.cert import Certificate, CertificateBundle
-    from reviewboard.certs.storage.base import (BaseCertificateStorageBackend,
-                                                BaseStoredCertificate,
-                                                BaseStoredCertificateBundle,
-                                                BaseStoredCertificateFingerprints)
     from reviewboard.site.models import LocalSite
 
     _CertStorageBackend: TypeAlias = BaseCertificateStorageBackend[
@@ -603,7 +601,7 @@ class CertificateManager:
             port=port,
             local_site=local_site)
 
-        def _get_stored() -> SerializableDjangoJSONDictImmutable | None:
+        def _get_stored() -> Optional[SerializableJSONDictImmutable]:
             stored_fingerprints = self.storage_backend.get_stored_fingerprints(
                 hostname=hostname,
                 port=port,
@@ -614,7 +612,8 @@ class CertificateManager:
 
             return stored_fingerprints.fingerprints.to_json()
 
-        data = cache_memoize(cache_key, _get_stored)
+        data = cast(Optional[SerializableJSONDictImmutable],
+                    cache_memoize(cache_key, _get_stored))
 
         if not data:
             return None

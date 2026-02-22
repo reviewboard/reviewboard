@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from typing import List, Optional, Sequence, TYPE_CHECKING
 
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
@@ -22,7 +21,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
-    from typelets.funcs import KwargsDict
+    from djblets.util.typing import KwargsDict
 
 
 class ReviewManagerTests(TestCase):
@@ -276,7 +275,7 @@ class ReviewManagerTests(TestCase):
             has_local_sites_in_db=True,
             accessible_repository_ids=[repo1.pk])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             # Testing that the reviews from other local sites or the global
             # site do not leak into the results from the given local site.
             self.assertQuerySetEqual(
@@ -336,7 +335,7 @@ class ReviewManagerTests(TestCase):
                 repo3.pk,
             ])
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             # Testing that passing LocalSite.ALL returns reviews from all local
             # sites and the global site.
             #
@@ -1098,7 +1097,7 @@ class ReviewManagerTests(TestCase):
             has_local_sites_in_db=local_sites_in_db,
             status='P')
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             # Testing that only reviews from the given user are returned.
             self.assertQuerySetEqual(
                 Review.objects.from_user(user, local_site=local_site),
@@ -1194,7 +1193,7 @@ class ReviewManagerTests(TestCase):
             local_site=local_site,
             has_local_sites_in_db=has_local_sites_in_db)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             self.assertQuerySetEqual(
                 Review.objects.accessible(user, local_site=local_site),
                 expected_reviews)
@@ -1254,7 +1253,7 @@ class ReviewManagerTests(TestCase):
             accessible_review_group_ids=accessible_review_group_ids,
             **accessible_kwargs)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             # Testing that the user can only access reviews
             # from repositories that they have access to.
             self.assertQuerySetEqual(
@@ -1307,7 +1306,7 @@ class ReviewManagerTests(TestCase):
             has_local_sites_in_db=local_sites_in_db,
             **accessible_kwargs)
 
-        with assert_queries(equeries):
+        with self.assertQueries(equeries):
             # Testing that superusers can acesss any reviews.
             self.assertQuerySetEqual(
                 Review.objects.accessible(user,

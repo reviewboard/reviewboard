@@ -52,9 +52,9 @@ case-insensitive).
 Static Media
 ------------
 
-As part of packaging, this build backend will regenerate static media files. As
-part of this process, it will set up symlinks to the applicable source trees in
-:file:`.npm-workspaces/`.
+As part of packaging or setting up editable installs, this build backend will
+regenerate static media files. As part of this process, it will set up symlinks
+to the applicable source trees in :file:`.npm-workspaces/`.
 
 If you are building a package out of your tree, any existing symlinks in
 this directory may be overridden, pointing to packages in the temporary build
@@ -218,7 +218,6 @@ def prepare_metadata_for_build_wheel(
         The basename for the generated ``.dist-info`` directory.
     """
     _rebuild_npm_workspaces()
-    _install_npm_packages()
     _write_dependencies()
 
     return _build_meta.prepare_metadata_for_build_wheel(
@@ -251,7 +250,7 @@ def build_editable(
         The basename for the generated source distribution file.
     """
     _rebuild_npm_workspaces()
-    _install_npm_packages()
+    _build_data_files(collect_static=False)
 
     return _build_meta.build_editable(
         wheel_directory,
@@ -283,7 +282,6 @@ def build_sdist(
         The basename for the generated source distribution file.
     """
     _rebuild_npm_workspaces()
-    _install_npm_packages()
     _build_data_files()
 
     return _build_meta.build_sdist(sdist_directory,
@@ -312,7 +310,6 @@ def build_wheel(
         The basename for the generated wheel file.
     """
     _rebuild_npm_workspaces()
-    _install_npm_packages()
     _build_data_files()
 
     return _build_meta.build_wheel(wheel_directory,
@@ -359,22 +356,6 @@ def _rebuild_npm_workspaces() -> None:
         os.symlink(os.path.dirname(mod_path), symlink_path)
 
 
-def _install_npm_packages() -> None:
-    """Install NPM packages.
-
-    Raises:
-        RuntimeError:
-            There was an error installing npm packages.
-    """
-    try:
-        subprocess.run(['npm', 'install'],
-                       stdout=subprocess.PIPE,
-                       stderr=subprocess.STDOUT,
-                       check=True)
-    except subprocess.CalledProcessError as e:
-        raise RuntimeError(f'Failed to install npm packages: {e.output}')
-
-
 def _write_dependencies() -> None:
     """Write all dependencies to a file.
 
@@ -391,28 +372,45 @@ def _write_dependencies() -> None:
             fp.write(f'{dependency}\n')
 
 
-def _build_data_files() -> None:
+def _build_data_files(
+    *,
+    collect_static: bool = True,
+) -> None:
     """Build static media and i18n data files.
+
+    Args:
+        collect_static (bool, optional):
+            Whether to run a ``collectstatic`` operation to build media
+            files.
+
+            If ``False``, support for building static media will still be
+            installed.
 
     Raises:
         RuntimeError:
             There was an error building the media or i18n files.
     """
+    media_env: dict[str, str] = os.environ.copy()
+
+    if not collect_static:
+        media_env['RUN_COLLECT_STATIC'] = '0'
+
     # Build the static media.
-    try:
-        subprocess.check_call(
-            [
-                sys.executable,
-                os.path.join('contrib', 'internal', 'build-media.py'),
-            ])
-    except subprocess.CalledProcessError:
+    retcode = subprocess.call(
+        [
+            sys.executable,
+            os.path.join('contrib', 'internal', 'build-media.py'),
+        ],
+        env=media_env)
+
+    if retcode != 0:
         raise RuntimeError('Failed to build media files')
 
     # Build the i18n files.
-    try:
-        subprocess.check_call([
-            sys.executable,
-            os.path.join('contrib', 'internal', 'build-i18n.py'),
-        ])
-    except subprocess.CalledProcessError:
+    retcode = subprocess.call([
+        sys.executable,
+        os.path.join('contrib', 'internal', 'build-i18n.py'),
+    ])
+
+    if retcode != 0:
         raise RuntimeError('Failed to build i18n files')

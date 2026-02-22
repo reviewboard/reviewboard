@@ -1,20 +1,9 @@
-"""Model for storing change description histories."""
-
-from __future__ import annotations
-
-from typing import TYPE_CHECKING, TypeVar, overload
-
 from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.query import QuerySet
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
-
-if TYPE_CHECKING:
-    from typing import Any, Callable
-
-    _T = TypeVar('_T')
 
 
 class ChangeDescription(models.Model):
@@ -106,93 +95,26 @@ class ChangeDescription(models.Model):
 
         return owner and user != owner and last_visited < self.timestamp
 
-    @overload
-    def record_field_change(
-        self,
-        field: str,
-        old_value: list[_T],
-        new_value: list[_T],
-        name_field: (str | None) = ...,
-        *,
-        build_url_func: (Callable[[_T], str] | None) = ...,
-    ) -> None:
-        ...
-
-    @overload
-    def record_field_change(
-        self,
-        field: str,
-        old_value: _T,
-        new_value: _T,
-        name_field: (str | None) = ...,
-        *,
-        build_url_func: (Callable[[_T], str] | None) = ...,
-    ) -> None:
-        ...
-
-    def record_field_change(
-        self,
-        field: str,
-        old_value: _T,
-        new_value: _T,
-        name_field: (str | None) = None,
-        *,
-        build_url_func: (Callable[[Any], str] | None) = None,
-    ) -> None:
+    def record_field_change(self, field, old_value, new_value,
+                            name_field=None):
         """Record a field change.
 
-        This will encode field changes following the rules in the
-        :py:class:`ChangeDescription` documentation.
+        This will encode field changes following the rules in the overlying
+        'ChangeDescription' documentation.
 
-        ``name_field`` can be specified for lists or other iterables. When
+        'name_field' can be specified for lists or other iterables. When
         specified, each list item will be a tuple in the form of
-        ``(object_name, object_url, object_id)``. Otherwise, it will be a
-        tuple in the form of ``(item,)``.
+        (object_name, object_url, object_id). Otherwise, it will be a
+        tuple in the form of (item,).
 
         It is generally expected that fields with lists of model objects will
-        have ``name_field`` set, whereas lists of numbers or some other
-        value type will not. Specifying a ``name_field`` for non-objects will
-        cause an :py:exc:`AttributeError`.
-
-        Version Changed:
-            7.1:
-            Added the ``build_url_func`` argument.
-
-        Args:
-            field (str):
-                The name of the field to record.
-
-            old_value (object):
-                The old value to compare against.
-
-            new_value (object):
-                The old value to compare to.
-
-            name_field (str, optional):
-                The optional attribute on the object storing a display name.
-
-            build_url_func (callable, optional):
-                The optional function for computing a URL to the object.
-
-                If not provided, the object's :py:func:`get_absolute_url`
-                will be used, if it exists.
-
-                Version Added:
-                    7.1
+        have 'name_field' set, whereas lists of numbers or some other
+        value type will not. Specifying a 'name_field' for non-objects will
+        cause an AttributeError.
         """
         def serialize_changed_obj(item, name_field):
-            url: str | None
-
-            if build_url_func:
-                url = build_url_func(item)
-            else:
-                try:
-                    url = item.get_absolute_url()
-                except AttributeError:
-                    url = None
-
             return (getattr(item, name_field),
-                    url,
+                    item.get_absolute_url(),
                     item.id)
 
         def serialize_changed_obj_list(items, name_field):

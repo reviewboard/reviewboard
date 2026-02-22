@@ -1,13 +1,8 @@
-"""Hosting service for Review Board Gateway."""
-
-from __future__ import annotations
-
 import hashlib
 import hmac
 import json
 import logging
 from collections import defaultdict
-from typing import TYPE_CHECKING
 from urllib.error import HTTPError
 from urllib.parse import quote
 
@@ -16,19 +11,17 @@ from django.http import HttpResponse, HttpResponseBadRequest
 from django.template.loader import render_to_string
 from django.urls import path
 from django.utils.translation import gettext_lazy as _, gettext
-from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import build_server_url, get_server_url
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
-from reviewboard.hostingsvcs.base.client import HostingServiceClient
-from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
-from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceAPIError,
                                             HostingServiceError)
+from reviewboard.hostingsvcs.forms import HostingServiceForm
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_repository_for_hook,
                                                 get_review_request_id)
+from reviewboard.hostingsvcs.service import (HostingService,
+                                             HostingServiceClient)
 from reviewboard.scmtools.core import Branch, Commit, UNKNOWN
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
@@ -36,32 +29,26 @@ from reviewboard.scmtools.errors import (FileNotFoundError,
                                          RepositoryNotFoundError)
 from reviewboard.site.urlresolvers import local_site_reverse
 
-if TYPE_CHECKING:
-    from django.http import HttpRequest
-
 
 logger = logging.getLogger(__name__)
 
 
-def hook_close_submitted(
-    request: HttpRequest,
-    local_site_name: (str | None) = None,
-    repository_id: (int | None) = None,
-    hosting_service_id: (str | None) = None,
-) -> HttpResponse:
+def hook_close_submitted(request, local_site_name=None,
+                         repository_id=None,
+                         hosting_service_id=None):
     """Close review requests as submitted after a push.
 
     Args:
         request (django.http.HttpRequest):
             The request from the RB Gateway webhook.
 
-        local_site_name (str, optional):
+        local_site_name (unicode, optional):
             The local site name, if available.
 
         repository_id (int, optional):
             The ID of the repository, if available.
 
-        hosting_service_id (str, optional):
+        hosting_service_id (unicode, optional):
             The ID of the hosting service.
 
     Returns:
@@ -76,13 +63,8 @@ def hook_close_submitted(
         return HttpResponseBadRequest(
             'Only "ping" and "push" events are supported.')
 
-    assert repository_id is not None
-    assert hosting_service_id is not None
-
-    repository = get_repository_for_hook(
-        repository_id=repository_id,
-        hosting_service_id=hosting_service_id,
-        local_site_name=local_site_name)
+    repository = get_repository_for_hook(repository_id, hosting_service_id,
+                                         local_site_name)
 
     sig = request.META.get('HTTP_X_RBG_SIGNATURE', '')
     m = hmac.new(repository.get_or_create_hooks_uuid().encode('utf-8'),
@@ -109,10 +91,7 @@ def hook_close_submitted(
         commit_id = commit.get('id')
         commit_message = commit.get('message')
         review_request_id = get_review_request_id(
-            commit_message=commit_message,
-            server_url=server_url,
-            commit_id=commit_id,
-            repository=repository)
+            commit_message, server_url, commit_id, repository)
 
         targets = commit['target']
 
@@ -133,16 +112,15 @@ def hook_close_submitted(
         review_request_ids_to_commits[review_request_id].append(target_str)
 
     if review_request_ids_to_commits:
-        close_all_review_requests(
-            review_request_id_to_commits=review_request_ids_to_commits,
-            local_site_name=local_site_name,
-            repository=repository,
-            hosting_service_id=hosting_service_id)
+        close_all_review_requests(review_request_ids_to_commits,
+                                  local_site_name,
+                                  repository,
+                                  hosting_service_id)
 
     return HttpResponse()
 
 
-class ReviewBoardGatewayForm(BaseHostingServiceRepositoryForm):
+class ReviewBoardGatewayForm(HostingServiceForm):
     """Hosting service form for Review Board Gateway.
 
     Provide an additional field on top of the base hosting service form to
@@ -473,8 +451,8 @@ class ReviewBoardGatewayClient(HostingServiceClient):
         in its place.
 
         Args:
-            request (reviewboard.hostingsvcs.base.http.
-                     HostingServiceHTTPRequest, unused):
+            request (reviewboard.hostingsvcs.service.HostingServiceHTTPRequest,
+                     unused):
                 The request that resulted in an error.
 
             e (urllib2.URLError):
@@ -621,7 +599,7 @@ class ReviewBoardGatewayClient(HostingServiceClient):
                        quote(path)))
 
 
-class ReviewBoardGateway(BaseHostingService):
+class ReviewBoardGateway(HostingService):
     """Hosting service support for Review Board Gateway.
 
     Review Board Gateway is a lightweight self-installed source hosting service
@@ -660,21 +638,18 @@ class ReviewBoardGateway(BaseHostingService):
              name='rbgateway-hooks-close-submitted'),
     ]
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-    def check_repository(
-        self,
-        *,
-        rbgateway_repo_name: str,
-        **kwargs,
-    ) -> None:
+    def check_repository(self, rbgateway_repo_name, *args, **kwargs):
         """Checks the validity of a repository configuration.
 
         Args:
-            rbgateway_repo_name (str):
+            rbgateway_repo_name (unicode):
                 The name of the repository to check.
 
+            *args (tuple, unused):
+                Unused positional arguments.
+
             **kwargs (dict, unused):
-                Additional keyword arguments provided by the repository form.
+                Unused dictionary arguments.
 
         Raises:
             reviewboard.hostingsvcs.errors.RepositoryError:
@@ -691,30 +666,22 @@ class ReviewBoardGateway(BaseHostingService):
 
             raise
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-    def authorize(
-        self,
-        *,
-        username: str | None,
-        password: str | None,
-        **kwargs,
-    ) -> None:
+    def authorize(self, username, password, *args, **kwargs):
         """Authorize an account on the RB Gateway service.
 
         This will perform an authentication request against the API. If
         successful, the generated API token will be stored, encrypted, for
         future requests to the API.
 
-        Version Changed:
-            7.1:
-            Made arguments keyword-only.
-
         Args:
-            username (str):
+            username (unicode):
                 The username for the account.
 
-            password (str):
+            password (unicode):
                 The password for the account.
+
+            *args (tuple, unused):
+                Unused positional arguments.
 
             **kwargs (dict, unused):
                 Unused keyword arguments.

@@ -1,11 +1,8 @@
 """Unit tests for reviewboard.site.managers.LocalSiteManager."""
 
-from __future__ import annotations
-
 from uuid import UUID, uuid4
 
 import kgb
-from django_assert_queries.testing import assert_queries
 from django.db.models import Count, Q
 
 from reviewboard.site.models import LocalSite
@@ -32,7 +29,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 0,
                 'public_count': 0,
@@ -71,7 +68,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 2,
                 'public_count': 1,
@@ -105,7 +102,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 0,
                 'public_count': 0,
@@ -116,7 +113,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         self.create_local_site(name='test-site-1')
 
         # The second query should hit cache.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 1,
                 'public_count': 0,
@@ -141,7 +138,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 0,
                 'public_count': 0,
@@ -153,7 +150,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
                                public=True)
 
         # Cache should be invalidated.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 0,
                 'public_count': 1,
@@ -182,7 +179,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 1,
                 'public_count': 0,
@@ -197,7 +194,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. Total LocalSite count
         # 2. Public LocalSite count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 0,
                 'public_count': 1,
@@ -224,7 +221,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 1,
                 'public_count': 0,
@@ -235,7 +232,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         local_site.delete()
 
         # Cache should be invalidated.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(LocalSite.objects.get_stats(), {
                 'private_count': 0,
                 'public_count': 0,
@@ -274,7 +271,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             stats = LocalSite.objects.get_local_site_acl_stats(local_site)
 
         self.assertEqual(stats, {
@@ -328,7 +325,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             stats = LocalSite.objects.get_local_site_acl_stats(local_site.pk)
 
         self.assertEqual(stats, {
@@ -370,7 +367,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -388,7 +385,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -424,7 +421,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -442,7 +439,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -477,7 +474,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             stats = LocalSite.objects.get_local_site_acl_stats(local_site)
 
         self.assertEqual(stats, {
@@ -521,7 +518,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -544,7 +541,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertIsNone(
                 LocalSite.objects.get_local_site_acl_stats(local_site_id))
 
@@ -580,7 +577,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -597,7 +594,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -615,7 +612,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -654,7 +651,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -671,7 +668,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -689,7 +686,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -728,7 +725,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -745,7 +742,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -783,7 +780,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -800,7 +797,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -818,7 +815,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -857,7 +854,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -874,7 +871,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -892,7 +889,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -931,7 +928,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -948,7 +945,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. User count
         # 2. Admin count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertEqual(
                 LocalSite.objects.get_local_site_acl_stats(local_site),
                 {
@@ -973,7 +970,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(LocalSite.objects.has_local_sites())
 
         # The second query should hit cache.
@@ -998,7 +995,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(LocalSite.objects.has_local_sites())
 
         # The second query should hit cache.
@@ -1022,7 +1019,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(LocalSite.objects.has_local_sites())
 
         # The second query should hit cache.
@@ -1048,7 +1045,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(LocalSite.objects.has_public_local_sites())
 
         # The second query should hit cache.
@@ -1075,7 +1072,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(LocalSite.objects.has_public_local_sites())
 
         # The second query should hit cache.
@@ -1102,7 +1099,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertFalse(LocalSite.objects.has_private_local_sites())
 
         # The second query should hit cache.
@@ -1128,7 +1125,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(LocalSite.objects.has_private_local_sites())
 
         # The second query should hit cache.
@@ -1152,7 +1149,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
             },
         ]
 
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(LocalSite.objects.has_local_sites())
 
         LocalSite.objects.invalidate_stats_cache()
@@ -1161,7 +1158,7 @@ class LocalSiteManagerTests(kgb.SpyAgency, TestCase):
         #
         # 1. Total LocalSite count
         # 2. Public LocalSite count
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             self.assertTrue(LocalSite.objects.has_local_sites())
 
     def _pregenerate_cache_state_uuids(self, count):

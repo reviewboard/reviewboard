@@ -2,7 +2,7 @@
 {% load accounts actions djblets_extensions djblets_js djblets_utils %}
 {% load features i18n pipeline rbproduct static %}
 
-{% definevar "page_class" spaceless %}{% block page_class %}default-page{% endblock %}{% enddefinevar %}
+{% definevar "page_class" %}{% block page_class %}default-page{% endblock %}{% enddefinevar %}
 <html class="{{page_class}}"{% block ui-theme-attrs %}{{ui_theme_attrs_html}}{% endblock ui-theme-attrs %}>
  <head>
 {% block global-vars %}{% endblock %}
@@ -60,6 +60,20 @@
 {%  endblock %}
      </nav>
 {%  template_hook_point "base-after-navbar" %}
+{%  block read_only_banner %}
+{%   if siteconfig_settings.site_read_only %}
+     <div id="read-only-banner">
+      <h2 id="read-only-banner-header">
+{%    blocktrans %}
+       {{PRODUCT_NAME}} is in read-only mode.
+{%    endblocktrans %}
+      </h2>
+{%    if read_only_message %}
+      <span id="read-only-banner-message">{{read_only_message}}</span>
+{%    endif %}
+     </div>
+{%   endif %}
+{%  endblock read_only_banner %}
 {%  block navbar_post %}{% endblock %}
      <noscript>
       <div class="rb-c-alert -is-error">
@@ -79,14 +93,6 @@
        </div>
       </div>
      </noscript>
-    </div>
-    <div class="rb-c-topbar__banners">
-{%  block read_only_banner %}
-{%   if siteconfig_settings.site_read_only %}
-{%    include "base/read-only-banner.html" %}
-{%   endif %}
-{%  endblock read_only_banner %}
-{%  template_hook_point "page-banners" %}
     </div>
 {% endblock %}
    </header>
@@ -129,10 +135,6 @@
     };
   </script>
 {% block scripts-post %}{% endblock %}
-{% block js_extensions %}
-{%  load_extensions_js "reviewboard.extensions" %}
-{%  init_js_extensions "reviewboard.extensions" %}
-{% endblock %}
 {% block setup-page %}
   <script>
     RB.PageManager.setupPage({
@@ -148,6 +150,10 @@
     });
   </script>
 {% endblock setup-page %}
+{% block js_extensions %}
+{%  load_extensions_js "reviewboard.extensions" %}
+{%  init_js_extensions "reviewboard.extensions" %}
+{% endblock %}
 <script>
     RB.PageManager.beforeRender(function(page) {
 {%  actions_js %}

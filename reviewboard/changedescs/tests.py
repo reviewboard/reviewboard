@@ -86,48 +86,6 @@ class ChangeDescTests(TestCase):
                                old_value[0].get_absolute_url(),
                                old_value[0].id)]))
 
-    def test_record_field_change_with_build_url_fuc(self) -> None:
-        """Testing ChangeDescription.record_field_change with build_url_func"""
-        class DummyObject:
-            def __init__(self, id):
-                self.id = id
-                self.text = "Object %s" % id
-
-        objs = [DummyObject(i) for i in range(4)]
-        old_value = [objs[0], objs[1], objs[2]]
-        new_value = [objs[1], objs[2], objs[3]]
-
-        changedesc = ChangeDescription()
-        changedesc.record_field_change(
-            field="test",
-            old_value=old_value,
-            new_value=new_value,
-            name_field='text',
-            build_url_func=lambda obj: f'/path/to/{obj.id}')
-
-        self.assertEqual(
-            changedesc.fields_changed,
-            {
-                'test': {
-                    'added': [
-                        ('Object 3', '/path/to/3', 3)
-                    ],
-                    'new': [
-                        ('Object 1', '/path/to/1', 1),
-                        ('Object 2', '/path/to/2', 2),
-                        ('Object 3', '/path/to/3', 3),
-                    ],
-                    'old': [
-                        ('Object 0', '/path/to/0', 0),
-                        ('Object 1', '/path/to/1', 1),
-                        ('Object 2', '/path/to/2', 2),
-                    ],
-                    'removed': [
-                        ('Object 0', '/path/to/0', 0),
-                    ],
-                },
-            })
-
     def test_record_list_mismatch_type(self):
         """Testing ChangeDescription.record_field_change with
         mismatched types

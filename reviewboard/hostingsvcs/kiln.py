@@ -1,26 +1,20 @@
-"""Hosting service for Kiln."""
-
-from __future__ import annotations
-
 import binascii
 import json
 from urllib.error import HTTPError, URLError
 
 from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
-from housekeeping import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
-from reviewboard.hostingsvcs.base.client import HostingServiceClient
-from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
-from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             RepositoryError)
+from reviewboard.hostingsvcs.forms import HostingServiceForm
+from reviewboard.hostingsvcs.service import (HostingService,
+                                             HostingServiceClient)
 from reviewboard.scmtools.errors import FileNotFoundError
 
 
-class KilnForm(BaseHostingServiceRepositoryForm):
+class KilnForm(HostingServiceForm):
     kiln_account_domain = forms.CharField(
         label=_('Account domain'),
         max_length=64,
@@ -185,7 +179,7 @@ class KilnClient(HostingServiceClient):
             raise KilnAPIError(rsp['errors'])
 
 
-class Kiln(BaseHostingService):
+class Kiln(HostingService):
     """Hosting service support for Kiln On Demand.
 
     Kiln On Demand supports Git and Mercurial repositories, accessible
@@ -225,45 +219,14 @@ class Kiln(BaseHostingService):
         },
     }
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-    def check_repository(
-        self,
-        *,
-        kiln_account_domain: str,
-        kiln_project_name: str,
-        kiln_group_name: str,
-        kiln_repo_name: str,
-        **kwargs,
-    ) -> None:
-        """Check the validity of a repository.
+    def check_repository(self, kiln_account_domain=None,
+                         kiln_project_name=None, kiln_group_name=None,
+                         kiln_repo_name=None, *args, **kwargs):
+        """Checks the validity of a repository.
 
         This will check to see if there's a repository accessible to the
         user matching the provided information. This will throw an exception
         if the repository was not found, and return cleanly if it was found.
-
-        Version Changed:
-            7.1:
-            Made arguments keyword-only.
-
-        Args:
-            kiln_account_domain (str):
-                The domain for the user's Kiln account.
-
-            kiln_project_name (str):
-                The name of the project.
-
-            kiln_group_name (str):
-                The name of the group within the project.
-
-            kiln_repo_name (str):
-                The name of the repository.
-
-            **kwargs (dict, unused):
-                Additional keyword arguments provided by the repository form.
-
-        Raises:
-            reviewboard.hostingsvcs.errors.RepositoryError:
-                The repository is not valid.
         """
         repo_info = self._find_repository_info(kiln_project_name,
                                                kiln_group_name,
@@ -275,38 +238,14 @@ class Kiln(BaseHostingService):
                 'found. Please verify that the information exactly matches '
                 'the configuration on Kiln.'))
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
-    def authorize(
-        self,
-        *,
-        username: str | None,
-        password: str | None,
-        kiln_account_domain: str,
-        **kwargs,
-    ) -> None:
-        """Authorize the Kiln repository.
+    def authorize(self, username, password, kiln_account_domain,
+                  *args, **kwargs):
+        """Authorizes the Kiln repository.
 
         Kiln requires an authentication request against a login URL,
         and will return an API token on success. This token is stored
         along with the account data. The username and password are not
         stored.
-
-        Version Changed:
-            7.1:
-            Made arguments keyword-only.
-
-        Args:
-            username (str):
-                The username for the account.
-
-            password (str):
-                The password for the account.
-
-            kiln_account_domain (str):
-                The domain for the user's Kiln account.
-
-            **kwargs (dict, unused):
-                Unused keyword arguments.
         """
         self.account.data['kiln_account_domain'] = kiln_account_domain
 

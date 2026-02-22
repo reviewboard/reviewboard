@@ -8,24 +8,13 @@
 @import (reference) "rb/css/ui/forms.less";
 
 
-:root,
-.rb-c-form-inline-group {
-  /** Inline groups. */
-  --rb-c-admin-form-inline-group-bg: var(--ink-p-header-bg);
-}
-
-
 #rb-ns-admin() {
   .form-inline() {
-    /*
-     * Legacy variable definitions.
-     *
-     * These are no longer used within Review Board, but might still be
-     * referenced by other consumers. These will be removed in Review Board 9.
-     */
     @_color-vars: #rb-ns-ui.colors();
     @_form-vars: #rb-ns-ui.form();
+
     @delete-icon-color: @_color-vars[@red-10];
+
     @spacing: @_form-vars[@standard-spacing];
     @title-border-color: #rb-ns-ui.form-fieldset[@separator-border-color];
     @title-margin: @_form-vars[@standard-spacing];
@@ -33,17 +22,13 @@
   }
 
   .form-inline-group() {
-    /*
-     * Legacy variable definitions.
-     *
-     * These are no longer used within Review Board, but might still be
-     * referenced by other consumers. These will be removed in Review Board 9.
-     */
     @_color-vars: #rb-ns-ui.colors();
     @_form-vars: #rb-ns-ui.form();
+
     @add-icon: @fa-var-plus;
     @add-icon-color: @_color-vars[@green-10];
     @add-icon-size: 140%;
+
     @title-border-color: #rb-ns-ui.form-fieldset[@separator-border-color];
     @title-bg: @_color-vars[@yellow-70];
     @title-padding: @_form-vars[@standard-spacing];
@@ -67,17 +52,23 @@
  *     </div>
  */
 .rb-c-admin-form-inline-group {
-  margin: var(--ink-u-spacing-l) 0 0 0;
+  @_inline-group-vars: #rb-ns-admin.form-inline-group();
+  @_form-vars: #rb-ns-ui.form();
+  @_spacing: @_form-vars[@standard-spacing];
+  @_large-spacing: @_form-vars[@large-spacing];
+
+  margin: @_large-spacing 0 0 0;
 
   &__add-action {
-    display: flex;
-    gap: var(--ink-u-spacing-s);
-    line-height: var(--ink-u-icon-std);
-    padding: var(--ink-u-spacing-m);
+    display: inline-block;
+    padding: @_spacing;
 
     &:before {
-      #ink-ns-ui.icons.svg-icon(@icon: var(--ink-i-add),
-                                @color: var(--ink-p-green-500));
+      .fa-icon();
+      color: @_inline-group-vars[@add-icon-color];
+      content: @_inline-group-vars[@add-icon];
+      font-size: @_inline-group-vars[@add-icon-size];
+      vertical-align: text-top;
     }
   }
 
@@ -100,11 +91,13 @@
    *     <h2 class="rb-c-admin-form-inline-group__title">...</h2>
    */
   &__title {
-    background: var(--ink-p-header-bg);
-    border-top: var(--ink-g-border-container);
-    border-bottom: var(--ink-g-border-container);
+    @_border-color: @_inline-group-vars[@title-border-color];
+
+    background: @_inline-group-vars[@title-bg];
+    border-top: 1px @_border-color solid;
+    border-bottom: 1px @_border-color solid;
     margin: 0;
-    padding: var(--ink-u-spacing-m);
+    padding: @_inline-group-vars[@title-padding];
     #rb-ns-ui.content-header.add-title-styles();
   }
 }
@@ -130,6 +123,9 @@
  *     </div>
  */
 .rb-c-admin-form-inline {
+  @_inline-vars: #rb-ns-admin.form-inline();
+  @_spacing: @_inline-vars[@spacing];
+
   margin: 0;
   overflow: hidden;
   position: relative;
@@ -145,7 +141,7 @@
    *     <span class="rb-c-admin-form-inline__delete-action">...</span>
    */
   &__delete-action {
-    color: var(--ink-p-red-500);
+    color: @_inline-vars[@delete-icon-color];
     cursor: pointer;
   }
 
@@ -179,9 +175,9 @@
    *     </h3>
    */
   &__title {
-    border-bottom: var(--ink-g-border-container);
-    margin: 0;
-    padding: var(--ink-u-spacing-m);
+    border-bottom: 1px @_inline-vars[@title-border-color] solid;
+    margin: @_inline-vars[@title-margin] 0;
+    padding: @_inline-vars[@title-padding];
     #rb-ns-ui.content-header.add-title-styles();
   }
 
@@ -304,7 +300,7 @@
 
     &:before {
       .fa-icon();
-      color: var(--ink-p-fg-weak);
+      color: black;
       content: @fa-var-search;
       font-size: 140%;
     }

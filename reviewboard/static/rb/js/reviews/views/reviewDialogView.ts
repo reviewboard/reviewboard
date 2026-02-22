@@ -18,10 +18,6 @@ import {
     UserSession,
 } from 'reviewboard/common';
 import {
-    ReviewDialogCommentHook,
-    ReviewDialogHook,
-} from 'reviewboard/extensions';
-import {
     type TextEditorView,
     RichTextInlineEditorView,
     SlideshowView,
@@ -293,7 +289,7 @@ class BaseCommentView<
         this.listenTo(this.model, 'destroying',
                       () => this.stopListening(this.model));
 
-        ReviewDialogCommentHook.each(hook => {
+        RB.ReviewDialogCommentHook.each(hook => {
             const HookView = hook.get('viewType');
             const hookView = new HookView({
                 extension: hook.get('extension'),
@@ -1072,12 +1068,10 @@ export class ReviewDialogView extends BaseView<
     static className = 'review';
 
     static template = _.template(dedent`
-        <% if (allowShipIt) { %>
-         <div class="edit-field">
-          <input id="id_shipit" type="checkbox">
-          <label for="id_shipit"><%- shipItText %></label>
-         </div>
-        <% } %>
+        <div class="edit-field">
+         <input id="id_shipit" type="checkbox">
+         <label for="id_shipit"><%- shipItText %></label>
+        </div>
         <div class="review-dialog-hooks-container"></div>
         <div class="edit-field body-top"></div>
         <ol id="review-dialog-body-top-comments" class="review-comments"></ol>
@@ -1349,24 +1343,9 @@ export class ReviewDialogView extends BaseView<
      * the server will begin loading and rendering.
      */
     protected onInitialRender() {
-        const userSession = UserSession.instance;
-
-        const reviewRequest = this.model.get('parentObject');
-        const links = reviewRequest.get('links');
-        let submitter: (string | null) = null;
-
-        if (links && links['submitter']) {
-            submitter = links['submitter']['title'];
-        }
-
-        const allowShipIt = (
-            userSession.get('allowSelfShipIt') ||
-            (userSession.get('username') !== submitter));
-
         this.$el.html(this.template({
             addFooterText: _`Add footer`,
             addHeaderText: _`Add header`,
-            allowShipIt: allowShipIt,
             markdownDocsURL: MANUAL_URL + 'users/markdown/',
             markdownText: _`Markdown Reference`,
             shipItText: _`Ship It`,
@@ -1392,7 +1371,7 @@ export class ReviewDialogView extends BaseView<
             .prependTo(this.$el);
 
         this.listenTo(this.#tipsView, 'hide', () => {
-            userSession.set('showReviewDialogTips', false);
+            UserSession.instance.set('showReviewDialogTips', false);
             this.#updateTipsVisibility(false);
         });
 
@@ -1405,13 +1384,13 @@ export class ReviewDialogView extends BaseView<
                 e.preventDefault();
 
                 this.#updateTipsVisibility(true);
-                userSession.set('showReviewDialogTips', true);
+                UserSession.instance.set('showReviewDialogTips', true);
             });
 
         this.#updateTipsVisibility(
-            userSession.get('showReviewDialogTips'));
+            UserSession.instance.get('showReviewDialogTips'));
 
-        ReviewDialogHook.each(hook => {
+        RB.ReviewDialogHook.each(hook => {
             const HookView = hook.get('viewType');
             const hookView = new HookView({
                 extension: hook.get('extension'),

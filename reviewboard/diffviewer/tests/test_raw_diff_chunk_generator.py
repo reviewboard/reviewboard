@@ -458,8 +458,7 @@ class RawDiffChunkGeneratorTests(TestCase):
                          '<span class="p">;</span>'),
                         None,
                         1,
-                        ('<span class="k">def</span>'
-                         '<span class="w"> </span>'
+                        ('<span class="k">def</span> '
                          '<span class="nf">is</span>'
                          '<span class="err">\u200b</span>'
                          '<span class="n">Admin</span>'

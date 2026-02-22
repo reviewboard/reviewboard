@@ -1,9 +1,4 @@
-"""Unit tests for the ReviewResource API."""
-
-from __future__ import annotations
-
 from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING
 
 from django.core import mail
 from django.utils import timezone as django_timezone
@@ -16,7 +11,7 @@ from kgb import SpyAgency, spy_on
 
 from reviewboard.reviews.models import Review, ReviewRequest
 from reviewboard.reviews.signals import review_ship_it_revoking
-from reviewboard.webapi.errors import PUBLISH_ERROR, REVOKE_SHIP_IT_ERROR
+from reviewboard.webapi.errors import REVOKE_SHIP_IT_ERROR
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.tests.base import BaseWebAPITestCase
 from reviewboard.webapi.tests.mimetypes import (review_list_mimetype,
@@ -28,9 +23,6 @@ from reviewboard.webapi.tests.mixins_review import (ReviewItemMixin,
                                                     ReviewListMixin)
 from reviewboard.webapi.tests.urls import (get_review_item_url,
                                            get_review_list_url)
-
-if TYPE_CHECKING:
-    from typelets.json import JSONDict
 
 
 class ResourceListTests(ReviewListMixin, ReviewRequestChildListMixin,
@@ -417,7 +409,8 @@ class ResourceItemTests(SpyAgency, ReviewItemMixin,
         revoke_timestamp = review_timestamp + timedelta(hours=1)
 
         with spy_on(django_timezone.now, call_fake=lambda: creation_timestamp):
-            review_request = self.create_review_request(publish=True)
+            review_request = self.create_review_request(publish=True,
+                                                        submitter=self.user)
 
         with spy_on(django_timezone.now, call_fake=lambda: review_timestamp):
             review = self.create_review(review_request,
@@ -450,10 +443,10 @@ class ResourceItemTests(SpyAgency, ReviewItemMixin,
         self.assertEqual(review.timestamp, review_timestamp)
 
     @add_fixtures(['test_site'])
-    def test_put_publish(self) -> None:
+    def test_put_publish(self):
         """Testing the PUT review-requests/<id>/reviews/<id>/?public=1 API"""
-        body_top = 'My Body Top'
-        body_bottom = ''
+        body_top = "My Body Top"
+        body_bottom = ""
         ship_it = True
 
         review_request = self.create_review_request(publish=True)
@@ -488,72 +481,3 @@ class ResourceItemTests(SpyAgency, ReviewItemMixin,
             review_request.submitter.username,
             self.user.username,
         ])
-
-    @add_fixtures(['test_site'])
-    def test_put_publish_self_shipit_disallowed(self) -> None:
-        """Testing the PUT review-requests/<id>/reviews/<id>/?public=1 API
-        with a ship-it on a user's own review request when not allowed
-        """
-        body_top = 'My Body Top'
-        body_bottom = ''
-        ship_it = True
-
-        review_request = self.create_review_request(
-            publish=True, submitter=self.user)
-        review = self.create_review(review_request, user=self.user)
-        settings: JSONDict = {
-            'reviews_allow_self_shipit': False,
-        }
-
-        with self.siteconfig_settings(settings):
-            rsp = self.api_put(
-                get_review_item_url(review_request, review.pk),
-                {
-                    'public': True,
-                    'ship_it': ship_it,
-                    'body_top': body_top,
-                    'body_bottom': body_bottom,
-                },
-                expected_status=500)
-
-            self.assertEqual(
-                rsp,
-                {
-                    'err': {
-                        'msg': 'Error publishing: You cannot mark "Ship It!" '
-                               'on your own review request.',
-                        'code': PUBLISH_ERROR.code,
-                        'type': 'review-request-publish-error',
-                    },
-                    'stat': 'fail',
-                })
-
-    @add_fixtures(['test_site'])
-    def test_put_publish_self_shipit_allowed(self) -> None:
-        """Testing the PUT review-requests/<id>/reviews/<id>/?public=1 API
-        with a ship-it on a user's own review request when allowed
-        """
-        body_top = "My Body Top"
-        body_bottom = ""
-        ship_it = True
-
-        review_request = self.create_review_request(
-            publish=True, submitter=self.user)
-        review = self.create_review(review_request, user=self.user)
-        settings: JSONDict = {
-            'reviews_allow_self_shipit': True,
-        }
-
-        with self.siteconfig_settings(settings):
-            rsp = self.api_put(
-                get_review_item_url(review_request, review.pk),
-                {
-                    'public': True,
-                    'ship_it': ship_it,
-                    'body_top': body_top,
-                    'body_bottom': body_bottom,
-                },
-                expected_mimetype=review_item_mimetype)
-
-            assert rsp is not None
-            self.assertEqual(rsp['stat'], 'ok')

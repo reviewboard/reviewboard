@@ -1,8 +1,5 @@
 """Unit tests for reviewboard.reviews.builtin_fields."""
 
-from __future__ import annotations
-
-from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
 from django.test.client import RequestFactory
@@ -1274,7 +1271,7 @@ class FileAttachmentsFieldTests(FieldsTestCase):
 
         # Check the added file attachments. Only file attachments 2 and 3
         # should be present.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             result = field.render_change_entry_html(
                 changedesc.fields_changed[field.field_id]['added'])
 
@@ -1367,6 +1364,6 @@ class FileAttachmentsFieldTests(FieldsTestCase):
         # Check that the queries are only run once and that the cached data
         # is used subsequently when fetching the state of all file attachments
         # in the changedesc.
-        with assert_queries(queries):
+        with self.assertQueries(queries):
             field.get_change_entry_sections_html(
                 changedesc.fields_changed[field.field_id])

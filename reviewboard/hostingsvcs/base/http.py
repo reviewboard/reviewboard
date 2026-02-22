@@ -13,7 +13,7 @@ import json
 import logging
 import ssl
 from collections import OrderedDict
-from typing import Any, Dict, TypedDict, TYPE_CHECKING, Union
+from typing import Any, Dict, List, NoReturn, Optional, TYPE_CHECKING, Union
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from urllib.request import (
     Request as BaseURLRequest,
@@ -24,18 +24,15 @@ from urllib.request import (
     build_opener)
 
 from django.utils.encoding import force_str
-from djblets.log import log_timed
 from djblets.util.decorators import cached_property
+from typing_extensions import TypeAlias, TypedDict
 
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
 
 if TYPE_CHECKING:
-    from urllib.request import BaseHandler
-
-    from typelets.json import JSONValue
-    from typing_extensions import Never, TypeAlias
-
+    from djblets.util.typing import JSONValue
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+    from urllib.request import BaseHandler
 
 
 logger = logging.getLogger(__name__)
@@ -52,13 +49,13 @@ class UploadedFileInfo(TypedDict):
     #:
     #: Type:
     #:      bytes
-    content: bytes | str
+    content: Union[bytes, str]
 
     #: The base name of the file.
     #:
     #: Type:
     #:      bytes
-    filename: bytes | str
+    filename: Union[bytes, str]
 
 
 #: Form field data to set when performing a POST or PUT.
@@ -91,27 +88,19 @@ UploadedFiles: TypeAlias = Dict[Union[bytes, str], UploadedFileInfo]
 
 
 def _log_and_raise(
-    value: Never,
     request: HostingServiceHTTPRequest,
     msg: str,
     **fmt_dict,
-) -> Never:
+) -> NoReturn:
     """Log and raise an exception with the given message.
 
     This is used when validating data going into the request, and is
     intended to help with debugging bad calls to the HTTP code.
 
-    Version Changed:
-        7.1:
-        Modified to take in the offending value.
-
     Version Added:
         4.0
 
     Args:
-        value (object):
-            The value which was not valid.
-
         request (HostingServiceHTTPRequest):
             The HTTP request.
 
@@ -125,7 +114,7 @@ def _log_and_raise(
         TypeError:
             The exception containing the provided message.
     """
-    msg %= dict({
+    msg = msg % dict({
         'method': request.method,
         'service': type(request.hosting_service),
     }, **fmt_dict)
@@ -158,7 +147,7 @@ class HostingServiceHTTPRequest:
     #:
     #: Type:
     #:     bytes
-    body: bytes | None
+    body: Optional[bytes]
 
     #: The headers to send in the request.
     #:
@@ -170,7 +159,7 @@ class HostingServiceHTTPRequest:
     #:
     #: Type:
     #:     HostingService
-    hosting_service: BaseHostingService | None
+    hosting_service: Optional[BaseHostingService]
 
     #: The HTTP method to perform.
     #:
@@ -182,7 +171,7 @@ class HostingServiceHTTPRequest:
     #:
     #: Type:
     #:     dict
-    query: QueryArgs | None
+    query: Optional[QueryArgs]
 
     #: The URL the request is being made to.
     #:
@@ -194,16 +183,16 @@ class HostingServiceHTTPRequest:
     #:
     #: Type:
     #:     list
-    _urlopen_handlers: list[BaseHandler]
+    _urlopen_handlers: List[BaseHandler]
 
     def __init__(
         self,
         url: str,
-        query: (QueryArgs | None) = None,
-        body: (bytes | None) = None,
-        headers: (HTTPHeaders | None) = None,
+        query: Optional[QueryArgs] = None,
+        body: Optional[bytes] = None,
+        headers: Optional[HTTPHeaders] = None,
         method: str = 'GET',
-        hosting_service: (BaseHostingService | None) = None,
+        hosting_service: Optional[BaseHostingService] = None,
         **kwargs,
     ) -> None:
         """Initialize the request.
@@ -244,7 +233,6 @@ class HostingServiceHTTPRequest:
 
         if body is not None and not isinstance(body, bytes):
             _log_and_raise(
-                body,
                 self,
                 'Received non-bytes body for the HTTP request for '
                 '%(service)r. This is likely an implementation problem. '
@@ -279,19 +267,19 @@ class HostingServiceHTTPRequest:
         self._urlopen_handlers = []
 
     @property
-    def data(self) -> bytes | None:
+    def data(self) -> Optional[bytes]:
         """The payload data for the request.
 
         Deprecated:
             4.0:
             This is deprecated in favor of the :py:attr:`body` attribute.
         """
-        class_name = type(self).__name__
-
         RemovedInReviewBoard80Warning.warn(
-            f'{class_name}.data is deprecated in favor of '
-            f'{class_name}.body. This will be removed in Review Board 8.'
-        )
+            '%(class_name)s.data is deprecated in favor of '
+            '%(class_name)s.body. This will be removed in Review Board 8.'
+            % {
+                'class_name': type(self).__name__,
+            })
 
         return self.body
 
@@ -309,35 +297,24 @@ class HostingServiceHTTPRequest:
             value (str):
                 The header value.
         """
-        if not isinstance(name, str):
+        if (not isinstance(name, str) or
+            not isinstance(value, str)):
             _log_and_raise(
-                name,
                 self,
-                'Received non-Unicode header name %(header)r '
-                '(value=%(data)r) for the HTTP request for %(service)r. '
-                'This is likely an implementation problem. Please make sure '
-                'only Unicode strings are sent in request headers.',
+                'Received non-Unicode header %(header)r (value=%(value)r) '
+                'for the HTTP request for %(service)r. This is likely an '
+                'implementation problem. Please make sure only Unicode '
+                'strings are sent in request headers.',
                 header=name,
-                data=value)
-
-        if not isinstance(value, str):
-            _log_and_raise(
-                value,
-                self,
-                'Received non-Unicode header value for %(header)r '
-                '(value=%(data)r) for the HTTP request for %(service)r. This '
-                'is likely an implementation problem. Please make sure only '
-                'Unicode strings are sent in request headers.',
-                header=name,
-                data=value)
+                value=value)
 
         self.headers[name.capitalize()] = value
 
     def get_header(
         self,
         name: str,
-        default: (str | None) = None,
-    ) -> str | None:
+        default: Optional[str] = None,
+    ) -> Optional[str]:
         """Return a header from the request.
 
         Args:
@@ -352,15 +329,15 @@ class HostingServiceHTTPRequest:
             The header value.
         """
         assert isinstance(name, str), (
-            f'{type(self).__name__}.get_header() requires a Unicode header '
-            f'name')
+            '%s.get_header() requires a Unicode header name'
+            % type(self).__name__)
 
         return self.headers.get(name.capitalize(), default)
 
     def add_basic_auth(
         self,
-        username: bytes | str,
-        password: bytes | str,
+        username: Union[bytes, str],
+        password: Union[bytes, str],
     ) -> None:
         """Add HTTP Basic Authentication headers to the request.
 
@@ -378,10 +355,8 @@ class HostingServiceHTTPRequest:
             password = password.encode('utf-8')
 
         auth = b'%s:%s' % (username, password)
-        encoded = force_str(base64.b64encode(auth))
-
         self.add_header(HTTPBasicAuthHandler.auth_header,
-                        f'Basic {encoded}')
+                        'Basic %s' % force_str(base64.b64encode(auth)))
 
     def add_digest_auth(
         self,
@@ -398,7 +373,7 @@ class HostingServiceHTTPRequest:
                 The password.
         """
         result = urlparse(self.url)
-        top_level_url = f'{result.scheme}://{result.netloc}'
+        top_level_url = '%s://%s' % (result.scheme, result.netloc)
 
         password_mgr = HTTPPasswordMgrWithDefaultRealm()
         password_mgr.add_password(None, top_level_url, username, password)
@@ -435,13 +410,10 @@ class HostingServiceHTTPRequest:
                 An error occurred talking to the server, or an HTTP error
                 (400+) was returned.
         """
-        url = self.url
-        method = self.method
-
-        request = BaseURLRequest(url=url,
+        request = BaseURLRequest(url=self.url,
                                  data=self.body,
                                  headers=self.headers,
-                                 method=method)
+                                 method=self.method)
 
         hosting_service = self.hosting_service
 
@@ -458,20 +430,8 @@ class HostingServiceHTTPRequest:
 
             self._urlopen_handlers.append(HTTPSHandler(context=context))
 
-            timer_msg = (
-                f'Performing HTTP {method} request for '
-                f'{hosting_service.name} at {url}'
-            )
-        else:
-            timer_msg = (
-                f'Performing HTTP {method} request at {url}'
-            )
-
         opener = build_opener(*self._urlopen_handlers)
-
-        with log_timed(timer_msg,
-                       logger=logger):
-            response = opener.open(request)
+        response = opener.open(request)
 
         if hosting_service:
             response_cls = hosting_service.client.http_response_cls
@@ -539,7 +499,7 @@ class HostingServiceHTTPResponse:
         self,
         request: HostingServiceHTTPRequest,
         url: str,
-        data: bytes | None,
+        data: bytes,
         headers: HTTPHeaders,
         status_code: int,
     ) -> None:
@@ -565,52 +525,37 @@ class HostingServiceHTTPResponse:
         """
         self.request = request
 
-        if data is None:
-            data = b''
-        elif not isinstance(data, bytes):
+        if data is not None and not isinstance(data, bytes):
             # HTTP response data will be in byte strings, unless something is
             # overridden. Users should never see this in production, but
             # it'll be confusing for development. Make sure developers see
             # this through both a log message and an exception.
             _log_and_raise(
-                data,
                 request,
                 'Received non-byte data from the HTTP %(method)s request '
                 'for %(service)r. This is likely an implementation '
                 'problem in a unit test or subclass. Please make sure '
                 'only byte strings are sent.')
 
-        if not isinstance(headers, dict):
+        if headers is None:
             _log_and_raise(
-                headers,
                 request,
-                'Headers response for HTTP %(method)s request for %(service)r '
-                'is not a dict. This is likely an implementation problem in a '
-                'unit test. Please make sure a dictionary is returned.')
+                'Headers response for HTTP %(method)s request for '
+                '%(service)r is None. This is likely an implementation '
+                'problem in a unit test. Please make sure a dictionary '
+                'is returned.')
 
         new_headers: HTTPHeaders = {}
 
         for key, value in headers.items():
-            if not isinstance(key, str):
+            if not isinstance(key, str) or not isinstance(value, str):
                 _log_and_raise(
-                    key,
                     request,
-                    'Received non string header %(header)r from the '
+                    'Received non-native string header %(header)r from the '
                     'HTTP %(method)s request for %(service)r. This is likely '
                     'an implementation problem in a unit test. Please '
-                    'make sure only strings are sent.',
+                    'make sure only native strings are sent.',
                     header=key)
-
-            if not isinstance(value, str):
-                _log_and_raise(
-                    value,
-                    request,
-                    'Received non string header value %(header)r '
-                    '(key=%(key)r) from the HTTP %(method)s request for '
-                    '%(service)r. This is likely an implementation problem in '
-                    'a unit test. Please make sure only strings are  sent.',
-                    key=key,
-                    header=value)
 
             new_headers[key.capitalize()] = value
 
@@ -639,8 +584,8 @@ class HostingServiceHTTPResponse:
     def get_header(
         self,
         name: str,
-        default: (str | None) = None,
-    ) -> str | None:
+        default: Optional[str] = None,
+    ) -> Optional[str]:
         """Return the value of a header as a Unicode string.
 
         This accepts a header name with any form of capitalization. The header
@@ -689,13 +634,13 @@ class HostingServiceHTTPResponse:
             IndexError:
                 An index other than 0 or 1 was requested.
         """
-        class_name = type(self).__name__
-
         RemovedInReviewBoard80Warning.warn(
-            f'Accessing {class_name} by index is deprecated. Please use '
-            f'{class_name}.data or {class_name}.headers instead. This '
+            'Accessing %(class_name)s by index is deprecated. Please use '
+            '%(class_name)s.data or %(class_name)s.headers instead. This '
             'will be removed in Review Board 8.'
-        )
+            % {
+                'class_name': type(self).__name__,
+            })
 
         if i == 0:
             return self.data

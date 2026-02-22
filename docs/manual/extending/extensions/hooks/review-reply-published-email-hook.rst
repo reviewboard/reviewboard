@@ -21,39 +21,16 @@ Example
 
 .. code-block:: python
 
-    from typing import TYPE_CHECKING
-
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import ReviewReplyPublishedEmailHook
 
-    if TYPE_CHECKING:
-        from django.contrib.auth.models import User
-        from reviewboard.notifications.email.utils import RecipientList
-        from reviewboard.reviews.models import Review, ReviewRequest
-
-
     class SampleEmailHook(ReviewReplyPublishedEmailHook):
-        def get_to_field(
-            self,
-            to_field: RecipientList,
-            reply: Review,
-            user: User,
-            review: Review,
-            review_request: ReviewRequest,
-        ) -> RecipientList:
+        def get_to_field(self, to_field, reply, user, review, review_request):
             to_field.add(user)
-            return to_field
 
-        def get_cc_field(
-            self,
-            cc_field: RecipientList,
-            reply: Review,
-            user: User,
-            review: Review,
-            review_request: ReviewRequest,
-        ) -> RecipientList:
-            return set()
+        def get_cc_field(self, cc_field, reply, user, review, review_request):
+            return set([])
 
     class SampleExtension(Extension):
-        def initialize(self) -> None:
+        def initialize(self):
             SampleEmailHook(self)

@@ -66,14 +66,6 @@ export interface DiffFileAttrs extends ModelAttributes {
     /** Whether or not this is a binary file. */
     binary: boolean;
 
-    /**
-     * A set of CSS bundle names used in rendering the file.
-     *
-     * Version Added:
-     *     7.1
-     */
-    cssMedia: Set<string> | null;
-
     /** Whether or not the file was deleted. */
     deleted: boolean;
 
@@ -99,14 +91,6 @@ export interface DiffFileAttrs extends ModelAttributes {
 
     /** Information about the interdiff, if present. */
     interfilediff: SerializedFileDiff | null;
-
-    /**
-     * A set of JavaScript bundle names and URLs used in rendering the file.
-     *
-     * Version Added:
-     *     7.1
-     */
-    jsMedia: Set<string> | null;
 
     /**
      * The filename for the modified version of the file.
@@ -164,7 +148,6 @@ export interface DiffFileAttrs extends ModelAttributes {
 export interface DiffFileResourceData {
     base_filediff_id: number;
     binary: boolean;
-    css_media: Array<string> | undefined;
     deleted: boolean;
     extra: DiffFileExtraContext;
     filediff: SerializedFileDiff;
@@ -173,7 +156,6 @@ export interface DiffFileResourceData {
     index: number;
     interdiff_revision: number;
     interfilediff: SerializedFileDiff;
-    js_media: Array<string> | undefined;
     modified_filename: string;
     modified_revision: string;
     newfile: boolean;
@@ -192,7 +174,6 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
     static defaults: Result<Partial<DiffFileAttrs>> = {
         baseFileDiffID: null,
         binary: false,
-        cssMedia: null,
         deleted: false,
         extra: null,
         filediff: null,
@@ -200,7 +181,6 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
         forceInterdiffRevision: null,
         index: null,
         interfilediff: null,
-        jsMedia: null,
         modifiedFilename: null,
         modifiedRevision: null,
         newfile: false,
@@ -227,7 +207,6 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
         return {
             baseFileDiffID: rsp.base_filediff_id,
             binary: rsp.binary,
-            cssMedia: new Set(rsp.css_media),
             deleted: rsp.deleted,
             extra: rsp.extra,
             filediff: rsp.filediff,
@@ -236,7 +215,6 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
             id: rsp.id,
             index: rsp.index,
             interfilediff: rsp.interfilediff,
-            jsMedia: new Set(rsp.js_media),
             modifiedFilename: rsp.modified_filename,
             modifiedRevision: rsp.modified_revision,
             newfile: rsp.newfile,

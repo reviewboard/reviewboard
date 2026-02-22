@@ -11,9 +11,9 @@ This page covers the general workflows for :ref:`pre-commit review
 We also have detailed guides for using Review Board with specific source code
 management systems:
 
+* :ref:`Cliosoft SOS <rbtools-workflow-sos>`
 * :ref:`Git <rbtools-workflow-git>`
-* :ref:`IBM ClearCase / HCL ClearCase <rbtools-workflow-clearcase>`
-* :ref:`Keysight SOS <rbtools-workflow-sos>`
+* :ref:`IBM ClearCase / HCL VersionVault <rbtools-workflow-versionvault>`
 * :ref:`Perforce <rbtools-workflow-perforce>`
 
 

@@ -144,7 +144,7 @@ using :ref:`rbt patch <rbtools:rbt-patch>`.
           - checkout
           - run:
             name: Install dependencies
-            command: sudo pip install -e .
+            command: sudo python setup.py develop
           - run:
             name: Run tests
             command: python ./tests/runtests.py
@@ -160,7 +160,7 @@ using :ref:`rbt patch <rbtools:rbt-patch>`.
               rbt patch --api-token "$REVIEWBOARD_API_TOKEN" --server "$REVIEWBOARD_SERVER" --diff-revision "$REVIEWBOARD_DIFF_REVISION" "$REVIEWBOARD_REVIEW_REQUEST"
           - run:
             name: Install dependencies
-            command: sudo pip install -e .
+            command: sudo python setup.py develop
           - run:
             name: Run tests
             command: python ./tests/runtests.py
