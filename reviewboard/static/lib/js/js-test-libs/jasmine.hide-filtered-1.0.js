@@ -5,14 +5,15 @@
  * of hiding any specs not matching the suite path specified in ?spec=<path>.
  * This helps keep the list of results focused when working on a small part of
  * a large test suite.
+ *
+ * Copyright (C) 2016 Beanbag, Inc.
+ *
+ * Licensed under the MIT license.
  */
-import {
-    Suite,
-    jasmine,
-} from 'jasmine-core';
+(function() {
 
 
-const queryString = new jasmine.QueryString({
+var queryString = new jasmine.QueryString({
     getWindowLocation: function() {
         return window.location;
     }
@@ -36,12 +37,15 @@ const queryString = new jasmine.QueryString({
  *     boolean:
  *     Whether or not this suite is marked as hidden.
  */
-function hideFilteredSuites(
-    suite: Suite,
-): boolean {
-    let hide = true;
+function hideFilteredSuites(suite) {
+    var hide = true,
+        child,
+        el,
+        i;
 
-    for (const child of suite.children) {
+    for (i = 0; i < suite.children.length; i++) {
+        child = suite.children[i];
+
         if ((child.children === undefined && !child.disabled) ||
             (child.children !== undefined && !hideFilteredSuites(child))) {
             hide = false;
@@ -50,7 +54,7 @@ function hideFilteredSuites(
 
     if (hide) {
         /* This suite can be hidden. */
-        const el = document.getElementById('suite-' + suite.id);
+        el = document.getElementById('suite-' + suite.id);
 
         if (el) {
             el.setAttribute('style', 'display: none;');
@@ -66,14 +70,17 @@ function hideFilteredSuites(
  *
  * Args:
  *     filterSpecs (boolean):
- *         The current setting for hiding filtered-out suites.
+ *         The current setting for hidding filtered-out suites.
  */
-function addFilterCheckbox(
-    filterSpecs: boolean,
-) {
-    const optionsEl = document.getElementsByClassName('jasmine-payload')[0];
-    const checkboxContainerEl = document.createElement('div');
-    const checkboxEl = document.createElement('input');
+function addFilterCheckbox(filterSpecs) {
+    var optionsEl = document.getElementsByClassName('jasmine-payload')[0],
+        checkboxContainerEl,
+        checkboxEl,
+        labelEl;
+
+    checkboxContainerEl = document.createElement('div');
+
+    checkboxEl = document.createElement('input');
     checkboxEl.setAttribute('type', 'checkbox');
     checkboxEl.setAttribute('id', 'jasmine-hide-filtered');
     checkboxContainerEl.appendChild(checkboxEl);
@@ -82,7 +89,7 @@ function addFilterCheckbox(
         checkboxEl.setAttribute('checked', 'checked');
     }
 
-    const labelEl = document.createElement('label');
+    labelEl = document.createElement('label');
     labelEl.className = 'jasmine-label';
     labelEl.setAttribute('for', 'jasmine-hide-filtered');
     labelEl.appendChild(document.createTextNode('hide filtered suites'));
@@ -101,8 +108,8 @@ function addFilterCheckbox(
 window.addEventListener('DOMContentLoaded', function() {
     jasmine.getEnv().addReporter({
         jasmineDone: function() {
-            const spec = queryString.getParam('spec');
-            const filterSpecs = (queryString.getParam('filter-specs') !== false);
+            var spec = queryString.getParam('spec'),
+                filterSpecs = (queryString.getParam('filter-specs') !== false);
 
             addFilterCheckbox(filterSpecs);
 
@@ -112,3 +119,6 @@ window.addEventListener('DOMContentLoaded', function() {
         }
     });
 }, false);
+
+
+})();

@@ -127,18 +127,22 @@ package_only_dependencies = {
 
 
 #: Dependencies required for runtime or static media building.
-runtime_npm_dependencies: Mapping[str, str] = {
-    '@beanbag/djblets': '*',
-    '@prantlf/jsonlint': '^16.0.0',
-    '@tabler/icons': '^3.35.0',
-    'codemirror': '^5.65.20',
-    'core-js': '^3.46.0',
+runtime_npm_dependencies: dict[str, str] = {
+    '@babel/plugin-external-helpers': '^7.18.6',
+    '@beanbag/jasmine-suites': '~2.0.0',
+    '@prantlf/jsonlint': '^11.7.0',
+    '@rollup/plugin-commonjs': '^24.0.1',
+    'babel-polyfill': '^6.26.0',
+    'codemirror': '^5.65.11',
+    'jasmine-core': '~5.1.0',
+    'jquery': '^3.7.1',
     'jquery-flot': '^0.8.3',
-    'jquery-form': '^4.3.0',
+    'jquery-form': '^4.2.2',
+    'jquery-ui': '~1.13.3',
     'jquery.cookie': '^1.4.1',
-    'masonry-layout': '^4.2.2',
-    'moment': '^2.30.1',
-    'moment-timezone': '^0.6.0',
+    'moment': '^2.29.4',
+    'moment-timezone': '^0.5.40',
+    'sourcemapped-stacktrace': '^1.1.11',
 }
 
 
@@ -213,42 +217,36 @@ def build_dependency_list(
     return sorted(new_deps, key=lambda s: s.lower())
 
 
-def _dependency_message(
-    message: str,
-    prefix: str = '',
-) -> None:
+def _dependency_message(message, prefix=''):
     """Utility function to print and track a dependency-related message.
 
     This will track that a message was printed, allowing us to determine if
     any messages were shown to the user.
 
     Args:
-        message (str):
+        message (unicode):
             The dependency-related message to display. This will be wrapped,
             but long strings (like paths) will not contain line breaks.
 
-        prefix (str, optional):
+        prefix (unicode, optional):
             The prefix for the message. All text will be aligned after this.
     """
-    wrapped = textwrap.fill(
-        message,
-        initial_indent=prefix,
-        subsequent_indent=' ' * len(prefix),
-        break_long_words=False,
-        break_on_hyphens=False)
-    sys.stderr.write(f'\n{wrapped}\n')
+    sys.stderr.write('\n%s\n'
+                     % textwrap.fill(message,
+                                     initial_indent=prefix,
+                                     subsequent_indent=' ' * len(prefix),
+                                     break_long_words=False,
+                                     break_on_hyphens=False))
 
 
-def dependency_error(
-    message: str,
-) -> None:
+def dependency_error(message):
     """Print a dependency error.
 
     This will track that a message was printed, allowing us to determine if
     any messages were shown to the user.
 
     Args:
-        message (str):
+        message (unicode):
             The dependency error to display. This will be wrapped, but long
             strings (like paths) will not contain line breaks.
     """
@@ -258,16 +256,14 @@ def dependency_error(
     _dependency_error_count += 1
 
 
-def dependency_warning(
-    message: str,
-) -> None:
+def dependency_warning(message):
     """Print a dependency warning.
 
     This will track that a message was printed, allowing us to determine if
     any messages were shown to the user.
 
     Args:
-        message (str):
+        message (unicode):
             The dependency warning to display. This will be wrapped, but long
             strings (like paths) will not contain line breaks.
     """
@@ -277,7 +273,7 @@ def dependency_warning(
     _dependency_warning_count += 1
 
 
-def fail_if_missing_dependencies() -> None:
+def fail_if_missing_dependencies():
     """Exit the process with an error if dependency messages were shown.
 
     If :py:func:`dependency_error` or :py:func:`dependency_warning` were
@@ -287,9 +283,8 @@ def fail_if_missing_dependencies() -> None:
     if _dependency_warning_count > 0 or _dependency_error_count > 0:
         from reviewboard import get_manual_url
 
-        manual_url = get_manual_url()
-        _dependency_message(
-            f'Please see {manual_url} for help setting up Review Board.')
+        _dependency_message('Please see %s for help setting up Review Board.'
+                            % get_manual_url())
 
         if _dependency_error_count > 0:
             sys.exit(1)

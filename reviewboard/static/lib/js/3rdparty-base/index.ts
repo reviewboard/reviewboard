@@ -1,4 +1,4 @@
-import 'core-js/stable';
+import 'babel-polyfill';
 import jQuery from 'jquery';
 
 

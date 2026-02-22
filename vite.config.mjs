@@ -14,12 +14,6 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 
-const node_modules_dir = path.resolve(__dirname, 'node_modules')
-const djblets_static_dir = path.resolve(
-    node_modules_dir, '@beanbag', 'djblets', 'static')
-const rb_static_dir = path.resolve(__dirname, 'reviewboard', 'static')
-
-
 export default defineConfig({
     build: {
         target: 'esnext',
@@ -29,12 +23,15 @@ export default defineConfig({
             less: {
                 javascriptEnabled: true,
                 modifyVars: {
-                    'tabler-path': path.resolve(node_modules_dir,
+                    'images-path': path.resolve(__dirname, 'src', 'ink',
+                                                'images'),
+                    'tabler-path': path.resolve(__dirname, 'node_modules',
                                                 '\\@tabler', 'icons'),
                 },
                 paths: [
-                    rb_static_dir,
-                    djblets_static_dir,
+                    path.resolve(__dirname, 'reviewboard', 'static'),
+                    path.resolve(__dirname, 'node_modules', '@beanbag',
+                                 'djblets', 'static'),
                 ],
             },
         },
@@ -75,24 +72,17 @@ export default defineConfig({
         }),
     ],
     resolve: {
-        alias: [
-            {
-                find: 'reviewboard',
-                replacement: path.resolve(rb_static_dir, 'rb', 'js'),
-            },
-            {
-                find: 'djblets/css',
-                replacement: path.resolve(djblets_static_dir, 'djblets', 'css'),
-            },
-            {
-                find: 'djblets/images',
-                replacement: path.resolve(djblets_static_dir, 'djblets', 'images'),
-            },
-            {
-                find: 'djblets',
-                replacement: path.resolve(djblets_static_dir, 'djblets', 'js'),
-            },
-        ],
+        alias: {
+            'reviewboard/common': path.resolve(
+                __dirname,
+                'reviewboard/static/rb/js/common/index.ts'),
+            'reviewboard/reviews': path.resolve(
+                __dirname,
+                'reviewboard/static/rb/js/reviews/index.ts'),
+            'reviewboard/ui': path.resolve(
+                __dirname,
+                'reviewboard/static/rb/js/ui/index.ts'),
+        },
     },
     ssr: {
         noExternal: [

@@ -16,14 +16,13 @@ export const commonRollupConfig = {
         'babel-plugin-dedent',
         'babel-plugin-django-gettext',
         'jQuery',
-        'jasmine-core',
+        'jasmine',
         'jquery',
     ],
     globals: {
         '$': '$',
         jQuery: '$',
         jquery: '$',
-        'jasmine-core': 'window',
     },
     output: {
         /* Enforce named exports, helping with CommonJS compatibility. */
@@ -106,6 +105,7 @@ export function makeReviewBoardRollupConfig(options) {
             'moment',
             'django',
             'djblets',
+            'jasmine-core',
             'underscore',
 
             ...externalConfig,
@@ -133,6 +133,7 @@ export function makeReviewBoardRollupConfig(options) {
                 backbone: 'Backbone',
                 django: 'django',
                 djblets: 'Djblets',
+                'jasmine-core': 'window',
                 underscore: '_',
 
                 ...globalsConfig,

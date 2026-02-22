@@ -1,0 +1,28 @@
+env:
+  '@beanbag/backbone': true
+  '@beanbag/django': true
+  '@beanbag/djblets': true
+  browser: true
+  jquery: true
+
+
+extends:
+  - 'plugin:@beanbag/recommended'
+
+
+plugins:
+  - '@beanbag'
+
+
+parserOptions:
+  ecmaVersion: 2015
+
+  # All of our JavaScript will be compiled as modules, and then later turned
+  # into browser-safe JavaScript. We want to validate as modules when writing
+  # code.
+  sourceType: module
+
+
+globals:
+  RB: writable
+  $testsScratch: readonly

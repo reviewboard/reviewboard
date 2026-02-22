@@ -1,13 +1,16 @@
 {
-    "extends": "@beanbag/js-buildkit/tsconfig.json",
     "compilerOptions": {
         "allowJs": true,
         "declaration": false,
+        "esModuleInterop": true,
+        "experimentalDecorators": true,
+        "isolatedModules": true,
+        "moduleResolution": "node",
         "moduleSuffixes": [
             ".es6",
             ""
         ],
         "noEmit": true,
-        "strict": false
+        "target": "ESNext"
     }
 }

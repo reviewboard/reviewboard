@@ -10,7 +10,7 @@
  */
 
 import { withThemeByDataAttribute } from '@storybook/addon-themes';
-import { HtmlRenderer, Preview } from '@storybook/html-vite';
+import { HtmlRenderer, Preview } from '@storybook/html';
 
 import './stubs.ts';
 import './rb-imports.ts';
@@ -39,11 +39,6 @@ const preview: Preview = {
         }),
     ],
     parameters: {
-        a11y: {
-            context: 'body',
-            config: {},
-            options: {},
-        },
         actions: {
             argTypesRegex: '^on[A-Z].*',
         },

@@ -1,19 +1,12 @@
 # Django settings for reviewboard project.
 
-from __future__ import annotations
-
 import os
 import re
-import sys
-from pathlib import Path
 
 import djblets
 from django.urls import reverse
-from djblets.pipeline.settings import (
-    DEFAULT_PIPELINE_COMPILERS,
-    build_pipeline_settings,
-    find_node_modules_dirs,
-)
+from djblets.pipeline.settings import (DEFAULT_PIPELINE_COMPILERS,
+                                       build_pipeline_settings)
 from djblets.staticbundles import (
     PIPELINE_JAVASCRIPT as DJBLETS_PIPELINE_JAVASCRIPT,
     PIPELINE_STYLESHEETS as DJBLETS_PIPELINE_STYLESHEETS)
@@ -123,7 +116,7 @@ RB_EXTRA_MIDDLEWARE_CLASSES = []
 SITE_ROOT_URLCONF = 'reviewboard.urls'
 ROOT_URLCONF = 'djblets.urls.root'
 
-REVIEWBOARD_ROOT = Path(__file__).parent.absolute()
+REVIEWBOARD_ROOT = os.path.abspath(os.path.split(__file__)[0])
 
 # where is the site on your server ? - add the trailing slash.
 SITE_ROOT = '/'
@@ -131,17 +124,18 @@ SITE_ROOT = '/'
 # This isn't needed for locating static media files in Review Board (as we
 # no longer use FileSystemFinder), but it is required for extension
 # packaging at this time.
-STATICFILES_DIRS: list[tuple[str, str] | str] = [
-    ('lib', str(REVIEWBOARD_ROOT / 'static' / 'lib')),
-    ('rb', str(REVIEWBOARD_ROOT / 'static' / 'rb')),
-    ('djblets', str(Path(djblets.__file__).parent / 'static' / 'djblets')),
-]
+STATICFILES_DIRS = (
+    ('lib', os.path.join(REVIEWBOARD_ROOT, 'static', 'lib')),
+    ('rb', os.path.join(REVIEWBOARD_ROOT, 'static', 'rb')),
+    ('djblets', os.path.join(os.path.dirname(djblets.__file__),
+                             'static', 'djblets')),
+)
 
-STATICFILES_FINDERS = [
+STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.AppDirectoriesFinder',
     'djblets.extensions.staticfiles.ExtensionFinder',
     'pipeline.finders.PipelineFinder',
-]
+)
 
 STORAGES = {
     'default': {
@@ -445,7 +439,6 @@ try:
     from settings_local import *  # noqa
 except ImportError as exc:
     dependency_error('Unable to import settings_local.py: %s' % exc)
-    sys.exit(1)
 
 
 SESSION_COOKIE_PATH = SITE_ROOT
@@ -458,7 +451,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
-            str(REVIEWBOARD_ROOT / 'templates'),
+            os.path.join(REVIEWBOARD_ROOT, 'templates'),
         ],
         'OPTIONS': {
             'builtins': [
@@ -608,19 +601,6 @@ if RUNNING_TEST:
 else:
     _pipeline_compilers = DEFAULT_PIPELINE_COMPILERS
 
-
-node_paths = find_node_modules_dirs(REVIEWBOARD_ROOT.parent)
-jquery_ui_dir: (Path | None) = None
-
-for modules_path in node_paths:
-    jquery_ui = modules_path / 'jquery-ui'
-
-    if jquery_ui.is_dir():
-        jquery_ui_dir = jquery_ui
-
-NODE_PATH = ':'.join(str(path) for path in node_paths)
-
-
 _force_build_media = (os.environ.get('FORCE_BUILD_MEDIA', '') == '1')
 
 if not _force_build_media:
@@ -655,6 +635,10 @@ if not _force_build_media:
     PIPELINE_STYLESHEETS.update(DJBLETS_PIPELINE_STYLESHEETS)
 
 
+NODE_PATH = os.path.abspath(os.path.join(REVIEWBOARD_ROOT, '..',
+                                         'node_modules'))
+
+
 PIPELINE = build_pipeline_settings(
     # On production (site-installed) builds, we always want to use the
     # pre-compiled versions. We want this regardless of the DEBUG setting
@@ -677,7 +661,6 @@ PIPELINE = build_pipeline_settings(
     javascript_bundles=PIPELINE_JAVASCRIPT,
     stylesheet_bundles=PIPELINE_STYLESHEETS,
     use_rollup=True,
-    use_terser=True,
     less_extra_args=[
         # This is just here for backwards-compatibility with any stylesheets
         # that still have this. It's no longer necessary because compilation

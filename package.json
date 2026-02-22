@@ -1,16 +1,1 @@
-{
-    "name": "reviewboard-root",
-    "private": true,
-    "scripts": {
-        "build-storybook": "storybook build",
-        "lint": "eslint reviewboard/static/rb/js",
-        "storybook": "storybook dev -p 6007 --no-open"
-    },
-    "browserslist": [
-        "baseline widely available"
-    ],
-    "workspaces": [
-        "reviewboard",
-        ".npm-workspaces/*"
-    ]
-}
+reviewboard/package.json
