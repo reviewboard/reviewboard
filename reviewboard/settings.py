@@ -609,11 +609,16 @@ else:
     _pipeline_compilers = DEFAULT_PIPELINE_COMPILERS
 
 
-NODE_PATH = ':'.join(
-    str(path)
-    for path in
-    find_node_modules_dirs(REVIEWBOARD_ROOT.parent)
-)
+node_paths = find_node_modules_dirs(REVIEWBOARD_ROOT.parent)
+jquery_ui_dir: (Path | None) = None
+
+for modules_path in node_paths:
+    jquery_ui = modules_path / 'jquery-ui'
+
+    if jquery_ui.is_dir():
+        jquery_ui_dir = jquery_ui
+
+NODE_PATH = ':'.join(str(path) for path in node_paths)
 
 
 _force_build_media = (os.environ.get('FORCE_BUILD_MEDIA', '') == '1')
