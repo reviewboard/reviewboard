@@ -83,6 +83,10 @@ class SearchViewTests(TestCase):
 
         self.assertEqual(rsp.status_code, 200)
 
+        # Total number of pages.
+        page_obj = rsp.context['page_obj']
+        num_pages = page_obj.paginator.num_pages
+
         self.assertIn(
             b'<a href="?q=Test&amp;page=1" rel="nofollow">'
             b'&laquo; First Page</a>',
@@ -96,6 +100,6 @@ class SearchViewTests(TestCase):
             b'Next &gt;</a>',
             rsp.content)
         self.assertIn(
-            b'<a href="?q=Test&amp;page=20" rel="nofollow">'
-            b'Last Page &raquo;</a>',
+            f'<a href="?q=Test&amp;page={num_pages}" rel="nofollow">'
+            f'Last Page &raquo;</a>'.encode(),
             rsp.content)

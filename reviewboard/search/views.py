@@ -156,7 +156,7 @@ class RBSearchView(CheckLoginRequiredViewMixin,
                 for filter_id, filter_type in form.FILTER_TYPES.items()
             ),
             'hits_returned': len(object_list),
-            'last_page_num': paginator.num_pages - 1,
+            'last_page_num': paginator.num_pages,
             'page_numbers': page_nums,
             'show_first_page': 1 not in page_nums,
             'show_last_page': paginator.num_pages not in page_nums,
