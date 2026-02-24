@@ -76,7 +76,7 @@ package_dependencies = {
     'mimeparse': '~=0.1.3',
     'packaging': '>=23.1',
     'paramiko': '~=3.4.1',
-    'pydantic': '~=2.5',
+    'pydantic': '~=2.10',
     'pydiffx': '~=1.1',
     'Pygments': '~=2.19.0',
 
@@ -110,7 +110,7 @@ package_dependencies = {
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
 package_only_dependencies = {
-    'rbintegrations': '~=4.0.2',
+    'rbintegrations': '~=5.0a0',
 }
 
 
