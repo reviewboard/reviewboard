@@ -103,7 +103,7 @@ def get_requires_for_build_editable(
         list of str:
         The list of build-time dependencies.
     """
-    _write_dependencies()
+    _write_dependencies(include_package_only=False)
 
     local_paths: dict[str, str] = {}
 
@@ -142,7 +142,7 @@ def get_requires_for_build_sdist(
 
     return [
         *build_dependency_list(package_dependencies),
-        *_build_meta.get_requires_for_build_wheel(config_settings)
+        *_build_meta.get_requires_for_build_wheel(config_settings),
     ]
 
 
@@ -166,7 +166,7 @@ def get_requires_for_build_wheel(
 
     return [
         *build_dependency_list(package_dependencies),
-        *_build_meta.get_requires_for_build_wheel(config_settings)
+        *_build_meta.get_requires_for_build_wheel(config_settings),
     ]
 
 
@@ -190,7 +190,7 @@ def prepare_metadata_for_build_editable(
         str:
         The basename for the generated ``.dist-info`` directory.
     """
-    _write_dependencies()
+    _write_dependencies(include_package_only=False)
 
     return _build_meta.prepare_metadata_for_build_editable(
         metadata_directory,
@@ -250,6 +250,7 @@ def build_editable(
         str:
         The basename for the generated source distribution file.
     """
+    _write_dependencies(include_package_only=False)
     _rebuild_npm_workspaces()
     _install_npm_packages()
 
@@ -257,7 +258,7 @@ def build_editable(
         wheel_directory,
         {
             'editable_mode': 'compat',
-            **(config_settings or {})
+            **(config_settings or {}),
         },
         metadata_directory)
 
@@ -282,6 +283,7 @@ def build_sdist(
         str:
         The basename for the generated source distribution file.
     """
+    _write_dependencies()
     _rebuild_npm_workspaces()
     _install_npm_packages()
     _build_data_files()
@@ -307,10 +309,14 @@ def build_wheel(
         config_settings (dict, optional):
             Configuration settings to pass to Setuptools.
 
+        metadata_directory (str, optional):
+            The directory containing package metadata.
+
     Returns:
         str:
         The basename for the generated wheel file.
     """
+    _write_dependencies()
     _rebuild_npm_workspaces()
     _install_npm_packages()
     _build_data_files()
@@ -375,16 +381,34 @@ def _install_npm_packages() -> None:
         raise RuntimeError(f'Failed to install npm packages: {e.output}')
 
 
-def _write_dependencies() -> None:
+def _write_dependencies(
+    *,
+    include_package_only: bool = True,
+) -> None:
     """Write all dependencies to a file.
 
     This will write to :file:`package-requirements.txt`, so that
     :file:`pyproject.toml` can reference it.
+
+    Version Changed:
+        7.1:
+        Added the ``include_package_only`` argument.
+
+    Args:
+        include_package_only (bool, optional):
+            Whether to include package-only dependencies.
+
+            Version Added:
+                7.1
     """
-    dependencies = build_dependency_list({
+    deps = {
         **package_dependencies,
-        **package_only_dependencies,
-    })
+    }
+
+    if include_package_only:
+        deps.update(package_only_dependencies)
+
+    dependencies = build_dependency_list(deps)
 
     with open('package-requirements.txt', 'w', encoding='utf-8') as fp:
         for dependency in dependencies:
