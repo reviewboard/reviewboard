@@ -1515,7 +1515,7 @@ class Site(object):
             unicode:
             The path to the generated log file.
         """
-        from django_evolution.compat.apps import get_apps
+        from django_evolution.utils.apps import get_apps
         from django_evolution.models import Evolution, Version
         from django_evolution.utils.apps import get_app_label
         from django_evolution.utils.evolutions import get_unapplied_evolutions
