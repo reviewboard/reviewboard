@@ -13,7 +13,7 @@
   "dependencies": {
     "@babel/plugin-external-helpers": "^7.18.6",
     "@beanbag/jasmine-suites": "~2.0.0",
-    "@prantlf/jsonlint": "^11.7.0",
+    "@prantlf/jsonlint": "^17.0.1",
     "@rollup/plugin-commonjs": "^24.0.1",
     "babel-polyfill": "^6.26.0",
     "codemirror": "^5.65.11",
@@ -21,11 +21,14 @@
     "jquery": "^3.7.1",
     "jquery-flot": "^0.8.3",
     "jquery-form": "^4.2.2",
-    "jquery-ui": "~1.13.3",
+    "jquery-ui": "~1.14.2",
     "jquery.cookie": "^1.4.1",
     "moment": "^2.29.4",
     "moment-timezone": "^0.5.40",
     "sourcemapped-stacktrace": "^1.1.11"
+  },
+  "overrides": {
+    "ajv": "8.18.0"
   },
   "workspaces": [
     ".npm-workspaces/*"

@@ -1,2 +1,0 @@
-FUZZINESS = 'AUTO'
-ALL_FIELD = '_all'

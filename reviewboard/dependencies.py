@@ -63,32 +63,52 @@ djblets_version = '~=5.2.1'
 #: All dependencies required to install Review Board.
 package_dependencies = {
     'bleach': '~=6.0.0',
-    'cryptography': '~=41.0.7',
+    'cryptography': '~=46.0.5',
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
     'django_evolution': '~=2.4.2',
-    'django-haystack': '~=3.2.1',
+    'django-haystack': '~=3.3.0',
     'django_oauth_toolkit': '~=1.6.3',
     'django-storages': '~=1.14.2',
     'Djblets': djblets_version,
     'docutils': '',
-    'markdown': '~=3.3.7',
+    'markdown': [
+        {
+            'version': '~=3.7.0',
+            'python': '=="3.8"',
+        },
+        {
+            'version': '~=3.9.0',
+            'python': '=="3.9"',
+        },
+        {
+            'version': '~=3.10',
+            'python': '>="3.10"',
+        },
+    ],
     'mimeparse': '~=0.1.3',
     'packaging': '>=23.1',
     'paramiko': '~=3.4.1',
     'pydiffx': '~=1.1',
-    'Pygments': '~=2.14.0',
+    'Pygments': '~=2.19.2',
 
     # While we don't directly use pyOpenSSL, we do use cryptography, and
     # older versions of pyOpenSSL can break a system badly with newer
     # cryptography (impacting pip as well). So we pin a compatible version.
     #
     # This must match cryptography compatibility.
-    'pyOpenSSL': '~=23.2.0',
+    'pyOpenSSL': '~=25.3.0',
 
-    # TODO: We can migrate to the latest pymdown-extensions release now that
-    # we're Python 3+ only.
-    'pymdown-extensions': '~=6.3.0',
+    'pymdown-extensions': [
+        {
+            'version': '~=10.15.0',
+            'python': '=="3.8"',
+        },
+        {
+            'version': '~=10.21.0',
+            'python': '>="3.9"',
+        },
+    ],
     'pymemcache': '',
     'pytz': '>=2015.2',
     'tqdm': '~=4.66.2',
@@ -129,7 +149,7 @@ package_only_dependencies = {
 runtime_npm_dependencies: dict[str, str] = {
     '@babel/plugin-external-helpers': '^7.18.6',
     '@beanbag/jasmine-suites': '~2.0.0',
-    '@prantlf/jsonlint': '^11.7.0',
+    '@prantlf/jsonlint': '^17.0.1',
     '@rollup/plugin-commonjs': '^24.0.1',
     'babel-polyfill': '^6.26.0',
     'codemirror': '^5.65.11',
@@ -137,7 +157,7 @@ runtime_npm_dependencies: dict[str, str] = {
     'jquery': '^3.7.1',
     'jquery-flot': '^0.8.3',
     'jquery-form': '^4.2.2',
-    'jquery-ui': '~1.13.3',
+    'jquery-ui': '~1.14.2',
     'jquery.cookie': '^1.4.1',
     'moment': '^2.29.4',
     'moment-timezone': '^0.5.40',
