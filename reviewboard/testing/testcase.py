@@ -1102,6 +1102,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         attachment_history: Optional[FileAttachmentHistory] = None,
         draft: Union[ReviewRequestDraft, bool] = False,
         active: bool = True,
+        has_file: bool = True,
         with_history: bool = True,
         **kwargs,
     ) -> FileAttachment:
@@ -1135,6 +1136,14 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             active (bool, optional):
                 Whether this attachment is considered active (not deleted).
 
+            has_file (bool, optional):
+                ``True`` if an actual file object should be included in the
+                model.
+
+                This will set the file content based on ``file_content``, if
+                one is provided. If not provided, the Review Board logo is used
+                as the file content.
+
             with_history (bool, optional):
                 Whether to create a FileAttachmentHistory for this file
                 attachment. If ``attachment_history`` is supplied, that
@@ -1159,12 +1168,14 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
 
         file_attachment = self.create_file_attachment_base(
             attachment_history=attachment_history,
+            has_file=has_file,
             **kwargs)
 
         # This will set the checksum in extra_data, which mirrors our real
         # world behavior of setting the checksum where ever we create file
         # attachments.
-        file_attachment.sha256_checksum
+        if has_file:
+            file_attachment.sha256_checksum
 
         if draft:
             if isinstance(draft, ReviewRequestDraft):
