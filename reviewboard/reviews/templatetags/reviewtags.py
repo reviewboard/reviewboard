@@ -19,7 +19,9 @@ from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 
-from reviewboard.accounts.models import Profile, Trophy
+from reviewboard.accounts.models import (Profile,
+                                         Trophy,
+                                         User as RBUser)
 from reviewboard.accounts.trophies import UnknownTrophy
 from reviewboard.admin.read_only import is_site_read_only_for
 from reviewboard.diffviewer.diffutils import get_displayed_diff_line_ranges
@@ -38,6 +40,9 @@ from reviewboard.reviews.ui.base import FileAttachmentReviewUI
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
+
+    from reviewboard.accounts.models import StarrableObject
     from reviewboard.attachments.models import FileAttachment
     from reviewboard.reviews.context import ReviewRequestContext
 
@@ -555,52 +560,60 @@ def star(context, obj):
     return render_star(context.get('user', None), obj)
 
 
-def render_star(user, obj):
-    """
-    Does the actual work of rendering the star. The star tag is a wrapper
-    around this.
+def render_star(
+    user: AbstractBaseUser | AnonymousUser,
+    obj: StarrableObject,
+) -> SafeString:
+    """Render a starrable object to HTML.
+
+    The starred state will be computed once for the object and then
+    reused for future calls.
+
+    Args:
+        user (django.contrib.auth.models.AnonymousUser or
+              reviewboard.accounts.models.User):
+            The user who may have starred the object.
+
+        obj (reviewboard.reviews.models.Group or
+             reviewboard.reviews.models.ReviewRequest):
+            The group or review request that may be starred.
+
+    Returns:
+        django.utils.safestring.SafeString:
+        The rendered HTML. This will be empty if the user is anonymous or
+        does not have a profile.
     """
     if user.is_anonymous:
-        return ""
+        return mark_safe('')
 
-    profile = None
+    assert isinstance(user, RBUser)
 
-    if not hasattr(obj, 'starred'):
-        try:
-            profile = user.get_profile(create_if_missing=False)
-        except Profile.DoesNotExist:
-            return ''
+    try:
+        profile = user.get_profile(create_if_missing=False)
+    except Profile.DoesNotExist:
+        return mark_safe('')
 
     if isinstance(obj, ReviewRequest):
+        starred = profile.is_review_request_starred(obj)
         obj_info = {
             'type': 'reviewrequests',
-            'id': obj.display_id
+            'id': obj.display_id,
         }
-
-        if hasattr(obj, 'starred'):
-            starred = obj.starred
-        else:
-            starred = \
-                profile.starred_review_requests.filter(pk=obj.id).exists()
     elif isinstance(obj, Group):
+        starred = profile.is_review_group_starred(obj)
         obj_info = {
             'type': 'groups',
-            'id': obj.name
+            'id': obj.name,
         }
-
-        if hasattr(obj, 'starred'):
-            starred = obj.starred
-        else:
-            starred = profile.starred_groups.filter(pk=obj.id).exists()
     else:
         raise TemplateSyntaxError(
-            "star tag received an incompatible object type (%s)" %
-            type(obj))
+            f'render_star() received an incompatible object type: {obj!r}'
+        )
 
     if starred:
-        image_alt = _("Starred")
+        image_alt = _('Starred')
     else:
-        image_alt = _("Click to star")
+        image_alt = _('Click to star')
 
     return render_to_string(
         template_name='reviews/star.html',

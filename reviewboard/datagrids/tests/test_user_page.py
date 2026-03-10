@@ -175,7 +175,8 @@ class SubmitterViewTests(BaseViewTestCase):
         # This will be ordered with newest at the top.
         review_request_pks.reverse()
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         equeries = self._build_user_review_requests_datagrid_equeries(
             user=user,

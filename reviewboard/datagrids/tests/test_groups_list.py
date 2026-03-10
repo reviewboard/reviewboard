@@ -97,7 +97,8 @@ class GroupListViewTests(BaseViewTestCase):
             for i in range(10)
         ]
 
-        self._prefetch_cached()
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         equeries = self._build_datagrid_equeries(
             user=user,

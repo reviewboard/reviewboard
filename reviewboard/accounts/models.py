@@ -36,10 +36,12 @@ from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.signals import (reply_published,
                                          review_published,
                                          review_request_published)
-from reviewboard.site.models import LocalSite
+from reviewboard.site.models import AnyOrAllLocalSites, LocalSite
 from reviewboard.site.signals import local_site_user_added
 
 if TYPE_CHECKING:
+    from typing import TypeAlias
+
     BaseUser = DjangoUser
 else:
     BaseUser = object
@@ -47,6 +49,13 @@ else:
 
 
 logger = logging.getLogger(__name__)
+
+
+#: A type alias for an object that can be starred by a user profile.
+#:
+#: Version Added:
+#:     7.1
+StarrableObject: TypeAlias = Union[Group, ReviewRequest]
 
 
 class UserLocalSiteStats(TypedDict):
@@ -255,6 +264,34 @@ class Profile(models.Model):
 
     objects: ClassVar[ProfileManager] = ProfileManager()
 
+    ######################
+    # Instance variables #
+    ######################
+
+    #: A local cache mapping starrable objects to explicit star states.
+    #:
+    #: When checking if an object is starred, this cache will be checked
+    #: first. If an object is present, its state will take priority over
+    #: anything in the database.
+    star_cache: dict[
+        tuple[type[StarrableObject], Any],
+        bool,
+    ]
+
+    def __init__(self, *args, **kwargs) -> None:
+        """Initialize the profile.
+
+        Args:
+            *args (tuple):
+                Positional arguments to pass to the parent constructor.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the parent constructor.
+        """
+        super().__init__(*args, **kwargs)
+
+        self.star_cache = {}
+
     @property
     def should_confirm_ship_it(self) -> bool:
         """Whether to prompt to confirm publishing a Ship It! review.
@@ -435,7 +472,11 @@ class Profile(models.Model):
         """
         self.settings['ui_theme'] = theme
 
-    def get_starred_review_groups_count(self, *, local_site=None):
+    def get_starred_review_groups_count(
+        self,
+        *,
+        local_site: (AnyOrAllLocalSites | int) = None,
+    ) -> int:
         """The number of starred review groups.
 
         This value is computed and stored in shared cache, to reduce lookups.
@@ -459,7 +500,7 @@ class Profile(models.Model):
             int:
             The starred review group count.
         """
-        def _get_count():
+        def _get_count() -> int:
             queryset = self.starred_groups
 
             if (local_site is LocalSite.ALL or
@@ -479,7 +520,11 @@ class Profile(models.Model):
 
         return count or 0
 
-    def get_starred_review_requests_count(self, *, local_site=None):
+    def get_starred_review_requests_count(
+        self,
+        *,
+        local_site: (AnyOrAllLocalSites | int) = None,
+    ) -> int:
         """The number of starred review requests.
 
         This value is computed and stored in shared cache, to reduce lookups.
@@ -503,7 +548,7 @@ class Profile(models.Model):
             int:
             The starred review request count.
         """
-        def _get_count():
+        def _get_count() -> int:
             queryset = self.starred_review_requests
 
             if (local_site is LocalSite.ALL or
@@ -523,7 +568,11 @@ class Profile(models.Model):
 
         return count or 0
 
-    def has_starred_review_groups(self, *, local_site=None):
+    def has_starred_review_groups(
+        self,
+        *,
+        local_site: (AnyOrAllLocalSites | int) = None,
+    ) -> bool:
         """Whether the user has starred review groups.
 
         The result is based on a shared cache, to reduce lookups.
@@ -550,7 +599,11 @@ class Profile(models.Model):
         """
         return self.get_starred_review_groups_count(local_site=local_site) > 0
 
-    def has_starred_review_requests(self, *, local_site=None):
+    def has_starred_review_requests(
+        self,
+        *,
+        local_site: (AnyOrAllLocalSites | int) = None,
+    ) -> bool:
         """Whether the user has starred review requests.
 
         The result is based on a shared cache, to reduce lookups.
@@ -579,8 +632,45 @@ class Profile(models.Model):
 
         return count > 0
 
-    def is_review_group_starred(self, review_group):
+    def is_object_starred(
+        self,
+        obj: StarrableObject,
+    ) -> bool:
+        """Return whether a starrable object has been starred.
+
+        This will look up in the local cache, if available. Otherwise it
+        will fall back to querying the database.
+
+        Version Added:
+            7.1
+
+        Args:
+            obj (StarrableObject):
+                The object to check.
+
+        Returns:
+            bool:
+            ``True`` if the object is starred. ``False`` if it is not.
+
+        Raises:
+            ValueError:
+                The provided object is not a starrable object.
+        """
+        if isinstance(obj, Group):
+            return self.is_review_group_starred(obj)
+        elif isinstance(obj, ReviewRequest):
+            return self.is_review_request_starred(obj)
+        else:
+            raise ValueError(f'{obj!r} is not an object that can be starred.')
+
+    def is_review_group_starred(
+        self,
+        review_group: Group,
+    ) -> bool:
         """Return whether a review group has been starred.
+
+        This will look up in the local cache, if available. Otherwise it
+        will fall back to querying the database.
 
         Version Added:
             5.0
@@ -594,19 +684,34 @@ class Profile(models.Model):
             ``True`` if the review group has been starred. ``False`` if it
             has not.
         """
-        return (
-            self.has_starred_review_groups(
-                local_site=review_group.local_site_id) and
-            (
-                type(self).starred_groups.through.objects
-                .filter(Q(profile=self.pk) &
-                        Q(group=review_group.pk))
-                .exists()
-            )
-        )
+        local_site = review_group.local_site_id
+        key = (Group, review_group.pk)
 
-    def is_review_request_starred(self, review_request):
+        try:
+            starred = self.star_cache[key]
+        except KeyError:
+            starred = (
+                self.has_starred_review_groups(local_site=local_site) and
+                (
+                    type(self).starred_groups.through.objects
+                    .filter(Q(profile=self.pk) &
+                            Q(group=review_group.pk))
+                    .exists()
+                )
+            )
+
+            self.star_cache[key] = starred
+
+        return starred
+
+    def is_review_request_starred(
+        self,
+        review_request: ReviewRequest,
+    ) -> bool:
         """Return whether a review request has been starred.
+
+        This will look up in the local cache, if available. Otherwise it
+        will fall back to querying the database.
 
         Version Added:
             5.0
@@ -620,18 +725,30 @@ class Profile(models.Model):
             ``True`` if the review request has been starred. ``False`` if it
             has not.
         """
-        return (
-            self.has_starred_review_requests(
-                local_site=review_request.local_site_id) and
-            (
-                type(self).starred_review_requests.through.objects
-                .filter(Q(profile=self.pk) &
-                        Q(reviewrequest=review_request.pk))
-                .exists()
-            )
-        )
+        local_site = review_request.local_site_id
+        key = (ReviewRequest, review_request.pk)
 
-    def star_review_request(self, review_request):
+        try:
+            starred = self.star_cache[key]
+        except KeyError:
+            starred = (
+                self.has_starred_review_requests(local_site=local_site) and
+                (
+                    type(self).starred_review_requests.through.objects
+                    .filter(Q(profile=self.pk) &
+                            Q(reviewrequest=review_request.pk))
+                    .exists()
+                )
+            )
+
+            self.star_cache[key] = starred
+
+        return starred
+
+    def star_review_request(
+        self,
+        review_request: ReviewRequest,
+    ) -> None:
         """Star a review request.
 
         This will mark a review request as starred for this user and
@@ -642,6 +759,7 @@ class Profile(models.Model):
                 The review request to star.
         """
         self.starred_review_requests.add(review_request)
+        self.star_cache[(ReviewRequest, review_request.pk)] = True
 
         if (review_request.public and
             review_request.status in (ReviewRequest.PENDING_REVIEW,
@@ -654,7 +772,10 @@ class Profile(models.Model):
         self._invalidate_starred_review_requests_count_cache(
             review_request.local_site_id)
 
-    def unstar_review_request(self, review_request):
+    def unstar_review_request(
+        self,
+        review_request: ReviewRequest,
+    ) -> None:
         """Unstar a review request.
 
         This will mark a review request as unstarred for this user and
@@ -665,6 +786,7 @@ class Profile(models.Model):
                 The review request to unstar.
         """
         self.starred_review_requests.remove(review_request)
+        self.star_cache[(ReviewRequest, review_request.pk)] = False
 
         if (review_request.public and
             review_request.status in (ReviewRequest.PENDING_REVIEW,
@@ -677,7 +799,10 @@ class Profile(models.Model):
         self._invalidate_starred_review_requests_count_cache(
             review_request.local_site_id)
 
-    def star_review_group(self, review_group):
+    def star_review_group(
+        self,
+        review_group: Group,
+    ) -> None:
         """Star a review group.
 
         This will mark a review group as starred for this user and
@@ -688,12 +813,16 @@ class Profile(models.Model):
                 The review group to star.
         """
         self.starred_groups.add(review_group)
+        self.star_cache[(Group, review_group.pk)] = True
 
         # Invalidate the cache.
         self._invalidate_starred_review_groups_count_cache(
             review_group.local_site_id)
 
-    def unstar_review_group(self, review_group):
+    def unstar_review_group(
+        self,
+        review_group: Group,
+    ) -> None:
         """Unstar a review group.
 
         This will mark a review group as unstarred for this user and
@@ -704,10 +833,90 @@ class Profile(models.Model):
                 The review group to unstar.
         """
         self.starred_groups.remove(review_group)
+        self.star_cache[(Group, review_group.pk)] = False
 
         # Invalidate the cache.
         self._invalidate_starred_review_groups_count_cache(
             review_group.local_site_id)
+
+    def prefetch_starred_objects(
+        self,
+        model: type[StarrableObject],
+        pks: Sequence[Any],
+    ) -> None:
+        """Pre-fetch the starred status for one or more objects.
+
+        This can speed up the lookup of the starred status for groups or
+        review requests, and is recommended when working with bulk lists
+        of these objects.
+
+        Version Added:
+            7.1
+
+        Args:
+            model (type):
+                The type of starrable model.
+
+            pks (list):
+                The list of primary keys.
+        """
+        if issubclass(model, Group):
+            self.prefetch_starred_review_groups(pks)
+        elif issubclass(model, ReviewRequest):
+            self.prefetch_starred_review_requests(pks)
+        else:
+            raise ValueError(f'{model!r} is not a model that can be starred.')
+
+    def prefetch_starred_review_groups(
+        self,
+        pks: Sequence[Any],
+    ) -> None:
+        """Pre-fetch the starred status for one or more review group IDs.
+
+        This can speed up the lookup of the starred status for groups,
+        and is recommended when working with bulk lists of groups.
+
+        Version Added:
+            7.1
+
+        Args:
+            pks (list):
+                The list of review group primary keys.
+
+                This is expected to be sanitized for ownership and any
+                accessible Local Site.
+        """
+        self._populate_star_cache(
+            pks=pks,
+            model=Group,
+            starrable_field='starred_groups',
+        )
+
+    def prefetch_starred_review_requests(
+        self,
+        pks: Sequence[Any],
+    ) -> None:
+        """Pre-fetch the starred status for one or more review request IDs.
+
+        This can speed up the lookup of the starred status for review
+        requests, and is recommended when working with bulk lists of review
+        requests.
+
+        Version Added:
+            7.1
+
+        Args:
+            pks (list):
+                The list of review request primary keys.
+
+                This is expected to be sanitized for ownership and any
+                accessible Local Site.
+        """
+        self._populate_star_cache(
+            pks=pks,
+            model=ReviewRequest,
+            starrable_field='starred_review_requests',
+        )
 
     def __str__(self):
         """Return a string used for the admin site listing."""
@@ -781,6 +990,51 @@ class Profile(models.Model):
         """
         if not is_site_read_only_for(self.user):
             super(Profile, self).save(*args, **kwargs)
+
+    def _populate_star_cache(
+        self,
+        *,
+        pks: Sequence[Any],
+        model: type[StarrableObject],
+        starrable_field: str,
+    ) -> None:
+        """Populate the star cache from state in the database.
+
+        Version Added:
+            7.1
+
+        Args:
+            pks (list):
+                The list of primary keys.
+
+                This is expected to be sanitized for ownership and any
+                accessible Local Site.
+
+            model (type):
+                The type of starrable object the primary keys correspond to.
+
+            starrable_field (str):
+                The relation field in the profile for the starrable objects.
+        """
+        star_cache = self.star_cache
+
+        pks = [
+            pk
+            for pk in pks
+            if (model, pk) not in star_cache
+        ]
+
+        if pks:
+            starred_pks = set(
+                getattr(self, starrable_field)
+                .filter(pk__in=pks)
+                .values_list('pk', flat=True)
+            )
+
+            star_cache.update({
+                (model, pk): pk in starred_pks
+                for pk in pks
+            })
 
     def _build_starred_review_groups_count_cache_key(self, local_site):
         """Build a cache key for a user's starred review group counts.

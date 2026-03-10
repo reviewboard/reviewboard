@@ -126,6 +126,7 @@ class BaseViewTestCase(TestCase):
             try:
                 profile = user.get_profile(create_if_missing=False)
                 profile.has_starred_review_groups(local_site=local_site)
+                profile.has_starred_review_requests(local_site=local_site)
             except Profile.DoesNotExist:
                 pass
 

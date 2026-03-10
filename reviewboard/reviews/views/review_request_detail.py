@@ -213,9 +213,7 @@ class ReviewRequestDetailView(ReviewRequestViewMixin,
             try:
                 return (
                     user.get_profile(create_if_missing=False)
-                    .starred_review_requests
-                    .filter(pk=self.review_request.pk)
-                    .exists()
+                    .is_review_request_starred(self.review_request)
                 )
             except Profile.DoesNotExist:
                 pass
