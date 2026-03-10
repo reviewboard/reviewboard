@@ -56,7 +56,7 @@ djblets_version = '~=6.0a0.dev0'
 #: All dependencies required to install Review Board.
 package_dependencies: Mapping[str, Dependency] = {
     'bleach': '~=6.0.0',
-    'cryptography': '~=41.0.7',
+    'cryptography': '~=46.0.5',
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
     'django_evolution': '>=3.0a0.dev0,==3.*',
@@ -65,22 +65,22 @@ package_dependencies: Mapping[str, Dependency] = {
     'django-storages': '~=1.14.6',
     'Djblets': djblets_version,
     'docutils': '',
-    'markdown': '~=3.10.0',
+    'markdown': '~=3.10',
     'mimeparse': '~=0.1.3',
     'packaging': '>=23.1',
     'paramiko': '~=3.4.1',
     'pydantic': '~=2.10',
     'pydiffx': '~=1.1',
-    'Pygments': '~=2.19.0',
+    'Pygments': '~=2.19.2',
 
     # While we don't directly use pyOpenSSL, we do use cryptography, and
     # older versions of pyOpenSSL can break a system badly with newer
     # cryptography (impacting pip as well). So we pin a compatible version.
     #
     # This must match cryptography compatibility.
-    'pyOpenSSL': '~=23.2.0',
+    'pyOpenSSL': '~=25.3.0',
 
-    'pymdown-extensions': '~=10.20',
+    'pymdown-extensions': '~=10.21',
     'pymemcache': '',
     'tqdm': '~=4.66.2',
     'Whoosh': '>=2.6',

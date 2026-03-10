@@ -35,6 +35,7 @@ from reviewboard.reviews.models import (Comment,
                                         ReviewRequestDraft,
                                         Screenshot,
                                         StatusUpdate)
+from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
@@ -267,8 +268,10 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
         doc = User.objects.get(username='doc')
 
         # Prime the caches.
-        admin.get_profile()
+        LocalSite.objects.has_local_sites()
         doc.get_profile()
+        profile = admin.get_profile()
+        profile.has_starred_review_requests()
 
         username = 'admin'
         summary = 'This is a test summary'
@@ -379,25 +382,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(depends_on__id=1),
             },
             {
-                'annotations': {
-                    'a': Value(1),
-                },
-                'join_types': {
-                    'accounts_profile_starred_review_requests': 'INNER JOIN',
-                },
-                'limit': 1,
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': (
-                    Q(starred_by__id=admin.pk) &
-                    Q(pk=1)
-                ),
-            },
-            {
                 'limit': 1,
                 'model': Review,
                 'order_by': ('timestamp',),
@@ -464,25 +448,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             {
                 'model': Trophy,
                 'where': Q(review_request=review_request),
-            },
-            {
-                'annotations': {
-                    'a': Value(1),
-                },
-                'join_types': {
-                    'accounts_profile_starred_review_requests': 'INNER JOIN',
-                },
-                'limit': 1,
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': (
-                    Q(starred_by__id=admin.pk) &
-                    Q(pk=1)
-                ),
             },
             {
                 'model': Profile,
@@ -933,7 +898,9 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
         self.client.login(username='doc', password='doc')
 
         # Prime the caches.
-        user1.get_profile()
+        profile = user1.get_profile()
+        profile.has_starred_review_requests()
+        LocalSite.objects.has_local_sites()
 
         # Clear the review request's caches so we'll re-fetch the draft.
         review_request.clear_local_caches()
@@ -1025,25 +992,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                     'reviews_reviewrequest_depends_on',
                 },
                 'where': Q(depends_on__id=1),
-            },
-            {
-                'annotations': {
-                    'a': Value(1),
-                },
-                'join_types': {
-                    'accounts_profile_starred_review_requests': 'INNER JOIN',
-                },
-                'limit': 1,
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': (
-                    Q(starred_by__id=user1.pk) &
-                    Q(pk=1)
-                ),
             },
             {
                 'join_types': {
@@ -1380,7 +1328,9 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
         self.client.login(username='doc', password='doc')
 
         # Prime the caches.
-        user1.get_profile()
+        LocalSite.objects.has_local_sites()
+        profile = user1.get_profile()
+        profile.has_starred_review_requests()
 
         # Clear the review request's caches so we'll re-fetch the draft.
         review_request.clear_local_caches()
@@ -1468,25 +1418,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                     'reviews_reviewrequest_depends_on',
                 },
                 'where': Q(depends_on__id=1),
-            },
-            {
-                'annotations': {
-                    'a': Value(1),
-                },
-                'join_types': {
-                    'accounts_profile_starred_review_requests': 'INNER JOIN',
-                },
-                'limit': 1,
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': (
-                    Q(starred_by__id=user1.pk) &
-                    Q(pk=1)
-                ),
             },
             {
                 'join_types': {

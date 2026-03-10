@@ -152,7 +152,8 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         if local_site:
             local_site.users.add(user)
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         equeries = self._build_datagrid_equeries(
             user=user,
@@ -277,7 +278,8 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         # Log in and check what we get.
         self.client.login(username='grumpy', password='grumpy')
 
-        self._prefetch_cached(local_site=local_site)
+        self._prefetch_cached(local_site=local_site,
+                              user=user)
 
         equeries = self._build_datagrid_equeries(
             user=user,

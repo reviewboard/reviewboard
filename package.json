@@ -9,6 +9,9 @@
     "browserslist": [
         "baseline widely available"
     ],
+    "overrides": {
+        "ajv": "8.18.0"
+    },
     "workspaces": [
         "reviewboard",
         ".npm-workspaces/*"

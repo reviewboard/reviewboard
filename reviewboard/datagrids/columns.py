@@ -17,15 +17,16 @@ from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.avatars import avatar_services
-from reviewboard.reviews.models import ReviewRequest
+from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.templatetags.reviewtags import render_star
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
+    from django.utils.safestring import SafeString
     from djblets.datagrid.grids import StatefulColumn
 
-    from reviewboard.reviews.models import Group
+    from reviewboard.accounts.models import StarrableObject
 
 
 class BaseStarColumn(Column):
@@ -36,6 +37,9 @@ class BaseStarColumn(Column):
     The star is interactive, allowing the user to star or unstar the item.
     """
 
+    #: The starrable model handled by the column.
+    starrable_model: type[StarrableObject]
+
     def __init__(self, *args, **kwargs):
         """Initialize the column."""
         super(BaseStarColumn, self).__init__(
@@ -45,13 +49,55 @@ class BaseStarColumn(Column):
             shrink=True,
             *args, **kwargs)
 
-    def setup_state(self, state):
-        """Set up the state for this column."""
-        state.all_starred = set()
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
 
-    def render_data(self, state, obj):
-        """Return the rendered contents of the column."""
-        obj.starred = obj.pk in state.all_starred
+        This will load the list of starrable object IDs to check in the
+        starred list, and then set them in the user's star cache for
+        later rendering.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
+        user = state.datagrid.request.user
+
+        if user.is_authenticated:
+            profile = user.get_profile()
+            profile.prefetch_starred_objects(self.starrable_model,
+                                             state.datagrid.id_list)
+
+        return queryset
+
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: StarrableObject,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (django.db.models.Model):
+                The starrable model object for the row.
+
+        Returns:
+            str:
+            The rendered data as HTML.
+        """
         return render_star(state.datagrid.request.user, obj)
 
 
@@ -739,18 +785,7 @@ class ReviewGroupStarColumn(BaseStarColumn):
     The star is interactive, allowing the user to star or unstar the group.
     """
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
-        user = state.datagrid.request.user
-
-        if user.is_authenticated:
-            state.all_starred = set(
-                user.get_profile().starred_groups
-                .filter(pk__in=state.datagrid.id_list)
-                .values_list('pk', flat=True)
-            )
-
-        return queryset
+    starrable_model = Group
 
 
 class ReviewRequestIDColumn(Column):
@@ -785,18 +820,7 @@ class ReviewRequestStarColumn(BaseStarColumn):
     review request.
     """
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
-        user = state.datagrid.request.user
-
-        if user.is_authenticated:
-            state.all_starred = set(
-                user.get_profile().starred_review_requests
-                .filter(pk__in=state.datagrid.id_list)
-                .values_list('pk', flat=True)
-            )
-
-        return queryset
+    starrable_model = ReviewRequest
 
 
 class ShipItColumn(Column):

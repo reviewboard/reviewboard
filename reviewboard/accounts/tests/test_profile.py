@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from django_assert_queries.testing import assert_queries
 from django.core.cache import cache
 from django.contrib.auth.models import AnonymousUser, User
@@ -12,6 +14,9 @@ from reviewboard.accounts.models import LocalSiteProfile, Profile
 from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from django_assert_queries import ExpectedQueries
 
 
 class ProfileTests(TestCase):
@@ -451,6 +456,11 @@ class ProfileTests(TestCase):
             profile.unstar_review_group(group)
 
         self.assertFalse(profile.starred_groups.exists())
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (Group, 1): False,
+            })
 
     @add_fixtures(['test_site'])
     def test_unstar_review_group_invalidates_cache(self):
@@ -556,7 +566,14 @@ class ProfileTests(TestCase):
         # Unstar the group. This should invalidate the global and cross-site
         # caches.
         profile.unstar_review_group(group2)
+
         self.assertTrue(LocalSite.objects.has_local_sites())
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (Group, 1): True,
+                (Group, 2): False,
+            })
 
         # Fetch the count for cross-sites.
         with assert_queries(cross_site_queries):
@@ -692,7 +709,14 @@ class ProfileTests(TestCase):
         # Unstar the group. This should invalidate the LocalSite and
         # cross-site caches.
         profile.unstar_review_group(group2)
+
         self.assertTrue(LocalSite.objects.has_local_sites())
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (Group, 1): True,
+                (Group, 2): False,
+            })
 
         # Fetch the count for cross-sites.
         with assert_queries(cross_site_queries):
@@ -1169,6 +1193,11 @@ class ProfileTests(TestCase):
 
         self.assertFalse(profile.starred_review_requests.exists())
         self.assertEqual(site_profile.starred_public_request_count, 0)
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (ReviewRequest, 1): False,
+            })
 
     def test_unstar_review_request_with_draft(self):
         """Testing Profile.unstar_review_request with draft review request"""
@@ -1201,6 +1230,11 @@ class ProfileTests(TestCase):
 
         self.assertFalse(profile.starred_review_requests.exists())
         self.assertEqual(site_profile.starred_public_request_count, 0)
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (ReviewRequest, 1): False,
+            })
 
     def test_unstar_review_request_with_pending(self):
         """Testing Profile.unstar_review_request with pending review request"""
@@ -1248,6 +1282,11 @@ class ProfileTests(TestCase):
 
         self.assertFalse(profile.starred_review_requests.exists())
         self.assertEqual(site_profile.starred_public_request_count, 0)
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (ReviewRequest, 1): False,
+            })
 
     def test_unstar_review_request_with_submitted(self):
         """Testing Profile.unstar_review_request with submitted review request
@@ -1298,6 +1337,11 @@ class ProfileTests(TestCase):
 
         self.assertFalse(profile.starred_review_requests.exists())
         self.assertEqual(site_profile.starred_public_request_count, 0)
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (ReviewRequest, 1): False,
+            })
 
     @add_fixtures(['test_site'])
     def test_unstar_review_request_invalidates_cache(self):
@@ -1404,6 +1448,13 @@ class ProfileTests(TestCase):
 
         # Unstar it. This should invalidate the global and cross-site caches.
         profile.unstar_review_request(review_request2)
+
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (ReviewRequest, 1): True,
+                (ReviewRequest, 2): False,
+            })
 
         # Fetch the count for cross-sites.
         with assert_queries(cross_site_queries):
@@ -1542,7 +1593,14 @@ class ProfileTests(TestCase):
         # Unstar it. This should invalidate the LocalSite and cross-site
         # caches.
         profile.unstar_review_request(review_request2)
+
         self.assertTrue(LocalSite.objects.has_local_sites())
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (ReviewRequest, 1): True,
+                (ReviewRequest, 2): False,
+            })
 
         # Fetch the count for cross-sites.
         with assert_queries(cross_site_queries):
@@ -2471,6 +2529,12 @@ class ProfileTests(TestCase):
         with assert_queries(queries):
             self.assertFalse(profile.is_review_request_starred(review_request))
 
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (ReviewRequest, 1): False,
+            })
+
         # A second call should hit the cache.
         with self.assertNumQueries(0):
             self.assertFalse(profile.is_review_request_starred(review_request))
@@ -2478,6 +2542,7 @@ class ProfileTests(TestCase):
         # Star a review request and invalidate cache.
         profile.starred_review_requests.add(review_request)
         cache.clear()
+        profile.star_cache.clear()
 
         self.assertFalse(LocalSite.objects.has_local_sites())
 
@@ -2505,7 +2570,21 @@ class ProfileTests(TestCase):
         with assert_queries(queries):
             self.assertTrue(profile.is_review_request_starred(review_request))
 
-        # A second call will still perform the starred_review_requests lookup.
+        # These will be in cache.
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (ReviewRequest, 1): True,
+            })
+
+        # Another call will utilize star_cache.
+        with self.assertNumQueries(0):
+            self.assertTrue(profile.is_review_request_starred(review_request))
+
+        # If we flush the cache, a new call will still perform the
+        # starred_review_requests lookup, but not the count.
+        profile.star_cache.clear()
+
         queries = [
             {
                 'model': Profile.starred_review_requests.through,
@@ -2556,6 +2635,12 @@ class ProfileTests(TestCase):
         with assert_queries(queries):
             self.assertFalse(profile.is_review_request_starred(review_request))
 
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (ReviewRequest, 1): False,
+            })
+
         # A second call should hit the cache.
         with self.assertNumQueries(0):
             self.assertFalse(profile.is_review_request_starred(review_request))
@@ -2563,6 +2648,7 @@ class ProfileTests(TestCase):
         # Star a review request and invalidate cache.
         profile.starred_review_requests.add(review_request)
         cache.clear()
+        profile.star_cache.clear()
 
         self.assertTrue(LocalSite.objects.has_local_sites())
 
@@ -2598,7 +2684,20 @@ class ProfileTests(TestCase):
         with assert_queries(queries):
             self.assertTrue(profile.is_review_request_starred(review_request))
 
-        # A second call will still perform the starred_review_requests lookup.
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (ReviewRequest, 1): True,
+            })
+
+        # Another call will utilize star_cache.
+        with self.assertNumQueries(0):
+            self.assertTrue(profile.is_review_request_starred(review_request))
+
+        # If we flush the cache, a new call will still perform the
+        # starred_review_requests lookup, but not the count.
+        profile.star_cache.clear()
+
         queries = [
             {
                 'model': Profile.starred_review_requests.through,
@@ -2638,6 +2737,12 @@ class ProfileTests(TestCase):
         with assert_queries(queries):
             self.assertFalse(profile.is_review_group_starred(review_group))
 
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (Group, 1): False,
+            })
+
         # A second call should hit the cache.
         with self.assertNumQueries(0):
             self.assertFalse(profile.is_review_group_starred(review_group))
@@ -2645,6 +2750,7 @@ class ProfileTests(TestCase):
         # Star a review group and invalidate cache.
         profile.starred_groups.add(review_group)
         cache.clear()
+        profile.star_cache.clear()
 
         self.assertFalse(LocalSite.objects.has_local_sites())
 
@@ -2672,7 +2778,20 @@ class ProfileTests(TestCase):
         with assert_queries(queries):
             self.assertTrue(profile.is_review_group_starred(review_group))
 
-        # A second call will still perform the starred_groups lookup.
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (Group, 1): True,
+            })
+
+        # Another call will utilize star_cache.
+        with self.assertNumQueries(0):
+            self.assertTrue(profile.is_review_group_starred(review_group))
+
+        # If we flush the cache, a new call will still perform the
+        # starred_groups lookup, but not the count.
+        profile.star_cache.clear()
+
         queries = [
             {
                 'model': Profile.starred_groups.through,
@@ -2722,6 +2841,12 @@ class ProfileTests(TestCase):
         with assert_queries(queries):
             self.assertFalse(profile.is_review_group_starred(review_group))
 
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (Group, 1): False,
+            })
+
         # A second call should hit the cache.
         with self.assertNumQueries(0):
             self.assertFalse(profile.is_review_group_starred(review_group))
@@ -2729,6 +2854,7 @@ class ProfileTests(TestCase):
         # Star a review group and invalidate cache.
         profile.starred_groups.add(review_group)
         cache.clear()
+        profile.star_cache.clear()
 
         self.assertTrue(LocalSite.objects.has_local_sites())
 
@@ -2764,7 +2890,20 @@ class ProfileTests(TestCase):
         with assert_queries(queries):
             self.assertTrue(profile.is_review_group_starred(review_group))
 
-        # A second call will still perform the starred_groups lookup.
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (Group, 1): True,
+            })
+
+        # Another call will utilize star_cache.
+        with self.assertNumQueries(0):
+            self.assertTrue(profile.is_review_group_starred(review_group))
+
+        # If we flush the cache, a new call will still perform the
+        # starred_groups lookup, but not the count.
+        profile.star_cache.clear()
+
         queries = [
             {
                 'model': Profile.starred_groups.through,
@@ -2779,3 +2918,155 @@ class ProfileTests(TestCase):
 
         with assert_queries(queries):
             self.assertTrue(profile.is_review_group_starred(review_group))
+
+    def test_prefetch_starred_review_groups(self) -> None:
+        """Testing Profile.prefetch_starred_review_groups"""
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        review_group1 = self.create_review_group(name='group1')
+        review_group2 = self.create_review_group(name='group2')
+        review_group3 = self.create_review_group(name='group3')
+
+        profile.starred_groups.add(review_group2, review_group3)
+
+        equeries: ExpectedQueries = [
+            {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'values_select': ('pk',),
+                'where': (
+                    Q(starred_by__id=user.pk) &
+                    Q(pk__in=[review_group1.pk, review_group2.pk])
+                ),
+            },
+        ]
+
+        with assert_queries(equeries):
+            profile.prefetch_starred_review_groups([
+                review_group1.pk,
+                review_group2.pk,
+            ])
+
+        # A second query for the cached items should be a no-op.
+        with self.assertNumQueries(0):
+            profile.prefetch_starred_review_groups([
+                review_group1.pk,
+                review_group2.pk,
+            ])
+
+        # A pre-fetch with an uncached entry should query again.
+        equeries = [
+            {
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'values_select': ('pk',),
+                'where': (
+                    Q(starred_by__id=user.pk) &
+                    Q(pk__in=[review_group3.pk])
+                ),
+            },
+        ]
+
+        with assert_queries(equeries):
+            profile.prefetch_starred_review_groups([
+                review_group3.pk,
+            ])
+
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (Group, review_group1.pk): False,
+                (Group, review_group2.pk): True,
+                (Group, review_group3.pk): True,
+            })
+
+    def test_prefetch_starred_review_requests(self) -> None:
+        """Testing Profile.prefetch_starred_review_requests"""
+        user = User.objects.get(username='doc')
+        profile = user.get_profile()
+
+        review_request1 = self.create_review_request()
+        review_request2 = self.create_review_request()
+        review_request3 = self.create_review_request()
+
+        profile.starred_review_requests.add(review_request2, review_request3)
+
+        equeries: ExpectedQueries = [
+            {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'values_select': ('pk',),
+                'where': (
+                    Q(starred_by__id=user.pk) &
+                    Q(pk__in=[review_request1.pk, review_request2.pk])
+                ),
+            },
+        ]
+
+        with assert_queries(equeries):
+            profile.prefetch_starred_review_requests([
+                review_request1.pk,
+                review_request2.pk,
+            ])
+
+        # A second query for the cached items should be a no-op.
+        with self.assertNumQueries(0):
+            profile.prefetch_starred_review_requests([
+                review_request1.pk,
+                review_request2.pk,
+            ])
+
+        # A pre-fetch with an uncached entry should query again.
+        equeries = [
+            {
+                'join_types': {
+                    'accounts_profile_starred_review_requests': 'INNER JOIN',
+                },
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_review_requests',
+                    'reviews_reviewrequest',
+                },
+                'values_select': ('pk',),
+                'where': (
+                    Q(starred_by__id=user.pk) &
+                    Q(pk__in=[review_request3.pk])
+                ),
+            },
+        ]
+
+        with assert_queries(equeries):
+            profile.prefetch_starred_review_requests([
+                review_request3.pk,
+            ])
+
+        self.assertEqual(
+            profile.star_cache,
+            {
+                (ReviewRequest, review_request1.pk): False,
+                (ReviewRequest, review_request2.pk): True,
+                (ReviewRequest, review_request3.pk): True,
+            })
