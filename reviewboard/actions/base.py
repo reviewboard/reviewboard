@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
 
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from djblets.pagestate.state import PageState
 from housekeeping import func_deprecated
 from typing_extensions import final
 
@@ -1043,6 +1044,49 @@ class BaseAction:
             does not.
         """
         return self.template_name != BaseAction.template_name
+
+    def should_register(
+        self,
+        *,
+        context: Context,
+        request: HttpRequest,
+    ) -> bool:
+        """Return whether this action should be registered.
+
+        By default, an action will be registered only if it's rendered
+        somewhere on the page (which will itself depend in part on the
+        result of :py:meth:`should_render`).
+
+        Subclasses can override this to register even if not rendered, which
+        may be useful for actions that are entirely managed dynamically in
+        JavaScript. When overriding, it's recommended to call
+        :py:meth:`should_render` in order to avoid registering an action
+        that is not applicable to a page or is hidden by a hook.
+
+        Version Added:
+            7.1
+
+        Args:
+            context (django.template.Context):
+                The current rendering context.
+
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            bool:
+            ``True`` if the action should be registered. ``False`` if it
+            should not.
+        """
+        page_state = PageState.for_request(request)
+
+        try:
+            rendered_action_ids = page_state.extra_data['rb-actions-rendered']
+        except KeyError:
+            # This should only happen during tests, but safeguard anyway.
+            return False
+
+        return self.action_id in rendered_action_ids
 
     def should_render(
         self,

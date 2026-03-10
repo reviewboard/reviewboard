@@ -83,6 +83,7 @@ def actions_html(
 
     # Store the rendered JavaScript views for later page injection.
     page_state = PageState.for_request(request)
+    page_state.extra_data.setdefault('rb-actions-rendered', set())
     page_state.inject('rb-action-views', {
         'content': attachment_point.render_js(request=request,
                                               context=context),
@@ -168,7 +169,8 @@ def _iter_actions_js(
     actions: Iterable[BaseAction] = actions_registry
 
     for action in actions:
-        if action.should_render(context=context):
+        if action.should_register(request=request,
+                                  context=context):
             try:
                 yield action.render_model_js(request=request,
                                              context=context)

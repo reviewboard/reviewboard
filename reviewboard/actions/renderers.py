@@ -11,6 +11,7 @@ from typing import Literal, Optional, TYPE_CHECKING, Type, Union, cast
 
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
+from djblets.pagestate.state import PageState
 
 from reviewboard.actions.errors import MissingActionRendererError
 
@@ -248,6 +249,16 @@ class BaseActionRenderer:
             'js_view_class': js_view_class,
             'js_view_data': js_view_data,
         })
+
+        page_state = PageState.for_request(request)
+
+        try:
+            rendered_action_ids = page_state.extra_data['rb-actions-rendered']
+        except KeyError:
+            rendered_action_ids = set()
+            page_state.extra_data['rb-actions-rendered'] = rendered_action_ids
+
+        rendered_action_ids.add(action.action_id)
 
         with context.update(extra_context):
             try:

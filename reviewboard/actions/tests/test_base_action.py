@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from django.template import Context
 from django.utils.safestring import SafeString
+from djblets.pagestate.state import PageState
 
 from reviewboard.actions.base import BaseAction
 from reviewboard.actions.errors import MissingActionRendererError
@@ -84,6 +85,97 @@ class BaseActionTests(TestCase):
 
         with self.assertWarnings(warning_list):
             MyAction()
+
+    def test_should_register_with_rendered(self) -> None:
+        """Testing BaseAction.should_register with rendered"""
+        class MyAction(BaseAction):
+            action_id = 'test-action'
+            label = 'My Label'
+            default_renderer_cls = DefaultActionRenderer
+
+        action = MyAction()
+
+        request = self.create_http_request()
+        context = Context({
+            'request': request,
+        })
+
+        MyAction().render_js(request=request,
+                             context=context)
+
+        self.assertTrue(action.should_register(request=request,
+                                               context=context))
+
+    def test_should_register_with_not_rendered(self) -> None:
+        """Testing BaseAction.should_register with not rendered"""
+        class MyAction(BaseAction):
+            action_id = 'test-action'
+            label = 'My Label'
+            default_renderer_cls = DefaultActionRenderer
+
+        action = MyAction()
+
+        request = self.create_http_request()
+        context = Context({
+            'request': request,
+        })
+
+        self.assertFalse(action.should_register(request=request,
+                                                context=context))
+
+    def test_should_register_with_should_render_true(self) -> None:
+        """Testing BaseAction.should_register with should_render() == True"""
+        class MyAction(BaseAction):
+            action_id = 'test-action'
+            label = 'My Label'
+            default_renderer_cls = DefaultActionRenderer
+
+            def should_render(
+                self,
+                *,
+                context: Context,
+            ) -> bool:
+                return True
+
+        action = MyAction()
+
+        request = self.create_http_request()
+        context = Context({
+            'request': request,
+        })
+
+        MyAction().render_js(request=request,
+                             context=context)
+
+        self.assertTrue(action.should_register(request=request,
+                                               context=context))
+
+    def test_should_register_with_should_render_false(self) -> None:
+        """Testing BaseAction.should_register with should_render() == False"""
+        class MyAction(BaseAction):
+            action_id = 'test-action'
+            label = 'My Label'
+            default_renderer_cls = DefaultActionRenderer
+
+            def should_render(
+                self,
+                *,
+                context: Context,
+            ) -> bool:
+                return False
+
+        action = MyAction()
+
+        request = self.create_http_request()
+        context = Context({
+            'request': request,
+        })
+
+        MyAction().render_js(request=request,
+                             context=context)
+
+        self.assertFalse(action.should_register(request=request,
+                                                context=context))
 
     def test_render_with_default_renderer(self) -> None:
         """Testing BaseAction.render with default renderer"""
@@ -291,6 +383,14 @@ class BaseActionTests(TestCase):
             }));
             """)
 
+        page_state = PageState.for_request(request)
+        self.assertIn('rb-actions-rendered', page_state.extra_data)
+        self.assertEqual(
+            page_state.extra_data['rb-actions-rendered'],
+            {
+                action.action_id,
+            })
+
     def test_render_js_with_custom_default_renderer(self) -> None:
         """Testing BaseAction.render_js with custom default_renderer_cls"""
         class MyAction(BaseAction):
@@ -320,6 +420,14 @@ class BaseActionTests(TestCase):
                 model: page.getAction("test-action"),
             }));
             """)
+
+        page_state = PageState.for_request(request)
+        self.assertIn('rb-actions-rendered', page_state.extra_data)
+        self.assertEqual(
+            page_state.extra_data['rb-actions-rendered'],
+            {
+                action.action_id,
+            })
 
     def test_render_js_with_renderer(self) -> None:
         """Testing BaseAction.render_js with provided renderer="""
@@ -353,6 +461,14 @@ class BaseActionTests(TestCase):
             }));
             """)
 
+        page_state = PageState.for_request(request)
+        self.assertIn('rb-actions-rendered', page_state.extra_data)
+        self.assertEqual(
+            page_state.extra_data['rb-actions-rendered'],
+            {
+                action.action_id,
+            })
+
     def test_render_js_with_no_renderer(self) -> None:
         """Testing BaseAction.render_js with no renderer"""
         class MyAction(BaseAction):
@@ -379,6 +495,9 @@ class BaseActionTests(TestCase):
                              context=context,
                              placement=action.get_placement('review-request'))
 
+        page_state = PageState.for_request(request)
+        self.assertNotIn('rb-actions-rendered', page_state.extra_data)
+
     def test_render_js_with_should_render_false(self) -> None:
         """Testing BaseAction.render_js with should_render() returning False"""
         class MyAction(BaseAction):
@@ -403,3 +522,6 @@ class BaseActionTests(TestCase):
 
         self.assertIsInstance(js, SafeString)
         self.assertEqual(js, '')
+
+        page_state = PageState.for_request(request)
+        self.assertNotIn('rb-actions-rendered', page_state.extra_data)
