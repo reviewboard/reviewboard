@@ -1161,25 +1161,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'model': Trophy,
                 'where': Q(review_request=review_request),
             },
-            {
-                'annotations': {
-                    'a': Value(1),
-                },
-                'join_types': {
-                    'accounts_profile_starred_review_requests': 'INNER JOIN',
-                },
-                'limit': 1,
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': (
-                    Q(starred_by__id=user1.pk) &
-                    Q(pk=1)
-                ),
-            },
             *get_user_permissions_equeries(user=user1),
             {
                 'model': Profile,
@@ -1496,25 +1477,6 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
             {
                 'model': Trophy,
                 'where': Q(review_request=review_request),
-            },
-            {
-                'annotations': {
-                    'a': Value(1),
-                },
-                'join_types': {
-                    'accounts_profile_starred_review_requests': 'INNER JOIN',
-                },
-                'limit': 1,
-                'model': ReviewRequest,
-                'num_joins': 1,
-                'tables': {
-                    'accounts_profile_starred_review_requests',
-                    'reviews_reviewrequest',
-                },
-                'where': (
-                    Q(starred_by__id=user1.pk) &
-                    Q(pk=1)
-                ),
             },
             *get_user_permissions_equeries(user=user1),
             {
