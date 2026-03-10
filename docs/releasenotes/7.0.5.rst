@@ -1,0 +1,153 @@
+.. default-intersphinx:: djblets5.x rb7.x
+
+
+================================
+Review Board 7.0.5 Release Notes
+================================
+
+**Release date**: TBD
+
+
+Installation/Upgrade
+====================
+
+Review Board 7.0.5 is compatible with Python 3.8 - 3.13.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To upgrade to this release in an existing Review Board environment, run:
+
+.. code-block:: console
+
+    $ rb-site manage /path/to/sitedir pip install ReviewBoard==7.0.5
+    $ rb-site upgrade /path/to/sitedir
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Packaging
+=========
+
+* :pypi:`Django` 4.2.29 (or a higher 4.2.x) is now required.
+
+  This is the latest security release for Django 4.2 LTS.
+
+* :pypi:`cryptography` 46.0.5 and :pypi:`pyOpenSSL` 26.0.0 are now required.
+
+  These are the latest security releases for the cryptography package.
+
+* :pypi:`django-haystack` 3.3.0 is now required.
+
+  This package update brings fixes for full-text search, and removes a
+  dependency on the now obsolete `pkg_resources`, which has been causing
+  breakages while installing Review Board 7.0.4.
+
+* :pypi:`markdown` 3.7.0 or newer and :pypi:`pymdown-extensions` 10.15.0 or
+  newer are now required.
+
+  These packages include numerous fixes to markdown processing.
+
+* :pypi:`Pygments` 2.19.2 is now required.
+
+  This includes numerous fixes and improvements to syntax highlighting.
+
+
+New Features
+============
+
+* Support for Bitbucket API tokens (:bug:`5058`).
+
+  Bitbucket has switched from app passwords to `Atlassian API tokens`_.
+  Bitbucket has already turned off the ability to create new app passwords, and
+  existing ones will stop working in June 2026.
+
+  Review Board now supports connecting to Bitbucket repositories with these API
+  tokens, and all users who use Bitbucket are encouraged to upgrade as soon as
+  possible in order to migrate to these.
+
+  See :ref:`Link Your Bitbucket Account <bitbucket-link-account>` for more
+  information on how to create and use these API tokens.
+
+
+.. _Atlassian API Tokens: https://support.atlassian.com/bitbucket-cloud/docs/using-api-tokens/
+
+
+Bug Fixes
+=========
+
+General
+-------
+
+* Fixed adding comments to file attachments which do not have a specialized
+  review UI for display.
+
+* Fixed the user privacy preferences form to disallow redirecting to arbitrary
+  URLs after saving.
+
+  This form contained an open redirect, possibly allowing a maliciously-crafted
+  link to redirect users in a confusing way.
+
+* Fixed display of Markdown headers in dark mode.
+
+  Markdown headers (such as a line starting with ``#``) would always render in
+  black, making them nearly impossible to read when Review Board was running in
+  dark mode. This has been fixed to properly use the theme.
+
+* Fixed the "last page" link in search results (:bug:`4820`)
+
+  Depending on the exact number of search results, clicking "last page" would
+  often navigate to the second-to-last page instead. This has been fixed.
+
+  Patch by Daniel Casares-Iglesias.
+
+
+Installation and upgrades
+-------------------------
+
+* Fixed :command:`rb-site install` to fail immediately if the installed
+  environment cannot load properly.
+
+  The install command would previously allow proceeding through several steps
+  and then fail with confusing errors if the Python environment with all of
+  Review Board's dependencies could not be loaded. This has been fixed to fail
+  early instead.
+
+
+Administration
+---------------
+
+* Fixed alignment of form fields in various settings pages.
+
+* Fixed alignment in the display of related users for groups and repositories.
+
+
+REST API
+--------
+
+* Fixed the descriptions for the ``url`` and ``absolute_url`` fields in the
+  :ref:`webapi2.0-review-group-resource`.
+
+  The documentation for these was incorrectly copied from a different API
+  endpoint.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Daniel Casares-Iglesias
+* David Trowbridge
+* Michelle Aubin
