@@ -1,0 +1,54 @@
+"""Unit tests for reviewboard.datagrids.columns.PeopleColumn.
+
+Version Added:
+    7.1
+"""
+
+from __future__ import annotations
+
+from django.contrib.auth.models import User
+
+from reviewboard.datagrids.columns import PeopleColumn
+from reviewboard.datagrids.tests.base import BaseColumnTestCase
+
+
+class PeopleColumnTests(BaseColumnTestCase):
+    """Unit tests for reviewboard.datagrids.columns.PeopleColumn.
+
+    Version Added:
+        7.1
+    """
+
+    column = PeopleColumn()
+
+    def test_render_data_with_no_people(self) -> None:
+        """Testing PeopleColumn.render_data with no people"""
+        review_request = self.create_review_request(publish=True)
+
+        value = self.column.render_data(self.stateful_column, review_request)
+
+        self.assertIs(type(value), str)
+        self.assertEqual(value, '')
+
+    def test_render_data_with_one_person(self) -> None:
+        """Testing PeopleColumn.render_data with one person"""
+        review_request = self.create_review_request(publish=True)
+        user = User.objects.get(username='grumpy')
+        review_request.target_people.add(user)
+
+        value = self.column.render_data(self.stateful_column, review_request)
+
+        self.assertIs(type(value), str)
+        self.assertEqual(value, 'grumpy ')
+
+    def test_render_data_with_multiple_people(self) -> None:
+        """Testing PeopleColumn.render_data with multiple people"""
+        review_request = self.create_review_request(publish=True)
+        grumpy = User.objects.get(username='grumpy')
+        admin = User.objects.get(username='admin')
+        review_request.target_people.add(grumpy, admin)
+
+        value = self.column.render_data(self.stateful_column, review_request)
+
+        self.assertIs(type(value), str)
+        self.assertEqual(value, 'admin grumpy ')

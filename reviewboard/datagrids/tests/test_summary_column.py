@@ -13,7 +13,7 @@ from reviewboard.reviews.models import ReviewRequest
 
 
 class SummaryColumnTests(BaseColumnTestCase):
-    """Testing reviewboard.datagrids.columns.SummaryColumn."""
+    """Unit tests for reviewboard.datagrids.columns.SummaryColumn."""
 
     column = SummaryColumn()
 

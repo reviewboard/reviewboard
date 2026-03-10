@@ -13,7 +13,7 @@ from reviewboard.datagrids.tests.base import BaseColumnTestCase
 
 
 class ShipItColumnTests(BaseColumnTestCase):
-    """Testing reviewboard.datagrids.columns.ShipItColumn."""
+    """Unit tests for reviewboard.datagrids.columns.ShipItColumn."""
 
     column = ShipItColumn()
 

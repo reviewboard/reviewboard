@@ -16,7 +16,7 @@ from reviewboard.site.models import LocalSite
 
 
 class FullNameColumnTests(BaseColumnTestCase):
-    """Testing reviewboard.datagrids.columns.FullNameColumn."""
+    """Unit tests for reviewboard.datagrids.columns.FullNameColumn."""
 
     column = FullNameColumn()
 

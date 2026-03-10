@@ -14,7 +14,7 @@ from reviewboard.datagrids.tests.base import BaseColumnTestCase
 
 
 class UsernameColumnTests(BaseColumnTestCase):
-    """Tests for reviewboard.datagrids.columns.UsernameColumn."""
+    """Unit tests for reviewboard.datagrids.columns.UsernameColumn."""
 
     column = UsernameColumn()
 
