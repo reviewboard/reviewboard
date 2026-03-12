@@ -91,8 +91,8 @@ package_dependencies: Mapping[str, Dependency] = {
 #: These dependencies are not used when simply developing Review Board.
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
-package_only_dependencies: Mapping[str, Dependency] = {
-    'rbintegrations': '~=5.0a0',
+package_only_dependencies = {
+    'rbintegrations': '>=4.0,<6',
 }
 
 
