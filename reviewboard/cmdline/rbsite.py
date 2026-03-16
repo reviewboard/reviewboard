@@ -1665,7 +1665,7 @@ class Site(object):
                             fp.write('\n')
 
                         # List the key columns.
-                        key_columns = introspection.get_key_columns(
+                        key_columns = introspection.get_primary_key_columns(
                             cursor, table_name)
                         fp.write('  Key Columns:\n')
 

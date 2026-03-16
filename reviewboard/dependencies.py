@@ -98,7 +98,7 @@ package_dependencies = {
     # cryptography (impacting pip as well). So we pin a compatible version.
     #
     # This must match cryptography compatibility.
-    'pyOpenSSL': '~=25.3.0',
+    'pyOpenSSL': '~=26.0.0',
 
     'pymdown-extensions': [
         {
