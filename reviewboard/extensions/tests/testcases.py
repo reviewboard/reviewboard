@@ -30,7 +30,7 @@ class ExtensionHookTestCaseMixin(ExtensionTestCaseMixin):
             djblets.extensions.manager.ExtensionManager:
             The new extension manager.
         """
-        return ExtensionManager('')
+        return ExtensionManager('', delay_init=False)
 
 
 class BaseExtensionHookTestCase(ExtensionHookTestCaseMixin, TestCase):

@@ -214,7 +214,7 @@ Contributors
 ============
 
 * Adriano Arce
-* Barret Rennie
+* Beth Rennie
 * Brett Kochendorfer
 * Byron Jones
 * Christian Hammond

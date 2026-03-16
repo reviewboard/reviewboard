@@ -7,6 +7,10 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import {
+    API,
+    BackboneError,
+} from '../../utils/apiUtils';
 import * as JSONSerializers from '../utils/serializers';
 import {
     type BaseResourceAttrs,
@@ -212,6 +216,10 @@ export class ReviewReply extends BaseResource<
      * After successfully publishing, "published" will be triggered.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and added a promise return value.
      *
@@ -219,27 +227,19 @@ export class ReviewReply extends BaseResource<
      *     options (object, optional):
      *         Options for the save operation.
      *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async publish(
         options: ReviewReplyPublishOptions = {},
-        context: unknown = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ReviewReply.publish was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return RB.promiseToCallbacks(options, context, newOptions =>
-                this.publish(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                RB.ReviewReply.publish was called using callbacks. This has
+                been removed in Review Board 8.0 in favor of promises.
+            `);
 
         this.trigger('publishing');
 
@@ -269,15 +269,16 @@ export class ReviewReply extends BaseResource<
      * this will discard the reply.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Changed to deprecate options and return a promise.
      *
      * Args:
      *     options (object, optional):
      *         Options for the save operation.
-     *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
      *
      * Returns:
      *     Promise:
@@ -286,18 +287,13 @@ export class ReviewReply extends BaseResource<
      */
     async discardIfEmpty(
         options: Backbone.PersistenceOptions = {},
-        context: unknown = undefined,
     ): Promise<boolean> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ReviewReply.discardIfEmpty was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return RB.promiseToCallbacks(options, context, newOptions =>
-                this.discardIfEmpty(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                RB.ReviewReply.discardIfEmpty was called using callbacks. This
+                has been removed in Review Board 8.0 in favor of promises.
+            `);
 
         await this.ready();
 
@@ -334,9 +330,8 @@ export class ReviewReply extends BaseResource<
             const linkName = ReviewReply.COMMENT_LINK_NAMES[linkNameIndex];
             const url = this.get('links')[linkName].href;
 
-            RB.apiCall({
-                error: (model, xhr, options) => reject(
-                    new BackboneError(model, xhr, options)),
+            API.request({
+                error: (xhr) => reject(new BackboneError(this, xhr, {})),
                 success: rsp => {
                     if (rsp[linkName].length > 0) {
                         resolve(false);

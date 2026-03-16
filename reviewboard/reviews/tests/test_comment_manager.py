@@ -8,12 +8,16 @@ from __future__ import annotations
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, Permission, User
-from django.db.models import Q, Value
+from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.accounts.testing.queries import get_user_permissions_equeries
 from reviewboard.reviews.models import GeneralComment, Group
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
+from reviewboard.site.testing.queries import (
+    get_local_site_is_mutable_by_equeries,
+)
 from reviewboard.testing import TestCase
 
 
@@ -174,40 +178,7 @@ class CommentManagerTests(TestCase):
                     Q(local_site=None)
                 ),
             },
-            {
-                'join_types': {
-                    'auth_user_user_permissions': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type',
-                },
-                'where': Q(user__id=user.pk),
-            },
-            {
-                'join_types': {
-                    'auth_group': 'INNER JOIN',
-                    'auth_group_permissions': 'INNER JOIN',
-                    'auth_user_groups': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 4,
-                'tables': {
-                    'auth_permission',
-                    'auth_group',
-                    'auth_user_groups',
-                    'auth_group_permissions',
-                    'django_content_type',
-                },
-                'where': Q(group__user=user),
-            },
+            *get_user_permissions_equeries(user=user),
             {
                 'join_types': {
                     'reviews_group_users': 'LEFT OUTER JOIN',
@@ -452,40 +423,7 @@ class CommentManagerTests(TestCase):
                     Q(local_site=None)
                 ),
             },
-            {
-                'join_types': {
-                    'auth_user_user_permissions': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type',
-                },
-                'where': Q(user__id=user.pk),
-            },
-            {
-                'join_types': {
-                    'auth_group': 'INNER JOIN',
-                    'auth_group_permissions': 'INNER JOIN',
-                    'auth_user_groups': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 4,
-                'tables': {
-                    'auth_permission',
-                    'auth_group',
-                    'auth_user_groups',
-                    'auth_group_permissions',
-                    'django_content_type',
-                },
-                'where': Q(group__user=user),
-            },
+            *get_user_permissions_equeries(user=user),
             {
                 'join_types': {
                     'reviews_group_users': 'LEFT OUTER JOIN',
@@ -702,40 +640,7 @@ class CommentManagerTests(TestCase):
                     Q(local_site=None)
                 ),
             },
-            {
-                'join_types': {
-                    'auth_user_user_permissions': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type',
-                },
-                'where': Q(user__id=user.pk),
-            },
-            {
-                'join_types': {
-                    'auth_group': 'INNER JOIN',
-                    'auth_group_permissions': 'INNER JOIN',
-                    'auth_user_groups': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 4,
-                'tables': {
-                    'auth_permission',
-                    'auth_group',
-                    'auth_user_groups',
-                    'auth_group_permissions',
-                    'django_content_type',
-                },
-                'where': Q(group__user=user),
-            },
+            *get_user_permissions_equeries(user=user),
             {
                 'join_types': {
                     'reviews_group_users': 'LEFT OUTER JOIN',
@@ -908,59 +813,10 @@ class CommentManagerTests(TestCase):
                     Q(local_site=local_site1)
                 ),
             },
-            {
-                'join_types': {
-                    'auth_user_user_permissions': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type',
-                },
-                'where': Q(user__id=user.pk),
-            },
-            {
-                'join_types': {
-                    'auth_group': 'INNER JOIN',
-                    'auth_group_permissions': 'INNER JOIN',
-                    'auth_user_groups': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 4,
-                'tables': {
-                    'auth_permission',
-                    'auth_group',
-                    'auth_user_groups',
-                    'auth_group_permissions',
-                    'django_content_type',
-                },
-                'where': Q(group__user=user),
-            },
-            {
-                'join_types': {
-                    'site_localsite_admins': 'INNER JOIN',
-                },
-                'model': User,
-                'annotations': {
-                    'a': Value(1),
-                },
-                'limit': 1,
-                'num_joins': 1,
-                'tables': {
-                    'auth_user',
-                    'site_localsite_admins',
-                },
-                'where': (
-                    Q(local_site_admins__id=local_site1.pk) &
-                    Q(pk=user.pk)
-                ),
-            },
+            *get_user_permissions_equeries(user=user),
+            *get_local_site_is_mutable_by_equeries(
+                user=user,
+                local_site=local_site1),
             {
                 'join_types': {
                     'reviews_group_users': 'LEFT OUTER JOIN',
@@ -1101,40 +957,7 @@ class CommentManagerTests(TestCase):
                     Q(review_groups__users=user.pk)
                 ),
             },
-            {
-                'join_types': {
-                    'auth_user_user_permissions': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type',
-                },
-                'where': Q(user__id=user.pk),
-            },
-            {
-                'join_types': {
-                    'auth_group': 'INNER JOIN',
-                    'auth_group_permissions': 'INNER JOIN',
-                    'auth_user_groups': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 4,
-                'tables': {
-                    'auth_permission',
-                    'auth_group',
-                    'auth_user_groups',
-                    'auth_group_permissions',
-                    'django_content_type',
-                },
-                'where': Q(group__user=user),
-            },
+            *get_user_permissions_equeries(user=user),
             {
                 'join_types': {
                     'reviews_group_users': 'LEFT OUTER JOIN',
@@ -1238,40 +1061,7 @@ class CommentManagerTests(TestCase):
                     Q(local_site=None)
                 ),
             },
-            {
-                'join_types': {
-                    'auth_user_user_permissions': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type',
-                },
-                'where': Q(user__id=user.pk),
-            },
-            {
-                'join_types': {
-                    'auth_group': 'INNER JOIN',
-                    'auth_group_permissions': 'INNER JOIN',
-                    'auth_user_groups': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'values_select': ('content_type__app_label', 'codename',),
-                'num_joins': 4,
-                'tables': {
-                    'auth_permission',
-                    'auth_group',
-                    'auth_user_groups',
-                    'auth_group_permissions',
-                    'django_content_type',
-                },
-                'where': Q(group__user=user),
-            },
+            *get_user_permissions_equeries(user=user),
             {
                 'join_types': {
                     'reviews_group_users': 'LEFT OUTER JOIN',

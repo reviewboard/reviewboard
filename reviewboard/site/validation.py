@@ -66,7 +66,7 @@ def validate_review_groups(form, field='review_groups'):
     for group in groups:
         if group.local_site != local_site:
             raise ValidationError(
-                [_("The review group %s does not exist.") % group.name])
+                [_('The review group %s does not exist.') % group.name])
 
     return groups
 
@@ -101,7 +101,7 @@ def validate_users(form, field='users'):
         for user in users:
             if not user.local_site.filter(pk=local_site.pk).exists():
                 raise ValidationError(
-                    [_("The user %s is not a member of this site.")
+                    [_('The user %s is not a member of this site.')
                      % user.username])
 
     return users

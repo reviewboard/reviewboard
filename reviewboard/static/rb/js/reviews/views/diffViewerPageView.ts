@@ -3,7 +3,10 @@
  */
 import { Router, spina } from '@beanbag/spina';
 
-import { UserSession } from 'reviewboard/common';
+import {
+    PromiseQueue,
+    UserSession,
+} from 'reviewboard/common';
 
 import { type DiffReviewable } from '../models/diffReviewableModel';
 import { type DiffViewerPage } from '../models/diffViewerPageModel';
@@ -105,20 +108,65 @@ export class DiffViewerPageView extends ReviewablePageView<
      * Instance variables *
      **********************/
 
+    /**
+     * The controls for the diff view.
+     *
+     * This includes the top-level expand and collapse buttons, as well as
+     * controls for whether extra whitespace is highlighted.
+     */
     #$controls: JQuery = null;
+
+    /** The main container for all the diff files. */
     #$diffs: JQuery = null;
+
+    /** The currently highlighted chunk. */
     #$highlightedChunk: JQuery = null;
+
+    /** The JQuery-wrapped window object. */
     #$window: JQuery<Window>;
+
+    /** The chunk highlighter. */
     #chunkHighlighter: RB.ChunkHighlighterView = null;
+
+    /** The hint about comments in other revisions. */
     #commentsHintView: DiffCommentsHintView = null;
+
+    /** The file index. */
     #diffFileIndexView: DiffFileIndexView = null;
+
+    /** The label for the current diff revision. */
     #diffRevisionLabelView: RB.DiffRevisionLabelView = null;
+
+    /** The selector for diff revisions. */
     #diffRevisionSelectorView: RB.DiffRevisionSelectorView = null;
+
+    /** The queue for loading diff files. */
+    #loadQueue = new PromiseQueue();
+
+    /** The abort controller for the load queue. */
+    #loadQueueAbort: AbortController = new AbortController();
+
+    /** The paginator at the top of the page. */
     #paginationView1: RB.PaginationView = null;
+
+    /** The paginator at the bottom of the page. */
     #paginationView2: RB.PaginationView = null;
+
+    /** The anchor name to scroll the initial load of the page to. */
     #startAtAnchorName: string = null;
+
+    /**
+     * All of the keyboard-accessible anchors on the page.
+     *
+     * This is the set of all of the locations that the user can scroll
+     * through with keyboard shortcuts.
+     */
     _$anchors: JQuery;
+
+    /** The list of commits. */
     _commitListView: RB.DiffCommitListView = null;
+
+    /** The set of views for each file in the diff. */
     _diffReviewableViews: DiffReviewableView[] = [];
 
     /**
@@ -139,7 +187,10 @@ export class DiffViewerPageView extends ReviewablePageView<
      */
     _renderedJSMedia: Set<string> = null;
 
+    /** The currently selected anchor, as an index into _$anchors. */
     _selectedAnchorIndex = -1;
+
+    /** The router for the page. */
     router: Router;
 
     /**
@@ -174,8 +225,6 @@ export class DiffViewerPageView extends ReviewablePageView<
          * of DiffReviewables. We'll use these events to clear and start the
          * diff loading queue.
          */
-        const diffQueue = $.funcQueue('diff_files');
-
         this.listenTo(this.model.diffReviewables, 'populating', () => {
             /*
              * Emit this event so that any FileAttachmentReviewableViews that
@@ -190,10 +239,15 @@ export class DiffViewerPageView extends ReviewablePageView<
             this.#$diffs.children('.diff-container').remove();
             this.#$highlightedChunk = null;
 
-            diffQueue.clear();
+            this.#loadQueueAbort.abort();
+            this.#loadQueue.clear();
+
+            this.#loadQueueAbort = new AbortController();
         });
-        this.listenTo(this.model.diffReviewables, 'populated',
-                      () => diffQueue.start());
+        this.listenTo(
+            this.model.diffReviewables,
+            'populated',
+            () => this.#loadQueue.start(this.#loadQueueAbort.signal));
 
         /*
          * Track the static media that has been added to the page
@@ -474,7 +528,7 @@ export class DiffViewerPageView extends ReviewablePageView<
         if (model.diffReviewables.length > 0) {
             model.diffReviewables.each(
                 diffReviewable => this.#onDiffReviewableAdded(diffReviewable));
-            $.funcQueue('diff_files').start();
+            this.#loadQueue.start(this.#loadQueueAbort.signal);
         }
     }
 
@@ -567,7 +621,11 @@ export class DiffViewerPageView extends ReviewablePageView<
             skipStaticMedia?: boolean,
         } = {},
     ) {
-        $.funcQueue('diff_files').add(async () => {
+        this.#loadQueue.add(async (abort: AbortSignal) => {
+            if (abort.aborted) {
+                return;
+            }
+
             const fileDiffID = diffReviewable.get('fileDiffID');
 
             if (!options.showDeleted && $(`#file${fileDiffID}`).length === 1) {
@@ -612,8 +670,12 @@ export class DiffViewerPageView extends ReviewablePageView<
                 }
 
                 const html = await diffReviewable.getRenderedDiff(options);
-                const $container = $(prefix + fileDiffID)
-                    .parent();
+
+                if (abort.aborted) {
+                    return;
+                }
+
+                const $container = $(`${prefix}${fileDiffID}`).parent();
 
                 if ($container.length === 0) {
                     /*
@@ -666,8 +728,6 @@ export class DiffViewerPageView extends ReviewablePageView<
              * The user changed revisions before the file finished loading, and
              * the target element no longer exists. Just return.
              */
-            $.funcQueue('diff_files').next();
-
             return;
         }
 
@@ -698,7 +758,8 @@ export class DiffViewerPageView extends ReviewablePageView<
         this.#diffFileIndexView.addDiff(index, diffReviewableView);
 
         this.listenTo(diffReviewableView, 'fileClicked', () => {
-            this.selectAnchorByName(diffReviewable.get('file').get('index'));
+            const index = diffReviewable.get('file').get('index');
+            this.selectAnchorByName(`${index}`);
         });
 
         this.listenTo(diffReviewableView, 'chunkClicked', name => {
@@ -771,10 +832,8 @@ export class DiffViewerPageView extends ReviewablePageView<
 
         this.listenTo(diffReviewableView, 'showDeletedClicked', () => {
             this.queueLoadDiff(diffReviewable, {showDeleted: true});
-            $.funcQueue('diff_files').start();
+            this.#loadQueue.start(this.#loadQueueAbort.signal);
         });
-
-        $.funcQueue('diff_files').next();
     }
 
     /**
@@ -836,10 +895,6 @@ export class DiffViewerPageView extends ReviewablePageView<
                     anchorOffset - DiffViewerPageView.DIFF_SCROLLDOWN_AMOUNT);
                 scrollAmount = this.#computeScrollHeight(
                     anchorOffset - newOffset);
-
-            } else if (RB.DraftReviewBannerView.instance) {
-                scrollAmount = (DiffViewerPageView.DIFF_SCROLLDOWN_AMOUNT +
-                                RB.DraftReviewBannerView.instance.getHeight());
             }
 
             this.#$window.scrollTop(anchorOffset - scrollAmount);

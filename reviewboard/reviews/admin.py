@@ -180,7 +180,7 @@ class ReviewRequestAdmin(ModelAdmin):
         self.message_user(request, msg)
 
     close_submitted.short_description = \
-        _("Close selected review requests as submitted")
+        _('Close selected review requests as submitted')
 
     def close_discarded(self, request, queryset):
         rows_updated = queryset.update(status=ReviewRequest.DISCARDED)
@@ -194,7 +194,7 @@ class ReviewRequestAdmin(ModelAdmin):
         self.message_user(request, msg)
 
     close_discarded.short_description = \
-        _("Close selected review requests as discarded")
+        _('Close selected review requests as discarded')
 
     def reopen(self, request, queryset):
         rows_updated = queryset.update(status=ReviewRequest.PENDING_REVIEW)
@@ -206,7 +206,7 @@ class ReviewRequestAdmin(ModelAdmin):
 
         self.message_user(request, msg)
 
-    reopen.short_description = _("Reopen selected review requests")
+    reopen.short_description = _('Reopen selected review requests')
 
 
 class ReviewRequestDraftAdmin(ModelAdmin):

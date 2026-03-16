@@ -13,17 +13,10 @@ import sys
 import textwrap
 from typing import TYPE_CHECKING
 
-try:
-    from djblets.dependencies import (
-        npm_dependencies as djblets_npm_dependencies,
-    )
-except ImportError:
-    # We're probably being called as part of the build backend process.
-    # Don't worry too much about this dependency.
-    djblets_npm_dependencies = []
-
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+
+    from djblets.dependencies import Dependency
 
 
 ###########################################################################
@@ -31,7 +24,7 @@ if TYPE_CHECKING:
 ###########################################################################
 
 #: The minimum supported version of Python.
-PYTHON_MIN_VERSION = (3, 8)
+PYTHON_MIN_VERSION = (3, 10)
 
 #: A string representation of the minimum supported version of Python.
 PYTHON_MIN_VERSION_STR = '%s.%s' % (PYTHON_MIN_VERSION)
@@ -44,16 +37,16 @@ PYTHON_MIN_VERSION_STR = '%s.%s' % (PYTHON_MIN_VERSION)
 
 
 #: The major version of Django we're using for documentation.
-django_doc_major_version = '4.2'
+django_doc_major_version = '5.2'
 
 #: The major version of Djblets we're using for documentation.
-djblets_doc_major_version = '5.x'
+djblets_doc_major_version = '6.x'
 
 #: The version of Django required for the current version of Python.
-django_version = '~=4.2.29'
+django_version = '~=5.2.12'
 
 #: The version range required for Djblets.
-djblets_version = '~=5.3a0.dev'
+djblets_version = '~=6.0a0.dev0'
 
 
 ###########################################################################
@@ -61,31 +54,18 @@ djblets_version = '~=5.3a0.dev'
 ###########################################################################
 
 #: All dependencies required to install Review Board.
-package_dependencies = {
+package_dependencies: Mapping[str, Dependency] = {
     'bleach': '~=6.0.0',
     'cryptography': '~=46.0.5',
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
-    'django_evolution': '~=2.4.2',
+    'django_evolution': '>=3.0a0.dev0,==3.*',
     'django-haystack': '~=3.3.0',
-    'django_oauth_toolkit': '~=1.6.3',
-    'django-storages': '~=1.14.2',
+    'django_oauth_toolkit': '~=3.2.0',
+    'django-storages': '~=1.14.6',
     'Djblets': djblets_version,
     'docutils': '',
-    'markdown': [
-        {
-            'version': '~=3.7.0',
-            'python': '=="3.8"',
-        },
-        {
-            'version': '~=3.9.0',
-            'python': '=="3.9"',
-        },
-        {
-            'version': '~=3.10',
-            'python': '>="3.10"',
-        },
-    ],
+    'markdown': '~=3.10',
     'mimeparse': '~=0.1.3',
     'packaging': '>=23.1',
     'paramiko': '~=3.4.1',
@@ -100,28 +80,10 @@ package_dependencies = {
     # This must match cryptography compatibility.
     'pyOpenSSL': '~=26.0.0',
 
-    'pymdown-extensions': [
-        {
-            'version': '~=10.15.0',
-            'python': '=="3.8"',
-        },
-        {
-            'version': '~=10.21.0',
-            'python': '>="3.9"',
-        },
-    ],
+    'pymdown-extensions': '~=10.21',
     'pymemcache': '',
-    'pytz': '>=2015.2',
     'tqdm': '~=4.66.2',
     'Whoosh': '>=2.6',
-
-    # The following are pinned versions/ranges needed to satisfy dependency
-    # conflicts between multiple projects. We are not using these directly.
-    # These should be removed in future versions of Review Board as
-    # dependencies change.
-
-    # django-oauth-toolkit dependencies:
-    'django-braces': '==1.13.0',
 }
 
 #: Dependencies only specified during the packaging process.
@@ -135,43 +97,6 @@ package_only_dependencies = {
 
 
 ###########################################################################
-# JavaScript dependencies
-#
-# These are auto-generated when running `npm install --save ...` (if the
-# package is not already in node_modules).
-#
-# To re-generate manually, run: `./contrib/internal/build-npm-deps.py`.
-###########################################################################
-
-# Auto-generated Node.js dependencies {
-
-
-#: Dependencies required for runtime or static media building.
-runtime_npm_dependencies: Mapping[str, str] = {
-    '@beanbag/djblets': '*',
-    '@prantlf/jsonlint': '^17.0.1',
-    '@tabler/icons': '^3.35.0',
-    'codemirror': '^5.65.20',
-    'core-js': '^3.46.0',
-    'jquery-flot': '^0.8.3',
-    'jquery-form': '^4.3.0',
-    'jquery.cookie': '^1.4.1',
-    'masonry-layout': '^4.2.2',
-    'moment': '^2.30.1',
-    'moment-timezone': '^0.6.0',
-}
-
-
-# } Auto-generated Node.js dependencies
-
-
-#: Node dependencies required to package/develop/test Djblets.
-npm_dependencies: dict[str, str] = {}
-npm_dependencies.update(djblets_npm_dependencies)
-npm_dependencies.update(runtime_npm_dependencies)
-
-
-###########################################################################
 # Packaging utilities
 ###########################################################################
 _dependency_error_count = 0
@@ -179,17 +104,16 @@ _dependency_warning_count = 0
 
 
 def build_dependency_list(
-    deps: Mapping[str, (str | Sequence[Mapping[str, str]])],
+    deps: Mapping[str, Dependency],
     version_prefix: str = '',
     *,
     local_packages: Mapping[str, str] = {},
 ) -> Sequence[str]:
     """Build a list of dependency specifiers from a dependency map.
 
-    This can be used along with :py:data:`package_dependencies`,
-    :py:data:`npm_dependencies`, or other dependency dictionaries to build a
-    list of dependency specifiers for use on the command line or in the
-    package build backend.
+    This can be used along with :py:data:`package_dependencies`
+    or other dependency dictionaries to build a list of dependency specifiers
+    for use on the command line or in the package build backend.
 
     Version Changed:
         7.1:
@@ -223,12 +147,14 @@ def build_dependency_list(
             new_deps.append(f'{dep_name} @ file://{package_path}')
         elif isinstance(dep_details, list):
             new_deps += [
-                '%s%s%s; python_version%s'
+                f'{dep_name}{version_prefix}{entry["version"]}; '
+                f'python_version{entry["python"]}'
                 % (dep_name, version_prefix, entry['version'], entry['python'])
                 for entry in dep_details
             ]
         else:
-            new_deps.append('%s%s%s' % (dep_name, version_prefix, dep_details))
+            new_deps.append(
+                f'{dep_name}{version_prefix}{dep_details}')
 
     return sorted(new_deps, key=lambda s: s.lower())
 

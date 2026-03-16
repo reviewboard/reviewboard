@@ -149,7 +149,7 @@ Documentation Changes
 Contributors
 ============
 
-* Barret Rennie
+* Beth Rennie
 * Christian Hammond
 * David Trowbridge
 * Jessica Qian

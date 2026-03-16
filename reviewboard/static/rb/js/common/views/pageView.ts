@@ -7,6 +7,8 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import { HeaderView } from 'reviewboard/ui';
+
 import { Action } from '../actions/models/actionModel';
 import { type ActionView } from '../actions/views/actionView';
 import { ClientCommChannel } from '../models/commChannelModel';
@@ -50,7 +52,7 @@ export interface PageViewOptions {
 })
 export class PageView<
     TModel extends Page = Page,
-    TElement extends HTMLDivElement = HTMLDivElement,
+    TElement extends HTMLBodyElement = HTMLBodyElement,
     TExtraViewOptions extends PageViewOptions = PageViewOptions
 > extends BaseView<TModel, TElement, TExtraViewOptions> {
     /**
@@ -107,7 +109,7 @@ export class PageView<
     hasSidebar: boolean = null;
 
     /** The view for the page header. */
-    headerView: RB.HeaderView = null;
+    headerView: HeaderView = null;
 
     /** Whether the page is currently in a mobile view. */
     inMobileMode: boolean = null;
@@ -189,7 +191,7 @@ export class PageView<
         this.$mainSidebar = this._$mainSidebarPane.children(
             '.rb-c-page-sidebar__pane-content');
 
-        this.headerView = new RB.HeaderView({
+        this.headerView = new HeaderView({
             $body: $body,
             $pageSidebar: this._$pageSidebar,
             el: options.$headerBar || $('#headerbar'),

@@ -267,7 +267,7 @@ Subversion
 Contributors
 ============
 
-* Barret Rennie
+* Beth Rennie
 * Chester Li
 * Christian Hammond
 * David Trowbridge

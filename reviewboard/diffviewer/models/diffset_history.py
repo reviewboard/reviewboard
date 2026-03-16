@@ -14,9 +14,9 @@ class DiffSetHistory(models.Model):
     """
 
     name = models.CharField(_('name'), max_length=256)
-    timestamp = models.DateTimeField(_("timestamp"), default=timezone.now)
+    timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
     last_diff_updated = models.DateTimeField(
-        _("last updated"),
+        _('last updated'),
         blank=True,
         null=True,
         default=None)

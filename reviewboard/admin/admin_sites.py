@@ -68,19 +68,6 @@ class AdminSite(DjangoAdminSite):
         self._actions.update(_django_site._actions)
         self._global_actions.update(_django_site._global_actions)
 
-    def get_model_admin(self, model_cls):
-        """Return the ModelAdmin for a given Model class.
-
-        Args:
-            model_cls (type):
-                The registered model class.
-
-        Returns:
-            django.contrib.admin.ModelAdmin:
-            The ModelAdmin for the Model, or ``None`` if one is not registered.
-        """
-        return self._registry.get(model_cls)
-
 
 #: The main instance for the Review Board administration site.
 #:

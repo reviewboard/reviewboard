@@ -9,11 +9,19 @@ import {
 } from '@beanbag/spina';
 
 import { UserSession } from '../../models/userSessionModel';
+import { API } from '../../utils/apiUtils';
 import {
     type BaseResourceAttrs,
     type BaseResourceResourceData,
+    type ResourceLink,
     BaseResource,
 } from './baseResourceModel';
+import { Diff } from './diffModel';
+import { DraftReview } from './draftReviewModel';
+import {
+    type DraftReviewRequestAttrs,
+    DraftReviewRequest,
+} from './draftReviewRequestModel';
 import {
     type FileAttachmentAttrs,
     FileAttachment,
@@ -23,6 +31,9 @@ import {
     type ReviewAttrs,
     Review,
 } from './reviewModel';
+import {
+    Screenshot,
+} from './screenshotModel';
 
 
 /**
@@ -57,7 +68,7 @@ export interface ReviewRequestAttrs extends BaseResourceAttrs {
     closeDescriptionRichText: boolean;
 
     /** A list of other review requests that this one depends on. */
-    dependsOn: ReviewRequest[];
+    dependsOn: ResourceLink[];
 
     /** The review request description */
     description: string;
@@ -95,10 +106,10 @@ export interface ReviewRequestAttrs extends BaseResourceAttrs {
     summary: string;
 
     /** A list of group names that this review request is assigned to. */
-    targetGroups: string[];
+    targetGroups: ResourceLink[];
 
     /** A list of user names that this review request is assigned to. */
-    targetPeople: string[];
+    targetPeople: ResourceLink[];
 
     /** The testing done field for the review request. */
     testingDone: string;
@@ -144,7 +155,8 @@ export interface ReviewRequestResourceData extends BaseResourceResourceData {
  *     7.0
  */
 interface ReviewRequestOptions {
-    extraDraftAttrs?: { [key: string]: unknown };
+    /** Extra attributes to set on the draft object. */
+    extraDraftAttrs?: Partial<DraftReviewRequestAttrs>;
 }
 
 
@@ -256,7 +268,7 @@ export class ReviewRequest extends BaseResource<
      **********************/
 
     /** The current draft of the review request, if any. */
-    draft: RB.DraftReviewRequest;
+    draft: DraftReviewRequest;
 
     /** The collection of reviews for this review request. */
     reviews = new Collection<Review>([], {
@@ -284,19 +296,21 @@ export class ReviewRequest extends BaseResource<
             ReviewRequestOptions, this> = {}) {
         super.initialize(attrs, options);
 
-        this.draft = new RB.DraftReviewRequest(_.defaults({
-            branch: this.get('branch'),
-            bugsClosed: this.get('bugsClosed'),
-            dependsOn: this.get('dependsOn'),
-            description: this.get('description'),
-            descriptionRichText: this.get('descriptionRichText'),
-            parentObject: this,
-            summary: this.get('summary'),
-            targetGroups: this.get('targetGroups'),
-            targetPeople: this.get('targetPeople'),
-            testingDone: this.get('testingDone'),
-            testingDoneRichText: this.get('testingDoneRichText'),
-        }, options.extraDraftAttrs));
+        this.draft = new DraftReviewRequest(Object.assign(
+            _.pick(this.attributes, [
+                'branch',
+                'bugsClosed',
+                'dependsOn',
+                'description',
+                'descriptionRichText',
+                'summary',
+                'targetGroups',
+                'targetPeople',
+                'testingDone',
+                'testingDoneRichText',
+            ]),
+            { parentObject: this },
+            options.extraDraftAttrs));
     }
 
     /**
@@ -355,8 +369,8 @@ export class ReviewRequest extends BaseResource<
      *     RB.Diff:
      *     The new diff model.
      */
-    createDiff(): RB.Diff {
-        return new RB.Diff({
+    createDiff(): Diff {
+        return new Diff({
             parentObject: this,
         });
     }
@@ -383,14 +397,14 @@ export class ReviewRequest extends BaseResource<
     createReview(
         reviewID?: number,
         extraAttrs: Partial<ReviewAttrs> = {},
-    ): Review {
-        let review;
+    ): Review | DraftReview {
+        let review: Review | DraftReview;
 
         if (reviewID === undefined) {
             review = this.get('draftReview');
 
             if (review === null) {
-                review = new RB.DraftReview({
+                review = new DraftReview({
                     parentObject: this,
                 });
 
@@ -425,8 +439,8 @@ export class ReviewRequest extends BaseResource<
      */
     createScreenshot(
         screenshotID: number,
-    ): RB.Screenshot {
-        return new RB.Screenshot({
+    ): Screenshot {
+        return new Screenshot({
             id: screenshotID,
             parentObject: this,
         });
@@ -632,7 +646,7 @@ export class ReviewRequest extends BaseResource<
      * server, and if there is, trigger the 'updated' event.
      */
     _checkForUpdates() {
-        RB.apiCall({
+        API.request({
             noActivityIndicator: true,
             prefix: this.get('sitePrefix'),
             success: rsp => {

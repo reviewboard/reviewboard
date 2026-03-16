@@ -47,10 +47,10 @@ class ChangeDescription(models.Model):
                              null=True,
                              blank=True)
     timestamp = models.DateTimeField(_('timestamp'), default=timezone.now)
-    public = models.BooleanField(_("public"), default=False)
-    text = models.TextField(_("change text"), blank=True)
-    rich_text = models.BooleanField(_("rich text"), default=False)
-    fields_changed = JSONField(_("fields changed"))
+    public = models.BooleanField(_('public'), default=False)
+    text = models.TextField(_('change text'), blank=True)
+    rich_text = models.BooleanField(_('rich text'), default=False)
+    fields_changed = JSONField(_('fields changed'))
 
     def get_user(self, model=None):
         """Return the user associated with the change description.
@@ -211,8 +211,8 @@ class ChangeDescription(models.Model):
             not (isinstance(old_value, str) and
                  isinstance(new_value, str)) and
             old_value is not None and new_value is not None):
-            raise ValueError("%s (%s) and %s (%s) are of two different value "
-                             "types." % (old_value, type(old_value),
+            raise ValueError('%s (%s) and %s (%s) are of two different value '
+                             'types.' % (old_value, type(old_value),
                                          new_value, type(new_value)))
 
         if isinstance(old_value, (dict, list, set, tuple, QuerySet)):
@@ -253,6 +253,6 @@ class ChangeDescription(models.Model):
     class Meta:
         db_table = 'changedescs_changedescription'
         ordering = ['-timestamp']
-        get_latest_by = "timestamp"
+        get_latest_by = 'timestamp'
         verbose_name = _('Change Description')
         verbose_name_plural = _('Change Descriptions')

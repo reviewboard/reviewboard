@@ -1156,33 +1156,33 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             },
             'time-added-to': {
                 'type': DateTimeFieldType,
-                'description': 'The date/time that all review requests must '
-                               'be added before. This is compared against the '
-                               'review request\'s ``time_added`` field. This '
-                               'must be a valid :term:`date/time format`.',
+                'description': "The date/time that all review requests must "
+                               "be added before. This is compared against the "
+                               "review request's ``time_added`` field. This "
+                               "must be a valid :term:`date/time format`.",
             },
             'time-added-from': {
                 'type': DateTimeFieldType,
-                'description': 'The earliest date/time the review request '
-                               'could be added. This is compared against the '
-                               'review request\'s ``time_added`` field. This '
-                               'must be a valid :term:`date/time format`.',
+                'description': "The earliest date/time the review request "
+                               "could be added. This is compared against the "
+                               "review request's ``time_added`` field. This "
+                               "must be a valid :term:`date/time format`.",
             },
             'last-updated-to': {
                 'type': DateTimeFieldType,
-                'description': 'The date/time that all review requests must '
-                               'be last updated before. This is compared '
-                               'against the review request\'s '
-                               '``last_updated`` field. This must be a valid '
-                               ':term:`date/time format`.',
+                'description': "The date/time that all review requests must "
+                               "be last updated before. This is compared "
+                               "against the review request's "
+                               "``last_updated`` field. This must be a valid "
+                               ":term:`date/time format`.",
             },
             'last-updated-from': {
                 'type': DateTimeFieldType,
-                'description': 'The earliest date/time the review request '
-                               'could be last updated. This is compared '
-                               'against the review request\'s '
-                               '``last_updated`` field. This must be a valid '
-                               ':term:`date/time format`.',
+                'description': "The earliest date/time the review request "
+                               "could be last updated. This is compared "
+                               "against the review request's "
+                               "``last_updated`` field. This must be a valid "
+                               ":term:`date/time format`.",
             },
             'from-user': {
                 'type': StringFieldType,

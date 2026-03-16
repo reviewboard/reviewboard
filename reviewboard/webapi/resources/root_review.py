@@ -142,7 +142,7 @@ class RootReviewResource(BaseReviewResource):
                 'type': DateTimeFieldType,
                 'description': "The date/time that the reviews must be "
                                "last updated before. This is compared against "
-                               "the review\'s ``timestamp`` field. This "
+                               "the review's ``timestamp`` field. This "
                                "must be a valid :term:`date/time format`.",
             },
             'public': {

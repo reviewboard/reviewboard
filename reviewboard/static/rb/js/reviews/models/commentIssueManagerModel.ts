@@ -12,6 +12,10 @@ import {
     type CommentIssueStatusType,
     type BaseComment,
     type ReviewRequest,
+    DiffComment,
+    FileAttachmentComment,
+    GeneralComment,
+    ScreenshotComment,
 } from 'reviewboard/common';
 import {
     type BaseCommentResourceData,
@@ -256,19 +260,20 @@ export class CommentIssueManager extends BaseModel<
     ): string {
         let commentType: CommentIssueManagerCommentType;
 
-        if (comment instanceof RB.DiffComment) {
+        if (comment instanceof DiffComment) {
             commentType = CommentIssueManagerCommentType.DIFF;
-        } else if (comment instanceof RB.FileAttachmentComment) {
+        } else if (comment instanceof FileAttachmentComment) {
             commentType = CommentIssueManagerCommentType.FILE_ATTACHMENT;
-        } else if (comment instanceof RB.GeneralComment) {
+        } else if (comment instanceof GeneralComment) {
             commentType = CommentIssueManagerCommentType.GENERAL;
-        } else if (comment instanceof RB.ScreenshotComment) {
+        } else if (comment instanceof ScreenshotComment) {
             commentType = CommentIssueManagerCommentType.SCREENSHOT;
         } else {
             console.error(
                 'RB.CommentIssueManager.makeCommentEventID received ' +
                 'unexpected comment object "%o"',
                 comment);
+
             return null;
         }
 
@@ -332,9 +337,9 @@ export class CommentIssueManager extends BaseModel<
         options: SetCommentIssueStatusOptions,
     ): Promise<void> {
         const comment = await this.getOrCreateComment({
-            reviewID: options.reviewID,
             commentID: options.commentID,
             commentType: options.commentType,
+            reviewID: options.reviewID,
         });
 
         await this.#updateIssueStatus(comment, options.newIssueStatus);

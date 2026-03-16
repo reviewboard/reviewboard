@@ -1,5 +1,7 @@
 """Unit tests for reviewboard.reviews.ui.text.MarkdownReviewUI."""
 
+from __future__ import annotations
+
 from django.test.client import RequestFactory
 
 from reviewboard.reviews.ui.markdownui import MarkdownReviewUI
@@ -59,7 +61,7 @@ class MarkdownReviewUITests(TestCase):
         self.assertEqual(extra_context['rendered_lines'],
                          ['<p>And <strong>this</strong> is revision 2.</p>'])
 
-    def test_get_extra_context_with_diff(self):
+    def test_get_extra_context_with_diff(self) -> None:
         """Testing MarkdownReviewUI.get_extra_context with diff_against_obj"""
         new_attachment = self.create_file_attachment(
             self.review_request,
@@ -93,7 +95,7 @@ class MarkdownReviewUITests(TestCase):
                     'collapsable': False,
                     'index': 0,
                     'lines': [
-                        [
+                        (
                             1,
                             1,
                             'This is revision <span class="ge">*1*</span>.',
@@ -103,7 +105,8 @@ class MarkdownReviewUITests(TestCase):
                             'revision 2.',
                             [(0, 7), (10, 12), (25, 26)],
                             False,
-                        ],
+                            None,
+                        ),
                     ],
                     'meta': {
                         'left_headers': [],
@@ -122,7 +125,7 @@ class MarkdownReviewUITests(TestCase):
                     'collapsable': False,
                     'index': 0,
                     'lines': [
-                        [
+                        (
                             1,
                             1,
                             '<p>This is revision <em>1</em>.</p>',
@@ -131,7 +134,8 @@ class MarkdownReviewUITests(TestCase):
                             '<p>And <strong>this</strong> is revision 2.</p>',
                             [(0, 5), (21, 22)],
                             False,
-                        ],
+                            None,
+                        ),
                     ],
                     'meta': {
                         'left_headers': [],

@@ -210,7 +210,7 @@ def build_diff_comment_fragments(
                         'filediff': comment.filediff,
                     },
                     'domain': Site.objects.get_current().domain,
-                    'domain_method': siteconfig.get("site_domain_method"),
+                    'domain_method': siteconfig.get('site_domain_method'),
                 })
 
             # It's bad that we failed, and we'll return a 500, but we'll

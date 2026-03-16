@@ -33,14 +33,13 @@ RB.ReviewRequestPage.ReviewRequestPageView = RB.ReviewablePageView.extend({
 
         const reviewRequest = this.model.get('reviewRequest');
 
-        this.diffFragmentQueue = new RB.DiffFragmentQueueView({
-            reviewRequestPath: reviewRequest.get('reviewURL'),
+        this.diffFragmentQueue = new RB.DiffFragmentQueue({
             containerPrefix: 'comment_container',
-            queueName: 'diff_fragments',
-            el: document.getElementById('content'),
             diffFragmentViewOptions: {
                 collapsible: true,
             },
+            queueName: 'diff_fragments',
+            reviewRequestPath: reviewRequest.get('reviewURL'),
         });
 
         /*

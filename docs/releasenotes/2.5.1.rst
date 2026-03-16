@@ -63,7 +63,7 @@ Contributors
 ============
 
 * Anthony Hache
-* Barret Rennie
+* Beth Rennie
 * Christian Hammond
 * David Trowbridge
 * Edward Lau

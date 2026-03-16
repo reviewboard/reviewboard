@@ -10,7 +10,7 @@ from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 
 class MonotoneTool(SCMTool):
     scmtool_id = 'monotone'
-    name = "Monotone"
+    name = 'Monotone'
     diffs_use_absolute_paths = True
     dependencies = {
         'executables': ['mtn'],
@@ -28,7 +28,7 @@ class MonotoneTool(SCMTool):
     def get_file(self, path, revision=None, **kwargs):
         # revision is actually the file id here...
         if not revision:
-            return b""
+            return b''
 
         return self.client.get_file(revision)
 
@@ -52,11 +52,11 @@ class MonotoneTool(SCMTool):
 
 
 class MonotoneDiffParser(DiffParser):
-    INDEX_SEP = b"=" * 60
+    INDEX_SEP = b'=' * 60
 
     def parse_special_header(self, linenum, info):
-        if self.lines[linenum].startswith(b"#"):
-            if b"is binary" in self.lines[linenum]:
+        if self.lines[linenum].startswith(b'#'):
+            if b'is binary' in self.lines[linenum]:
                 info['binary'] = True
                 linenum += 1
             elif self.lines[linenum + 1] == self.INDEX_SEP:
@@ -77,7 +77,7 @@ class MonotoneClient:
         self.path = path
 
         if not os.path.isfile(self.path):
-            raise SCMError("Repository %s does not exist" % path)
+            raise SCMError('Repository %s does not exist' % path)
 
     def get_file(self, fileid):
         args = ['mtn', '-d', self.path, 'automate', 'get_file', fileid]
@@ -94,7 +94,7 @@ class MonotoneClient:
         if not failure:
             return out
 
-        if "mtn: misuse: no file" in err:
+        if 'mtn: misuse: no file' in err:
             raise FileNotFoundError(fileid)
         else:
             raise SCMError(err)

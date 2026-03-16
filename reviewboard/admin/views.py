@@ -99,7 +99,7 @@ def admin_dashboard_view(request):
 
 
 @staff_member_required
-def cache_stats(request, template_name="admin/cache_stats.html"):
+def cache_stats(request, template_name='admin/cache_stats.html'):
     """Display statistics on the cache.
 
     This includes such pieces of information as memory used, cache misses, and
@@ -120,7 +120,7 @@ def cache_stats(request, template_name="admin/cache_stats.html"):
 
 
 @staff_member_required
-def security(request, template_name="admin/security.html"):
+def security(request, template_name='admin/security.html'):
     """Run security checks and report the results."""
     runner = SecurityCheckRunner()
     results = runner.run()
@@ -220,7 +220,7 @@ def widget_activity(request):
     activity_data = dynamic_activity_data(request)
 
     return HttpResponse(json.dumps(activity_data),
-                        content_type="application/json")
+                        content_type='application/json')
 
 
 def support_redirect(request, **kwargs):

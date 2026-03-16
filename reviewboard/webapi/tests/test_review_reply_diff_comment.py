@@ -129,7 +129,7 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         POST review-requests/<id>/reviews/<id>/replies/<id>/diff-comments/ API
         with second instance of same reply
         """
-        comment_text = "My New Comment Text"
+        comment_text = 'My New Comment Text'
 
         review_request = self.create_review_request(
             create_repository=True,

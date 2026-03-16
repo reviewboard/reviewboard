@@ -46,7 +46,7 @@ class HgTool(SCMTool):
     """SCMTool for Mercurial."""
 
     scmtool_id = 'mercurial'
-    name = "Mercurial"
+    name = 'Mercurial'
     diffs_use_absolute_paths = True
     supports_history = True
     supports_post_commit = True
@@ -698,11 +698,11 @@ class HgWebClient(SCMClient):
             rev = base_commit_id
 
         if rev == HEAD or rev == UNKNOWN:
-            rev = "tip"
+            rev = 'tip'
         elif rev == PRE_CREATION:
-            rev = ""
+            rev = ''
 
-        for rawpath in ["raw-file", "raw", "hg-history"]:
+        for rawpath in ['raw-file', 'raw', 'hg-history']:
             try:
                 url = self.FULL_FILE_URL % {
                     'url': self.path_stripped,
@@ -967,9 +967,9 @@ class HgClient(SCMClient):
             rev = base_commit_id
 
         if rev == HEAD:
-            rev = "tip"
+            rev = 'tip'
         elif rev == PRE_CREATION:
-            rev = ""
+            rev = ''
 
         if path:
             with self._run_hg(['cat', '--rev', str(rev), path]) as p:

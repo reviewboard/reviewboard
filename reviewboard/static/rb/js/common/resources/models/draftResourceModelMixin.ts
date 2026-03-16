@@ -2,7 +2,8 @@
  * Mixin for resources that have special "draft" URLs.
  */
 
-import { UserSession } from 'reviewboard/common';
+import { UserSession } from '../../models/userSessionModel';
+import { BackboneError } from '../../utils/apiUtils';
 
 
 /**
@@ -38,6 +39,10 @@ export const DraftResourceModelMixin = {
      * Otherwise, we delegate to the parent's ready().
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and changed to return a promise.
      *
@@ -45,28 +50,21 @@ export const DraftResourceModelMixin = {
      *     options (object, optional):
      *         Options for the operation, including callbacks.
      *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async ready(
         options: ReadyOptions = {},
-        context: unknown = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete) ||
-            _.isFunction(options.ready)) {
-            console.warn('RB.DraftResourceModelMixin.ready was ' +
-                         'called using callbacks. Callers should be updated ' +
-                         'to use promises instead.');
-
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.ready(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete ||
+              options.ready),
+            dedent`
+                RB.DraftResourceModelMixin.ready was called using callbacks.
+                This has been removed in Review Board 8.0 in favor of
+                promises.
+            `);
 
         if (!this.get('loaded') && this.isNew() &&
             this._needDraft === undefined) {
@@ -92,6 +90,10 @@ export const DraftResourceModelMixin = {
      * look up the draft the next time an operation is performed.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and changed to return a promise.
      *
@@ -99,27 +101,20 @@ export const DraftResourceModelMixin = {
      *     options (object, optional):
      *         Options for the operation, including callbacks.
      *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async destroy(
         options: Backbone.ModelDestroyOptions = {},
-        context: unknown = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.DraftResourceModelMixin.destroy was ' +
-                         'called using callbacks. Callers should be updated ' +
-                         'to use promises instead.');
-
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.destroy(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                RB.DraftResourceModelMixin.destroy was called using callbacks.
+                This has been removed in Review Board 8.0 in favor of
+                promises.
+            `);
 
         await this.ready();
         await _super(this).destroy.call(this, options);
@@ -135,12 +130,15 @@ export const DraftResourceModelMixin = {
      * if we have yet to redirect and otherwise delegate to the prototype
      * implementation.
      *
+     * Users of this mixin may set ``_hasOwnURL`` to ``true`` if they implement
+     * their own url() method.
+     *
      * Returns:
      *     string:
      *     The URL to use for the resource.
      */
     url() {
-        if (this._needDraft) {
+        if (this._needDraft && !this._hasOwnURL) {
             const parentObject = this.get('parentObject');
             const linkName = _.result(this, 'listKey');
             const links = parentObject.get('links');

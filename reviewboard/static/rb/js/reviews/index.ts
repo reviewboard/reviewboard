@@ -55,6 +55,7 @@ export { DiffCommentBlockView } from './views/diffCommentBlockView';
 export { DiffCommentsHintView } from './views/diffCommentsHintView';
 export { DiffComplexityIconView } from './views/diffComplexityIconView';
 export { DiffFileIndexView } from './views/diffFileIndexView';
+export { DiffFragmentView } from './views/diffFragmentView';
 export { DiffReviewableView } from './views/diffReviewableView';
 export { DiffViewerPageView } from './views/diffViewerPageView';
 export { DummyReviewableView } from './views/dummyReviewableView';
@@ -75,3 +76,6 @@ export { TextBasedCommentBlockView } from './views/textBasedCommentBlockView';
 export { TextBasedReviewableView } from './views/textBasedReviewableView';
 export { TextCommentRowSelector } from './views/textCommentRowSelectorView';
 export { UnifiedBannerView } from './views/unifiedBannerView';
+export { UploadAttachmentView } from './views/uploadAttachmentView';
+
+export * from './utils';

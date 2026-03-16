@@ -8,6 +8,7 @@ import {
 } from 'jasmine-core';
 
 import {
+    API,
     BaseResource,
     ReviewReply,
 } from 'reviewboard/common';
@@ -125,7 +126,7 @@ suite('rb/resources/models/ReviewReply', function() {
                     loaded: true,
                 });
 
-                spyOn(RB, 'apiCall').and.callFake(options => {
+                spyOn(API, 'request').and.callFake(options => {
                     const links = model.get('links');
                     const data = {};
                     const key = _.find(
@@ -212,21 +213,6 @@ suite('rb/resources/models/ReviewReply', function() {
                 const discarded = await model.discardIfEmpty();
                 expect(discarded).toBe(false);
                 expect(model.destroy).not.toHaveBeenCalled();
-            });
-
-            it('With callbacks', function(done) {
-                spyOn(console, 'warn');
-
-                model.discardIfEmpty({
-                    error: () => done.fail(),
-                    success: discarded => {
-                        expect(discarded).toBe(true);
-                        expect(model.destroy).toHaveBeenCalled();
-                        expect(console.warn).toHaveBeenCalled();
-
-                        done();
-                    },
-                });
             });
         });
     });
@@ -317,31 +303,6 @@ suite('rb/resources/models/ReviewReply', function() {
             expect(model._retrieveDraft).toHaveBeenCalled();
             expect(Backbone.Model.prototype.fetch).toHaveBeenCalled();
             expect(model._needDraft).toBe(false);
-        });
-
-        it('With callbacks', function(done) {
-            expect(model.isNew()).toBe(true);
-            expect(model.get('loaded')).toBe(false);
-
-            spyOn(Backbone.Model.prototype, 'fetch')
-                .and.callFake(options => {
-                    if (options && _.isFunction(options.success)) {
-                        options.success();
-                    }
-                });
-            spyOn(model, '_retrieveDraft').and.resolveTo();
-            spyOn(console, 'warn');
-
-            model.ready({
-                error: () => done.fail(),
-                success: () => {
-                    expect(parentObject.ready).toHaveBeenCalled();
-                    expect(model._retrieveDraft).toHaveBeenCalled();
-                    expect(console.warn).toHaveBeenCalled();
-
-                    done();
-                },
-            });
         });
     });
 

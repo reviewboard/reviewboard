@@ -135,12 +135,12 @@ def check_updates_required():
         # Check if there's a media/uploaded/images directory. If not, this is
         # either a new install or is using the old-style media setup and needs
         # to be manually upgraded.
-        uploaded_dir = os.path.join(settings.MEDIA_ROOT, "uploaded")
+        uploaded_dir = os.path.join(settings.MEDIA_ROOT, 'uploaded')
 
         if not os.path.isdir(uploaded_dir) or \
-           not os.path.isdir(os.path.join(uploaded_dir, "images")):
+           not os.path.isdir(os.path.join(uploaded_dir, 'images')):
             updates_required.append((
-                "admin/manual-updates/media-upload-dir.html", {
+                'admin/manual-updates/media-upload-dir.html', {
                     'MEDIA_ROOT': settings.MEDIA_ROOT
                 }
             ))
@@ -151,7 +151,7 @@ def check_updates_required():
             # This will happen if running on Windows (which doesn't have
             # the pwd module) and if %LOGNAME%, %USER%, %LNAME% and
             # %USERNAME% are all undefined.
-            username = "<server username>"
+            username = '<server username>'
 
         # Check if the data directory (should be $HOME) is writable by us.
         data_dir: Optional[str] = None
@@ -172,7 +172,7 @@ def check_updates_required():
                 # This will happen if running on Windows (which doesn't have
                 # the pwd module) and if %LOGNAME%, %USER%, %LNAME% and
                 # %USERNAME% are all undefined.
-                username = "<server username>"
+                username = '<server username>'
 
             updates_required.append((
                 'admin/manual-updates/data-dir.html', {
@@ -209,7 +209,7 @@ def check_updates_required():
                 binaryname = 'patch'
 
             updates_required.append((
-                "admin/manual-updates/install-patch.html", {
+                'admin/manual-updates/install-patch.html', {
                     'platform': sys.platform,
                     'binaryname': binaryname,
                     'search_path': os.getenv('PATH'),

@@ -431,9 +431,10 @@ RB.ReviewRequestPage.ReviewRequestPage = RB.ReviewablePage.extend({
                     arrayBuffer.slice(htmlStart, htmlStart + htmlLen),
                 ]);
 
-                RB.DataUtils.readManyBlobsAsStrings(
-                    [metadataBlob, htmlBlob],
-                    (metadata, html) => cb(JSON.parse(metadata), html));
+                RB.DataUtils.readManyBlobsAsStrings([metadataBlob, htmlBlob])
+                    .then(([metadata, html]) => {
+                        cb(JSON.parse(metadata), html);
+                    });
             },
         };
     },

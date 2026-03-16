@@ -275,7 +275,9 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                         html2,
                     ]);
 
-                    RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                    RB.DataUtils.readBlobAsArrayBuffer(blob)
+                        .then(data => options.success(data))
+                        .catch(err => done.fail(err));
                 });
 
                 page._loadUpdates({
@@ -412,7 +414,9 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                         html2,
                     ]);
 
-                    RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                    RB.DataUtils.readBlobAsArrayBuffer(blob)
+                        .then(data => options.success(data))
+                        .catch(err => done.fail(err));
                 });
 
                 page._loadUpdates({
@@ -530,7 +534,9 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                         html,
                     ]);
 
-                    RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                    RB.DataUtils.readBlobAsArrayBuffer(blob)
+                        .then(data => options.success(data))
+                        .catch(err => done.fail(err));
                 });
 
                 page._loadUpdates({
@@ -599,7 +605,9 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                         html,
                     ]);
 
-                    RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                    RB.DataUtils.readBlobAsArrayBuffer(blob)
+                        .then(data => options.success(data))
+                        .catch(err => done.fail(err));
                 });
 
                 page._loadUpdates({
@@ -700,7 +708,9 @@ suite('rb/reviewRequestPage/models/ReviewRequestPage', function() {
                         ],
                     ]);
 
-                    RB.DataUtils.readBlobAsArrayBuffer(blob, options.success);
+                    RB.DataUtils.readBlobAsArrayBuffer(blob)
+                        .then(data => options.success(data))
+                        .catch(err => done.fail(err));
                 });
 
                 page._loadUpdates({

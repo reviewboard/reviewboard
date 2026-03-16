@@ -12,6 +12,13 @@ import {
     type BaseResourceResourceData,
     BaseResource,
 } from './baseResourceModel';
+import {
+    RepositoryBranches,
+} from '../collections/repositoryBranchesCollection';
+import {
+    type RepositoryCommitsOptions,
+    RepositoryCommits,
+} from '../collections/repositoryCommitsCollection';
 
 
 /**
@@ -70,21 +77,6 @@ export interface RepositoryResourceData extends BaseResourceResourceData {
 
 
 /**
- * Options for the getCommits operation.
- *
- * Version Added:
- *     7.0.1
- */
-interface GetRepositoryCommitsOptions {
-    /** The branch to fetch commits from. */
-    branch: string;
-
-    /** The starting commit (which will be the most recent commit listed). */
-    start: string;
-}
-
-
-/**
  * A client-side representation of a repository on the server.
  */
 @spina
@@ -127,7 +119,7 @@ export class Repository extends BaseResource<
      **********************/
 
     /** The repository branches collection. */
-    branches: RB.RepositoryBranches;
+    branches: RepositoryBranches;
 
     /**
      * Initialize the model.
@@ -139,7 +131,7 @@ export class Repository extends BaseResource<
     ) {
         super.initialize(attributes, options);
 
-        this.branches = new RB.RepositoryBranches();
+        this.branches = new RepositoryBranches();
         this.branches.url = _.result(this, 'url') + 'branches/';
     }
 
@@ -147,7 +139,7 @@ export class Repository extends BaseResource<
      * Return a collection of commits from a given starting point.
      *
      * Args:
-     *     options (GetRepositoryCommitsOptions):
+     *     options (RepositoryCommitsOptions):
      *         Options for the commits collection.
      *
      * Returns:
@@ -155,13 +147,11 @@ export class Repository extends BaseResource<
      *     The commits collection.
      */
     getCommits(
-        options: GetRepositoryCommitsOptions,
-    ): RB.RepositoryCommits {
-        return new RB.RepositoryCommits([], {
-            branch: options.branch,
-            start: options.start,
-            urlBase: _.result(this, 'url') + 'commits/',
-        });
+        options: RepositoryCommitsOptions,
+    ): RepositoryCommits {
+        return new RepositoryCommits([], Object.assign({
+            urlBase: `${this.getURL()}commits/`,
+        }, options));
     }
 
     /**

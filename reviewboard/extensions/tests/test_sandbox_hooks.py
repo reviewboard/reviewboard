@@ -190,8 +190,8 @@ class SandboxTests(BaseExtensionHookTestCase):
         context = Context({})
 
         t = Template(
-            "{% load rb_extensions %}"
-            "{% navigation_bar_hooks %}")
+            '{% load rb_extensions %}'
+            '{% navigation_bar_hooks %}')
 
         t.render(context).strip()
 
@@ -319,9 +319,9 @@ class SandboxTests(BaseExtensionHookTestCase):
         })
 
         t = Template(
-            "{% load reviewtags %}"
-            "{% for_review_request_fieldset review_request_details %}"
-            "{% end_for_review_request_fieldset %}")
+            '{% load reviewtags %}'
+            '{% for_review_request_fieldset review_request_details %}'
+            '{% end_for_review_request_fieldset %}')
 
         t.render(context).strip()
 
@@ -363,9 +363,9 @@ class SandboxTests(BaseExtensionHookTestCase):
         })
 
         t = Template(
-            "{% load reviewtags %}"
-            "{% for_review_request_fieldset review_request_details %}"
-            "{% end_for_review_request_fieldset %}")
+            '{% load reviewtags %}'
+            '{% for_review_request_fieldset review_request_details %}'
+            '{% end_for_review_request_fieldset %}')
 
         t.render(context).strip()
 

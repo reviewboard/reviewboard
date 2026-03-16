@@ -120,7 +120,7 @@ class ResourceListTests(CommentReplyListMixin, ReviewRequestChildListMixin,
         review-requests/<id>/reviews/<id>/replies/<id>/screenshot-comments/ API
         with second instance of same reply
         """
-        comment_text = "My Comment Text"
+        comment_text = 'My Comment Text'
 
         review_request = self.create_review_request(publish=True)
         screenshot = self.create_screenshot(review_request)

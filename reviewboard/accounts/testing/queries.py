@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Optional, TYPE_CHECKING
 
-from django.contrib.auth.models import Permission, User
+from django.contrib.auth.models import Group, Permission, User
 from django.db.models import Q
 
 from reviewboard.accounts.models import LocalSiteProfile, Profile
@@ -133,22 +133,32 @@ def get_user_permissions_equeries(
         {
             '__note__': f'Fetch the user "{username}"\'s permission groups',
             'join_types': {
-                'auth_group': 'INNER JOIN',
                 'auth_group_permissions': 'INNER JOIN',
-                'auth_user_groups': 'INNER JOIN',
                 'django_content_type': 'INNER JOIN',
             },
             'model': Permission,
-            'num_joins': 4,
+            'num_joins': 2,
             'tables': {
-                'auth_group',
                 'auth_group_permissions',
                 'auth_permission',
-                'auth_user_groups',
                 'django_content_type',
             },
             'values_select': ('content_type__app_label', 'codename'),
-            'where': Q(group__user=user),
+            'where': Q(group__in=('__QuerySet__subquery__', 1)),
+            'subqueries': [
+                {
+                    'join_types': {
+                        'auth_user_groups': 'INNER JOIN',
+                    },
+                    'model': Group,
+                    'num_joins': 1,
+                    'tables': {
+                        'auth_group',
+                        'auth_user_groups',
+                    },
+                    'where': Q(user__id=user.pk),
+                },
+            ],
         },
     ]
 

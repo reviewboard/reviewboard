@@ -8,6 +8,7 @@ import {
 } from 'jasmine-core';
 
 import {
+    API,
     ReviewGroup,
     UserSession,
 } from 'reviewboard/common';
@@ -33,7 +34,7 @@ suite('rb/resources/models/ReviewGroup', function() {
             spyOn(session.watchedGroups, 'addImmediately').and.callThrough();
             spyOn(session.watchedGroups, 'removeImmediately')
                 .and.callThrough();
-            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn(API, 'request').and.callThrough();
         });
 
         it('true', async function() {
@@ -50,7 +51,7 @@ suite('rb/resources/models/ReviewGroup', function() {
 
             expect(session.watchedGroups.addImmediately)
                 .toHaveBeenCalled();
-            expect(RB.apiCall).toHaveBeenCalled();
+            expect(API.request).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
         });
 
@@ -68,33 +69,8 @@ suite('rb/resources/models/ReviewGroup', function() {
 
             expect(session.watchedGroups.removeImmediately)
                 .toHaveBeenCalled();
-            expect(RB.apiCall).toHaveBeenCalled();
+            expect(API.request).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
-        });
-
-        it('With callbacks', function(done) {
-            spyOn($, 'ajax').and.callFake(request => {
-                expect(request.type).toBe('POST');
-                expect(request.url).toBe(url);
-
-                request.success({
-                    stat: 'ok',
-                });
-            });
-            spyOn(console, 'warn');
-
-            group.setStarred(true, {
-                error: () => done.fail(),
-                success: () => {
-                    expect(session.watchedGroups.addImmediately)
-                        .toHaveBeenCalled();
-                    expect(RB.apiCall).toHaveBeenCalled();
-                    expect($.ajax).toHaveBeenCalled();
-                    expect(console.warn).toHaveBeenCalled();
-
-                    done();
-                },
-            });
         });
     });
 
@@ -107,7 +83,7 @@ suite('rb/resources/models/ReviewGroup', function() {
                 name: 'test-group',
             });
 
-            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn(API, 'request').and.callThrough();
         });
 
         it('Loaded group', async function() {
@@ -121,31 +97,8 @@ suite('rb/resources/models/ReviewGroup', function() {
             });
 
             await group.addUser('my-user');
-            expect(RB.apiCall).toHaveBeenCalled();
+            expect(API.request).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
-        });
-
-        it('With callbacks', function(done) {
-            spyOn($, 'ajax').and.callFake(request => {
-                expect(request.type).toBe('POST');
-                expect(request.data.username).toBe('my-user');
-
-                request.success({
-                    stat: 'ok',
-                });
-            });
-            spyOn(console, 'warn');
-
-            group.addUser('my-user', {
-                error: () => done.fail(),
-                success: () => {
-                    expect(RB.apiCall).toHaveBeenCalled();
-                    expect($.ajax).toHaveBeenCalled();
-                    expect(console.warn).toHaveBeenCalled();
-
-                    done();
-                },
-            });
         });
 
         it('Unloaded group', async function() {
@@ -157,7 +110,7 @@ suite('rb/resources/models/ReviewGroup', function() {
             await expectAsync(group.addUser('my-user')).toBeRejectedWith(
                 Error('Unable to add to the group.'));
 
-            expect(RB.apiCall).not.toHaveBeenCalled();
+            expect(API.request).not.toHaveBeenCalled();
             expect($.ajax).not.toHaveBeenCalled();
         });
     });
@@ -171,7 +124,7 @@ suite('rb/resources/models/ReviewGroup', function() {
                 name: 'test-group',
             });
 
-            spyOn(RB, 'apiCall').and.callThrough();
+            spyOn(API, 'request').and.callThrough();
         });
 
         it('Loaded group', async function() {
@@ -182,28 +135,8 @@ suite('rb/resources/models/ReviewGroup', function() {
             });
 
             await group.removeUser('my-user');
-            expect(RB.apiCall).toHaveBeenCalled();
+            expect(API.request).toHaveBeenCalled();
             expect($.ajax).toHaveBeenCalled();
-        });
-
-        it('With callbacks', function(done) {
-            spyOn($, 'ajax').and.callFake(request => {
-                expect(request.type).toBe('DELETE');
-
-                request.success();
-            });
-            spyOn(console, 'warn');
-
-            group.removeUser('my-user', {
-                error: () => done.fail(),
-                success: () => {
-                    expect(RB.apiCall).toHaveBeenCalled();
-                    expect($.ajax).toHaveBeenCalled();
-                    expect(console.warn).toHaveBeenCalled();
-
-                    done();
-                },
-            });
         });
 
         it('Unloaded group', async function() {
@@ -215,7 +148,7 @@ suite('rb/resources/models/ReviewGroup', function() {
             await expectAsync(group.removeUser('my-user')).toBeRejectedWith(
                 Error('Unable to remove from the group.'));
 
-            expect(RB.apiCall).not.toHaveBeenCalled();
+            expect(API.request).not.toHaveBeenCalled();
             expect($.ajax).not.toHaveBeenCalled();
         });
     });

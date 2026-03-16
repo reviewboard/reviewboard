@@ -1819,7 +1819,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                     'num_joins': rows_q_num_joins,
                     'tables': rows_q_tables,
                     'where': (Q(rows_q) &
-                              ~Q(__Q__subquery__=next_subquery_i) &
+                              ~Q(pk__in=('__QuerySet__subquery__',
+                                         next_subquery_i)) &
                               Q(local_site=local_site)),
 
                     'subqueries': rows_q_subqueries + [
@@ -1844,7 +1845,8 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
                         'values_select': ('pk',),
                         'extra': extra,
                         'where': (Q(rows_q) &
-                                  ~Q(__Q__subquery__=next_subquery_i) &
+                                  ~Q(pk__in=('__QuerySet__subquery__',
+                                             next_subquery_i)) &
                                   Q(local_site=local_site)),
                         'order_by': ('-last_updated',),
                         'distinct': True,

@@ -1,6 +1,7 @@
 """Middleware for account-related functionality."""
 
-import pytz
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from django.conf import settings
 from django.contrib import auth
 from django.utils import timezone
@@ -30,8 +31,8 @@ def timezone_middleware(get_response):
         if request.user.is_authenticated:
             try:
                 user = request.user.get_profile()
-                timezone.activate(pytz.timezone(user.timezone))
-            except pytz.UnknownTimeZoneError:
+                timezone.activate(ZoneInfo(user.timezone))
+            except ZoneInfoNotFoundError:
                 pass
 
         return get_response(request)

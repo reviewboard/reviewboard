@@ -1,5 +1,6 @@
 import './commentDialogViewTests';
 import './commentIssueBarViewTests';
+import './diffFragmentViewTests';
 import './diffReviewableViewTests';
 import './diffViewerPageViewTests';
 import './fileAttachmentThumbnailViewTests';
@@ -8,3 +9,4 @@ import './reviewRequestEditorViewTests';
 import './reviewRequestFieldViewsTests';
 import './reviewablePageViewTests';
 import './textBasedReviewableViewTests';
+import './uploadAttachmentViewTests';

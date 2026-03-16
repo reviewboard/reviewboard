@@ -56,7 +56,7 @@ class BaseScreenshotResource(WebAPIResource):
         },
         'absolute_url': {
             'type': StringFieldType,
-            'description': "The absolute URL of the screenshot file.",
+            'description': 'The absolute URL of the screenshot file.',
             'added_in': '2.0',
         },
         'thumbnail_url': {

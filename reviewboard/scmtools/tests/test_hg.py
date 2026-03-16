@@ -392,7 +392,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         settings.TIME_ZONE != UTC
         """
         old_tz = os.environ['TZ']
-        os.environ['TZ'] = 'US/Pacific'
+        os.environ['TZ'] = 'America/Los_Angeles'
 
         try:
             value = self.tool.get_commits()

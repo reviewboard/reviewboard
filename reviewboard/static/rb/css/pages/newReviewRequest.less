@@ -253,6 +253,7 @@
 
     .commit-info {
       color: var(--ink-p-fg-weak);
+      line-height: var(--ink-u-icon-std);
 
       .author, .revision {
         margin-right: 1em;
@@ -262,6 +263,12 @@
         display: inline-block;
         margin-top: 0.5em;
         white-space: nowrap;
+
+        .ink-i-clock,
+        .ink-i-user,
+        .ink-i-vcs-commit {
+          vertical-align: bottom;
+        }
 
         .on-mobile-medium-screen-720({
           display: block;

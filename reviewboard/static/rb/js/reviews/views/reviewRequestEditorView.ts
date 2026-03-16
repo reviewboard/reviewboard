@@ -1154,11 +1154,6 @@ export class ReviewRequestEditorView extends BaseView<
 
         view.on('beginEdit', () => this.model.incr('editCount'));
         view.on('endEdit', () => this.model.decr('editCount'));
-
-        if (!EnabledFeatures.unifiedBanner) {
-            view.on('commentSaved',
-                    () => RB.DraftReviewBannerView.instance.show());
-        }
     }
 
     /**

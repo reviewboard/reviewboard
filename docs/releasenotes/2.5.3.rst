@@ -168,7 +168,7 @@ Contributors
 ============
 
 * André Klitzing
-* Barret Rennie
+* Beth Rennie
 * Christian Hammond
 * David Trowbridge
 * Griffin Myers

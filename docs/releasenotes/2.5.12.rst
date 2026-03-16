@@ -28,6 +28,6 @@ Bugs Fixed
 Contributors
 ============
 
-* Barret Rennie
+* Beth Rennie
 * Christian Hammond
 * Daniel Bak

@@ -12,7 +12,7 @@
             "last_login": "2010-12-03T16:48:53+00:00", 
             "groups": [], 
             "user_permissions": [], 
-            "password": "sha1$b2c09$12c1820af5195a026c703a6149467800d7937dd6", 
+            "password": "base64$YWRtaW4=",
             "email": "admin@example.com", 
             "date_joined": "2007-06-24T00:02:37+00:00"
         }
@@ -30,7 +30,7 @@
             "last_login": "2007-06-24T00:03:08+00:00", 
             "groups": [], 
             "user_permissions": [],
-            "password": "sha1$3d041$6700c5db6c46bf90d3b3c2716f5b60fb30ede072", 
+            "password": "base64$ZG9j",
             "email": "doc@example.com", 
             "date_joined": "2007-06-24T00:03:08+00:00"
         }
@@ -48,7 +48,7 @@
             "last_login": "2007-06-24T00:03:14+00:00", 
             "groups": [], 
             "user_permissions": [], 
-            "password": "sha1$4ff27$f7753bda33cc04efc49b7e7dd0cbd519677a3bdc", 
+            "password": "base64$ZG9wZXk=",
             "email": "dopey@example.com", 
             "date_joined": "2007-06-24T00:03:14+00:00"
         }
@@ -66,7 +66,7 @@
             "last_login": "2007-06-24T00:03:20+00:00", 
             "groups": [], 
             "user_permissions": [], 
-            "password": "sha1$e38cf$ebcabd0c95ec5c5f02b34e2da3a3aba69edb09c4", 
+            "password": "base64$Z3J1bXB5",
             "email": "grumpy@example.com", 
             "date_joined": "2007-06-24T00:03:20+00:00"
         }

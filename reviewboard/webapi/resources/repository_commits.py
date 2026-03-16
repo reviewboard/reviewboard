@@ -81,7 +81,7 @@ class RepositoryCommitsResource(WebAPIResource):
         optional={
             'branch': {
                 'type': StringFieldType,
-                "description": "The ID of the branch to limit the commits "
+                'description': "The ID of the branch to limit the commits "
                                "to, as provided by the 'id' field of the "
                                "repository branches API.",
                 'added_in': '2.5',

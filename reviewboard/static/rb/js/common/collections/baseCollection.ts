@@ -3,6 +3,11 @@
  * */
 import { BaseCollection as SpinaCollection, spina } from '@beanbag/spina';
 
+import {
+    API,
+    BackboneError,
+} from '../utils/apiUtils';
+
 
 /**
  * The base class used for Review Board collections.
@@ -27,17 +32,17 @@ export class BaseCollection<
      * takes a context parameter for callbacks and can return promises.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     This method was changed to return a promise. Using callbacks instead
-     *     of the promise is deprecated, and will be removed in Review Board
-     *     6.0.
+     *     of the promise is deprecated.
      *
      * Args:
      *     options (object):
      *         Options for the fetch operation.
-     *
-     *     context (object):
-     *         Context to be used when calling callbacks.
      *
      * Returns:
      *     Promise:
@@ -45,17 +50,13 @@ export class BaseCollection<
      */
     fetch(
         options: Backbone.CollectionFetchOptions = {},
-        context: object = undefined,
     ): Promise<BaseCollection> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error)) {
-            console.warn('RB.BaseCollection.fetch was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.fetch(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error),
+            dedent`
+                RB.BaseCollection.fetch was called using callbacks. This has
+                been removed in Review Board 8.0 in favor of promises.
+            `);
 
         return new Promise((resolve, reject) => {
             super.fetch(_.defaults({
@@ -92,7 +93,7 @@ export class BaseCollection<
     ) {
         return Backbone.sync.call(this, method, model, _.defaults({
             error: (xhr, textStatus, errorThrown) => {
-                RB.storeAPIError(xhr);
+                API.storeError(xhr);
 
                 if (_.isFunction(options.error)) {
                     options.error(xhr, textStatus, errorThrown);

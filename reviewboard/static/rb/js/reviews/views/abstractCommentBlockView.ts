@@ -258,10 +258,6 @@ export class AbstractCommentBlockView<
             if (!options.boundsUpdated) {
                 this.notify(gettext('Comment Saved'));
             }
-
-            if (!EnabledFeatures.unifiedBanner) {
-                RB.DraftReviewBannerView.instance.show();
-            }
         });
 
         this.$el.addClass('draft');

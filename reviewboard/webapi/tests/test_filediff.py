@@ -451,10 +451,10 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
                                     1,
                                     '',
                                     '',
-                                    [],
+                                    None,
                                     1,
                                     'print(&#x27;hello, world!&#x27;)',
-                                    [],
+                                    None,
                                     False,
                                 ],
                             ],
@@ -474,7 +474,7 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
             })
 
     @webapi_test_template
-    def test_get_with_diff_data_and_syntax_highlighting(self):
+    def test_get_with_diff_data_and_syntax_highlighting(self) -> None:
         """Testing the GET <URL> API with diff data result and
         ?syntax-highlighting=1
         """
@@ -524,14 +524,14 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
                                     1,
                                     '',
                                     '',
-                                    [],
+                                    None,
                                     1,
                                     '<span class="nb">print</span>'
                                     '<span class="p">(</span>'
                                     '<span class="s1">&#39;hello, '
                                     'world!&#39;</span>'
                                     '<span class="p">)</span>',
-                                    [],
+                                    None,
                                     False,
                                 ],
                             ],

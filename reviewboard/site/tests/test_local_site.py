@@ -13,18 +13,18 @@ class LocalSiteTests(TestCase):
 
     def test_access(self):
         """Test LocalSite.is_accessible_by"""
-        doc = User.objects.get(username="doc")
-        dopey = User.objects.get(username="dopey")
-        site = LocalSite.objects.get(name="local-site-1")
+        doc = User.objects.get(username='doc')
+        dopey = User.objects.get(username='dopey')
+        site = LocalSite.objects.get(name='local-site-1')
 
         self.assertTrue(site.is_accessible_by(doc))
         self.assertFalse(site.is_accessible_by(dopey))
 
     def test_access_with_public(self):
         """Test LocalSite.is_accessible_by with public LocalSites"""
-        doc = User.objects.get(username="doc")
-        dopey = User.objects.get(username="dopey")
-        site = LocalSite.objects.get(name="local-site-1")
+        doc = User.objects.get(username='doc')
+        dopey = User.objects.get(username='dopey')
+        site = LocalSite.objects.get(name='local-site-1')
         site.public = True
 
         self.assertTrue(site.is_accessible_by(doc))

@@ -1,5 +1,6 @@
 import { Action } from './models/actionModel';
 import { GroupAction } from './models/groupActionModel';
+import { LogoutAction } from './models/logoutActionModel';
 import { MenuAction } from './models/menuActionModel';
 import { ActionView } from './views/actionView';
 import { ButtonActionView } from './views/buttonActionView';
@@ -11,6 +12,7 @@ export const Actions = {
     ActionView,
     ButtonActionView,
     GroupAction,
+    LogoutAction,
     MenuAction,
     MenuActionView,
     MenuItemActionView,

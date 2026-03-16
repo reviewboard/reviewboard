@@ -7,6 +7,9 @@ import {
 } from '@beanbag/spina';
 
 import { DiffFileCollection } from '../collections/diffFileCollection';
+import {
+    DiffReviewableCollection,
+} from '../collections/diffReviewableCollection';
 import { type DiffFileResourceData } from './diffFileModel';
 import {
     type DiffCommentsHintParseData,
@@ -133,7 +136,7 @@ export class DiffViewerPage extends ReviewablePage<DiffViewerPageAttrs> {
     commits: RB.DiffFCommitCollection;
 
     /** The set of reviewables for currently-shown files. */
-    diffReviewables: RB.DiffReviewableCollection;
+    diffReviewables: DiffReviewableCollection;
 
     /** The set of currently-shown files. */
     files: DiffFileCollection;
@@ -169,7 +172,7 @@ export class DiffViewerPage extends ReviewablePage<DiffViewerPageAttrs> {
     initialize(...args: [DiffViewerPageAttrs, object]) {
         super.initialize(...args);
 
-        this.diffReviewables = new RB.DiffReviewableCollection([], {
+        this.diffReviewables = new DiffReviewableCollection([], {
             reviewRequest: this.get('reviewRequest'),
         });
         this.diffReviewables.watchFiles(this.files);

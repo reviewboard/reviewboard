@@ -177,7 +177,7 @@ def get_collapse_diff(request):
     elif request.GET.get('collapse', False):
         return True
     elif 'collapsediffs' in request.COOKIES:
-        return (request.COOKIES['collapsediffs'] == "True")
+        return (request.COOKIES['collapsediffs'] == 'True')
     else:
         return True
 

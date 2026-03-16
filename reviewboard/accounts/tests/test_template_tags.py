@@ -1,8 +1,8 @@
 """Unit tests for reviewboard.accounts.templatetags.accounts."""
 
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
-import pytz
 from django.contrib.auth.models import AnonymousUser, User
 from django.template import Context, Template
 from django.test.client import RequestFactory
@@ -40,12 +40,12 @@ class JSUserSessionInfoTests(TestCase):
     def test_with_authenticated_user(self):
         """Testing {% js_user_session_info %} with authenticated user"""
         profile = self.user.get_profile()
-        profile.timezone = 'US/Pacific'
+        profile.timezone = 'America/Los_Angeles'
         profile.save(update_fields=('timezone',))
 
-        tz = pytz.timezone('US/Pacific')
+        tz = ZoneInfo('America/Los_Angeles')
 
-        if tz.dst(datetime.now()):
+        if tz.dst(datetime.now(tz=timezone.utc)):
             expected_tz_offset = '-0700'
         else:
             expected_tz_offset = '-0800'
@@ -106,12 +106,12 @@ class JSUserSessionInfoTests(TestCase):
         LocalSite
         """
         profile = self.user.get_profile()
-        profile.timezone = 'US/Pacific'
+        profile.timezone = 'America/Los_Angeles'
         profile.save(update_fields=('timezone',))
 
-        tz = pytz.timezone('US/Pacific')
+        tz = ZoneInfo('America/Los_Angeles')
 
-        if tz.dst(datetime.now()):
+        if tz.dst(datetime.now(tz=timezone.utc)):
             expected_tz_offset = '-0700'
         else:
             expected_tz_offset = '-0800'

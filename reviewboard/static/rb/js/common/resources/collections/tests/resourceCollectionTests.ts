@@ -15,9 +15,9 @@ import {
 } from 'reviewboard/common';
 
 
-suite('rb/resources/collections/ResourceCollection', function() {
-    let collection;
-    let reviewRequest;
+suite('rb/common/collections/ResourceCollection', function() {
+    let collection: ResourceCollection;
+    let reviewRequest: ReviewRequest;
 
     beforeEach(function() {
         reviewRequest = new ReviewRequest({
@@ -118,24 +118,6 @@ suite('rb/resources/collections/ResourceCollection', function() {
                         .toHaveBeenCalled();
                 });
             });
-
-            it('Using callbacks', function(done) {
-                spyOn(BaseCollection.prototype, 'fetch')
-                    .and.resolveTo();
-                spyOn(console, 'warn');
-
-                collection.fetch({
-                    error: () => done.fail(),
-                    success: () => {
-                        expect(reviewRequest.ready).toHaveBeenCalled();
-                        expect(BaseCollection.prototype.fetch)
-                            .toHaveBeenCalled();
-                        expect(console.warn).toHaveBeenCalled();
-
-                        done();
-                    },
-                });
-            });
         });
 
         describe('fetchAll', function() {
@@ -225,101 +207,6 @@ suite('rb/resources/collections/ResourceCollection', function() {
                 expect(collection.at(2).id).toBe(3);
                 expect(collection.at(3).id).toBe(4);
             });
-
-            it('With callbacks', function(done) {
-                let numFetches = 0;
-
-                spyOn($, 'ajax').and.callFake(request => {
-                    console.assert(numFetches < 2);
-
-                    expect(request.type).toBe('GET');
-
-                    numFetches++;
-
-                    if (numFetches === 1) {
-                        expect(request.url).toBe(
-                            '/api/review-requests/123/reviews/');
-
-                        request.success({
-                            links: {
-                                next: {
-                                    href: '/api/review-requests/123/reviews/' +
-                                          '?start=25',
-                                    method: 'GET',
-                                },
-                                self: {
-                                    href: '/api/review-requests/123/reviews/',
-                                    method: 'GET',
-                                },
-                            },
-                            reviews: [
-                                {
-                                    id: 1,
-                                    links: {},
-                                },
-                                {
-                                    id: 2,
-                                    links: {},
-                                },
-                            ],
-                            stat: 'ok',
-                            total_results: 4,
-                        });
-                    } else if (numFetches === 2) {
-                        expect(request.url).toBe(
-                            '/api/review-requests/123/reviews/?start=25');
-
-                        request.success({
-                            links: {
-                                prev: {
-                                    href: '/api/review-requests/123/reviews/' +
-                                          '?start=0',
-                                    method: 'GET',
-                                },
-                                self: {
-                                    href: '/api/review-requests/123/reviews/' +
-                                          '?start=25',
-                                    method: 'GET',
-                                },
-                            },
-                            reviews: [
-                                {
-                                    id: 3,
-                                    links: {},
-                                },
-                                {
-                                    id: 4,
-                                    links: {},
-                                },
-                            ],
-                            stat: 'ok',
-                            total_results: 4,
-                        });
-                    }
-                });
-
-                spyOn(console, 'warn');
-
-                collection.fetchAll({
-                    error: () => done.fail(),
-                    success: () => {
-                        expect($.ajax).toHaveBeenCalled();
-                        expect(numFetches).toBe(2);
-                        expect(collection.hasPrev).toBe(false);
-                        expect(collection.hasNext).toBe(false);
-                        expect(collection.totalResults).toBe(4);
-                        expect(collection.currentPage).toBe(0);
-                        expect(collection.length).toBe(4);
-                        expect(collection.at(0).id).toBe(1);
-                        expect(collection.at(1).id).toBe(2);
-                        expect(collection.at(2).id).toBe(3);
-                        expect(collection.at(3).id).toBe(4);
-                        expect(console.warn).toHaveBeenCalled();
-
-                        done();
-                    },
-                });
-            });
         });
 
         describe('fetchNext', function() {
@@ -389,71 +276,6 @@ suite('rb/resources/collections/ResourceCollection', function() {
                 expect(collection.currentPage).toBe(3);
                 expect(collection.models.length).toBe(2);
             });
-
-            it('With callbacks', function(done) {
-                spyOn($, 'ajax').and.callFake(request => {
-                    expect(request.url).toBe(
-                        '/api/review-requests/123/reviews/?start=25');
-                    expect(request.type).toBe('GET');
-
-                    request.success({
-                        links: {
-                            next: {
-                                href: '/api/review-requests/123/reviews/' +
-                                      '?start=50',
-                                method: 'GET',
-                            },
-                            prev: {
-                                href: '/api/review-requests/123/reviews/' +
-                                      '?start=0',
-                                method: 'GET',
-                            },
-                            self: {
-                                href: '/api/review-requests/123/reviews/',
-                                method: 'GET',
-                            },
-                        },
-                        reviews: [
-                            {
-                                id: 1,
-                                links: {},
-                            },
-                            {
-                                id: 2,
-                                links: {},
-                            },
-                        ],
-                        stat: 'ok',
-                        total_results: 2,
-                    });
-                });
-
-                collection.hasNext = true;
-                collection.currentPage = 2;
-                collection._links = {
-                    next: {
-                        href: '/api/review-requests/123/reviews/?start=25',
-                        method: 'GET',
-                    },
-                };
-
-                spyOn(collection, 'fetch').and.callThrough();
-                spyOn(console, 'warn');
-
-                collection.fetchNext({
-                    error: () => done.fail(),
-                    success: () => {
-                        expect(collection.fetch).toHaveBeenCalled();
-                        expect(collection.hasPrev).toBe(true);
-                        expect(collection.hasNext).toBe(true);
-                        expect(collection.currentPage).toBe(3);
-                        expect(collection.models.length).toBe(2);
-                        expect(console.warn).toHaveBeenCalled();
-
-                        done();
-                    },
-                });
-            });
         });
 
         describe('fetchPrev', function() {
@@ -522,71 +344,6 @@ suite('rb/resources/collections/ResourceCollection', function() {
                 expect(collection.hasNext).toBe(true);
                 expect(collection.currentPage).toBe(1);
                 expect(collection.models.length).toBe(2);
-            });
-
-            it('With callbacks', function(done) {
-                spyOn($, 'ajax').and.callFake(request => {
-                    expect(request.url).toBe(
-                        '/api/review-requests/123/reviews/?start=25');
-                    expect(request.type).toBe('GET');
-
-                    request.success({
-                        links: {
-                            next: {
-                                href: '/api/review-requests/123/reviews/' +
-                                      '?start=25',
-                                method: 'GET',
-                            },
-                            prev: {
-                                href: '/api/review-requests/123/reviews/' +
-                                      '?start=0',
-                                method: 'GET',
-                            },
-                            self: {
-                                href: '/api/review-requests/123/reviews/',
-                                method: 'GET',
-                            },
-                        },
-                        reviews: [
-                            {
-                                id: 1,
-                                links: {},
-                            },
-                            {
-                                id: 2,
-                                links: {},
-                            },
-                        ],
-                        stat: 'ok',
-                        total_results: 2,
-                    });
-                });
-
-                collection.hasPrev = true;
-                collection.currentPage = 2;
-                collection._links = {
-                    prev: {
-                        href: '/api/review-requests/123/reviews/?start=25',
-                        method: 'GET',
-                    },
-                };
-
-                spyOn(collection, 'fetch').and.callThrough();
-                spyOn(console, 'warn');
-
-                collection.fetchPrev({
-                    error: () => done.fail(),
-                    success: () => {
-                        expect(collection.fetch).toHaveBeenCalled();
-                        expect(collection.hasPrev).toBe(true);
-                        expect(collection.hasNext).toBe(true);
-                        expect(collection.currentPage).toBe(1);
-                        expect(collection.models.length).toBe(2);
-                        expect(console.warn).toHaveBeenCalled();
-
-                        done();
-                    },
-                });
             });
         });
 

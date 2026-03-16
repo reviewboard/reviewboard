@@ -1,3 +1,8 @@
+"""Evolutions for the oauth app."""
+
+from __future__ import annotations
+
+
 # The oauth2_provider module expects that the app specified in
 # settings.OAUTH2_PROVIDER['APPLICATION_MODULE'] has already been added in the
 # database. We need to specify this dependency to ensure this app is processed
@@ -17,4 +22,5 @@ AFTER_EVOLUTIONS = [
 SEQUENCE = [
     'disabled_for_security',
     'upgrade_to_1_6_3',
+    'upgrade_to_3_2_0',
 ]

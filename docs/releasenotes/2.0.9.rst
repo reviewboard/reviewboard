@@ -35,7 +35,7 @@ New Features
   that the users are members of will still be delivered to them through the
   mailing list.
 
-  Patch by Barret Rennie.
+  Patch by Beth Rennie.
 
 
 Security Improvements
@@ -258,7 +258,7 @@ Contributors
 ============
 
 * Andrew Hong
-* Barret Rennie
+* Beth Rennie
 * Christian Hammond
 * David Trowbridge
 * John Talling

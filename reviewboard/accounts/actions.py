@@ -141,6 +141,7 @@ class LogoutAction(LoggedInUserMixin, BaseAction):
     """
 
     action_id = 'logout'
+    js_model_class = 'RB.Actions.LogoutAction'
     label = _('Log out')
     url_name = 'logout'
 

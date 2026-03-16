@@ -13,8 +13,12 @@ import { BaseView, spina } from '@beanbag/spina';
 import {
     type Review,
     ClientCommChannel,
+    DiffComment,
     EnabledFeatures,
+    FileAttachmentComment,
+    GeneralComment,
     ResourceCollection,
+    ScreenshotComment,
     UserSession,
 } from 'reviewboard/common';
 import {
@@ -28,6 +32,7 @@ import {
 } from 'reviewboard/ui';
 
 import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { DiffFragmentQueue } from '../utils/diffFragmentQueue';
 
 
 const REVIEW_DOCS_URL = `${MANUAL_URL}users/#reviewing-code-and-documents`;
@@ -388,7 +393,7 @@ class BaseCommentView<
  */
 interface DiffCommentViewOptions {
     /** The view that handles loading diff fragments. */
-    diffQueue: RB.DiffFragmentQueueView;
+    diffQueue: DiffFragmentQueuew;
 }
 
 
@@ -399,7 +404,7 @@ interface DiffCommentViewOptions {
     prototypeAttrs: ['thumbnailTemplate'],
 })
 export class DiffCommentView extends BaseCommentView<
-    RB.DiffComment,
+    DiffComment,
     HTMLDivElement,
     DiffCommentViewOptions
 > {
@@ -505,7 +510,7 @@ export class DiffCommentView extends BaseCommentView<
     prototypeAttrs: ['thumbnailTemplate'],
 })
 class FileAttachmentCommentView extends BaseCommentView<
-    RB.FileAttachmentComment
+    FileAttachmentComment
 > {
     static thumbnailTemplate = _.template(dedent`
         <div class="rb-c-review-comment-thumbnail">
@@ -575,7 +580,7 @@ class GeneralCommentView extends BaseCommentView {
     prototypeAttrs: ['thumbnailTemplate'],
 })
 class ScreenshotCommentView extends BaseCommentView<
-    RB.ScreenshotComment
+    ScreenshotComment
 > {
     static thumbnailTemplate = _.template(dedent`
         <div class="rb-c-review-comment-thumbnail">
@@ -1092,6 +1097,7 @@ export class ReviewDialogView extends BaseView<
         <div class="spinner"><span class="ink-c-spinner"></span></div>
         <div class="edit-field body-bottom"></div>
     `);
+    template: _.CompiledTemplate;
 
     /** The review dialog instance. */
     static instance: ReviewDialogView = null;
@@ -1156,7 +1162,7 @@ export class ReviewDialogView extends BaseView<
     #defaultUseRichText: boolean;
 
     /** The queue for loading diff fragments. */
-    #diffQueue: RB.DiffFragmentQueueView;
+    #diffQueue: DiffFragmentQueue;
 
     /** The set of additional views added by extension hooks. */
     #hookViews: Backbone.View[] = [];
@@ -1186,17 +1192,17 @@ export class ReviewDialogView extends BaseView<
     _commentViews: BaseCommentView[] = [];
 
     /** The collection of diff comments. */
-    _diffCommentsCollection: ResourceCollection<RB.DiffComment>;
+    _diffCommentsCollection: ResourceCollection<DiffComment>;
 
     /** The collection of file attachment comments. */
     _fileAttachmentCommentsCollection:
-        ResourceCollection<RB.FileAttachmentComment>;
+        ResourceCollection<FileAttachmentComment>;
 
     /** The collection of general comments. */
-    _generalCommentsCollection: ResourceCollection<RB.GeneralComment>;
+    _generalCommentsCollection: ResourceCollection<GeneralComment>;
 
     /** The collection of screenshot comments. */
-    _screenshotCommentsCollection: ResourceCollection<RB.ScreenshotComment>;
+    _screenshotCommentsCollection: ResourceCollection<ScreenshotComment>;
 
     /** The link to show the tips carousel when hidden. */
     #showTips: JQuery = null;
@@ -1215,18 +1221,18 @@ export class ReviewDialogView extends BaseView<
         this.options = options;
 
         const reviewRequest = this.model.get('parentObject');
-        this.#diffQueue = new RB.DiffFragmentQueueView({
+        this.#diffQueue = new DiffFragmentQueue({
             containerPrefix: 'review_draft_comment_container',
             queueName: 'review_draft_diff_comments',
             reviewRequestPath: reviewRequest.get('reviewURL'),
         });
 
         this._diffCommentsCollection =
-            new ResourceCollection<RB.DiffComment>([], {
+            new ResourceCollection<DiffComment>([], {
                 extraQueryData: {
                     'order-by': 'filediff,first_line',
                 },
-                model: RB.DiffComment,
+                model: DiffComment,
                 parentResource: this.model,
             });
 
@@ -1255,8 +1261,8 @@ export class ReviewDialogView extends BaseView<
         });
 
         this._fileAttachmentCommentsCollection =
-            new ResourceCollection<RB.FileAttachmentComment>([], {
-                model: RB.FileAttachmentComment,
+            new ResourceCollection<FileAttachmentComment>([], {
+                model: FileAttachmentComment,
                 parentResource: this.model,
             });
 
@@ -1267,8 +1273,8 @@ export class ReviewDialogView extends BaseView<
         });
 
         this._generalCommentsCollection =
-            new RB.ResourceCollection<RB.FileAttachmentComment>([], {
-                model: RB.GeneralComment,
+            new ResourceCollection<FileAttachmentComment>([], {
+                model: GeneralComment,
                 parentResource: this.model,
             });
 
@@ -1278,8 +1284,8 @@ export class ReviewDialogView extends BaseView<
         });
 
         this._screenshotCommentsCollection =
-            new ResourceCollection<RB.ScreenshotComment>([], {
-                model: RB.ScreenshotComment,
+            new ResourceCollection<ScreenshotComment>([], {
+                model: ScreenshotComment,
                 parentResource: this.model,
             });
 
@@ -1687,10 +1693,6 @@ export class ReviewDialogView extends BaseView<
                 await this.model.destroy();
 
                 ClientCommChannel.getInstance().reload();
-
-                if (!EnabledFeatures.unifiedBanner) {
-                    RB.DraftReviewBannerView.instance.hideAndReload();
-                }
               }}>
              ${_`Discard`}
             </Ink.Button>
@@ -1791,24 +1793,10 @@ export class ReviewDialogView extends BaseView<
 
             this.close();
 
-            if (EnabledFeatures.unifiedBanner) {
-                if (publish) {
-                    // Reload the page.
-                    RB.navigateTo(
-                        this.model.get('parentObject').get('reviewURL'));
-                }
-            } else {
-                const reviewBanner = RB.DraftReviewBannerView.instance;
-
-                if (reviewBanner) {
-                    if (publish) {
-                        reviewBanner.hideAndReload();
-                    } else if (this.model.isNew() && !madeChanges) {
-                        reviewBanner.hide();
-                    } else {
-                        reviewBanner.show();
-                    }
-                }
+            if (publish) {
+                // Reload the page.
+                RB.navigateTo(
+                    this.model.get('parentObject').get('reviewURL'));
             }
         } catch (err) {
             console.error('Failed to save review', err);

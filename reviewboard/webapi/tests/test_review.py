@@ -533,8 +533,8 @@ class ResourceItemTests(SpyAgency, ReviewItemMixin,
         """Testing the PUT review-requests/<id>/reviews/<id>/?public=1 API
         with a ship-it on a user's own review request when allowed
         """
-        body_top = "My Body Top"
-        body_bottom = ""
+        body_top = 'My Body Top'
+        body_bottom = ''
         ship_it = True
 
         review_request = self.create_review_request(

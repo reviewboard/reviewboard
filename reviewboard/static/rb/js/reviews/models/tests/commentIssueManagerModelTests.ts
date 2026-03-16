@@ -9,8 +9,12 @@ import {
 
 import {
     CommentIssueStatusType,
+    DiffComment,
+    FileAttachmentComment,
+    GeneralComment,
     Review,
     ReviewRequest,
+    ScreenshotComment,
 } from 'reviewboard/common';
 import {
     CommentIssueManager,
@@ -82,7 +86,7 @@ suite('rb/reviews/models/CommentIssueManager', () => {
                     reviewID: 456,
                 });
 
-                expect(comment).toBeInstanceOf(RB.DiffComment);
+                expect(comment).toBeInstanceOf(DiffComment);
             });
         });
 
@@ -361,7 +365,7 @@ suite('rb/reviews/models/CommentIssueManager', () => {
 
         describe('makeCommentEventID', () => {
             it('With diff comment', () => {
-                const comment = new RB.DiffComment({
+                const comment = new DiffComment({
                     id: 456,
                 });
 
@@ -370,7 +374,7 @@ suite('rb/reviews/models/CommentIssueManager', () => {
             });
 
             it('With file attachment comment', () => {
-                const comment = new RB.FileAttachmentComment({
+                const comment = new FileAttachmentComment({
                     id: 456,
                 });
 
@@ -379,7 +383,7 @@ suite('rb/reviews/models/CommentIssueManager', () => {
             });
 
             it('With general comment', () => {
-                const comment = new RB.GeneralComment({
+                const comment = new GeneralComment({
                     id: 456,
                 });
 
@@ -388,7 +392,7 @@ suite('rb/reviews/models/CommentIssueManager', () => {
             });
 
             it('With screenshot comment', () => {
-                const comment = new RB.ScreenshotComment({
+                const comment = new ScreenshotComment({
                     id: 456,
                 });
 

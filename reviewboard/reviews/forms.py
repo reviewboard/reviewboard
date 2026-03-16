@@ -40,12 +40,12 @@ def regex_validator(value):
 
 class DefaultReviewerForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
     name = forms.CharField(
-        label=_("Name"),
+        label=_('Name'),
         max_length=64,
         widget=forms.TextInput(attrs={'size': '30'}))
 
     file_regex = forms.CharField(
-        label=_("File regular expression"),
+        label=_('File regular expression'),
         max_length=256,
         widget=forms.TextInput(attrs={'size': '60'}),
         validators=[regex_validator],

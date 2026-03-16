@@ -308,7 +308,7 @@ class ParseOptionsTests(BaseRBSiteTestCase):
         stored site
         """
         expected_message = \
-            "No Review Board sites were listed in %s" % SITELIST_FILE_UNIX
+            'No Review Board sites were listed in %s' % SITELIST_FILE_UNIX
 
         with self.assertRaisesMessage(MissingSiteError, expected_message):
             parse_options(['upgrade', '--all-sites'])
@@ -673,11 +673,11 @@ class SiteTests(kgb.SpyAgency, BaseRBSiteTestCase):
     def test_get_wsgi_upgrade_needed_with_pkg_resources(self):
         """Testing Site.get_wsgi_upgrade_needed with pkg_resources imports"""
         self.assertTrue(self._get_wsgi_upgrade_needed(
-            'import __main__\n'
-            '__main__.__requires__ = [\'ReviewBoard\']\n'
-            'import pkg_resources\n'
-            '\n'
-            'from reviewboard.wsgi import application\n'))
+            "import __main__\n"
+            "__main__.__requires__ = ['ReviewBoard']\n"
+            "import pkg_resources\n"
+            "\n"
+            "from reviewboard.wsgi import application\n"))
 
     def test_get_wsgi_upgrade_needed_with_rb4(self):
         """Testing Site.get_wsgi_upgrade_needed with RB4+ configuration"""

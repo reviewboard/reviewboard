@@ -11,7 +11,6 @@ from django.db import connections, router, transaction, IntegrityError
 from django.db.models import Exists, Manager, OuterRef, Q
 from django.db.models.query import QuerySet
 from django.utils.text import slugify
-from djblets.db.managers import ConcurrencyManager
 from housekeeping.functions import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard80Warning
@@ -27,6 +26,7 @@ if TYPE_CHECKING:
     from reviewboard.integrations.base import Integration
     from reviewboard.integrations.models import IntegrationConfig
     from reviewboard.reviews.models import (
+        BaseComment,
         FileAttachmentComment,
         Review,
         ReviewRequest,
@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class CommentManager(ConcurrencyManager):
+class CommentManager(Manager['BaseComment']):
     """A manager for Comment models.
 
     This handles concurrency issues with Comment models.
@@ -490,7 +490,7 @@ class ReviewRequestQuerySet(QuerySet):
         return queryset
 
 
-class ReviewRequestManager(ConcurrencyManager):
+class ReviewRequestManager(Manager['ReviewRequest']):
     """
     A manager for review requests. Provides specialized queries to retrieve
     review requests with specific targets or origins, and to create review
@@ -1446,7 +1446,7 @@ class _ReviewANY:
         return '<ReviewManager.ANY>'
 
 
-class ReviewManager(ConcurrencyManager):
+class ReviewManager(Manager['Review']):
     """A manager for Review models.
 
     This handles concurrency issues with Review models. In particular, it
@@ -1633,16 +1633,16 @@ class ReviewManager(ConcurrencyManager):
         master_review = reviews[0]
 
         for review in reviews[1:]:
-            for attname in ["body_top", "body_bottom", "body_top_reply_to",
-                            "body_bottom_reply_to"]:
+            for attname in ['body_top', 'body_bottom', 'body_top_reply_to',
+                            'body_bottom_reply_to']:
                 review_value = getattr(review, attname)
 
                 if (review_value and not getattr(master_review, attname)):
                     setattr(master_review, attname, review_value)
 
-            for attname in ["comments", "screenshot_comments",
-                            "file_attachment_comments",
-                            "general_comments"]:
+            for attname in ['comments', 'screenshot_comments',
+                            'file_attachment_comments',
+                            'general_comments']:
                 master_m2m = getattr(master_review, attname)
                 review_m2m = getattr(review, attname)
 

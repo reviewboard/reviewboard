@@ -1029,7 +1029,7 @@ class SVNDiffParser(DiffParser):
         """
         super().__init__(data, **kwargs)
 
-        revision_re_part = r'''
+        revision_re_part = r"""
             (                      # - svn 1.9 nonexistent revision indicator
              nonexistent|          # English
              nicht\ existent|      # German
@@ -1050,9 +1050,9 @@ class SVNDiffParser(DiffParser):
                revisión:           # Spanish
              )\ (\d+)              # - the revision number
             )
-        '''.strip()
+        """.strip()
 
-        working_copy_re_part = r'''
+        working_copy_re_part = r"""
             (
              cópia\ de\ trabalho|   # Brazilian Portuguese
              working\ copy|         # English
@@ -1066,7 +1066,7 @@ class SVNDiffParser(DiffParser):
              工作副本|              # Simplified Chinese
              copia\ de\ trabajo     # Spanish
             )
-        '''.strip()
+        """.strip()
 
         global _revision_re
         global _working_copy_re
@@ -1089,7 +1089,7 @@ class SVNDiffParser(DiffParser):
             # the revision number. Subversion >=1.9 adds the 'nonexistent'
             # revision string.
             _revision_re = re.compile(
-                fr'''
+                fr"""
                     ^(\(([^\)]+)\)\s)?      # creating diffs between two
                                             # branches of a remote repository
                                             # will insert extra "relocation
@@ -1103,7 +1103,7 @@ class SVNDiffParser(DiffParser):
                                             # well.
 
                     \ *\({revision_re_part}\)$
-                '''.encode('utf-8'),
+                """.encode('utf-8'),
                 re.VERBOSE)
 
             # 'svn diff' also localises the (working copy) string to the system

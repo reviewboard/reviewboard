@@ -397,8 +397,8 @@ class ReviewGroupResource(WebAPIResource):
 
             group.name = name
 
-        for field in ("display_name", "mailing_list", "visible",
-                      "invite_only"):
+        for field in ('display_name', 'mailing_list', 'visible',
+                      'invite_only'):
             val = kwargs.get(field, None)
 
             if val is not None:

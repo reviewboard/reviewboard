@@ -44,12 +44,10 @@ class BaseCommentTests(kgb.SpyAgency, TestCase):
         comment.issue_status = BaseComment.OPEN
 
         comment.save(
-            None,  # Passing `force_insert` as a positional argument.
             update_fields=['issue_opened', 'issue_status', 'timestamp'])
 
         self.assertSpyCalledWith(
             models.Model.save,
-            force_insert=None,
             update_fields={'issue_opened', 'issue_status', 'timestamp'})
 
     def test_issue_updated_signal_with_created(self) -> None:

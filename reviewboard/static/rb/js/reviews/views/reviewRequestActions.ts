@@ -10,6 +10,11 @@ import {
 } from 'reviewboard/common';
 import { OverlayView } from 'reviewboard/ui';
 
+import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
+import { type ReviewRequestEditorView } from './reviewRequestEditorView';
+import { ReviewDialogView } from './reviewDialogView';
+import { UploadAttachmentView } from './uploadAttachmentView';
+
 
 /**
  * The view to manage the archive menu.

@@ -17,6 +17,7 @@ from kgb import SpyAgency
 from reviewboard.accounts.models import (ReviewRequestVisit,
                                          Profile,
                                          Trophy)
+from reviewboard.accounts.testing.queries import get_user_permissions_equeries
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.changedescs.models import ChangeDescription
@@ -1160,46 +1161,7 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'model': Trophy,
                 'where': Q(review_request=review_request),
             },
-            {
-                'join_types': {
-                    'auth_user_user_permissions': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type',
-                },
-                'values_select': (
-                    'content_type__app_label',
-                    'codename',
-                ),
-                'where': Q(user__id=user1.pk),
-            },
-            {
-                'join_types': {
-                    'auth_group': 'INNER JOIN',
-                    'auth_group_permissions': 'INNER JOIN',
-                    'auth_user_groups': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'num_joins': 4,
-                'tables': {
-                    'auth_group',
-                    'auth_group_permissions',
-                    'auth_permission',
-                    'auth_user_groups',
-                    'django_content_type',
-                },
-                'values_select': (
-                    'content_type__app_label',
-                    'codename',
-                ),
-                'where': Q(group__user=user1),
-            },
+            *get_user_permissions_equeries(user=user1),
             {
                 'model': Profile,
                 'where': Q(user=user1),
@@ -1516,46 +1478,7 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'model': Trophy,
                 'where': Q(review_request=review_request),
             },
-            {
-                'join_types': {
-                    'auth_user_user_permissions': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'num_joins': 2,
-                'tables': {
-                    'auth_permission',
-                    'auth_user_user_permissions',
-                    'django_content_type',
-                },
-                'values_select': (
-                    'content_type__app_label',
-                    'codename',
-                ),
-                'where': Q(user__id=user1.pk),
-            },
-            {
-                'join_types': {
-                    'auth_group': 'INNER JOIN',
-                    'auth_group_permissions': 'INNER JOIN',
-                    'auth_user_groups': 'INNER JOIN',
-                    'django_content_type': 'INNER JOIN',
-                },
-                'model': Permission,
-                'num_joins': 4,
-                'tables': {
-                    'auth_group',
-                    'auth_group_permissions',
-                    'auth_permission',
-                    'auth_user_groups',
-                    'django_content_type',
-                },
-                'values_select': (
-                    'content_type__app_label',
-                    'codename',
-                ),
-                'where': Q(group__user=user1),
-            },
+            *get_user_permissions_equeries(user=user1),
             {
                 'model': Profile,
                 'where': Q(user=user1),

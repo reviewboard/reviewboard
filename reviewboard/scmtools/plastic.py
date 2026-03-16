@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 class PlasticTool(SCMTool):
     scmtool_id = 'plastic'
-    name = "Plastic SCM"
+    name = 'Plastic SCM'
     diffs_use_absolute_paths = True
     supports_pending_changesets = True
     field_help_text = {
@@ -34,7 +34,7 @@ class PlasticTool(SCMTool):
     CS_RE = re.compile(br'^(?P<csid>\d+) (?P<user>[^\s]+) (?P<revid>\d+) '
                        br'(?P<file>.*)$')
     REPOLIST_RE = re.compile(br'^\s*\d+\s*(?P<reponame>[^\s]+)\s*.*:.*$')
-    UNKNOWN_REV = "rev:revid:-1"
+    UNKNOWN_REV = 'rev:revid:-1'
 
     def __init__(self, repository):
         super(PlasticTool, self).__init__(repository)
@@ -62,8 +62,8 @@ class PlasticTool(SCMTool):
 
         split = changesetdata.split(b'\n')
         m = self.CS_RE.match(split[0])
-        revid = m.group("revid")
-        changeset.username = m.group("user")
+        revid = m.group('revid')
+        changeset.username = m.group('user')
         changeset.summary = self.client.get_changeset_comment(changesetid,
                                                               revid)
         logger.debug('Plastic: changeset user %s summary %s',
@@ -76,7 +76,7 @@ class PlasticTool(SCMTool):
                 if not m:
                     logger.debug('Plastic: bad re %s failed to match %s',
                                  self.CS_RE, line)
-                    raise SCMError("Error looking up changeset")
+                    raise SCMError('Error looking up changeset')
 
                 if m.group('csid') != str(changesetid):
                     logger.debug('Plastic: csid %s != %s',
@@ -163,9 +163,9 @@ class PlasticTool(SCMTool):
         m = cls.REP_RE.match(path)
 
         if m:
-            repopath = m.group("reponame")
-            hostname = m.group("hostname")
-            port = m.group("port")
+            repopath = m.group('reponame')
+            hostname = m.group('hostname')
+            port = m.group('port')
 
             return repopath, hostname, port
         else:
@@ -204,8 +204,8 @@ class PlasticTool(SCMTool):
         # Can't use 'cm checkconnection' here as it only checks the
         # pre-configured server
 
-        server = "%s:%s" % (m.group("hostname"), m.group("port"))
-        reponame = m.group("reponame")
+        server = '%s:%s' % (m.group('hostname'), m.group('port'))
+        reponame = m.group('reponame')
 
         logger.debug('Plastic: Checking repository %s@%s',
                      reponame, server)
@@ -215,7 +215,7 @@ class PlasticTool(SCMTool):
 
         for rep in split:
             m = cls.REPOLIST_RE.match(rep)
-            if m and m.group("reponame") == reponame:
+            if m and m.group('reponame') == reponame:
                 break
         else:
             raise RepositoryNotFoundError()
@@ -241,12 +241,12 @@ class PlasticDiffParser(DiffParser):
             info['origFile'] = m.group(1)
             info['origInfo'] = m.group(2)
             info['newFile'] = m.group(1)
-            info['newInfo'] = ""
+            info['newInfo'] = ''
             linenum += 1
 
             if (linenum < len(self.lines) and
-                (self.lines[linenum].startswith(b"Binary files ") or
-                 self.lines[linenum].startswith(b"Files "))):
+                (self.lines[linenum].startswith(b'Binary files ') or
+                 self.lines[linenum].startswith(b'Files '))):
                 info['binary'] = True
                 linenum += 1
 
@@ -272,7 +272,7 @@ class PlasticClient(object):
     def get_file(self, path, revision):
         logger.debug('Plastic: get_file %s rev %s', path, revision)
 
-        repo = "rep:%s@repserver:%s:%s" % (self.reponame, self.hostname,
+        repo = 'rep:%s@repserver:%s:%s' % (self.reponame, self.hostname,
                                            self.port)
 
         # Work around a plastic bug, where 'cm cat --file=blah' gets an
@@ -302,12 +302,12 @@ class PlasticClient(object):
     def get_changeset(self, changesetid):
         logger.debug('Plastic: get_changeset %s', changesetid)
 
-        repo = "rep:%s@repserver:%s:%s" % (self.reponame, self.hostname,
+        repo = 'rep:%s@repserver:%s:%s' % (self.reponame, self.hostname,
                                            self.port)
 
         p = subprocess.Popen(['cm', 'find', 'revs', 'where',
                               'changeset=' + str(changesetid), 'on',
-                              'repository', '\'' + repo + '\'',
+                              'repository', "'" + repo + "'",
                               '--format={changeset} {owner} {id} {item}',
                               '--nototal'],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
@@ -324,12 +324,12 @@ class PlasticClient(object):
     def get_changeset_comment(self, changesetid, revid):
         logger.debug('Plastic: get_changeset_comment %s', changesetid)
 
-        repo = "rep:%s@repserver:%s:%s" % (self.reponame, self.hostname,
+        repo = 'rep:%s@repserver:%s:%s' % (self.reponame, self.hostname,
                                            self.port)
 
         p = subprocess.Popen(['cm', 'find', 'changesets', 'where',
                               'changesetid=' + str(changesetid),
-                              'on', 'repository', '\'' + repo + '\'',
+                              'on', 'repository', "'" + repo + "'",
                               '--format={comment}', '--nototal'],
                              stderr=subprocess.PIPE, stdout=subprocess.PIPE,
                              close_fds=(os.name != 'nt'))

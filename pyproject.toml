@@ -14,7 +14,7 @@ authors = [
 license = { text = 'MIT' }
 readme = 'README.rst'
 dynamic = ['dependencies', 'version']
-requires-python = '>=3.8'
+requires-python = '>=3.9'
 
 classifiers = [
     'Development Status :: 5 - Production/Stable',
@@ -27,11 +27,11 @@ classifiers = [
     'Operating System :: OS Independent',
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.8',
-    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
+    'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.14',
     'Topic :: Software Development',
     'Topic :: Software Development :: Quality Assurance',
 ]
@@ -69,15 +69,50 @@ subvertpy = ['subvertpy']
 swift = ['django-storage-swift']
 
 
+[tool.pytest]
+python_files = ["tests.py", "test_*.py"]
+python_classes = ["*Tests"]
+python_functions = ["test_*"]
+pythonpath = ["."]
+norecursedirs = ["reviewboard/htdocs"]
+testpaths = ["reviewboard"]
+
+# Default to treating arguments as module/class/function paths, not files.
+addopts = ["--reuse-db"]
+
+# Require the following plugins
+required_plugins = [
+    "pytest-django",
+    "pytest-env",
+]
+
+filterwarnings = [
+    # Ignore all paramiko "Unknown key" warnings.
+    "ignore:Unknown .* host key for localhost",
+
+    # Ignore warnings inside paramiko
+    "ignore:setDaemon() is deprecated, set the daemon attribute instead",
+    "ignore:notifyAll() is deprecated, use notify_all() instead",
+
+    # We're currently using this to opt-in to the new behavior.
+    # TODO: remove when we're on Django 6.0+.
+    "ignore: The FORMS_URLFIELD_ASSUME_HTTPS transitional setting is deprecated.",
+]
+
+DJANGO_SETTINGS_MODULE = "reviewboard.settings"
+
+[tool.pytest_env]
+RB_RUNNING_TESTS = 1
+RBSSH_STORAGE_BACKEND = "reviewboard.ssh.storage.FileSSHStorage"
+
+
 [tool.setuptools.package-data]
 reviewboard = ['py.typed']
-
 
 [tool.setuptools.packages.find]
 where = ['.']
 include = ['reviewboard*']
 namespaces = false
-
 
 [tool.setuptools.dynamic]
 dependencies = { file = 'package-requirements.txt' }

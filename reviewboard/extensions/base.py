@@ -52,6 +52,7 @@ def get_extension_manager():
     global _extension_manager
 
     if not _extension_manager:
-        _extension_manager = ExtensionManager('reviewboard.extensions')
+        _extension_manager = ExtensionManager('reviewboard.extensions',
+                                              delay_init=True)
 
     return _extension_manager

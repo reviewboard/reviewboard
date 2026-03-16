@@ -27,35 +27,35 @@ class BaseReviewRequestDetails(models.Model):
 
     MAX_SUMMARY_LENGTH = 300
 
-    description = models.TextField(_("description"), blank=True)
+    description = models.TextField(_('description'), blank=True)
     description_rich_text = models.BooleanField(
         _('description in rich text'),
         default=False)
 
-    testing_done = models.TextField(_("testing done"), blank=True)
+    testing_done = models.TextField(_('testing done'), blank=True)
     testing_done_rich_text = models.BooleanField(
         _('testing done in rich text'),
         default=False)
 
-    bugs_closed = models.CharField(_("bugs"), max_length=300, blank=True)
-    branch = models.CharField(_("branch"), max_length=300, blank=True)
+    bugs_closed = models.CharField(_('bugs'), max_length=300, blank=True)
+    branch = models.CharField(_('branch'), max_length=300, blank=True)
     commit_id = models.CharField(_('commit ID'), max_length=64, blank=True,
                                  null=True, db_index=True)
 
     extra_data = JSONField(null=True)
 
     # Deprecated and no longer used for new review requests as of 2.0.9.
-    rich_text = models.BooleanField(_("rich text"), default=False)
+    rich_text = models.BooleanField(_('rich text'), default=False)
 
     def get_review_request(self):
         raise NotImplementedError
 
     def get_bug_list(self):
         """Returns a list of bugs associated with this review request."""
-        if self.bugs_closed == "":
+        if self.bugs_closed == '':
             return []
 
-        bugs = list(set(re.split(r"[, ]+", self.bugs_closed)))
+        bugs = list(set(re.split(r'[, ]+', self.bugs_closed)))
 
         # First try a numeric sort, to show the best results for the majority
         # case of bug trackers with numeric IDs.  If that fails, sort

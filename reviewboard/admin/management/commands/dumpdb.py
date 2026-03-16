@@ -47,8 +47,8 @@ class Command(BaseCommand):
             "native SQL dumping and loading tools instead.\n"))
         self.stderr.write('\n')
         self.stderr.write(textwrap.fill(
-            "If you need this functionality, or assistance with "
-            "transitioning databases, you can contact us at "
-            "support@beanbaginc.com for options."))
+            'If you need this functionality, or assistance with '
+            'transitioning databases, you can contact us at '
+            'support@beanbaginc.com for options.'))
 
         sys.exit(1)

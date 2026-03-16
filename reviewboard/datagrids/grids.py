@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import pytz
 from typing import List, Optional, TYPE_CHECKING
+from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -269,6 +269,13 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
     status_query_field = 'status'
     site_query_field = 'local_site'
 
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The user's configured time zone.
+    timezone: ZoneInfo
+
     def __init__(self, *args, **kwargs) -> None:
         """Initialize the datagrid.
 
@@ -302,7 +309,7 @@ class ReviewRequestDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
 
         if user.is_authenticated:
             profile = user.get_profile()
-            self.timezone = pytz.timezone(profile.timezone)
+            self.timezone = ZoneInfo(profile.timezone)
             self.time_added.timezone = self.timezone
             self.last_updated.timezone = self.timezone
             self.diff_updated.timezone = self.timezone
@@ -363,6 +370,13 @@ class ReviewDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
     status_query_field = 'review_request__status'
     site_query_field = 'review_request__local_site'
 
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The user's configured time zone.
+    timezone: ZoneInfo
+
     def __init__(self, *args, **kwargs):
         """Initialize the datagrid."""
         super(ReviewDataGrid, self).__init__(*args, **kwargs)
@@ -379,7 +393,7 @@ class ReviewDataGrid(ShowClosedReviewRequestsMixin, DataGrid):
 
         if user.is_authenticated:
             profile = user.get_profile()
-            self.timezone = pytz.timezone(profile.timezone)
+            self.timezone = ZoneInfo(profile.timezone)
             self.timestamp.timezone = self.timezone
 
     def post_process_queryset(

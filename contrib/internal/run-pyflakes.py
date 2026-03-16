@@ -25,13 +25,13 @@ module_exclusions = (
 def scan_for_modules():
     return [entry
             for entry in os.listdir(os.getcwd())
-            if ((os.path.isdir(entry) or entry.endswith(".py")) and
+            if ((os.path.isdir(entry) or entry.endswith('.py')) and
                 entry not in module_exclusions)]
 
 
 def main():
     cur_dir = os.path.dirname(__file__)
-    os.chdir(os.path.join(cur_dir, "..", ".."))
+    os.chdir(os.path.join(cur_dir, '..', '..'))
     modules = sys.argv[1:]
 
     if not modules:
@@ -47,9 +47,9 @@ def main():
 
     # Read in the exclusions file
     exclusions = {}
-    with open(os.path.join(cur_dir, "pyflakes.exclude"), "r") as fp:
+    with open(os.path.join(cur_dir, 'pyflakes.exclude'), 'r') as fp:
         for line in fp:
-            if not line.startswith("#"):
+            if not line.startswith('#'):
                 exclusions[line.rstrip()] = 1
 
     # Now filter things
@@ -63,5 +63,5 @@ def main():
             print(line)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

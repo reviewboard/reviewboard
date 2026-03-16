@@ -5,8 +5,8 @@ from __future__ import annotations
 import logging
 from datetime import datetime
 from typing import Iterator, TYPE_CHECKING
+from zoneinfo import ZoneInfo
 
-import pytz
 from django import template
 from django.contrib.auth.models import User
 from django.utils import dateformat, timezone
@@ -117,7 +117,7 @@ def js_user_session_info(context):
                 })
 
         if profile is not None:
-            cur_timezone = pytz.timezone(profile.timezone)
+            cur_timezone = ZoneInfo(profile.timezone)
             use_rich_text = profile.should_use_rich_text
             info.update({
                 'commentsOpenAnIssue': profile.open_an_issue,

@@ -164,7 +164,7 @@ class SearchBackend(object):
         Version Changed:
             4.0.5:
             Added the ``configuration`` and ``**kwargs`` arguments. Subclasses
-            msut be updated to take ``**kwargs``.
+            must be updated to take ``**kwargs``.
 
         Raises:
             django.core.exceptions.ValidationError:
@@ -192,7 +192,7 @@ class SearchBackend(object):
                   'search backend was: %s')
                 % e)
         finally:
-            connections.connections_info[using] = {}
+            del connections.connections_info[using]
 
     def get_config_form(self, data=None, **kwargs):
         """Create and return a new configuration form instance.

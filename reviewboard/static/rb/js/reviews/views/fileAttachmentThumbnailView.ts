@@ -10,7 +10,9 @@ import {
 
 import {
     type FileAttachment,
+    type FileAttachmentComment,
     type ReviewRequest,
+    API,
     FileAttachmentStates,
 } from 'reviewboard/common';
 import {
@@ -23,10 +25,9 @@ import {
 } from 'reviewboard/ui';
 
 import { type ReviewRequestEditor } from '../models/reviewRequestEditorModel';
-import {
-    type ReviewRequestEditorView,
-} from '../views/reviewRequestEditorView';
+import { type ReviewRequestEditorView } from './reviewRequestEditorView';
 import { CommentDialogView } from './commentDialogView';
+import { UploadAttachmentView } from './uploadAttachmentView';
 
 
 /**
@@ -58,7 +59,7 @@ interface FileAttachmentThumbnailViewOptions {
     canEdit?: boolean;
 
     /** The comments on the file attachment. */
-    comments?: RB.FileAttachmentComment[];
+    comments?: FileAttachmentComment[];
 
     /**
      * Whether the thumbnail should be rendered.
@@ -262,13 +263,13 @@ export class FileAttachmentThumbnailView extends BaseView<
     #canCurrentlyEdit: boolean;
 
     /** The processed comments that are usable in the comment dialog. */
-    #comments: RB.FileAttachmentComment[] = [];
+    #comments: FileAttachmentComment[] = [];
 
     /** Whether the comments have been processed. */
     #commentsProcessed: boolean = null;
 
     /** The current draft comment for the file attachment. */
-    #draftComment: RB.FileAttachmentComment = null;
+    #draftComment: FileAttachmentComment = null;
 
     /** Whether the thumbnail supports scrolling. */
     #scrollingThumbnail: boolean = null;
@@ -834,12 +835,14 @@ export class FileAttachmentThumbnailView extends BaseView<
             this.options.reviewRequestEditorView.promptToLoadUserDraft();
         } else {
             const model = this.model;
-            const updateDlg = new RB.UploadAttachmentView({
+            const updateDlg = new UploadAttachmentView({
                 attachmentHistoryID: model.get('attachmentHistoryID'),
+                onClose: () => updateDlg.remove(),
                 presetCaption: model.get('caption'),
                 reviewRequestEditor: this.options.reviewRequestEditor,
             });
-            updateDlg.show();
+            updateDlg.render();
+            updateDlg.open();
         }
     }
 
@@ -892,7 +895,7 @@ export class FileAttachmentThumbnailView extends BaseView<
 
         const model = this.model;
 
-        RB.apiCall({
+        API.request({
             data: {
                 'pending_deletion': false,
             },

@@ -1137,7 +1137,7 @@ class FileDiff(models.Model):
             unicode:
             A human-readable representation of the model.
         """
-        return "%s (%s) -> %s (%s)" % (self.source_file, self.source_revision,
+        return '%s (%s) -> %s (%s)' % (self.source_file, self.source_revision,
                                        self.dest_file, self.dest_detail)
 
     class Meta:

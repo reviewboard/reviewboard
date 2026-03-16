@@ -96,10 +96,14 @@ export const Product: ProductInfo = {
 
 export * from './actions';
 export * from './resources';
+export * from './utils';
 export { BaseCollection } from './collections/baseCollection';
 export { ClientCommChannel } from './models/commChannelModel';
 export { ExtraData } from './models/extraDataModel';
 export { ExtraDataMixin } from './models/extraDataMixin';
 export { Page } from './models/pageModel';
-export { PageView } from './views/pageView';
+export { FormView } from './views/formView';
+export { PageManager } from './models/pageManagerModel';
 export { UserSession } from './models/userSessionModel';
+export { ClientLoginPageView } from './views/clientLoginPageView';
+export { PageView } from './views/pageView';

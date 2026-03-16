@@ -62,7 +62,7 @@ LANGUAGE_CODE = 'en-us'
 SITE_ID = 1
 
 # The prefix for e-mail subjects sent to administrators.
-EMAIL_SUBJECT_PREFIX = "[Review Board] "
+EMAIL_SUBJECT_PREFIX = '[Review Board] '
 
 # Default name of the service used in From e-mail when not spoofing.
 #
@@ -229,18 +229,11 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 
 # A list of supported password hashers. This contains some old hashers we no
 # longer want to use to generate passwords, but are needed for legacy servers.
-#
-# This is current as of Django 1.11.
 PASSWORD_HASHERS = (
     'django.contrib.auth.hashers.PBKDF2PasswordHasher',
     'django.contrib.auth.hashers.PBKDF2SHA1PasswordHasher',
     'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
     'django.contrib.auth.hashers.BCryptPasswordHasher',
-    'django.contrib.auth.hashers.SHA1PasswordHasher',
-    'django.contrib.auth.hashers.MD5PasswordHasher',
-    'django.contrib.auth.hashers.UnsaltedSHA1PasswordHasher',
-    'django.contrib.auth.hashers.UnsaltedMD5PasswordHasher',
-    'django.contrib.auth.hashers.CryptPasswordHasher',
 )
 
 # Set up a default cache backend. This will mostly be useful for
@@ -329,8 +322,8 @@ LOGGING = {
     }
 }
 
-LOGGING_NAME = "reviewboard"
-LOGGING_REQUEST_FORMAT = "%(_local_site_name)s - %(user)s - %(path)s"
+LOGGING_NAME = 'reviewboard'
+LOGGING_REQUEST_FORMAT = '%(_local_site_name)s - %(user)s - %(path)s'
 LOGGING_BLACKLIST = [
     'django.db.backends',
     'MARKDOWN',
@@ -339,7 +332,7 @@ LOGGING_BLACKLIST = [
 LOGGING_ENABLED = True
 LOGGING_DIRECTORY = None
 
-AUTH_PROFILE_MODULE = "accounts.Profile"
+AUTH_PROFILE_MODULE = 'accounts.Profile'
 
 # Default expiration time for the cache.  Note that this has no effect unless
 # CACHE_BACKEND is specified in settings_local.py
@@ -369,8 +362,8 @@ SILENCED_SYSTEM_CHECKS = [
 ]
 
 # Cookie settings
-LANGUAGE_COOKIE_NAME = "rblanguage"
-SESSION_COOKIE_NAME = "rbsessionid"
+LANGUAGE_COOKIE_NAME = 'rblanguage'
+SESSION_COOKIE_NAME = 'rbsessionid'
 SESSION_COOKIE_AGE = 365 * 24 * 60 * 60  # 1 year
 
 # Default support settings
@@ -535,9 +528,6 @@ HAYSTACK_CONNECTIONS = {
     'default': {
         'ENGINE': 'reviewboard.search.haystack_backend.ForwardingSearchEngine',
     },
-
-    # This is used internally when validating search backends.
-    'validation-test': {},
 }
 
 HAYSTACK_SIGNAL_PROCESSOR = \
@@ -706,6 +696,11 @@ OAUTH2_PROVIDER = {
 CUSTOM_PYGMENTS_LEXERS = {
     '.less': 'LessCss',
 }
+
+
+# Opt in to the new behavior for URL fields in forms. This setting can be
+# removed once we're on Django 6.0+.
+FORMS_URLFIELD_ASSUME_HTTPS = True
 
 
 fail_if_missing_dependencies()

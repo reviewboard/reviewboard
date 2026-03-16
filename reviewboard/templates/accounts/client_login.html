@@ -25,16 +25,18 @@ your administrator if this issue persists.
 </div>
 {% endblock auth_content %}
 
-{% block scripts-post %}
+{% block js-page-view-type %}
 {%  if client_allowed and not error %}
-<script>
-$(document).ready(async function() {
-  const view = new RB.ClientLoginView({
-    el: $('#auth_container'),
-    {{js_view_data|json_dumps_items:','}}
-  });
-  await view.render();
-});
-</script>
+RB.ClientLoginPageView
+{%  else %}
+RB.PageView
 {%  endif %}
-{% endblock scripts-post %}
+{% endblock js-page-view-type %}
+
+{% block js-page-view-options %}
+{%  if client_allowed and not error %}
+{{js_view_data|json_dumps}}
+{%  else %}
+{}
+{%  endif %}
+{% endblock js-page-view-options %}

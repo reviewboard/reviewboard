@@ -32,7 +32,7 @@ diff_fragment_urls = [
 diffviewer_revision_urls = [
     path('',
          views.ReviewsDiffViewerView.as_view(),
-         name="view-diff-revision"),
+         name='view-diff-revision'),
 
     path('raw/',
          views.DownloadRawDiffView.as_view(),
@@ -49,7 +49,7 @@ diffviewer_revision_urls = [
 diffviewer_interdiff_urls = [
     path('',
          views.ReviewsDiffViewerView.as_view(),
-         name="view-interdiff"),
+         name='view-interdiff'),
 
     re_path(r'^fragment/(?P<filediff_id>\d+)(?:-(?P<interfilediff_id>\d+))?/'
             r'(?:chunk/(?P<chunk_index>\d+)/)?',

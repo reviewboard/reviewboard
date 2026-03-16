@@ -4,39 +4,110 @@ from __future__ import annotations
 
 import os
 import re
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                post_process_filtered_equals)
 from reviewboard.diffviewer.settings import DiffSettings
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Mapping
+    from typing import Any
+
     from django.http import HttpRequest
 
-    from reviewboard.diffviewer.differ import Differ
+    from reviewboard.diffviewer.differ import (
+        Differ,
+        DiffOpcode,
+        DiffOpcodeTag,
+        DiffOpcodeWithMetadata,
+    )
 
 
-class MoveRange(object):
+class MoveRange:
     """Stores information on a move range.
 
     This will store the start and end of the range, and all groups that
     are a part of it.
     """
-    def __init__(self, start, end, groups=[]):
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The end index of the range.
+    #:
+    #: This indexes into the opcode generator's groups list.
+    end: int
+
+    #: The opcodes in the range.
+    #:
+    #: This is a list of tuples where the first element is the opcode, and the
+    #: second is the index into the opcode generator's groups list.
+    groups: list[tuple[DiffOpcodeWithMetadata, int]]
+
+    #: The start index of the range.
+    #:
+    #: This indexes into the opcode generator's groups list.
+    start: int
+
+    def __init__(
+        self,
+        start: int,
+        end: int,
+        groups: (list[tuple[DiffOpcodeWithMetadata, int]] | None) = None,
+    ) -> None:
+        """Initialize the object.
+
+        Args:
+            start (int):
+                The start index of the range.
+
+            end (int):
+                The end index of the range.
+
+            groups (list of tuple, optional):
+                The opcodes in the range.
+        """
         self.start = start
         self.end = end
-        self.groups = groups
+        self.groups = groups or []
 
     @property
-    def last_group(self):
+    def last_group(self) -> tuple[DiffOpcodeWithMetadata, int]:
+        """The last group in the move range.
+
+        Raises:
+            IndexError:
+                The move range was empty.
+        """
         return self.groups[-1]
 
-    def add_group(self, group, group_index):
+    def add_group(
+        self,
+        group: DiffOpcodeWithMetadata,
+        group_index: int,
+    ) -> None:
+        """Add a group to the range.
+
+        Args:
+            group (reviewboard.diffviewer.differ.DiffOpcode):
+                The opcode.
+
+            group_index (int):
+                The index of the group in the opcode generator's groups list.
+        """
         if self.groups[-1] != group:
             self.groups.append((group, group_index))
 
-    def __repr__(self):
-        return '<MoveRange(%d, %d, %r)>' % (self.start, self.end, self.groups)
+    def __repr__(self) -> str:
+        """Return a string representation of the object.
+
+        Returns:
+            str:
+            A string representation of the object.
+        """
+        return f'<MoveRange({self.start}, {self.end}, {self.groups!r})>'
 
 
 class DiffOpcodeGenerator:
@@ -56,7 +127,7 @@ class DiffOpcodeGenerator:
     ######################
 
     #: The raw contents for the diff.
-    diff: Optional[bytes]
+    diff: bytes | None
 
     #: The differ being used to generate the diff.
     differ: Differ
@@ -67,20 +138,36 @@ class DiffOpcodeGenerator:
     #:     7.0.4
     diff_settings: DiffSettings
 
+    #: The generated opcodes.
+    groups: list[DiffOpcodeWithMetadata]
+
+    #: A list of all opcodes involving inserted lines.
+    #:
+    #: This will contain both pure inserts as well as replaces.
+    inserts: list[DiffOpcodeWithMetadata]
+
     #: The raw contents of the interdiff range diff.
-    interdiff: Optional[bytes]
+    interdiff: bytes | None
 
     #: The HTTP request from the client.
-    request: Optional[HttpRequest]
+    request: HttpRequest | None
+
+    #: A mapping for working with removed lines.
+    #:
+    #: This is a mapping from the line content of a removed line to a list of
+    #: potential opcodes relating to that removal. The values in that list are
+    #: tuples of the original line number, the opcode, and the index of that
+    #: opcode in the ``groups`` list.
+    removes: dict[str, list[tuple[int, DiffOpcodeWithMetadata, int]]]
 
     def __init__(
         self,
         differ: Differ,
-        diff: Optional[bytes] = None,
-        interdiff: Optional[bytes] = None,
-        request: Optional[HttpRequest] = None,
+        diff: (bytes | None) = None,
+        interdiff: (bytes | None) = None,
+        request: (HttpRequest | None) = None,
         *,
-        diff_settings: Optional[DiffSettings] = None,
+        diff_settings: (DiffSettings | None) = None,
         **kwargs,
     ) -> None:
         """Initialize the opcode generator.
@@ -128,15 +215,16 @@ class DiffOpcodeGenerator:
         assert diff_settings.tab_size
         self.diff_settings = diff_settings
 
-    def __iter__(self):
-        """Returns opcodes from the differ with extra metadata.
+    def __iter__(self) -> Iterator[DiffOpcodeWithMetadata]:
+        """Yield opcodes from the differ with extra metadata.
 
         This is a wrapper around a differ's get_opcodes function, which returns
         extra metadata along with each range. That metadata includes
         information on moved blocks of code and whitespace-only lines.
 
-        This returns a list of opcodes as tuples in the form of
-        (tag, i1, i2, j1, j2, meta).
+        Yields:
+            reviewboard.diffviewer.differ.DiffOpcode:
+            The opcodes in the diff.
         """
         self.groups = []
         self.removes = {}
@@ -151,21 +239,23 @@ class DiffOpcodeGenerator:
         self._group_opcodes(opcodes)
         self._compute_moves()
 
-        for opcodes in self.groups:
-            yield opcodes
+        yield from self.groups
 
-    def _apply_processors(self, opcodes):
+    def _apply_processors(
+        self,
+        opcodes: Iterable[DiffOpcode],
+    ) -> Iterator[DiffOpcode]:
         """Apply any diff processors to the generated list of opcodes.
 
         If generating an interdiff, this will apply a filter to remove any
         unmodified lines.
 
         Args:
-            opcodes (list of tuple):
+            opcodes (iterator of reviewboard.diffviewer.differ.DiffOpcode):
                 The list of generated diff opcodes to process.
 
         Yields:
-            tuple:
+            reviewboard.diffviewer.differ.DiffOpcode:
             A processed opcode.
         """
         if self.diff and self.interdiff:
@@ -177,17 +267,31 @@ class DiffOpcodeGenerator:
                 interfilediff_data=self.interdiff,
                 request=self.request)
 
-        for opcode in opcodes:
-            yield opcode
+        yield from opcodes
 
-    def _generate_opcode_meta(self, opcodes):
+    def _generate_opcode_meta(
+        self,
+        opcodes: Iterable[DiffOpcode],
+    ) -> Iterator[DiffOpcodeWithMetadata]:
+        """Generate metadata for opcodes.
+
+        Args:
+            opcodes (iterator of reviewboard.diffviewer.differ.DiffOpcode):
+                The opcodes.
+
+        Yields:
+            reviewboard.diffviewer.differ.DiffOpcodeWithMetadata:
+            The opcodes, with additional metadata added.
+        """
         for tag, i1, i2, j1, j2 in opcodes:
+            whitespace_lines: list[tuple[int, int]] = []
+
             meta = {
                 # True if this chunk is only whitespace.
                 'whitespace_chunk': False,
 
                 # List of tuples (i, j), with whitespace changes.
-                'whitespace_lines': [],
+                'whitespace_lines': whitespace_lines,
             }
 
             if tag == 'replace':
@@ -200,13 +304,13 @@ class DiffOpcodeGenerator:
                         # Both original lines are equal when removing all
                         # whitespace, so include their original line number in
                         # the meta dict.
-                        meta['whitespace_lines'].append((i + 1, j + 1))
+                        whitespace_lines.append((i + 1, j + 1))
 
                 # If all lines are considered to have only whitespace change,
                 # the whole chunk is considered a whitespace-only chunk.
-                if len(meta['whitespace_lines']) == (i2 - i1):
+                if len(whitespace_lines) == (i2 - i1):
                     meta['whitespace_chunk'] = True
-            elif tag in ('equal', 'filtered-equal'):
+            elif tag in {'equal', 'filtered-equal'}:
                 for group in self._compute_chunk_indentation(i1, i2, j1, j2):
                     ii1, ii2, ij1, ij2, indentation_changes = group
 
@@ -215,17 +319,31 @@ class DiffOpcodeGenerator:
                             'indentation_changes': indentation_changes,
                         }, **meta)
 
-                        yield 'equal', ii1, ii2, ij1, ij2, new_meta
+                        yield ('equal', ii1, ii2, ij1, ij2, new_meta)
                     else:
                         new_meta = meta
 
-                        yield tag, ii1, ii2, ij1, ij2, new_meta
+                        yield (tag, ii1, ii2, ij1, ij2, new_meta)
 
                 continue
 
-            yield tag, i1, i2, j1, j2, meta
+            yield (tag, i1, i2, j1, j2, meta)
 
-    def _apply_meta_processors(self, opcodes):
+    def _apply_meta_processors(
+        self,
+        opcodes: Iterable[DiffOpcodeWithMetadata],
+    ) -> Iterator[DiffOpcodeWithMetadata]:
+        """Apply processors to opcodes based on metadata.
+
+        Args:
+            opcodes (iterator of reviewboard.diffviewer.differ.
+                     DiffOpcodeWithMetadata):
+                The opcodes.
+
+        Yields:
+            reviewboard.diffviewer.differ.DiffOpcodeWithMetadata:
+            The opcodes.
+        """
         if self.interdiff:
             # When filtering out opcodes, we may have converted chunks into
             # "filtered-equal" chunks. This allowed us to skip any additional
@@ -233,12 +351,26 @@ class DiffOpcodeGenerator:
             # now time to turn those back into "equal" chunks.
             opcodes = post_process_filtered_equals(opcodes)
 
-        for opcode in opcodes:
-            yield opcode
+        yield from opcodes
 
-    def _group_opcodes(self, opcodes):
+    def _group_opcodes(
+        self,
+        opcodes: Iterable[DiffOpcodeWithMetadata],
+    ) -> None:
+        """Group opcodes by type.
+
+        Args:
+            opcodes (iterator of reviewboard.diffviewer.differ.
+                     DiffOpcodeWithMetadata):
+                The opcodes.
+        """
+        differ = self.differ
+        groups = self.groups
+        inserts = self.inserts
+        removes = self.removes
+
         for group_index, group in enumerate(opcodes):
-            self.groups.append(group)
+            groups.append(group)
 
             # Store delete/insert ranges for later lookup. We will be building
             # keys that in most cases will be unique for the particular block
@@ -249,21 +381,33 @@ class DiffOpcodeGenerator:
             # keys/groups that match remove keys/groups.
             tag = group[0]
 
-            if tag in ('delete', 'replace'):
+            if tag in {'delete', 'replace'}:
                 i1 = group[1]
                 i2 = group[2]
 
                 for i in range(i1, i2):
-                    line = self.differ.a[i].strip()
+                    line = differ.a[i].strip()
 
                     if line:
-                        self.removes.setdefault(line, []).append(
+                        removes.setdefault(line, []).append(
                             (i, group, group_index))
 
-            if tag in ('insert', 'replace'):
-                self.inserts.append(group)
+            if tag in {'insert', 'replace'}:
+                inserts.append(group)
 
-    def _compute_chunk_indentation(self, i1, i2, j1, j2):
+    def _compute_chunk_indentation(
+        self,
+        i1: int,
+        i2: int,
+        j1: int,
+        j2: int,
+    ) -> Iterator[tuple[
+        int,
+        int,
+        int,
+        int,
+        dict[str, tuple[bool, int, int]],
+    ]]:
         """Generate sequential groups of lines with indentation changes.
 
         This will group together sequential lines that have all had
@@ -291,16 +435,26 @@ class DiffOpcodeGenerator:
             A 5-tuple containing information on a batch of lines with or
             without indentation changes. This includes:
 
-            1. The 0-based start index on the original side.
-            2. The 0-based start of the next range to process on the original
-               side.
-            3. The 0-based start index on the modified side.
-            4. The 0-based start of the next range to process on the modified
-               side.
-            5. A dictionary mapping keys in the form of
-               :samp:`"{orig_linenum}-{modified_linenum}"` (1-based) to
-               line indentation result tuples (see
-               :py:meth:`_compute_line_indentation`).
+            Tuple:
+                0 (int):
+                    The 0-based start index on the original side.
+
+                1 (int):
+                    The 0-based start of the next range to process on the
+                    original side.
+
+                2 (int):
+                    The 0-based start index on the modified side.
+
+                3 (int):
+                    The 0-based start of the next range to process on the
+                    modified side.
+
+                4 (dict):
+                    A dictionary mapping keys in the form of
+                   :samp:`"{orig_linenum}-{modified_linenum}"` (1-based) to
+                   line indentation result tuples (see
+                   :py:meth:`_compute_line_indentation`).
         """
         # We'll be going through all the opcodes in this equals chunk and
         # grouping with adjacent opcodes based on whether they have
@@ -323,7 +477,7 @@ class DiffOpcodeGenerator:
             has_indent = indent_info is not None
 
             if has_indent:
-                key = '%d-%d' % (i + 1, j + 1)
+                key = f'{i + 1}-{j + 1}'
                 new_indentation_changes[key] = indent_info
 
             if has_indent != prev_has_indent:
@@ -344,7 +498,11 @@ class DiffOpcodeGenerator:
         if prev_start_i != i2 or prev_start_j != j2:
             yield prev_start_i, i2, prev_start_j, j2, indentation_changes
 
-    def _compute_line_indentation(self, old_line, new_line):
+    def _compute_line_indentation(
+        self,
+        old_line: str,
+        new_line: str,
+    ) -> tuple[bool, int, int] | None:
         """Compute the indentation of a line.
 
         This will determine whether the indentation has changed in a line of
@@ -356,21 +514,28 @@ class DiffOpcodeGenerator:
             "filtered-equal" lines.
 
         Args:
-            old_line (unicode):
+            old_line (str):
                 The old line content.
 
-            new_line (unicode):
+            new_line (str):
                 The new line content.
 
         Returns:
             tuple:
             A 3-tuple if indentation changes were found. This contains:
 
-            1. Whether the content was indented (``True``) or unindented
-               (``False``).
-            2. How many characters of indentation were added (if indenting)
-               or removed (if unindenting).
-            3. The difference in indentation levels (between the two lines).
+            Tuple:
+                0 (bool):
+                    Whether the content was indented (``True``) or unindented
+                    (``False``).
+
+                1 (int):
+                    How many characters of indentation were added (if
+                    indenting) or removed (if unindenting).
+
+                2 (int):
+                    The difference in indentation levels (between the two
+                    lines).
 
             If no indentation took place, or indentation logic is not
             appropriate for these lines, this will be ``None`` instead.
@@ -462,9 +627,8 @@ class DiffOpcodeGenerator:
                 raw_indent_len,
                 abs(norm_old_line_indent_len - norm_new_line_indent_len))
 
-    def _compute_moves(self):
-        # We now need to figure out all the moved locations.
-        #
+    def _compute_moves(self) -> None:
+        """Compute all the moved locations."""
         # At this point, we know all the inserted groups, and all the
         # individually deleted lines. We'll be going through and finding
         # consecutive groups of matching inserts/deletes that represent a
@@ -473,13 +637,21 @@ class DiffOpcodeGenerator:
         # The algorithm will be documented as we go in the code.
         #
         # We start by looping through all the inserted groups.
-        r_move_indexes_used = set()
+        r_move_indexes_used: set[int] = set()
 
         for insert in self.inserts:
             self._compute_move_for_insert(r_move_indexes_used, *insert)
 
-    def _compute_move_for_insert(self, r_move_indexes_used, itag, ii1, ii2,
-                                 ij1, ij2, imeta):
+    def _compute_move_for_insert(
+        self,
+        r_move_indexes_used: set[int],
+        itag: DiffOpcodeTag,
+        ii1: int,
+        ii2: int,
+        ij1: int,
+        ij2: int,
+        imeta: dict[str, Any] | None,
+    ) -> None:
         """Compute move information for a given insert-like chunk.
 
         Args:
@@ -487,7 +659,7 @@ class DiffOpcodeGenerator:
                 All remove indexes that have already been included in a move
                 range.
 
-            itag (unicode):
+            itag (reviewboard.diffviewer.differ.DiffOpcodeTag):
                 The chunk tag for the insert (``insert`` or ``replace``).
 
             ii1 (int):
@@ -506,6 +678,8 @@ class DiffOpcodeGenerator:
                 The metadata for the chunk for the modification, where the move
                 ranges may be stored.
         """
+        assert imeta is not None
+
         # Store some state on the range we'll be working with inside this
         # insert group.
 
@@ -521,7 +695,7 @@ class DiffOpcodeGenerator:
         # group for the line. The value is an instance of MoveRange. The values
         # in MoveRange are used to quickly locate deleted lines we've found
         # that match the inserted lines, so we can assemble ranges later.
-        r_move_ranges = {}  # key -> (start, end, group)
+        r_move_ranges: dict[str, MoveRange] = {}  # key -> (start, end, group)
 
         move_key = None
         is_replace = (itag == 'replace')
@@ -559,13 +733,16 @@ class DiffOpcodeGenerator:
                     if ri in r_move_indexes_used:
                         continue
 
-                    r_move_range = r_move_ranges.get(move_key)
+                    if move_key:
+                        r_move_range = r_move_ranges.get(move_key)
+                    else:
+                        r_move_range = None
 
                     if not r_move_range or ri != r_move_range.end + 1:
                         # We either didn't have a previous range, or this
                         # group didn't immediately follow it, so we need
                         # to start a new one.
-                        move_key = '%s-%s-%s-%s' % rgroup[1:5]
+                        move_key = '{}-{}-{}-{}'.format(*rgroup[1:5])
                         r_move_range = r_move_ranges.get(move_key)
 
                     if r_move_range:
@@ -586,6 +763,7 @@ class DiffOpcodeGenerator:
                             # with the existing range, so it's time to build
                             # one based on any removed lines we find that
                             # match the inserted line.
+                            assert move_key is not None
                             r_move_ranges[move_key] = \
                                 MoveRange(ri, ri, [(rgroup, rgroup_index)])
                             updated_range = True
@@ -638,7 +816,7 @@ class DiffOpcodeGenerator:
                         # range, so we need to try to find that group and
                         # add it to the list of groups in the range, if it'
                         # not already there.
-                        last_group, last_group_index = r_move_range.last_group
+                        last_group = r_move_range.last_group[0]
 
                         if new_end_i >= last_group[2]:
                             # This is in the next group, which hasn't been
@@ -689,8 +867,10 @@ class DiffOpcodeGenerator:
 
                         moved_to_ranges = dict(zip(r_range, i_range))
 
-                        for group, group_index in r_move_range.groups:
+                        for group, _group_index in r_move_range.groups:
                             rmeta = group[-1]
+                            assert rmeta is not None
+
                             rmeta.setdefault('moved-to', {}).update(
                                 moved_to_ranges)
 
@@ -710,7 +890,20 @@ class DiffOpcodeGenerator:
                 i_move_range = MoveRange(i_move_cur, i_move_cur)
                 r_move_ranges = {}
 
-    def _find_longest_move_range(self, r_move_ranges):
+    def _find_longest_move_range(
+        self,
+        r_move_ranges: Mapping[str, MoveRange],
+    ) -> MoveRange | None:
+        """Find the longest move range.
+
+        Args:
+            r_move_ranges (dict):
+                A dictionary mapping positions to the move ranges.
+
+        Returns:
+            MoveRange:
+            The longest move range found.
+        """
         # Go through every range of lines we've found and find the longest.
         #
         # The longest move range wins. If we find two ranges that are equal,
@@ -743,8 +936,11 @@ class DiffOpcodeGenerator:
 
         return r_move_range
 
-    def _determine_move_range(self, r_move_range):
-        """Determines if a move range is valid and should be included.
+    def _determine_move_range(
+        self,
+        r_move_range: MoveRange | None,
+    ) -> MoveRange | None:
+        """Determine if a move range is valid and should be included.
 
         This performs some tests to try to eliminate trivial changes that
         shouldn't have moves associated.
@@ -755,6 +951,14 @@ class DiffOpcodeGenerator:
 
         If the move range is valid, any trailing whitespace-only lines will
         be stripped, ensuring it covers only a valid range of content.
+
+        Args:
+            r_move_range (MoveRange):
+                The move range to check.
+
+        Returns:
+            MoveRange:
+            The move range, if it is valid. ``None``, if it is not.
         """
         if not r_move_range:
             return None
@@ -777,6 +981,11 @@ class DiffOpcodeGenerator:
                 if valid:
                     break
 
+        if not valid:
+            return None
+
+        assert new_end_i is not None
+
         # Accept this if there's more than one line or if the first
         # line is long enough, in order to filter out small bits of garbage.
         valid = (
@@ -788,8 +997,6 @@ class DiffOpcodeGenerator:
 
         if not valid:
             return None
-
-        assert new_end_i is not None
 
         return MoveRange(r_move_range.start, new_end_i, r_move_range.groups)
 

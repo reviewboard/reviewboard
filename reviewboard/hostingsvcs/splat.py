@@ -77,8 +77,9 @@ class Splat(BaseHostingService, BaseBugTracker):
         )
 
         try:
-            rsp = self.client.json_get(url)[0]
-            ticket = rsp['ticket']
+            rsp = self.client.http_get(url)
+            data = rsp.json
+            ticket = data['ticket']
         except Exception as e:
             logger.warning('Unable to fetch Splat data from %s: %s',
                            url, e, exc_info=True)

@@ -15,7 +15,6 @@ class LoginNotAllowedError(Exception):
         6.0.3
     """
 
-
 class UserQueryError(Exception):
     """An error for when a user query fails during user population.
 

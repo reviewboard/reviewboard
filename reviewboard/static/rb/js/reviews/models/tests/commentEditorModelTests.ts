@@ -16,10 +16,10 @@ import {
 import { CommentEditor } from 'reviewboard/reviews';
 
 
-suite('rb/models/CommentEditor', function() {
-    let editor;
-    let reviewRequest;
-    let comment;
+suite('rb/reviews/models/CommentEditor', function() {
+    let editor: CommentEditor;
+    let reviewRequest: ReviewRequest;
+    let comment: BaseComment;
 
     function createComment() {
         return new BaseComment({
@@ -278,6 +278,7 @@ suite('rb/models/CommentEditor', function() {
                     comment: comment,
                 });
 
+                console.assert.calls.reset();
                 expect(() => editor.beginEdit()).toThrow();
                 expect(console.assert).toHaveBeenCalled();
                 expect(editor.get('canDelete')).toBe(false);
@@ -403,6 +404,7 @@ suite('rb/models/CommentEditor', function() {
                     comment: createComment(),
                 });
 
+                console.assert.calls.reset();
                 editor.beginEdit();
                 expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
             });
@@ -413,11 +415,13 @@ suite('rb/models/CommentEditor', function() {
                     comment: createComment(),
                 });
 
+                console.assert.calls.reset();
                 expect(function() { editor.beginEdit(); }).toThrow();
                 expect(console.assert.calls.argsFor(0)[0]).toBeFalsy();
             });
 
             it('With no comment', function() {
+                console.assert.calls.reset();
                 expect(function() { editor.beginEdit(); }).toThrow();
                 expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
                 expect(console.assert.calls.argsFor(1)[0]).toBeFalsy();
@@ -464,6 +468,7 @@ suite('rb/models/CommentEditor', function() {
                 editor.set('comment', comment);
                 editor.set('canDelete', false);
 
+                console.assert.calls.reset();
                 await expectAsync(editor.deleteComment()).toBeRejectedWith(
                     Error('deleteComment() called when canDelete is false.'));
                 expect(console.assert.calls.argsFor(0)[0]).toBeFalsy();
@@ -477,6 +482,7 @@ suite('rb/models/CommentEditor', function() {
                 editor.set('comment', comment);
                 editor.set('canDelete', true);
 
+                console.assert.calls.reset();
                 await editor.deleteComment();
                 expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
                 expect(comment.destroy).toHaveBeenCalled();
@@ -499,9 +505,10 @@ suite('rb/models/CommentEditor', function() {
                 editor.set('comment', comment);
                 editor.set('canSave', false);
 
+                console.assert.calls.reset();
                 await expectAsync(editor.save()).toBeRejectedWith(
                     Error('save() called when canSave is false.'));
-                expect(console.assert.calls.argsFor(0)[0]).toBeFalsy();
+                expect(console.assert.calls.argsFor(1)[0]).toBeFalsy();
                 expect(comment.save).not.toHaveBeenCalled();
                 expect(editor.trigger).not.toHaveBeenCalledWith('saved');
             });
@@ -521,6 +528,7 @@ suite('rb/models/CommentEditor', function() {
                 });
                 editor.setExtraData('mykey', 'myvalue');
 
+                console.assert.calls.reset();
                 await editor.save();
 
                 expect(console.assert.calls.argsFor(0)[0]).toBeTruthy();
@@ -534,45 +542,6 @@ suite('rb/models/CommentEditor', function() {
                 });
                 expect(editor.get('dirty')).toBe(false);
                 expect(editor.trigger).toHaveBeenCalledWith('saved');
-            });
-
-            it('With callbacks', function(done) {
-                /* Set these in order, to override canSave. */
-                const text = 'My text';
-                const issueOpened = true;
-
-                comment.set('issueOpened', false);
-                editor.set('comment', comment);
-                editor.set({
-                    canSave: true,
-                    issue_opened: issueOpened,
-                    richText: true,
-                    text: text,
-                });
-                editor.setExtraData('mykey', 'myvalue');
-
-                spyOn(console, 'warn');
-
-                editor.save({
-                    error: () => done.fail(),
-                    success: () => {
-                        expect(console.assert.calls.argsFor(0)[0])
-                            .toBeTruthy();
-                        expect(comment.save).toHaveBeenCalled();
-                        expect(comment.get('text')).toBe(text);
-                        expect(comment.get('issueOpened')).toBe(issueOpened);
-                        expect(comment.get('richText')).toBe(true);
-                        expect(comment.get('extraData')).toEqual({
-                            mykey: 'myvalue',
-                            require_verification: false,
-                        });
-                        expect(editor.get('dirty')).toBe(false);
-                        expect(editor.trigger).toHaveBeenCalledWith('saved');
-                        expect(console.warn).toHaveBeenCalled();
-
-                        done();
-                    },
-                });
             });
         });
     });

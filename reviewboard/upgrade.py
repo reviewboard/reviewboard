@@ -212,10 +212,17 @@ def post_upgrade_reset_oauth2_provider(
     upgrade_state: UpgradeState,
     console: Console,
 ) -> None:
-    """Mark oauth2_provider migrations as applied.
+    """Perform post-upgrade tasks for oauth2_provider.
 
-    Post-upgrade, this will mark all oauth2_provider migrations as applied,
-    satisfying migration dependency checks and Django startup checks.
+    This does two things:
+
+    1. Hashes any unhashed client secrets for all
+       :py:class:`~oauth2_provider.models.Application` instances. This
+       replicates the data migration in oauth2_provider's
+       ``0006_alter_application_client_secret`` migration.
+
+    2. Marks all oauth2_provider migrations as applied, satisfying migration
+       dependency checks and Django startup checks.
 
     These steps will be executed regardless of whether we changed any state
     in :py:func:`pre_upgrade_reset_oauth2_provider`, since we always need to
@@ -240,11 +247,19 @@ def post_upgrade_reset_oauth2_provider(
     from django_evolution.utils.migrations import (MigrationList,
                                                    record_applied_migrations,
                                                    unrecord_applied_migrations)
+    from oauth2_provider.models import Application
+
+    # Hash any unhashed client secrets. This is equivalent to the data
+    # migration in oauth2_provider's 0006_alter_application_client_secret
+    # migration. The ClientSecretField.pre_save() method is idempotent,
+    # skipping secrets that are already hashed.
+    for application in Application._default_manager.iterator():
+        application.save(update_fields=['client_secret'])
 
     unrecord_applied_migrations(connection=connection,
                                 app_label='oauth2_provider')
 
-    # This is current as of oauth2_provider 1.6.3.
+    # This is current as of oauth2_provider 3.2.0.
     record_applied_migrations(
         connection=connection,
         migrations=MigrationList.from_names(
@@ -255,6 +270,14 @@ def post_upgrade_reset_oauth2_provider(
                 '0003_auto_20201211_1314',
                 '0004_auto_20200902_2022',
                 '0005_auto_20211222_2352',
+                '0006_alter_application_client_secret',
+                '0007_application_post_logout_redirect_uris',
+                '0008_alter_accesstoken_token',
+                '0009_add_hash_client_secret',
+                '0010_application_allowed_origins',
+                '0011_refreshtoken_token_family',
+                '0012_add_token_checksum',
+                '0013_alter_application_authorization_grant_type_device',
             ]))
 
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from zoneinfo import ZoneInfo
+
 import kgb
 from django_assert_queries.testing import assert_queries
 from django.contrib import auth
@@ -16,7 +18,6 @@ from djblets.webapi.errors import (DOES_NOT_EXIST,
                                    INVALID_FORM_DATA,
                                    PERMISSION_DENIED)
 from djblets.webapi.testing.decorators import webapi_test_template
-from pytz import timezone
 
 from reviewboard.accounts.backends import AuthBackend
 from reviewboard.accounts.testing.queries import get_user_permissions_equeries
@@ -323,7 +324,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.to_user_directly("doc").count())
+                         ReviewRequest.objects.to_user_directly('doc').count())
 
     def test_get_with_to_users_directly_and_status(self):
         """Testing the GET review-requests/?to-users-directly=&status= API"""
@@ -336,7 +337,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             len(rsp['review_requests']),
-            ReviewRequest.objects.to_user_directly("doc", status='S').count())
+            ReviewRequest.objects.to_user_directly('doc', status='S').count())
 
         rsp = self.api_get(url, {
             'status': 'discarded',
@@ -345,7 +346,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             len(rsp['review_requests']),
-            ReviewRequest.objects.to_user_directly("doc", status='D').count())
+            ReviewRequest.objects.to_user_directly('doc', status='D').count())
 
     def test_get_with_to_users_directly_and_counts_only(self):
         """Testing the
@@ -357,7 +358,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.to_user_directly("doc").count())
+                         ReviewRequest.objects.to_user_directly('doc').count())
 
     def test_get_with_from_user(self):
         """Testing the GET review-requests/?from-user= API"""
@@ -366,7 +367,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']),
-                         ReviewRequest.objects.from_user("grumpy").count())
+                         ReviewRequest.objects.from_user('grumpy').count())
 
     def test_get_with_from_user_and_status(self):
         """Testing the GET review-requests/?from-user=&status= API"""
@@ -379,7 +380,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             len(rsp['review_requests']),
-            ReviewRequest.objects.from_user("grumpy", status='S').count())
+            ReviewRequest.objects.from_user('grumpy', status='S').count())
 
         rsp = self.api_get(url, {
             'status': 'discarded',
@@ -388,7 +389,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             len(rsp['review_requests']),
-            ReviewRequest.objects.from_user("grumpy", status='D').count())
+            ReviewRequest.objects.from_user('grumpy', status='D').count())
 
     def test_get_with_from_user_and_counts_only(self):
         """Testing the GET review-requests/?from-user=&counts-only=1 API"""
@@ -398,7 +399,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         }, expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(rsp['count'],
-                         ReviewRequest.objects.from_user("grumpy").count())
+                         ReviewRequest.objects.from_user('grumpy').count())
 
     # Tests for ?issue-dropped-count*= query parameters.
     def _setup_issue_dropped_count_tests(self):
@@ -756,7 +757,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         ambiguous timestamp
         """
         self.spy_on(get_current_timezone,
-                    call_fake=lambda: timezone('America/Chicago'))
+                    call_fake=lambda: ZoneInfo('America/Chicago'))
 
         rsp = self.api_get(
             get_review_request_list_url(),
@@ -2275,8 +2276,8 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, SSLTestsMixin,
             expected_mimetype=review_request_item_mimetype)
 
         rr = rsp['review_request']
-        self.assertEqual(rr["changenum"], int(changenum))
-        self.assertEqual(rr["commit_id"], changenum)
+        self.assertEqual(rr['changenum'], int(changenum))
+        self.assertEqual(rr['commit_id'], changenum)
 
         r = ReviewRequest.objects.get(pk=r.id)
         self.assertEqual(r.changenum, int(changenum))

@@ -244,8 +244,8 @@ def load_site_config(
         siteconfig = SiteConfiguration.objects.get_current()
     except SiteConfiguration.DoesNotExist:
         raise ImproperlyConfigured(
-            "The site configuration entry does not exist in the database. "
-            "You will need to re-create or upgrade your database.")
+            'The site configuration entry does not exist in the database. '
+            'You will need to re-create or upgrade your database.')
     except Exception as e:
         # We got something else. Likely, this doesn't exist yet and we're
         # doing a syncdb or something, so silently ignore.
@@ -318,24 +318,24 @@ def load_site_config(
     haystack_connections['default'].reset_forwarding()
 
     # Site administrator settings
-    apply_setting("ADMINS", None, (
-        (siteconfig.get("site_admin_name", ""),
-         siteconfig.get("site_admin_email", "")),
+    apply_setting('ADMINS', None, (
+        (siteconfig.get('site_admin_name', ''),
+         siteconfig.get('site_admin_email', '')),
     ))
 
-    apply_setting("MANAGERS", None, settings.ADMINS)
+    apply_setting('MANAGERS', None, settings.ADMINS)
 
     # Explicitly base this off the STATIC_URL
-    apply_setting("ADMIN_MEDIA_PREFIX", None, settings.STATIC_URL + "admin/")
+    apply_setting('ADMIN_MEDIA_PREFIX', None, settings.STATIC_URL + 'admin/')
 
     # Set the auth backends
-    auth_backend_id = siteconfig.settings.get("auth_backend", "builtin")
+    auth_backend_id = siteconfig.settings.get('auth_backend', 'builtin')
     builtin_backend_obj = auth_backends.get('backend_id', 'builtin')
-    builtin_backend = "%s.%s" % (builtin_backend_obj.__module__,
+    builtin_backend = '%s.%s' % (builtin_backend_obj.__module__,
                                  builtin_backend_obj.__name__)
 
-    if auth_backend_id == "custom":
-        custom_backends = siteconfig.settings.get("auth_custom_backends")
+    if auth_backend_id == 'custom':
+        custom_backends = siteconfig.settings.get('auth_custom_backends')
 
         if isinstance(custom_backends, str):
             custom_backends = (custom_backends,)
@@ -351,14 +351,14 @@ def load_site_config(
 
         if backend and backend is not builtin_backend_obj:
             settings.AUTHENTICATION_BACKENDS = \
-                ("%s.%s" % (backend.__module__, backend.__name__),
+                ('%s.%s' % (backend.__module__, backend.__name__),
                  builtin_backend)
         else:
             settings.AUTHENTICATION_BACKENDS = (builtin_backend,)
 
         # If we're upgrading from a 1.x LDAP configuration, populate
         # ldap_uid and clear ldap_uid_mask
-        if auth_backend_id == "ldap":
+        if auth_backend_id == 'ldap':
             if not hasattr(settings, 'LDAP_UID'):
                 if hasattr(settings, 'LDAP_UID_MASK'):
                     # Get the username attribute from the old UID mask
@@ -366,7 +366,7 @@ def load_site_config(
                     # characters and the hyphen and must lead with an
                     # alphabetic character. This is not dependent upon
                     # locale.
-                    m = re.search("([a-zA-Z][a-zA-Z0-9-]+)=%s",
+                    m = re.search(r'([a-zA-Z][a-zA-Z0-9-]+)=%s',
                                   settings.LDAP_UID_MASK)
                     if m:
                         # Assign LDAP_UID the value of the retrieved attribute

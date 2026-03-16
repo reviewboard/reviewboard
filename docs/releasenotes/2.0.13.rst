@@ -214,7 +214,7 @@ Administration
 Contributors
 ============
 
-* Barret Rennie
+* Beth Rennie
 * Chester Li
 * Chris Arnold
 * Christian Hammond

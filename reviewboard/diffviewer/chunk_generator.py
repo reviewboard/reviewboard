@@ -6,8 +6,9 @@ import fnmatch
 import hashlib
 import logging
 import re
+from collections.abc import Mapping
 from itertools import zip_longest
-from typing import Optional, Sequence, TYPE_CHECKING, Union
+from typing import Any, Literal, TYPE_CHECKING, TypedDict
 
 import pygments.util
 from django.utils.encoding import force_str
@@ -22,47 +23,158 @@ from pygments.lexers import (find_lexer_class,
                              guess_lexer_for_filename)
 
 from reviewboard.codesafety import code_safety_checker_registry
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import (
+    RemovedInReviewBoard80Warning,
+    RemovedInReviewBoard10_0Warning,
+)
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
-from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
-                                              get_line_changed_regions,
-                                              get_original_file,
-                                              get_original_and_patched_files,
-                                              get_patched_file,
-                                              get_sha256,
-                                              convert_to_unicode,
-                                              split_line_endings)
+from reviewboard.diffviewer.diffutils import (
+    DiffRegions,
+    convert_to_unicode,
+    get_filediff_encodings,
+    get_line_changed_regions,
+    get_original_and_patched_files,
+    get_original_file,
+    get_patched_file,
+    get_sha256,
+    split_line_endings,
+)
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
 from reviewboard.diffviewer.settings import DiffSettings
 
 if TYPE_CHECKING:
-    from django.http import HttpRequest
+    from collections.abc import Callable, Iterator, Sequence
 
+    from django.http import HttpRequest
+    from typing_extensions import TypeAlias
+
+    from reviewboard.diffviewer.differ import Differ, DiffOpcodeTag
     from reviewboard.diffviewer.models.filediff import FileDiff
+    from reviewboard.diffviewer.opcode_generator import DiffOpcodeGenerator
+
+    _HtmlFormatter = HtmlFormatter[str]
+else:
+    _HtmlFormatter = HtmlFormatter
 
 
 logger = logging.getLogger(__name__)
 
 
-class NoWrapperHtmlFormatter(HtmlFormatter):
+class NoWrapperHtmlFormatter(_HtmlFormatter):
     """An HTML Formatter for Pygments that doesn't wrap items in a div."""
-    def __init__(self, *args, **kwargs):
-        super(NoWrapperHtmlFormatter, self).__init__(*args, **kwargs)
 
-    def _wrap_div(self, inner):
-        """Removes the div wrapper from formatted code.
+    def _wrap_div(
+        self,
+        inner: Iterator[tuple[int, str]],
+    ) -> Iterator[tuple[int, str]]:
+        """Override for the _wrap_div method.
 
-        This is called by the formatter to wrap the contents of inner.
-        Inner is a list of tuples containing formatted code. If the first item
-        in the tuple is zero, then it's the div wrapper, so we should ignore
-        it.
+        The parent class uses this method to wrap raw contents in ``<div>``
+        tags. This override prevents that, and filters out any wrapper nodes
+        which have already been added.
+
+        Args:
+            inner (iterator):
+                The iterator of nodes.
+
+        Yields:
+            tuple:
+            Each node to include.
+
+            Tuple:
+                0 (int):
+                    1, always. For the HTML formatter implementation, this
+                    value is either 0 (indicating a wrapper node) or 1
+                    (indicating content).
+
+                1 (str):
+                    The content of the node.
         """
         for tup in inner:
             if tup[0]:
                 yield tup
 
 
-class RawDiffChunkGenerator(object):
+#: The tag for a diff chunk.
+#:
+#: Version Added:
+#:     8.0
+DiffChunkTag: TypeAlias = Literal[
+    'delete',
+    'equal',
+    'insert',
+    'replace',
+]
+
+
+#: A line in the diff.
+#:
+#: Version Added:
+#:     8.0
+DiffLine: TypeAlias = tuple[
+    # [0] Virtual line number (row number in the two-column diff).
+    int,
+
+    # [1] Real line number in the original file.
+    int | None,
+
+    # [2] HTML markup of the original file line.
+    str,
+
+    # [3] Changed regions of the original line (for "replace" chunks).
+    DiffRegions,
+
+    # [4] Real line number in the modified file.
+    int | None,
+
+    # [5] HTML markup of the modified file line.
+    str,
+
+    # [6] Changed regions of the modified line (for "replace" chunks).
+    DiffRegions,
+
+    # [7] Whether the line consists only of whitespace changes.
+    bool,
+
+    # [8] Metadata for the line.
+    dict[str, Any] | None,
+]
+
+
+class DiffChunk(TypedDict):
+    """Definition for a chunk in the diff.
+
+    Version Added:
+        8.0
+    """
+
+    #: The type of change.
+    change: DiffChunkTag
+
+    #: Whether the chunk can be collapsed.
+    collapsable: bool
+
+    #: The 0-based index of the chunk.
+    index: int
+
+    #: The rendered lines in the chunk.
+    lines: Sequence[DiffLine]
+
+    #: Metadata for the chunk.
+    meta: dict[str, Any]
+
+    #: The number of lines in the chunk.
+    numlines: int
+
+
+#: Type for information about a header in a file.
+#:
+#: Version Added:
+#:     8.0
+HeaderInfo = Mapping[str, str] | None
+
+
+class RawDiffChunkGenerator:
     """A generator for chunks for a diff that can be used for rendering.
 
     Each chunk represents an insert, delete, replace, or equal section. It
@@ -81,25 +193,6 @@ class RawDiffChunkGenerator(object):
     Version Changed:
         5.0:
         Added :py:attr:`all_code_safety_results`.
-
-    Attributes:
-        all_code_safety_results (dict):
-            Code safety warnings were found while processing the diff.
-
-            This is in the form of::
-
-                {
-                    '<checker_id>': {
-                        'warnings': {'<result_id>', ...},
-                        'errors': {'<result_id>', ...},
-                    },
-                    ...
-                }
-
-            All keys are optional.
-
-            Version Added:
-                5.0
     """
 
     NEWLINES_RE = re.compile(r'\r?\n')
@@ -120,6 +213,27 @@ class RawDiffChunkGenerator(object):
     # Instance variables #
     ######################
 
+    #: Code safety warnings were found while processing the diff.
+    #:
+    #: This is in the form of::
+    #:
+    #:     {
+    #:         '<checker_id>': {
+    #:             'warnings': {'<result_id>', ...},
+    #:             'errors': {'<result_id>', ...},
+    #:         },
+    #:         ...
+    #:     }
+    #:
+    #: All keys are optional.
+    #:
+    #: Version Added:
+    #:     5.0
+    all_code_safety_results: dict[str, dict[str, set[str]]]
+
+    #: The diff compatibility version.
+    diff_compat: int
+
     #: Settings used for the generation of the diff.
     #:
     #: Version Added:
@@ -129,13 +243,46 @@ class RawDiffChunkGenerator(object):
     #:     reviewboard.diffviewer.settings.DiffSettings
     diff_settings: DiffSettings
 
+    #: The differ object.
+    differ: Differ | Any
+
+    #: Whether to enable syntax highlighting
+    enable_syntax_highlighting: bool
+
+    #: A list of file encodings to try.
+    encoding_list: Sequence[str]
+
+    #: The old version of the file.
+    old: bytes | Sequence[bytes]
+
+    #: The filename for the old version of the file.
+    orig_filename: str
+
+    #: The filename for the new version of the file.
+    modified_filename: str
+
+    #: The new version of the file.
+    new: bytes | Sequence[bytes]
+
+    #: The current chunk being processed.
+    _chunk_index: int
+
+    #: The most recently seen header information.
+    _last_header: tuple[
+        HeaderInfo,
+        HeaderInfo,
+    ]
+
+    #: The most recent header index used.
+    _last_header_index: list[int]
+
     def __init__(
         self,
-        old: Optional[Union[bytes, Sequence[bytes]]],
-        new: Optional[Union[bytes, Sequence[bytes]]],
+        old: bytes | Sequence[bytes] | None,
+        new: bytes | Sequence[bytes] | None,
         orig_filename: str,
         modified_filename: str,
-        encoding_list: Optional[Sequence[str]] = None,
+        encoding_list: (Sequence[str] | None) = None,
         diff_compat: int = DiffCompatVersion.DEFAULT,
         *,
         diff_settings: DiffSettings,
@@ -161,13 +308,13 @@ class RawDiffChunkGenerator(object):
             new (bytes or list of bytes):
                 The new data.
 
-            orig_filename (unicode):
+            orig_filename (str):
                 The filename corresponding to the old data.
 
-            modified_filename (unicode):
+            modified_filename (str):
                 The filename corresponding to the new data.
 
-            encoding_list (list of unicode, optional):
+            encoding_list (list of str, optional):
                 A list of encodings to try for the ``old`` and ``new`` data,
                 when converting to Unicode. If not specified, this defaults
                 to ``iso-8859-15``.
@@ -211,8 +358,12 @@ class RawDiffChunkGenerator(object):
         assert diff_settings.tab_size
         self.diff_settings = diff_settings
 
-        self.old = old
-        self.new = new
+        if old is not None:
+            self.old = old
+
+        if new is not None:
+            self.new = new
+
         self.orig_filename = orig_filename
         self.modified_filename = modified_filename
         self.diff_settings = diff_settings
@@ -224,20 +375,36 @@ class RawDiffChunkGenerator(object):
         self.all_code_safety_results = {}
 
         # Chunk processing state.
-        self._last_header = [None, None]
+        self._last_header = (None, None)
         self._last_header_index = [0, 0]
         self._chunk_index = 0
 
-    def get_opcode_generator(self):
-        """Return the DiffOpcodeGenerator used to generate diff opcodes."""
+    def get_opcode_generator(self) -> DiffOpcodeGenerator:
+        """Return the DiffOpcodeGenerator used to generate diff opcodes.
+
+        Returns:
+            reviewboard.diffviewer.opcode_generator.DiffOpcodeGenerator:
+            The opcode generator.
+        """
         return get_diff_opcode_generator(self.differ)
 
-    def get_chunks(self, cache_key=None):
-        """Return the chunks for the given diff information.
+    def get_chunks(
+        self,
+        cache_key: (str | None) = None,
+    ) -> Iterator[DiffChunk]:
+        """Yield the chunks for the given diff information.
 
         If a cache key is provided and there are chunks already computed in the
         cache, they will be yielded. Otherwise, new chunks will be generated,
         stored in cache (given a cache key), and yielded.
+
+        Args:
+            cache_key (str, optional):
+                The cache key to use.
+
+        Yields:
+            DiffChunk:
+            Each chunk in the diff.
         """
         if cache_key:
             chunks = cache_memoize(cache_key,
@@ -246,16 +413,27 @@ class RawDiffChunkGenerator(object):
         else:
             chunks = self.get_chunks_uncached()
 
-        for chunk in chunks:
-            yield chunk
+        yield from chunks
 
-    def get_chunks_uncached(self):
-        """Yield the list of chunks, bypassing the cache."""
-        for chunk in self.generate_chunks(self.old, self.new):
-            yield chunk
+    def get_chunks_uncached(self) -> Iterator[DiffChunk]:
+        """Yield the list of chunks, bypassing the cache.
 
-    def generate_chunks(self, old, new, old_encoding_list=None,
-                        new_encoding_list=None):
+        Yields:
+            DiffChunk:
+            Each chunk in the diff.
+        """
+        assert self.old is not None
+        assert self.new is not None
+
+        yield from self.generate_chunks(self.old, self.new)
+
+    def generate_chunks(
+        self,
+        old: bytes | Sequence[bytes],
+        new: bytes | Sequence[bytes],
+        old_encoding_list: (Sequence[str] | None) = None,
+        new_encoding_list: (Sequence[str] | None) = None,
+    ) -> Iterator[DiffChunk]:
         """Generate chunks for the difference between two strings.
 
         The strings will be normalized, ensuring they're of the proper
@@ -277,36 +455,17 @@ class RawDiffChunkGenerator(object):
             new (bytes or list of bytes):
                 The new data.
 
-            old_encoding_list (list of unicode, optional):
+            old_encoding_list (list of str, optional):
                 An optional list of encodings that ``old`` may be encoded in.
                 If not provided, :py:attr:`encoding_list` is used.
 
-            new_encoding_list (list of unicode, optional):
+            new_encoding_list (list of str, optional):
                 An optional list of encodings that ``new`` may be encoded in.
                 If not provided, :py:attr:`encoding_list` is used.
 
         Yields:
-            dict:
-            A rendered chunk containing the following keys:
-
-            ``index`` (int)
-                The 0-based index of the chunk.
-
-            ``lines`` (list of unicode):
-                The rendered list of lines.
-
-            ``numlines`` (int):
-                The number of lines in the chunk.
-
-            ``change`` (unicode):
-                The type of change (``delete``, ``equal``, ``insert`` or
-                ``replace``).
-
-            ``collapsable`` (bool):
-                Whether the chunk can be collapsed.
-
-            ``meta`` (dict):
-                Metadata on the chunk.
+            DiffChunk:
+            A rendered chunk.
         """
         is_lists = isinstance(old, list)
         assert is_lists == isinstance(new, list)
@@ -318,50 +477,51 @@ class RawDiffChunkGenerator(object):
             new_encoding_list = self.encoding_list
 
         if is_lists:
-            if self.encoding_list:
-                old = self.normalize_source_list(old, old_encoding_list)
-                new = self.normalize_source_list(new, new_encoding_list)
+            assert isinstance(old, list)
+            assert isinstance(new, list)
 
-            a = old
-            b = new
+            old_lines = self.normalize_source_list(old, old_encoding_list)
+            new_lines = self.normalize_source_list(new, new_encoding_list)
+
+            old_markup = old_lines
+            new_markup = new_lines
         else:
-            old, a = self.normalize_source_string(old, old_encoding_list)
-            new, b = self.normalize_source_string(new, new_encoding_list)
+            assert isinstance(old, bytes)
+            assert isinstance(new, bytes)
 
-        a_num_lines = len(a)
-        b_num_lines = len(b)
+            old_str, old_lines = self.normalize_source_string(
+                old, old_encoding_list)
+            new_str, new_lines = self.normalize_source_string(
+                new, new_encoding_list)
 
-        if is_lists:
-            markup_a = a
-            markup_b = b
-        else:
-            markup_a = None
-            markup_b = None
+            old_markup = None
+            new_markup = None
 
-            if self._get_enable_syntax_highlighting(old, new, a, b):
-                # TODO: Try to figure out the right lexer for these files
-                #       once instead of twice.
-                markup_a = self._apply_pygments(
-                    old or '',
+            if self._get_enable_syntax_highlighting(
+                old, new, old_lines, new_lines):
+                old_markup = self._apply_pygments(
+                    old_str,
                     self.normalize_path_for_display(self.orig_filename))
-                markup_b = self._apply_pygments(
-                    new or '',
+                new_markup = self._apply_pygments(
+                    new_str,
                     self.normalize_path_for_display(self.modified_filename))
 
-            if not markup_a:
-                markup_a = self.NEWLINES_RE.split(escape(old))
+            if not old_markup:
+                old_markup = self.NEWLINES_RE.split(escape(old_str))
 
-            if not markup_b:
-                markup_b = self.NEWLINES_RE.split(escape(new))
+            if not new_markup:
+                new_markup = self.NEWLINES_RE.split(escape(new_str))
 
-        ignore_space = True
+        old_num_lines = len(old_lines)
+        new_num_lines = len(new_lines)
 
-        for pattern in self.diff_settings.include_space_patterns:
-            if fnmatch.fnmatch(self.orig_filename, pattern):
-                ignore_space = False
-                break
+        ignore_space = not any(
+            fnmatch.fnmatch(self.orig_filename, pattern)
+            for pattern in self.diff_settings.include_space_patterns
+        )
 
-        self.differ = get_differ(a, b, ignore_space=ignore_space,
+        self.differ = get_differ(old_lines, new_lines,
+                                 ignore_space=ignore_space,
                                  compat_version=self.diff_compat)
         self.differ.add_interesting_lines_for_headers(self.orig_filename)
 
@@ -369,7 +529,7 @@ class RawDiffChunkGenerator(object):
         collapse_threshold = 2 * context_num_lines + 3
 
         line_num = 1
-        opcodes_generator = self.get_opcode_generator()
+        opcode_generator = self.get_opcode_generator()
 
         counts = {
             'equal': 0,
@@ -378,21 +538,22 @@ class RawDiffChunkGenerator(object):
             'delete': 0,
         }
 
-        for tag, i1, i2, j1, j2, meta in opcodes_generator:
-            old_lines = markup_a[i1:i2]
-            new_lines = markup_b[j1:j2]
-            num_lines = max(len(old_lines), len(new_lines))
+        for tag, i1, i2, j1, j2, meta in opcode_generator:
+            num_lines = max(i2 - i1, j2 - j1)
+
+            assert meta is not None
 
             lines = [
-                self._diff_line(tag, meta, *diff_args)
+                self._diff_line(tag, meta, *diff_args)  # type:ignore
                 for diff_args in zip_longest(
                     range(line_num, line_num + num_lines),
                     range(i1 + 1, i2 + 1),
                     range(j1 + 1, j2 + 1),
-                    a[i1:i2],
-                    b[j1:j2],
-                    old_lines,
-                    new_lines)
+                    old_lines[i1:i2],
+                    new_lines[j1:j2],
+                    old_markup[i1:i2],
+                    new_markup[j1:j2]
+                )
             ]
 
             counts[tag] += num_lines
@@ -406,7 +567,7 @@ class RawDiffChunkGenerator(object):
                 else:
                     yield self._new_chunk(lines, 0, context_num_lines)
 
-                    if i2 == a_num_lines and j2 == b_num_lines:
+                    if i2 == old_num_lines and j2 == new_num_lines:
                         yield self._new_chunk(lines, context_num_lines,
                                               num_lines, True)
                     else:
@@ -421,8 +582,13 @@ class RawDiffChunkGenerator(object):
 
         self.counts = counts
 
-    def check_line_code_safety(self, orig_line, modified_line,
-                               extra_state={}, **kwargs):
+    def check_line_code_safety(
+        self,
+        orig_line: str | None,
+        modified_line: str | None,
+        extra_state: (dict[str, Any] | None) = None,
+        **kwargs,
+    ) -> list[tuple[str, dict[str, Any]]]:
         """Check the safety of a line of code.
 
         This will run the original and modified line through all registered
@@ -453,25 +619,34 @@ class RawDiffChunkGenerator(object):
             A list of code safety results containing warnings or errors. Each
             item is a tuple containing:
 
-            1. The registered checker ID.
-            2. A dictionary with ``errors`` and/or ``warnings`` keys.
+            Tuple:
+                0 (str):
+                    The registered checker ID.
+
+                1 (dict):
+                    A dictionary with ``errors`` and/or ``warnings`` keys.
         """
+        if extra_state is None:
+            extra_state = {}
+
         # Check for any unsafe/suspicious content on this line by passing
         # the raw source through any registered code safety checkers.
         results = []
         to_check = []
 
         if orig_line:
-            to_check.append(dict({
+            to_check.append({
                 'path': self.orig_filename,
                 'lines': [orig_line],
-            }, **extra_state))
+                **extra_state,
+            })
 
         if modified_line:
-            to_check.append(dict({
+            to_check.append({
                 'path': self.modified_filename,
                 'lines': [modified_line],
-            }, **extra_state))
+                **extra_state,
+            })
 
         if to_check:
             code_safety_configs = self.diff_settings.code_safety_configs
@@ -505,7 +680,12 @@ class RawDiffChunkGenerator(object):
 
         return results
 
-    def normalize_source_string(self, s, encoding_list, **kwargs):
+    def normalize_source_string(
+        self,
+        s: bytes,
+        encoding_list: Sequence[str],
+        **kwargs,
+    ) -> tuple[str, Sequence[str]]:
         """Normalize a source string of text to use for the diff.
 
         This will normalize the encoding of the string and the newlines,
@@ -524,7 +704,7 @@ class RawDiffChunkGenerator(object):
             s (bytes):
                 The string to normalize.
 
-            encoding_list (list of unicode):
+            encoding_list (list of str):
                 The list of encodings to try when converting the string to
                 Unicode.
 
@@ -535,29 +715,38 @@ class RawDiffChunkGenerator(object):
             tuple:
             A tuple containing:
 
-            1. The full normalized string
-            2. The list of lines from the string
+            Tuple:
+                0 (str):
+                    The normalized string.
+
+                1 (list of str):
+                    The string, split into lines.
 
         Raises:
             UnicodeDecodeError:
                 The string could not be converted to Unicode.
         """
-        s = convert_to_unicode(s, encoding_list)[1]
+        s_str = convert_to_unicode(s, encoding_list)[1]
 
         # Normalize the input so that if there isn't a trailing newline, we
         # add it.
-        if s and not s.endswith('\n'):
-            s += '\n'
+        if s_str and not s_str.endswith('\n'):
+            s_str += '\n'
 
-        lines = self.NEWLINES_RE.split(s or '')
+        lines = self.NEWLINES_RE.split(s_str or '')
 
         # Remove the trailing newline, now that we've split this. This will
         # prevent a duplicate line number at the end of the diff.
         del lines[-1]
 
-        return s, lines
+        return s_str, lines
 
-    def normalize_source_list(self, lines, encoding_list, **kwargs):
+    def normalize_source_list(
+        self,
+        lines: Sequence[bytes],
+        encoding_list: Sequence[str],
+        **kwargs,
+    ) -> Sequence[str]:
         """Normalize a list of source lines to use for the diff.
 
         This will normalize the encoding of the lines.
@@ -574,7 +763,7 @@ class RawDiffChunkGenerator(object):
             lines (list of bytes):
                 The list of lines to normalize.
 
-            encoding_list (list of unicode):
+            encoding_list (list of str):
                 The list of encodings to try when converting the lines to
                 Unicode.
 
@@ -582,39 +771,44 @@ class RawDiffChunkGenerator(object):
                 Additional keyword arguments, for future expansion.
 
         Returns:
-            list of unicode:
+            list of str:
             The resulting list of normalized lines.
 
         Raises:
             UnicodeDecodeError:
                 One or more lines could not be converted to Unicode.
         """
-        if encoding_list:
-            lines = [
-                convert_to_unicode(s, encoding_list)[1]
-                for s in lines
-            ]
+        return [
+            convert_to_unicode(s, encoding_list)[1]
+            for s in lines
+        ]
 
-        return lines
-
-    def normalize_path_for_display(self, filename):
+    def normalize_path_for_display(
+        self,
+        filename: str,
+    ) -> str:
         """Normalize a file path for display to the user.
 
         By default, this returns the filename as-is. Subclasses can override
         the behavior to return a variant of the filename.
 
         Args:
-            filename (unicode):
+            filename (str):
                 The filename to normalize.
 
         Returns:
-            unicode:
+            str:
             The normalized filename.
         """
         return filename
 
-    def get_line_changed_regions(self, old_line_num, old_line,
-                                 new_line_num, new_line):
+    def get_line_changed_regions(
+        self,
+        old_line_num: int | None,
+        old_line: str | None,
+        new_line_num: int | None,
+        new_line: str | None,
+    ) -> tuple[DiffRegions, DiffRegions]:
         """Return information on changes between two lines.
 
         This returns a tuple containing a list of tuples of ranges in the
@@ -623,11 +817,41 @@ class RawDiffChunkGenerator(object):
 
         This defaults to simply wrapping get_line_changed_regions() from
         diffutils. Subclasses can override to provide custom behavior.
+
+        Args:
+            old_line_num (int):
+                The line number for the old line.
+
+            old_line (str):
+                The contents of the old line.
+
+            new_line_num (int):
+                The line number for the new line.
+
+            new_line (str):
+                The contents of the new line.
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (reviewboard.diffviewer.diffutils.DiffRegions):
+                    A list of (int, int) for changed regions in the old line.
+
+                1 (reviewboard.diffviewer.diffutils.DiffRegions):
+                    A list of (int, int) for changed regions in the new line.
         """
         return get_line_changed_regions(old_line, new_line)
 
-    def _get_enable_syntax_highlighting(self, old, new, a, b):
-        """Returns whether or not we'll be enabling syntax highlighting.
+    def _get_enable_syntax_highlighting(
+        self,
+        old: bytes,
+        new: bytes,
+        old_lines: Sequence[str],
+        new_lines: Sequence[str],
+    ) -> bool:
+        """Return whether or not we'll be enabling syntax highlighting.
 
         This is based first on the value received when constructing the
         generator, and then based on heuristics to determine if it's fast
@@ -635,40 +859,106 @@ class RawDiffChunkGenerator(object):
 
         The heuristics take into account the size of the files in bytes and
         the number of lines.
+
+        Args:
+            old (bytes):
+                The contents of the old file as a single bytestring.
+
+            new (bytes):
+                The contents of the new file as a single bytestring.
+
+            old_lines (list of str):
+                The list of lines in the old file.
+
+            new_lines (list of str):
+                The list of lines in the new file.
+
+        Returns:
+            bool:
+            Whether syntax highlighting should be applied for the file.
         """
         if not self.enable_syntax_highlighting:
             return False
 
         threshold = self.diff_settings.syntax_highlighting_threshold
 
-        if threshold and (len(a) > threshold or len(b) > threshold):
+        if threshold and (len(old_lines) > threshold or
+                          len(new_lines) > threshold):
             return False
 
         # Very long files, especially XML files, can take a long time to
         # highlight. For files over a certain size, don't highlight them.
         if (len(old) > self.STYLED_MAX_LIMIT_BYTES or
-                len(new) > self.STYLED_MAX_LIMIT_BYTES):
+            len(new) > self.STYLED_MAX_LIMIT_BYTES):
             return False
 
         # Don't style the file if we have any *really* long lines.
         # It's likely a minified file or data or something that doesn't
         # need styling, and it will just grind Review Board to a halt.
-        for lines in (a, b):
+        for lines in (old_lines, new_lines):
             for line in lines:
                 if len(line) > self.STYLED_MAX_LINE_LEN:
                     return False
 
         return True
 
-    def _diff_line(self, tag, meta, v_line_num, old_line_num, new_line_num,
-                   old_line, new_line, old_markup, new_markup):
-        """Creates a single line in the diff viewer.
+    def _diff_line(
+        self,
+        tag: DiffOpcodeTag,
+        meta: dict[str, Any],
+        v_line_num: int,
+        old_line_num: int | None,
+        new_line_num: int | None,
+        old_line: str | None,
+        new_line: str | None,
+        old_markup: str | None,
+        new_markup: str | None,
+    ) -> DiffLine:
+        """Create a single line in the diff viewer.
 
         Information on the line will be returned, and later will be used
         for rendering the line. The line represents a single row of a
         side-by-side diff. It contains a row number, real line numbers,
         region information, syntax-highlighted HTML for the text,
         and other metadata.
+
+        Version Changed:
+            8.0:
+            Changed to return a DiffLine tuple instead of a heterogenous list.
+
+        Args:
+            tag (reviewboard.diffviewer.differ.DiffOpcodeTag):
+                The tag for the chunk the line is in.
+
+            meta (dict):
+                Metadata for the chunk.
+
+            v_line_num (int):
+                The row number of the line in the 2-column diff.
+
+            old_line_num (int):
+                The line number in the old version of the file.
+
+            new_line_num (int):
+                The line number in the new version of the file.
+
+            old_line (str):
+                The line content in the old version of the file.
+
+            new_line (str):
+                The line content in the new version of the file.
+
+            old_markup (str):
+                The HTML markup for the line in the old version of the file
+                (e.g. the line with syntax highlighting applied).
+
+            new_markup (str):
+                The HTML markup for the line in the old version of the file
+                (e.g. the line with syntax highlighting applied).
+
+        Returns:
+            DiffLine:
+            The diff line.
         """
         if (tag == 'replace' and
             old_line and new_line and
@@ -677,11 +967,11 @@ class RawDiffChunkGenerator(object):
             old_line != new_line):
             # Generate information on the regions that changed between the
             # two lines.
-            old_region, new_region = \
+            old_regions, new_regions = \
                 self.get_line_changed_regions(old_line_num, old_line,
                                               new_line_num, new_line)
         else:
-            old_region = new_region = []
+            old_regions = new_regions = None
 
         old_markup = old_markup or ''
         new_markup = new_markup or ''
@@ -691,7 +981,8 @@ class RawDiffChunkGenerator(object):
         indentation_changes = meta.get('indentation_changes', {})
 
         if line_pair[0] is not None and line_pair[1] is not None:
-            indentation_change = indentation_changes.get('%d-%d' % line_pair)
+            indentation_change = indentation_changes.get(
+                '{}-{}'.format(*line_pair))
 
             # We check the ranges against (0, 0) for compatibility with a bug
             # present in Review Board 4.0.6 and older, where bad indentation
@@ -706,13 +997,6 @@ class RawDiffChunkGenerator(object):
             if indentation_change and indentation_change[1:] != (0, 0):
                 old_markup, new_markup = self._highlight_indentation(
                     old_markup, new_markup, *indentation_change)
-
-        result = [
-            v_line_num,
-            old_line_num or '', old_markup, old_region,
-            new_line_num or '', new_markup, new_region,
-            line_pair in meta['whitespace_lines']
-        ]
 
         # NOTE: Prior to Review Board 5, this only contained moved info
         #       ("to"/"from" keys), and was not used for general line-level
@@ -754,14 +1038,23 @@ class RawDiffChunkGenerator(object):
                     all_code_checker_results.setdefault(key, set()).update(
                         checker_result_ids)
 
-        # Only include the meta information for the line if it has content.
-        # Otherwise, save the space in cache.
-        if line_meta:
-            result.append(line_meta)
+        return (
+            v_line_num,
+            old_line_num,
+            old_markup,
+            old_regions,
+            new_line_num,
+            new_markup,
+            new_regions,
+            line_pair in meta['whitespace_lines'],
+            line_meta or None,
+        )
 
-        return result
-
-    def _get_move_info(self, line_num, moved_meta):
+    def _get_move_info(
+        self,
+        line_num: int | None,
+        moved_meta: Mapping[int, int],
+    ) -> tuple[int, bool] | None:
         """Return information for a moved line.
 
         This will return a tuple containing the line number on the other end
@@ -787,15 +1080,49 @@ class RawDiffChunkGenerator(object):
         return (
             other_line_num,
             (line_num - 1 not in moved_meta or
-             other_line_num != moved_meta[line_num - 1] + 1)
+             other_line_num != moved_meta[line_num - 1] + 1),
         )
 
-    def _highlight_indentation(self, old_markup, new_markup, is_indent,
-                               raw_indent_len, norm_indent_len_diff):
-        """Highlights indentation in an HTML-formatted line.
+    def _highlight_indentation(
+        self,
+        old_markup: str,
+        new_markup: str,
+        is_indent: bool,
+        raw_indent_len: int,
+        norm_indent_len_diff: int,
+    ) -> tuple[str, str]:
+        """Highlight indentation in an HTML-formatted line.
 
-        This will wrap the indentation in <span> tags, and format it in
-        a way that makes it clear how many spaces or tabs were used.
+         This will wrap the indentation in <span> tags, and format it in
+         a way that makes it clear how many spaces or tabs were used.
+
+        Args:
+            old_markup (str):
+                The markup for the old line.
+
+            new_markup (str):
+                The markup for the new line.
+
+            is_indent (bool):
+                If ``True``, the new line is indented compared to the old. If
+                ``False``, the new line is dedented.
+
+            raw_indent_len (int):
+                The base amount of indentation in the line.
+
+            norm_indent_len_diff (int):
+                The difference in indentation between the old and new lines.
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (str):
+                    The changed markup for the old line.
+
+                1 (str):
+                    The changed markup for the new line.
         """
         if is_indent:
             new_markup = self._wrap_indentation_chars(
@@ -814,13 +1141,39 @@ class RawDiffChunkGenerator(object):
 
         return old_markup, new_markup
 
-    def _wrap_indentation_chars(self, class_name, markup, raw_indent_len,
-                                norm_indent_len_diff, serializer):
-        """Wraps characters in a string with indentation markers.
+    def _wrap_indentation_chars(
+        self,
+        class_name: str,
+        markup: str,
+        raw_indent_len: int,
+        norm_indent_len_diff: int,
+        serializer: Callable[[str, int], tuple[str, str]],
+    ) -> str:
+        """Wrap characters in a string with indentation markers.
 
         This will insert the indentation markers and its wrapper in the
         markup string. It's careful not to interfere with any tags that
         may be used to highlight that line.
+
+        Args:
+            class_name (str):
+                The class name to apply to the new <span> element.
+
+            markup (str):
+                The markup for the line.
+
+            raw_indent_len (int):
+                The base amount of indentation in the line.
+
+            norm_indent_len_diff (int):
+                The difference in indentation between the old and new lines.
+
+            serializer (callable):
+                The method to call to serialize the indentation characters.
+
+        Returns:
+            str:
+            The wrapped string.
         """
         start_pos = 0
 
@@ -846,13 +1199,17 @@ class RawDiffChunkGenerator(object):
 
         serialized, remainder = serializer(indentation, norm_indent_len_diff)
 
-        return '%s<span class="%s">%s</span>%s' % (
-            markup[:start_pos],
-            class_name,
-            serialized,
-            remainder + markup[end_pos:])
+        return (
+            f'{markup[:start_pos]}'
+            f'<span class="{class_name}">{serialized}</span>'
+            f'{remainder + markup[end_pos:]}'
+        )
 
-    def _serialize_indentation(self, chars, norm_indent_len_diff):
+    def _serialize_indentation(
+        self,
+        chars: str,
+        norm_indent_len_diff: int,
+    ) -> tuple[str, str]:
         """Serializes an indentation string into an HTML representation.
 
         This will show every space as ``>``, and every tab as ``------>|``.
@@ -861,7 +1218,7 @@ class RawDiffChunkGenerator(object):
         boundary.
 
         Args:
-            chars (unicode):
+            chars (str):
                 The indentation characters to serialize.
 
             norm_indent_len_diff (int):
@@ -871,8 +1228,12 @@ class RawDiffChunkGenerator(object):
             tuple:
             A 2-tuple containing:
 
-            1. The serialized indentation string.
-            2. The remaining indentation characters not serialized.
+            Tuple:
+                0 (str):
+                    The serialized indentation string.
+
+                1 (str):
+                    The remaining indentation characters not serialized.
         """
         assert chars
 
@@ -908,7 +1269,11 @@ class RawDiffChunkGenerator(object):
 
         return s, chars[j + 1:]
 
-    def _serialize_unindentation(self, chars, norm_indent_len_diff):
+    def _serialize_unindentation(
+        self,
+        chars: str,
+        norm_indent_len_diff: int,
+    ) -> tuple[str, str]:
         """Serialize an unindentation string into an HTML representation.
 
         This will show every space as ``<``, and every tab as ``|<------``.
@@ -917,7 +1282,7 @@ class RawDiffChunkGenerator(object):
         boundary.
 
         Args:
-            chars (unicode):
+            chars (str):
                 The unindentation characters to serialize.
 
             norm_indent_len_diff (int):
@@ -927,8 +1292,12 @@ class RawDiffChunkGenerator(object):
             tuple:
             A 2-tuple containing:
 
-            1. The serialized unindentation string.
-            2. The remaining unindentation characters not serialized.
+            Tuple:
+                0 (str):
+                    The serialized unindentation string.
+
+                1 (str):
+                    The remaining unindentation characters not serialized.
         """
         assert chars
 
@@ -964,23 +1333,59 @@ class RawDiffChunkGenerator(object):
 
         return s, chars[j + 1:]
 
-    def _new_chunk(self, all_lines, start, end, collapsable=False,
-                   tag='equal', meta=None):
-        """Creates a chunk.
+    def _new_chunk(
+        self,
+        all_lines: Sequence[DiffLine],
+        start: int,
+        end: int,
+        collapsible: bool = False,
+        tag: DiffChunkTag = 'equal',
+        meta: (dict[str, Any] | None) = None,
+    ) -> DiffChunk:
+        """Create a chunk.
 
         A chunk represents an insert, delete, or equal region. The chunk
         contains a bunch of metadata for things like whether or not it's
-        collapsable and any header information.
+        collapsible and any header information.
 
         This is what ends up being returned to the caller of this class.
+
+        Args:
+            all_lines (list of DiffLine):
+                The lines in the chunk.
+
+            start (int):
+                The row number of the start of the chunk.
+
+            end (int):
+                The row number of the start of the next chunk.
+
+            collapsible (bool, optional):
+                Whether the chunk is collapsible.
+
+            tag (str, optional):
+                The change tag for the chunk.
+
+            meta (dict, optional):
+                Metadata for the chunk.
+
+        Returns:
+            DiffChunk:
+            The new chunk.
         """
         if not meta:
             meta = {}
 
         left_headers = list(self._get_interesting_headers(
-            all_lines, start, end - 1, False))
+            lines=all_lines,
+            start=start,
+            end=end,
+            is_modified_file=False))
         right_headers = list(self._get_interesting_headers(
-            all_lines, start, end - 1, True))
+            lines=all_lines,
+            start=start,
+            end=end,
+            is_modified_file=True))
 
         meta['left_headers'] = left_headers
         meta['right_headers'] = right_headers
@@ -988,18 +1393,23 @@ class RawDiffChunkGenerator(object):
         lines = all_lines[start:end]
         num_lines = len(lines)
 
-        compute_chunk_last_header(lines, num_lines, meta, self._last_header)
+        self._last_header = compute_chunk_last_header(
+            lines=lines,
+            numlines=num_lines,
+            meta=meta,
+            last_header=self._last_header)
 
-        if (collapsable and end < len(all_lines) and
-                (self._last_header[0] or self._last_header[1])):
+        if (collapsible and
+            end < len(all_lines) and
+            (self._last_header[0] or self._last_header[1])):
             meta['headers'] = list(self._last_header)
 
-        chunk = {
+        chunk: DiffChunk = {
             'index': self._chunk_index,
             'lines': lines,
             'numlines': num_lines,
             'change': tag,
-            'collapsable': collapsable,
+            'collapsable': collapsible,
             'meta': meta,
         }
 
@@ -1007,12 +1417,49 @@ class RawDiffChunkGenerator(object):
 
         return chunk
 
-    def _get_interesting_headers(self, lines, start, end, is_modified_file):
-        """Returns all headers for a region of a diff.
+    def _get_interesting_headers(
+        self,
+        *,
+        lines: Sequence[DiffLine],
+        start: int,
+        end: int,
+        is_modified_file: bool,
+    ) -> Iterator[tuple[int, str]]:
+        """Yield all headers for a region of a diff.
 
         This scans for all headers that fall within the specified range
         of the specified lines on both the original and modified files.
+
+        Version Changed:
+            8.0:
+            Made the arguments keyword-only.
+
+        Args:
+            lines (list of DiffLine):
+                The lines in the chunk.
+
+            start (int):
+                The row number of the start of the chunk.
+
+            end (int):
+                The row number of the start of the next chunk.
+
+            is_modified_file (bool):
+                If ``True``, get headers for the modified version of the file.
+                If ``False``, get headers for the original version of the file.
+
+        Yields:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (int):
+                    The line number of the header.
+
+                1 (str):
+                    The contents of the line with the header.
         """
+        assert self.differ is not None
         possible_functions = \
             self.differ.get_interesting_lines('header', is_modified_file)
 
@@ -1035,10 +1482,11 @@ class RawDiffChunkGenerator(object):
             linenum, line = possible_functions[i]
             linenum += 1
 
-            if i2 != '' and linenum > i2:
+            if i2 is not None and linenum > i2:
                 break
-            elif i1 != '' and linenum >= i1:
+            elif i1 is not None and linenum >= i1:
                 last_index = i
+
                 yield linenum, line
 
         if is_modified_file:
@@ -1046,22 +1494,26 @@ class RawDiffChunkGenerator(object):
         else:
             self._last_header_index[0] = last_index
 
-    def _apply_pygments(self, data, filename):
+    def _apply_pygments(
+        self,
+        data: str,
+        filename: str,
+    ) -> Sequence[str] | None:
         """Apply Pygments syntax-highlighting to a file's contents.
 
         This will only apply syntax highlighting if a lexer is available and
         the file extension is not blacklisted.
 
         Args:
-            data (unicode):
+            data (str):
                 The data to syntax highlight.
 
-            filename (unicode):
+            filename (str):
                 The name of the file. This is used to help determine a
                 suitable lexer.
 
         Returns:
-            list of unicode:
+            list of str:
             A list of lines, all syntax-highlighted, if a lexer is found.
             If no lexer is available, this will return ``None``.
         """
@@ -1138,14 +1590,25 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
        grab a patched file for the interdiff version.
     """
 
+    #: The format version for data stored in the cache.
+    #:
+    #: This should be updated when the format of the data returned by
+    #: :py:meth:`get_chunks` changes in a compatibility-breaking way. This
+    #: compatibility version is considered internal to Review Board, but we
+    #: don't want old data in the cache to cause errors.
+    #:
+    #: Version Added:
+    #:     8.0
+    CACHE_FORMAT_VERSION = 1
+
     @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
     def __init__(
         self,
         request: HttpRequest,
         filediff: FileDiff,
-        interfilediff: Optional[FileDiff] = None,
+        interfilediff: (FileDiff | None) = None,
         force_interdiff: bool = False,
-        base_filediff: Optional[FileDiff] = None,
+        base_filediff: (FileDiff | None) = None,
         *,
         diff_settings: DiffSettings,
     ) -> None:
@@ -1215,18 +1678,17 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         """
         key: list[str] = []
 
-        key.append('diff-sidebyside')
+        key.append(f'diff-sidebyside-{self.CACHE_FORMAT_VERSION}')
 
         if self.base_filediff is not None:
-            key.append('base-%s' % self.base_filediff.pk)
+            key.append(f'base-{self.base_filediff.pk}')
 
         if not self.force_interdiff:
             key.append(str(self.filediff.pk))
         elif self.interfilediff:
-            key.append('interdiff-%s-%s' % (self.filediff.pk,
-                                            self.interfilediff.pk))
+            key.append(f'interdiff-{self.filediff.pk}-{self.interfilediff.pk}')
         else:
-            key.append('interdiff-%s-none' % self.filediff.pk)
+            key.append(f'interdiff-{self.filediff.pk}-none')
 
         key += [
             self.diff_settings.state_hash,
@@ -1235,8 +1697,13 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
 
         return '-'.join(key)
 
-    def get_opcode_generator(self):
-        """Return the DiffOpcodeGenerator used to generate diff opcodes."""
+    def get_opcode_generator(self) -> DiffOpcodeGenerator:
+        """Return the DiffOpcodeGenerator used to generate diff opcodes.
+
+        Returns:
+            reviewboard.diffviewer.opcode_generator.DiffOpcodeGenerator:
+            The opcode generator.
+        """
         diff = self.filediff.diff
 
         if self.interfilediff:
@@ -1248,8 +1715,8 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
                                          request=self.request,
                                          diff_settings=self.diff_settings)
 
-    def get_chunks(self):
-        """Return the chunks for the given diff information.
+    def get_chunks(self) -> Iterator[DiffChunk]:
+        """Yield the chunks for the given diff information.
 
         If the file is binary or is an added or deleted 0-length file, or if
         the file has moved with no additional changes, then an empty list of
@@ -1258,24 +1725,33 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         If there are chunks already computed in the cache, they will be
         yielded. Otherwise, new chunks will be generated, stored in cache,
         and yielded.
-        """
-        counts = self.filediff.get_line_counts()
 
-        if (self.filediff.binary or
-            self.filediff.source_revision == '' or
-            ((self.filediff.is_new or self.filediff.deleted or
-              self.filediff.moved or self.filediff.copied) and
+        Yields:
+            DiffChunk:
+            Each chunk in the diff.
+        """
+        filediff = self.filediff
+        counts = filediff.get_line_counts()
+
+        if (filediff.binary or
+            filediff.source_revision == '' or
+            ((filediff.is_new or filediff.deleted or
+              filediff.moved or filediff.copied) and
              counts['raw_insert_count'] == 0 and
              counts['raw_delete_count'] == 0)):
             return
 
         cache_key = self.make_cache_key()
 
-        for chunk in super(DiffChunkGenerator, self).get_chunks(cache_key):
-            yield chunk
+        yield from super().get_chunks(cache_key)
 
-    def get_chunks_uncached(self):
-        """Yield the list of chunks, bypassing the cache."""
+    def get_chunks_uncached(self) -> Iterator[DiffChunk]:
+        """Yield the list of chunks, bypassing the cache.
+
+        Yields:
+            DiffChunk:
+            Each chunk in the diff.
+        """
         base_filediff = self.base_filediff
         filediff = self.filediff
         interfilediff = self.interfilediff
@@ -1418,8 +1894,13 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
                 total_line_count=(insert_count + delete_count +
                                   replace_count + equal_count))
 
-    def check_line_code_safety(self, orig_line, modified_line,
-                               extra_state={}, **kwargs):
+    def check_line_code_safety(
+        self,
+        orig_line: str,
+        modified_line: str,
+        extra_state: (dict[str, Any] | None) = None,
+        **kwargs,
+    ) -> list[tuple[str, dict[str, Any]]]:
         """Check the safety of a line of code.
 
         This will run the original and modified line through all registered
@@ -1458,33 +1939,43 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             1. The registered checker ID.
             2. A dictionary with ``errors`` and/or ``warnings`` keys.
         """
-        return super(DiffChunkGenerator, self).check_line_code_safety(
+        if extra_state is None:
+            extra_state = {}
+
+        return super().check_line_code_safety(
             orig_line=orig_line,
             modified_line=modified_line,
-            extra_state=dict({
+            extra_state={
                 'repository': self.repository,
-            }, **extra_state),
+                **extra_state,
+            },
             **kwargs)
 
-    def normalize_path_for_display(self, filename):
+    def normalize_path_for_display(
+        self,
+        filename: str,
+    ) -> str:
         """Normalize a file path for display to the user.
 
         This uses the associated :py:class:`~reviewboard.scmtools.core.SCMTool`
         to normalize the filename.
 
         Args:
-            filename (unicode):
+            filename (str):
                 The filename to normalize.
 
         Returns:
-            unicode:
+            str:
             The normalized filename.
         """
         return self.tool.normalize_path_for_display(
             filename,
             extra_data=self.filediff.extra_data)
 
-    def _get_sha1(self, content):
+    def _get_sha1(
+        self,
+        content: bytes,
+    ) -> str:
         """Return a SHA1 hash for the provided content.
 
         Args:
@@ -1492,14 +1983,21 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
                 The content to generate the hash for.
 
         Returns:
-            unicode:
+            str:
             The resulting hash.
         """
         return force_str(hashlib.sha1(content).hexdigest())
 
 
-def compute_chunk_last_header(lines, numlines, meta, last_header=None):
-    """Computes information for the displayed function/class headers.
+@deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
+def compute_chunk_last_header(
+    *,
+    lines: Sequence[DiffLine],
+    numlines: int,
+    meta: dict[str, Any],
+    last_header: (tuple[HeaderInfo, HeaderInfo] | None) = None,
+) -> tuple[HeaderInfo, HeaderInfo]:
+    """Compute information for the displayed function/class headers.
 
     This will record the displayed headers, their line numbers, and expansion
     offsets relative to the header's collapsed line range.
@@ -1507,24 +2005,59 @@ def compute_chunk_last_header(lines, numlines, meta, last_header=None):
     The last_header variable, if provided, will be modified, which is
     important when processing several chunks at once. It will also be
     returned as a convenience.
+
+    Version Changed:
+        8.0:
+        * Made arguments keyword-only.
+        * Changed to take in and return a 2-tuple instead of a 2-element list.
+
+    Args:
+        lines (list of DiffLine):
+            The lines in the chunk.
+
+        numlines (int):
+            The number of lines in the chuck.
+
+        meta (dict):
+            Metadata for the chunk.
+
+        last_header (tuple):
+            A 2-tuple of the most recent header information.
+
+    Returns:
+        tuple:
+        A 2-tuple of:
+
+        Tuple:
+            0 (dict):
+                Header information for the original version of the file.
+
+            1 (dict):
+                Header information for the modified version of the file.
     """
-    if last_header is None:
-        last_header = [None, None]
+    if last_header is not None:
+        left, right = last_header
+    else:
+        left = None
+        right = None
 
-    line = lines[0]
+    if left_headers := meta['left_headers']:
+        header = left_headers[-1]
 
-    for i, (linenum, header_key) in enumerate([(line[1], 'left_headers'),
-                                               (line[4], 'right_headers')]):
-        headers = meta[header_key]
+        left = {
+            'line': header[0],
+            'text': header[1].strip(),
+        }
 
-        if headers:
-            header = headers[-1]
-            last_header[i] = {
-                'line': header[0],
-                'text': header[1].strip(),
-            }
+    if right_headers := meta['right_headers']:
+        header = right_headers[-1]
 
-    return last_header
+        right = {
+            'line': header[0],
+            'text': header[1].strip(),
+        }
+
+    return left, right
 
 
 _generator: type[DiffChunkGenerator] = DiffChunkGenerator

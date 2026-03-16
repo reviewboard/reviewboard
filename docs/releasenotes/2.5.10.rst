@@ -140,7 +140,7 @@ Contributors
 
 * André Klitzing
 * Anthony Steinhauser
-* Barret Rennie
+* Beth Rennie
 * Christian Hammond
 * David Trowbridge
 * Kanghee Park

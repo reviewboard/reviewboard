@@ -15,7 +15,12 @@ import {
     type SerializerMap,
     BaseResource,
 } from './baseResourceModel';
+import { DiffComment } from './diffCommentModel';
+import { FileAttachmentComment } from './fileAttachmentCommentModel';
+import { GeneralComment } from './generalCommentModel';
 import { ReviewReply } from './reviewReplyModel';
+import { ReviewRequest } from './reviewRequestModel';
+import { ScreenshotComment } from './screenshotCommentModel';
 
 
 /**
@@ -312,7 +317,7 @@ export class Review<
      */
     createDiffComment(
         options: CreateDiffCommentOptions,
-    ): RB.DiffComment {
+    ): DiffComment {
         if (!!options.interFileDiffID && !!options.baseFileDiffID) {
             console.error(
                 'Options `interFileDiffID` and `baseFileDiffID` for ' +
@@ -321,7 +326,7 @@ export class Review<
             return null;
         }
 
-        return new RB.DiffComment(_.defaults({parentObject: this}, options));
+        return new DiffComment(Object.assign({ parentObject: this }, options));
     }
 
     /**
@@ -359,8 +364,8 @@ export class Review<
         y: number,
         width: number,
         height: number,
-    ): RB.ScreenshotComment {
-        return new RB.ScreenshotComment({
+    ): ScreenshotComment {
+        return new ScreenshotComment({
             height: height,
             id: id,
             parentObject: this,
@@ -393,8 +398,8 @@ export class Review<
         id: number,
         fileAttachmentID: number,
         diffAgainstFileAttachmentID?: number,
-    ): RB.FileAttachmentComment {
-        return new RB.FileAttachmentComment({
+    ): FileAttachmentComment {
+        return new FileAttachmentComment({
             diffAgainstFileAttachmentID: diffAgainstFileAttachmentID,
             fileAttachmentID: fileAttachmentID,
             id: id,
@@ -419,8 +424,8 @@ export class Review<
     createGeneralComment(
         id: number,
         issueOpened?: boolean,
-    ): RB.GeneralComment {
-        return new RB.GeneralComment({
+    ): GeneralComment {
+        return new GeneralComment({
             id: id,
             issueOpened: issueOpened,
             parentObject: this,
@@ -447,7 +452,8 @@ export class Review<
             this.set('draftReply', draftReply);
 
             draftReply.once('published', () => {
-                const reviewRequest = this.get('parentObject');
+                const reviewRequest = this.get('parentObject') as
+                    ReviewRequest;
                 reviewRequest.markUpdated(draftReply.get('timestamp'));
                 this.set('draftReply', null);
             });

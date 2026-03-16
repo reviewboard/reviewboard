@@ -62,9 +62,9 @@ class Command(BaseCommand):
             dest='max_diffs',
             type=int,
             default=None,
-            help=_("The maximum number of migrations to perform. This is "
-                   "useful if you have a lot of diffs to migrate and want "
-                   "to do it over several sessions."))
+            help=_('The maximum number of migrations to perform. This is '
+                   'useful if you have a lot of diffs to migrate and want '
+                   'to do it over several sessions.'))
 
     def handle(self, **options):
         """Handle the command.

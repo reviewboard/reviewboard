@@ -1,5 +1,7 @@
 """Sphinx plugins for web API docs."""
 
+from __future__ import annotations
+
 import ast
 import inspect
 import json
@@ -8,6 +10,7 @@ import os
 import re
 import sys
 from importlib import import_module
+from typing import TYPE_CHECKING
 
 # Initialize Review Board before we load anything from Django.
 import reviewboard
@@ -29,7 +32,7 @@ from djblets.webapi.fields import (BaseAPIFieldType,
                                    DateTimeFieldType,
                                    ResourceFieldType,
                                    ResourceListFieldType)
-from djblets.webapi.resources import get_resource_from_class, WebAPIResource
+from djblets.webapi.resources import get_resource_from_class
 from djblets.webapi.responses import WebAPIResponseError
 from docutils import nodes
 from docutils.parsers.rst import Directive, DirectiveError, directives
@@ -39,6 +42,9 @@ from reviewboard.webapi.resources import resources
 from sphinx import addnodes
 from sphinx.util import docname_join
 from sphinx.util.docstrings import prepare_docstring
+
+if TYPE_CHECKING:
+    from djblets.webapi.resources import WebAPIResource
 
 
 # Mapping of mimetypes to language names for syntax highlighting.
@@ -357,11 +363,11 @@ class ResourceDirective(Directive):
         else:
             resource_name = resource.name
 
-        append_detail_row(tbody, "Name", nodes.literal(text=resource_name))
+        append_detail_row(tbody, 'Name', nodes.literal(text=resource_name))
 
         # URI
         uri_template = get_resource_uri_template(resource, not is_list)
-        append_detail_row(tbody, "URI", nodes.literal(text=uri_template))
+        append_detail_row(tbody, 'URI', nodes.literal(text=uri_template))
 
         # Required features
         if getattr(resource, 'required_features', False):
@@ -379,7 +385,7 @@ class ResourceDirective(Directive):
 
         # Token Policy ID
         if hasattr(resource, 'policy_id'):
-            append_detail_row(tbody, "Token Policy ID",
+            append_detail_row(tbody, 'Token Policy ID',
                               nodes.literal(text=resource.policy_id))
 
         # HTTP Methods
@@ -402,14 +408,14 @@ class ResourceDirective(Directive):
             if i != -1:
                 doc_summary = doc_summary[:i + 1]
 
-            paragraph += nodes.inline(text=" - ")
+            paragraph += nodes.inline(text=' - ')
             paragraph += parse_text(
                 self, doc_summary,
                 wrapper_node_type=nodes.inline,
                 where='HTTP %s handler summary for %s'
                       % (http_method, self.options['classname']))
 
-        append_detail_row(tbody, "HTTP Methods", bullet_list)
+        append_detail_row(tbody, 'HTTP Methods', bullet_list)
 
         # Parent Resource
         if is_list or resource.uri_object_key is None:
@@ -426,7 +432,7 @@ class ResourceDirective(Directive):
         else:
             paragraph = 'None.'
 
-        append_detail_row(tbody, "Parent Resource", paragraph)
+        append_detail_row(tbody, 'Parent Resource', paragraph)
 
         # Child Resources
         if is_list:
@@ -459,9 +465,9 @@ class ResourceDirective(Directive):
             tocnode['includefiles'] = docnames
             tocnode['entries'] = [(None, docname) for docname in docnames]
         else:
-            tocnode = nodes.paragraph(text="None")
+            tocnode = nodes.paragraph(text='None')
 
-        append_detail_row(tbody, "Child Resources", tocnode)
+        append_detail_row(tbody, 'Child Resources', tocnode)
 
         return table
 
@@ -712,9 +718,36 @@ class ResourceDirective(Directive):
 
         return getattr(resource, method_name)
 
-    def get_doc_for_http_method(self, resource, http_method):
-        return inspect.getdoc(self.get_http_method_func(resource,
-                                                        http_method)) or ''
+    def get_doc_for_http_method(
+        self,
+        resource: type[WebAPIResource],
+        http_method: str,
+    ) -> str:
+        """Return the documentation for a given HTTP method.
+
+        Args:
+            resource (type):
+                The resource class to get the method for.
+
+            http_method (str):
+                The HTTP method to get the documentation for.
+
+        Returns:
+            str:
+            The documentation for the method.
+        """
+        http_method_func = self.get_http_method_func(resource, http_method)
+
+        # If the method uses @webapi_docs, prefer that.
+        docs = getattr(http_method_func, 'webapi_docs', None)
+        assert docs is None or isinstance(docs, str)
+
+        if docs:
+            return inspect.cleandoc(docs)
+
+        # Fall back to the method's docstring, which was used prior to djblets
+        # 6.x
+        return inspect.getdoc(http_method_func) or ''
 
     def get_http_methods(self, resource, is_list):
         if is_list:
@@ -1731,7 +1764,7 @@ def fetch_response_data(response_class, mimetype, request, **kwargs):
     """
     request.META['HTTP_ACCEPT'] = mimetype
 
-    response = response_class(request=request, **kwargs)
+    response = response_class(request, **kwargs)
     headers = response.headers
     status_code = response.status_code
 

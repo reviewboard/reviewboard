@@ -3,7 +3,7 @@ from reviewboard.scmtools.core import FileNotFoundError, SCMTool, HEAD
 
 class LocalFileTool(SCMTool):
     scmtool_id = 'local-file'
-    name = "Local File"
+    name = 'Local File'
 
     def __init__(self, repository):
         self.repopath = repository.path

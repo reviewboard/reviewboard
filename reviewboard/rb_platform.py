@@ -9,16 +9,16 @@ for their systems.
 #: Review Board sites on this machine and is used when performing a site
 #: upgrade to ensure all sites are upgraded together.
 
-SITELIST_FILE_UNIX = "/etc/reviewboard/sites"
+SITELIST_FILE_UNIX = '/etc/reviewboard/sites'
 
 
 #: Default location of the cache directory. This path is used in
 #: :command:`rb-site install` if using a file-based cache instead of a
 #: memcached-based cache.
-DEFAULT_FS_CACHE_PATH = "/tmp/reviewboard_cache"
+DEFAULT_FS_CACHE_PATH = '/tmp/reviewboard_cache'
 
 
 #: Preferred location of the Review Board sites. If the :program:`rb-site`
 #: tool is passed a site name instead of a full path, it will be prepended
 #: with this path.
-INSTALLED_SITE_PATH = "/var/www"
+INSTALLED_SITE_PATH = '/var/www'

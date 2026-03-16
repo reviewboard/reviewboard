@@ -1,0 +1,338 @@
+/**
+ * A view for managing state on a form.
+ */
+
+import {
+    type EventsHash,
+    BaseView,
+    spina,
+} from '@beanbag/spina';
+
+
+/**
+ * Options for FormView.setSubformVisibility.
+ *
+ * Version Added:
+ *     8.0
+ */
+interface SetSubformVisibilityOptions {
+    /** The registered group for the subforms. */
+    group: string;
+
+    /**
+     * Whether to hide any subforms other than the one specified by
+     * ``subformID``.
+     */
+    hideOthers?: boolean;
+
+    /**
+     * A single subform to set the visibility state for.
+     *
+     * If not provided, this will toggle visibility of all subforms in the
+     * group.
+     */
+    subformID?: string;
+
+    /**
+     * Whether to make the selected subform visible.
+     *
+     * This is only used if ``hideOthers`` is not provided.
+     */
+    visible?: boolean;
+}
+
+
+/**
+ * A view for managing state on a form.
+ *
+ * This provides some standard behavior for setting up form widgets and
+ * handling collapsible fieldsets, along with managing subforms.
+ */
+@spina
+export class FormView extends BaseView<undefined, HTMLFormElement> {
+    static events: EventsHash = {
+        'click .rb-c-form-fieldset__toggle': '_onToggleFieldSetClicked',
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    _$subforms: JQuery = null;
+
+    /**
+     * The subforms.
+     *
+     * This is a two-layer mapping from group ID and subform ID to the subform
+     * element.
+     */
+    _subformsByGroup: { [key: string]: { [key: string]: JQuery} } = {};
+
+    /** Whether the widgets have been initialized. */
+    #formWidgetsInitialized = false;
+
+    /**
+     * Render the view.
+     *
+     * This will set up any subforms that might be available within the form.
+     */
+    onRender() {
+        this._$subforms = this.$('.rb-c-form-fieldset.-is-subform');
+
+        if (this._$subforms.length > 0) {
+            this._setupSubforms();
+        }
+
+        this.setupFormWidgets();
+    }
+
+    /**
+     * Set up state for widgets on the form.
+     *
+     * This will ensure that widgets are set up correctly on the form, or on
+     * a part of the form. This will take care to re-initialize widgets if
+     * they've already been initialized before (useful when dynamically adding
+     * new sections of a form).
+     *
+     * This supports only a few known types of widgets (Django date/time
+     * widgets and related object selectors).
+     *
+     * Args:
+     *     $el (jQuery, optional):
+     *         A starting point for finding the widgets. If not provided, all
+     *         widgets in the form will be set up.
+     */
+    setupFormWidgets($el?: JQuery) {
+        if ($el === undefined) {
+            $el = this.$el;
+        }
+
+        /*
+         * Update some state for Django widgets. We've quite possibly made use
+         * of widgets in the form that need to be initialized, and Django
+         * doesn't have much fine-grained support for doing this, so we need
+         * to take a heavy-handed approach.
+         *
+         * Django (up through 3.0 at least) performs similar logic.
+         */
+        if (window.DateTimeShortcuts &&
+            $el.find('.datetimeshortcuts').length > 0) {
+            if (this.#formWidgetsInitialized) {
+                /*
+                 * Yep, we have to remove *all* of these... DateTimeShortcuts
+                 * has no granular widget support.
+                 */
+                $('.datetimeshortcuts').remove();
+            }
+
+            DateTimeShortcuts.init();
+        }
+
+        if (window.SelectFilter) {
+            $el.find('.selectfilter').each((i, el) => {
+                const parts = el.name.split('-');
+                SelectFilter.init(el.id, parts[parts.length - 1], false);
+            });
+
+            $el.find('.selectfilterstacked').each((i, el) => {
+                const parts = el.name.split('-');
+                SelectFilter.init(el.id, parts[parts.length - 1], true);
+            });
+        }
+
+        this.#formWidgetsInitialized = true;
+    }
+
+    /**
+     * Set the visibility of one or more subforms.
+     *
+     * This will toggle visibility of a single subform, hide all subforms,
+     * or hide all subforms except one.
+     *
+     * Args:
+     *     options (SetSubformVisibilityOptions):
+     *         Options to control visibility.
+     */
+    setSubformVisibility(options: SetSubformVisibilityOptions) {
+        console.assert(_.isObject(options),
+                       'An options object must be provided.');
+
+        const group = options.group;
+        const subformID = options.subformID;
+        const visible = options.visible;
+
+        console.assert(group, 'Missing option "group"');
+
+        const subformIDs = this._subformsByGroup[group];
+        console.assert(subformIDs, `Invalid subform group ${group}`);
+
+        if (options.hideOthers || !subformID) {
+            _.each(subformIDs, ($subform, id) => {
+                const isHidden = (subformID === undefined
+                                  ? !visible
+                                  : (id !== subformID));
+
+                $subform.prop({
+                    disabled: isHidden,
+                    hidden: isHidden,
+                });
+            });
+        } else {
+            console.assert(visible !== undefined, 'Missing option "visible"');
+
+            const $subform = subformIDs[subformID];
+            console.assert($subform, `Invalid subform ID ${subformID}`);
+
+            $subform.prop({
+                disabled: !visible,
+                hidden: !visible,
+            });
+        }
+    }
+
+    /**
+     * Set up state and event handlers for subforms.
+     *
+     * This will begin tracking all the subforms on the page, and connect
+     * subform visibility to any associated controllers.
+     */
+    _setupSubforms() {
+        const configuredControllers = {};
+
+        this._$subforms.each((i, subformEl) => {
+            const $subform = $(subformEl);
+            const controllerID = $subform.data('subform-controller');
+            const subformID = $subform.data('subform-id');
+            const enablerID = $subform.data('subform-enabler');
+            let group = $subform.data('subform-group');
+            let $controller;
+            let $enabler;
+
+            if (!subformID) {
+                console.error('Subform %o is missing data-subform-id=',
+                              subformEl);
+                return;
+            }
+
+            if (!group && !controllerID && !enablerID) {
+                console.error(
+                    'Subform %o is missing data-subform-group=, ' +
+                    'data-subform-controller=, or data-subform-enable=',
+                    subformEl);
+                return;
+            }
+
+            /*
+             * If we have a controller ID provided, look it up and ensure
+             * we're using the right group.
+             */
+            if (controllerID) {
+                $controller = this.$(`#${controllerID}`);
+
+                console.assert($controller.length === 1,
+                               `Missing controller #${controllerID}`);
+
+                const controllerGroup =
+                    $controller.data('subform-group');
+
+                /*
+                 * If the subform specifies an explicit group, and it
+                 * specified a controller, make sure they match up. While
+                 * we could work around an issue here, we'd rather make the
+                 * developer fix their code.
+                 */
+                if (group === undefined) {
+                    group = controllerGroup;
+                } else if (controllerGroup !== group) {
+                    console.error('Subform %o and controller %s have ' +
+                                  'different values for data-subform-group',
+                                  subformEl, controllerID);
+
+                    return;
+                }
+            } else if (enablerID) {
+                $enabler = this.$(`#${enablerID}`);
+                window.$form = this.$el;
+
+                console.assert($enabler.length === 1,
+                               `Missing enabler #${enablerID}`);
+            }
+
+            /* Register the subforms so that they can be looked up later. */
+            if (!this._subformsByGroup.hasOwnProperty(group)) {
+                this._subformsByGroup[group] = {};
+            }
+
+            this._subformsByGroup[group][subformID] = $subform;
+
+            /*
+             * If we have a controller associated, set the current subform's
+             * visibility based on that value, and listen for changes.
+             */
+            if ($controller) {
+                this.setSubformVisibility({
+                    group: group,
+                    subformID: subformID,
+                    visible: $controller.val() === subformID,
+                });
+
+                if (!configuredControllers[controllerID]) {
+                    configuredControllers[controllerID] = true;
+
+                    $controller.on('change', () => this.setSubformVisibility({
+                        group: group,
+                        hideOthers: true,
+                        subformID: $controller.val(),
+                        visible: true,
+                    }));
+                }
+            }
+
+            /*
+             * If there's an enabler, set the current subform's visibility
+             * based on the state of that element, and listen for changes.
+             */
+            if ($enabler) {
+                const enabled = $enabler.is(':checked');
+
+                $subform
+                    .toggle(enabled)
+                    .prop('disabled', !enabled);
+
+                $enabler.on('change', () => {
+                    const enabled = $enabler.is(':checked');
+
+                    $subform
+                        .toggle(enabled)
+                        .prop('disabled', !enabled);
+                });
+            }
+        });
+    }
+
+    /**
+     * Handle the showing or collapsing of a fieldset.
+     *
+     * This will set the appropriate state on the fieldset to show or hide
+     * the content.
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The click event on the Show/Hide button.
+     */
+    _onToggleFieldSetClicked(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const $toggle = $(e.target);
+        const $fieldset = $toggle.closest('.rb-c-form-fieldset');
+
+        if ($fieldset.hasClass('-is-collapsed')) {
+            $fieldset.removeClass('-is-collapsed');
+            $toggle.text(gettext('(Hide)'));
+        } else {
+            $fieldset.addClass('-is-collapsed');
+            $toggle.text(gettext('(Show)'));
+        }
+    }
+}

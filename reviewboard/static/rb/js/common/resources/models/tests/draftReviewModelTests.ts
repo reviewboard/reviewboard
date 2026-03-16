@@ -65,24 +65,6 @@ suite('rb/resources/models/DraftReview', function() {
                 expect(parentObject.ready).toHaveBeenCalled();
                 expect(model._retrieveDraft).not.toHaveBeenCalled();
             });
-
-            it('With callbacks', function(done) {
-                expect(model.isNew()).toBe(true);
-                expect(model.get('loaded')).toBe(false);
-
-                spyOn(console, 'warn');
-
-                model.ready({
-                    error: () => done.fail(),
-                    success: () => {
-                        expect(parentObject.ready).toHaveBeenCalled();
-                        expect(model._retrieveDraft).toHaveBeenCalled();
-                        expect(console.warn).toHaveBeenCalled();
-
-                        done();
-                    },
-                });
-            });
         });
 
         describe('publish', function() {

@@ -121,7 +121,7 @@ class UserEmailTests(UserEmailTestsMixin, TestCase):
 
         email = mail.outbox[0]
         self.assertEqual(email.subject,
-                         "New Review Board user registration for NewUser")
+                         'New Review Board user registration for NewUser')
 
         self.assertEqual(email.from_email, self.sender)
         self.assertEqual(email.extra_headers['From'],
@@ -772,7 +772,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request = self.create_review_request(
             summary='My test review request')
         review_request.target_groups.add(group)
-        review_request.email_message_id = "junk"
+        review_request.email_message_id = 'junk'
         review_request.publish(review_request.submitter)
 
         from_email = build_email_address_for_user(review_request.submitter)
@@ -802,7 +802,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request = self.create_review_request(
             summary='My test review request')
         review_request.target_groups.add(group)
-        review_request.email_message_id = "junk"
+        review_request.email_message_id = 'junk'
         review_request.publish(review_request.submitter)
 
         self.assertEqual(len(mail.outbox), 1)
@@ -826,7 +826,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request = self.create_review_request(
             summary='My test review request',
             public=True)
-        review_request.email_message_id = "junk"
+        review_request.email_message_id = 'junk'
         review_request.target_people.add(User.objects.get(username='dopey'))
         review_request.save()
 
@@ -860,7 +860,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request = self.create_review_request(
             summary='My test review request',
             public=True)
-        review_request.email_message_id = "junk"
+        review_request.email_message_id = 'junk'
         review_request.target_groups.add(existing_group)
         review_request.target_people.add(User.objects.get(username='dopey'))
         review_request.save()
@@ -895,7 +895,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
         review_request = self.create_review_request(
             summary='My test review request',
             public=True)
-        review_request.email_message_id = "junk"
+        review_request.email_message_id = 'junk'
         review_request.target_people.add(User.objects.get(username='dopey'))
         review_request.save()
 
@@ -1022,7 +1022,7 @@ class ReviewRequestEmailTests(ReviewRequestEmailTestsMixin, DmarcDnsTestsMixin,
 
         review_request = self.create_review_request(with_local_site=True,
                                                     local_id=123)
-        review_request.email_message_id = "junk"
+        review_request.email_message_id = 'junk'
         review_request.target_people.add(site_user1, site_user2, site_user3,
                                          non_site_user1)
         review_request.target_groups.add(group)

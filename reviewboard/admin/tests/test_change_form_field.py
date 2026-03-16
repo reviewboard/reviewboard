@@ -230,7 +230,7 @@ class ChangeFormFieldTests(TestCase):
         self.assertHTMLEqual(
             html,
             '<input id="id_is_active" name="is_active" type="checkbox"'
-            ' checked>')
+            '       aria-describedby="id_is_active_helptext" checked>')
 
     def test_render_with_read_only_field(self):
         """Testing ChangeFormField.render with read-only field"""

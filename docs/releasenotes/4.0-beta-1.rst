@@ -474,7 +474,7 @@ number of contributors. Thank you for all your work on 4.0!
 
 * Adil Malik
 * André Klitzing
-* Barret Rennie
+* Beth Rennie
 * Bolarinwa Balogun
 * Christian Hammond
 * David Trowbridge

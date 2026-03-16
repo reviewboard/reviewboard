@@ -7,6 +7,7 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import { BackboneError } from '../../utils/apiUtils';
 import {
     type BaseResourceAttrs,
     type BaseResourceResourceData,
@@ -127,8 +128,8 @@ export interface ReviewGroupAttrs extends BaseResourceAttrs {
  *     7.0.1
  */
 export interface ReviewGroupResourceData extends BaseResourceResourceData {
-    /** The name of the review group. */
     name: string;
+    url: string;
 }
 
 
@@ -177,6 +178,10 @@ export class ReviewGroup extends BaseResource<
      * Mark a review group as starred or unstarred.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated the options and context parameters and changed to return
      *     a promise.
@@ -188,9 +193,6 @@ export class ReviewGroup extends BaseResource<
      *     options (object, optional):
      *         Additional options for the save operation, including callbacks.
      *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
@@ -198,18 +200,13 @@ export class ReviewGroup extends BaseResource<
     setStarred(
         starred: boolean,
         options: Backbone.ModelSaveOptions = {},
-        context: unknown = undefined,
     ): Promise<void | JQueryXHR> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ReviewGroup.setStarred was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.setStarred(starred));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                RB.ReviewGroup.setStarred was called using callbacks. This has
+                been removed in Review Board 8.0 in favor of promises.
+            `);
 
         const watched = UserSession.instance.watchedGroups;
 
@@ -224,6 +221,10 @@ export class ReviewGroup extends BaseResource<
      * success or failure.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and added a promise return value.
      *
@@ -234,9 +235,6 @@ export class ReviewGroup extends BaseResource<
      *     options (object, optional):
      *         Additional options for the save operation.
      *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
@@ -244,18 +242,13 @@ export class ReviewGroup extends BaseResource<
     addUser(
         username: string,
         options: Backbone.ModelSaveOptions = {},
-        context: unknown = undefined,
     ): Promise<JQueryXHR> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ReviewGroup.addUser was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.addUser(username));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                RB.ReviewGroup.addUser was called using callbacks. This has
+                been removed in Review Board 8.0 in favor of promises.
+            `);
 
         const url = this.url() + 'users/';
 
@@ -280,6 +273,10 @@ export class ReviewGroup extends BaseResource<
      * success or failure.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and added a promise return value.
      *
@@ -290,9 +287,6 @@ export class ReviewGroup extends BaseResource<
      *     options (object, optional):
      *         Additional options for the save operation.
      *
-     *     context (object, optional):
-     *         Context to bind when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
@@ -300,18 +294,13 @@ export class ReviewGroup extends BaseResource<
     removeUser(
         username: string,
         options: Backbone.ModelSaveOptions = {},
-        context: unknown = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('RB.ReviewGroup.removeUser was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.removeUser(username));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                RB.ReviewGroup.removeUser was called using callbacks. This has
+                been removed in Review Board 8.0 in favor of promises.
+            `);
 
         const url = this.url() + 'users/';
 

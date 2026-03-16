@@ -2138,7 +2138,7 @@ class DiffXParserTests(DiffParserTestingMixin, TestCase):
         ))
 
         message = (
-            "Error on line 2: Unexpected or improperly formatted header: %r"
+            'Error on line 2: Unexpected or improperly formatted header: %r'
             % b'BLARGH'
         )
 

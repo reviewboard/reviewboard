@@ -10,8 +10,12 @@ import {
 import {
     BaseComment,
     CommentIssueStatusType,
+    DiffComment,
+    FileAttachmentComment,
+    GeneralComment,
     Review,
     ReviewRequest,
+    ScreenshotComment,
 } from 'reviewboard/common';
 import {
     type BaseCommentAttrs,
@@ -436,13 +440,13 @@ suite('rb/reviews/views/CommentIssueBarView', () => {
                 _buildTests(
                     {
                         commentType: CommentIssueManagerCommentType.DIFF,
-                        CommentCls: RB.DiffComment,
+                        CommentCls: DiffComment,
                         rspNamespace: 'diff_comment',
                         createCommentFunc: 'createDiffComment',
                     },
                     {
                         commentType: CommentIssueManagerCommentType.GENERAL,
-                        CommentCls: RB.GeneralComment,
+                        CommentCls: GeneralComment,
                         rspNamespace: 'general_comment',
                         createCommentFunc: 'createGeneralComment',
                     });
@@ -452,13 +456,13 @@ suite('rb/reviews/views/CommentIssueBarView', () => {
                 _buildTests(
                     {
                         commentType: CommentIssueManagerCommentType.GENERAL,
-                        CommentCls: RB.GeneralComment,
+                        CommentCls: GeneralComment,
                         rspNamespace: 'general_comment',
                         createCommentFunc: 'createGeneralComment',
                     },
                     {
                         commentType: CommentIssueManagerCommentType.DIFF,
-                        CommentCls: RB.DiffComment,
+                        CommentCls: DiffComment,
                         rspNamespace: 'diff_comment',
                         createCommentFunc: 'createDiffComment',
                     });
@@ -469,13 +473,13 @@ suite('rb/reviews/views/CommentIssueBarView', () => {
                     {
                         commentType:
                             CommentIssueManagerCommentType.FILE_ATTACHMENT,
-                        CommentCls: RB.FileAttachmentComment,
+                        CommentCls: FileAttachmentComment,
                         rspNamespace: 'file_attachment_comment',
                         createCommentFunc: 'createFileAttachmentComment',
                     },
                     {
                         commentType: CommentIssueManagerCommentType.GENERAL,
-                        CommentCls: RB.GeneralComment,
+                        CommentCls: GeneralComment,
                         rspNamespace: 'general_comment',
                         createCommentFunc: 'createGeneralComment',
                     });
@@ -485,13 +489,13 @@ suite('rb/reviews/views/CommentIssueBarView', () => {
                 _buildTests(
                     {
                         commentType: CommentIssueManagerCommentType.SCREENSHOT,
-                        CommentCls: RB.ScreenshotComment,
+                        CommentCls: ScreenshotComment,
                         rspNamespace: 'screenshot_comment',
                         createCommentFunc: 'createScreenshotComment',
                     },
                     {
                         commentType: CommentIssueManagerCommentType.GENERAL,
-                        CommentCls: RB.GeneralComment,
+                        CommentCls: GeneralComment,
                         rspNamespace: 'general_comment',
                         createCommentFunc: 'createGeneralComment',
                     });

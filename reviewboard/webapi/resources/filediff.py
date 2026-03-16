@@ -37,7 +37,9 @@ from reviewboard.webapi.resources.diff_file_attachment import \
 
 
 if TYPE_CHECKING:
-    from django.db import QuerySet
+    from typing import Any
+
+    from django.db.models import QuerySet
     from django.http import HttpRequest
 
 
@@ -97,17 +99,17 @@ class FileDiffResource(WebAPIResource):
         'source_attachment': {
             'type': ResourceFieldType,
             'resource': DiffFileAttachmentResource,
-            'description': "The file attachment for the contents of the "
-                           "original file for this file diff, if representing "
-                           "a binary file.",
+            'description': 'The file attachment for the contents of the '
+                           'original file for this file diff, if representing '
+                           'a binary file.',
             'added_in': '2.0',
         },
         'dest_attachment': {
             'type': ResourceFieldType,
             'resource': DiffFileAttachmentResource,
-            'description': "The file attachment for the contents of the "
-                           "patched file for this file diff, if representing "
-                           "a binary file.",
+            'description': 'The file attachment for the contents of the '
+                           'patched file for this file diff, if representing '
+                           'a binary file.',
             'added_in': '2.0',
         },
         'orig_sha256': {
@@ -550,7 +552,7 @@ class FileDiffResource(WebAPIResource):
 
         if mimetype == 'text/x-patch':
             return self._get_patch(request, *args, **kwargs)
-        elif mimetype.startswith(self.DIFF_DATA_MIMETYPE_BASE + "+"):
+        elif mimetype.startswith(self.DIFF_DATA_MIMETYPE_BASE + '+'):
             return self._get_diff_data(request, mimetype, *args, **kwargs)
         else:
             return super(FileDiffResource, self).get(request, *args, **kwargs)
@@ -640,12 +642,47 @@ class FileDiffResource(WebAPIResource):
         assert len(files) == 1
         f = files[0]
 
+        assert 'chunks' in f
+
+        # This changes things to maintain compatibility with the previous
+        # definitions of diff chunks and lines.
+        #
+        # These changes include:
+        # - "blank" line numbers (virtual lines in a file corresponding to
+        #    added or deleted lines on the other side of the diff) in DiffChunk
+        #    are now stored as ``None``, but used to be stored as an empty
+        #    string. Review Bot checks against the empty string, so we can't
+        #    change it.
+        # - Lines without metadata didn't have the last element in the list,
+        #   but that metadata is now stored as ``None``.
+        for chunk in f['chunks']:
+            lines: list[list[Any]] = []
+
+            for line in chunk['lines']:
+                new_line: list[Any] = [
+                    line[0],
+                    line[1] or '',
+                    line[2],
+                    line[3],
+                    line[4] or '',
+                    line[5],
+                    line[6],
+                    line[7],
+                ]
+
+                if line[8] is not None:
+                    new_line.append(line[8])
+
+                lines.append(new_line)
+
+            chunk['lines'] = lines  # type:ignore
+
         payload = {
             'diff_data': {
                 'binary': f['binary'],
                 'chunks': f['chunks'],
-                'num_changes': f['num_changes'],
-                'changed_chunk_indexes': f['changed_chunk_indexes'],
+                'num_changes': f.get('num_changes'),
+                'changed_chunk_indexes': f.get('changed_chunk_indexes'),
                 'new_file': f['newfile'],
             }
         }

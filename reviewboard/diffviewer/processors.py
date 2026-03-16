@@ -1,9 +1,23 @@
 """Diff processing and filtering logic."""
 
+from __future__ import annotations
+
 import re
+from typing import TYPE_CHECKING
 
 from reviewboard.diffviewer.diffutils import get_diff_data_chunks_info
 from reviewboard.diffviewer.features import filter_interdiffs_v2_feature
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Iterator, Sequence
+
+    from django.http import HttpRequest
+
+    from reviewboard.diffviewer.differ import (
+        DiffOpcode,
+        DiffOpcodeTag,
+        DiffOpcodeWithMetadata,
+    )
 
 
 #: Regex for matching a diff chunk line.
@@ -19,8 +33,12 @@ CHUNK_RANGE_RE = re.compile(
     re.M)
 
 
-def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
-                             request=None):
+def filter_interdiff_opcodes(
+    opcodes: Iterable[DiffOpcode],
+    filediff_data: bytes,
+    interfilediff_data: bytes,
+    request: (HttpRequest | None) = None,
+) -> Iterator[DiffOpcode]:
     """Filter the opcodes for an interdiff to remove unnecessary lines.
 
     An interdiff may contain lines of code that have changed as the result of
@@ -38,8 +56,8 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
         .diffviewer.features.filter_interdiffs_v2_feature` feature).
 
     Args:
-        opcodes (list of tuple):
-            The list of opcodes to filter.
+        opcodes (iterator of reviewboard.diffviewer.differ.DiffOpcode):
+            The of opcodes to filter.
 
         filediff_data (bytes):
             The data from the filediff to filter.
@@ -54,7 +72,9 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
         tuple:
         An opcode to render for the diff.
     """
-    def _find_range_info_v1(diff):
+    def _find_range_info_v1(
+        diff: bytes,
+    ) -> Sequence[tuple[int, int]]:
         ranges = []
 
         for range_info in get_diff_data_chunks_info(diff):
@@ -94,7 +114,9 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
 
         return ranges
 
-    def _find_range_info_v2(diff):
+    def _find_range_info_v2(
+        diff: bytes,
+    ) -> Sequence[tuple[int, int]]:
         ranges = []
 
         for range_info in get_diff_data_chunks_info(diff):
@@ -134,7 +156,12 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
 
         return ranges
 
-    def _is_range_valid(line_range, tag, i1, i2):
+    def _is_range_valid(
+        line_range: tuple[int, int] | None,
+        tag: DiffOpcodeTag,
+        i1: int,
+        i2: int,
+    ) -> bool:
         return (line_range is not None and
                 i1 >= line_range[0] and
                 (tag == 'delete' or i1 != i2))
@@ -143,12 +170,12 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
         filter_interdiffs_v2_feature.is_enabled(request=request)
 
     if use_v2_algorithm:
-        _find_range_info = _find_range_info_v2
+        find_range_info = _find_range_info_v2
     else:
-        _find_range_info = _find_range_info_v1
+        find_range_info = _find_range_info_v1
 
-    orig_ranges = _find_range_info(filediff_data)
-    new_ranges = _find_range_info(interfilediff_data)
+    orig_ranges = find_range_info(filediff_data)
+    new_ranges = find_range_info(interfilediff_data)
 
     orig_range_i = 0
     new_range_i = 0
@@ -166,9 +193,7 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
     if not orig_range and not new_range:
         # There's nothing in here, or it's not a unified diff. Just yield
         # what we get.
-        for tag, i1, i2, j1, j2 in opcodes:
-            yield tag, i1, i2, j1, j2
-
+        yield from opcodes
         return
 
     for tag, i1, i2, j1, j2 in opcodes:
@@ -197,12 +222,15 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
         orig_starts_valid = _is_range_valid(orig_range, tag, i1, i2)
         new_starts_valid = _is_range_valid(new_range, tag, j1, j2)
 
-        if tag in ('equal', 'replace'):
+        if tag in {'equal', 'replace'}:
             valid_chunk = orig_starts_valid or new_starts_valid
         elif tag == 'delete':
             valid_chunk = orig_starts_valid
         elif tag == 'insert':
             valid_chunk = new_starts_valid
+        else:
+            # We should never hit this.
+            assert False
 
         if valid_chunk:
             # This chunk is valid. It may only be a portion of the real
@@ -228,7 +256,7 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
             else:
                 valid_j2 = j2
 
-            if tag in ('equal', 'replace'):
+            if tag in {'equal', 'replace'}:
                 # We need to take care to not let the replace lines have
                 # differing ranges for the orig and modified files. We want the
                 # replace to take up the full bounds of the two sides, but
@@ -265,7 +293,7 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
                 cap_i2 = valid_i2
                 cap_j2 = valid_j2
 
-            yield tag, i1, valid_i2, j1, valid_j2
+            yield (tag, i1, valid_i2, j1, valid_j2)
 
             if valid_i2 == i2 and valid_j2 == j2:
                 continue
@@ -289,11 +317,13 @@ def filter_interdiff_opcodes(opcodes, filediff_data, interfilediff_data,
             #
             # These will get turned back into "equal" chunks in the
             # post-processing step.
-            yield 'filtered-equal', i1, i2, j1, j2
+            yield ('filtered-equal', i1, i2, j1, j2)
 
 
-def post_process_filtered_equals(opcodes):
-    """Post-processes filtered-equal and equal chunks from interdiffs.
+def post_process_filtered_equals(
+    opcodes: Iterable[DiffOpcodeWithMetadata],
+) -> Iterator[DiffOpcodeWithMetadata]:
+    """Post-process filtered-equal and equal chunks from interdiffs.
 
     Any filtered-out "filtered-equal" chunks will get turned back into "equal"
     chunks and merged into any prior equal chunks. Likewise, simple "equal"
@@ -301,10 +331,20 @@ def post_process_filtered_equals(opcodes):
 
     "equal" chunks that have any indentation information will remain
     their own chunks, with nothing merged in.
+
+    Args:
+        opcodes (iterator of reviewboard.diffviewer.differ.DiffOpcode):
+            The opcodes.
+
+    Yields:
+        reviewboard.diffviewer.differ.DiffOpcode:
+        The opcodes.
     """
-    cur_chunk = None
+    cur_chunk: (DiffOpcodeWithMetadata | None) = None
 
     for tag, i1, i2, j1, j2, meta in opcodes:
+        assert meta is not None
+
         if ((tag == 'equal' and not meta.get('indentation_changes')) or
             tag == 'filtered-equal'):
             # We either have a plain equal chunk without any indentation
@@ -325,7 +365,7 @@ def post_process_filtered_equals(opcodes):
                 yield cur_chunk
                 cur_chunk = None
 
-            yield tag, i1, i2, j1, j2, meta
+            yield (tag, i1, i2, j1, j2, meta)
 
     if cur_chunk:
         yield cur_chunk

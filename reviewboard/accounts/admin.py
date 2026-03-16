@@ -1,7 +1,11 @@
+"""Admin definitions for the accounts app."""
+
+from __future__ import annotations
+
 from django import forms
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from django.contrib.auth.forms import UserChangeForm, UserCreationForm
+from django.contrib.auth.forms import AdminUserCreationForm, UserChangeForm
 from django.contrib.auth.models import User
 from django.utils.translation import gettext_lazy as _
 
@@ -34,8 +38,14 @@ class RBUserChangeForm(UserChangeForm):
         })
 
 
-class RBUserCreationForm(UserCreationForm):
-    """A variation of UserCreationForm that allows "." in the username."""
+class RBUserCreationForm(AdminUserCreationForm):
+    """A variation of AdminUserCreationForm that allows "." in the username.
+
+    Version Changed:
+        8.0:
+        Changed base class to AdminUserCreationForm from UserCreationForm to
+        match change in Django 5.
+    """
 
     username = forms.RegexField(
         label=_('Username'),

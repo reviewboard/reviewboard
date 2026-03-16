@@ -1,8 +1,8 @@
 """Unit tests for reviewboard.reviews.views.ReviewRequestViewMixin."""
 
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
-import pytz
 from django.utils import timezone as django_timezone
 
 from reviewboard.reviews.models import ReviewRequest
@@ -11,7 +11,7 @@ from reviewboard.reviews.views import ReviewRequestViewMixin
 from reviewboard.testing import TestCase
 
 
-_local_timezone = pytz.timezone('US/Pacific')
+_local_timezone = ZoneInfo('America/Los_Angeles')
 
 
 class ReviewRequestViewMixinTests(TestCase):

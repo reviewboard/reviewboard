@@ -10,6 +10,10 @@ import {
 
 import { ExtraData } from '../../models/extraDataModel';
 import { ExtraDataMixin } from '../../models/extraDataMixin';
+import {
+    API,
+    BackboneError,
+} from '../../utils/apiUtils';
 import { type SerializerState } from '../utils/serializers';
 
 
@@ -93,6 +97,9 @@ export interface SaveOptions extends Backbone.ModelSaveOptions {
     attrs?: {
         [key: string]: unknown;
     };
+
+    /** A form to use for populating the payload. */
+    form?: JQuery;
 }
 
 
@@ -354,6 +361,10 @@ export class BaseResource<
      * If we fail to load the resource, objects.error() will be called instead.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and changed to return a promise.
      *
@@ -361,27 +372,20 @@ export class BaseResource<
      *     options (ReadyOptions):
      *         Options for the fetch operation.
      *
-     *     context (object):
-     *         Context to bind when executing callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async ready(
         options: ReadyOptions = {},
-        context: object = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete) ||
-            _.isFunction(options.ready)) {
-            console.warn('BaseResource.ready was called using callbacks. ' +
-                         'Callers should be updated to use promises instead.');
-
-            return RB.promiseToCallbacks(
-                options, context, () => this.ready());
-        }
+        console.assert(
+            !(options.success || options.error || options.complete ||
+                         options.ready),
+            dedent`
+                BaseResource.ready was called using callbacks. This has been
+                removed in Review Board 8.0 in favor of promises.
+            `);
 
         const parentObject = this.get('parentObject');
 
@@ -411,6 +415,10 @@ export class BaseResource<
      * instead.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and added a promise return value.
      *
@@ -418,27 +426,19 @@ export class BaseResource<
      *     options (object, optional):
      *         Object with success and error callbacks.
      *
-     *     context (object, optional):
-     *         Context to bind when executing callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async ensureCreated(
         options: Backbone.PersistenceOptions = {},
-        context: object = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('BaseResource.ensureCreated was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return RB.promiseToCallbacks(
-                options, context, () => this.ensureCreated());
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                BaseResource.ensureCreated was called using callbacks. This
+                has been removed in Review Board 8.0 in favor of promises.
+            `);
 
         await this.ready();
 
@@ -461,6 +461,10 @@ export class BaseResource<
      * this object.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated the callbacks and added a promise return value.
      *
@@ -468,26 +472,19 @@ export class BaseResource<
      *     options (object, optional):
      *         Options to pass through to the base Backbone fetch operation.
      *
-     *     context (object, optional):
-     *         Context to bind when executing callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async fetch(
         options: Backbone.ModelFetchOptions = {},
-        context: object = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('BaseResource.fetch was called using callbacks. ' +
-                         'Callers should be updated to use promises instead.');
-
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.fetch(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                BaseResource.fetch was called using callbacks. This has been
+                removed in Review Board 8.0 in favor of promises.
+            `);
 
         if (this.isNew()) {
             throw new Error(
@@ -531,6 +528,10 @@ export class BaseResource<
      * If we fail to save the resource, options.error() will be called.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated the callbacks and added a promise return value.
      *
@@ -538,28 +539,21 @@ export class BaseResource<
      *     options (object, optional):
      *         Options for the save operation.
      *
-     *     context (object, optional):
-     *         Context to bind when executing callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async save(
         options: SaveOptions = {},
-        context: object = undefined,
     ): Promise<JQuery.jqXHR> {
         options ??= {};
 
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('BaseResource.save was called using callbacks. ' +
-                         'Callers should be updated to use promises instead.');
-
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.save(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                BaseResource.save was called using callbacks. This has been
+                removed in Review Board 8.0 in favor of promises.
+            `);
 
         this.trigger('saving', options);
         await this.ready();
@@ -725,6 +719,10 @@ export class BaseResource<
      * this object's list resource URL for an object to be deleted.
      *
      * Version Changed:
+     *     8.0:
+     *     Removed callbacks and the context parameter.
+     *
+     * Version Changed:
      *     5.0:
      *     Deprecated callbacks and changed to return a promise.
      *
@@ -732,27 +730,19 @@ export class BaseResource<
      *     options (object, optional):
      *         Object with success and error callbacks.
      *
-     *     context (object, optional):
-     *         Context to use when calling callbacks.
-     *
      * Returns:
      *     Promise:
      *     A promise which resolves when the operation is complete.
      */
     async destroy(
         options: Backbone.ModelDestroyOptions = {},
-        context: object = undefined,
     ): Promise<void> {
-        if (_.isFunction(options.success) ||
-            _.isFunction(options.error) ||
-            _.isFunction(options.complete)) {
-            console.warn('BaseResource.destroy was called using ' +
-                         'callbacks. Callers should be updated to use ' +
-                         'promises instead.');
-
-            return RB.promiseToCallbacks(
-                options, context, newOptions => this.destroy(newOptions));
-        }
+        console.assert(
+            !(options.success || options.error || options.complete),
+            dedent`
+                BaseResource.destroy was called using callbacks. This has been
+                removed in Review Board 8.0 in favor of promises.
+            `);
 
         this.trigger('destroying', options);
 
@@ -1059,7 +1049,7 @@ export class BaseResource<
         }
 
         syncOptions.error = (xhr, textStatus, jqXHR) => {
-            RB.storeAPIError(xhr);
+            API.storeError(xhr);
 
             const rsp = xhr.errorPayload;
 

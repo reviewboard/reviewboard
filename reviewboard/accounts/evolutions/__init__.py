@@ -15,4 +15,5 @@ SEQUENCE = [
     'profile_default_use_rich_text_boolean_field',
     'linkedaccount_unique_together',
     'reviewrequestvisit_index_together',
+    'timezone_length_40',
 ]
