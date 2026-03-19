@@ -22,7 +22,7 @@ from reviewboard.actions.renderers import (BaseActionGroupRenderer,
                                            DefaultActionGroupRenderer,
                                            DefaultActionRenderer,
                                            MenuActionGroupRenderer)
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
@@ -817,9 +817,9 @@ class BaseAction:
 
         # Check for deprecations.
         if attachment:
-            RemovedInReviewBoard90Warning.warn(
+            RemovedInReviewBoard10_0Warning.warn(
                 f'{type(self).__name__}.attachment is deprecated and '
-                f'support will be removed in Review Board 9. Please set the '
+                f'support will be removed in Review Board 10. Please set the '
                 f'"placements" attribute instead.'
             )
 
@@ -842,44 +842,44 @@ class BaseAction:
             ]
 
         if parent_id:
-            RemovedInReviewBoard90Warning.warn(
+            RemovedInReviewBoard10_0Warning.warn(
                 f'{type(self).__name__}.parent_id is deprecated and '
-                f'support will be removed in Review Board 9. Please set this '
+                f'support will be removed in Review Board 10. Please set this '
                 f'attribute in "placements" instead.'
             )
 
         if self.template_name:
-            RemovedInReviewBoard90Warning.warn(
+            RemovedInReviewBoard10_0Warning.warn(
                 f'{cls.__name__}.template_name is deprecated and '
-                f'support will be removed in Review Board 9. Please move any '
+                f'support will be removed in Review Board 10. Please move any '
                 f'custom rendering to a reviewboard.actions.renderers.'
                 f'BaseActionRenderer subclass instead.'
             )
 
         if self.js_view_class:
-            RemovedInReviewBoard90Warning.warn(
+            RemovedInReviewBoard10_0Warning.warn(
                 f'{cls.__name__}.js_view_class is deprecated and '
-                f'support will be removed in Review Board 9. Please move any '
+                f'support will be removed in Review Board 10. Please move any '
                 f'custom rendering to a reviewboard.actions.renderers.'
                 f'BaseActionRenderer subclass instead.'
             )
 
         if cls.get_js_view_data is not BaseAction.get_js_view_data:
-            RemovedInReviewBoard90Warning.warn(
+            RemovedInReviewBoard10_0Warning.warn(
                 f'{cls.__name__}.get_js_view_data is deprecated and '
-                f'support will be removed in Review Board 9. Please move any '
+                f'support will be removed in Review Board 10. Please move any '
                 f'custom rendering to a reviewboard.actions.renderers.'
                 f'BaseActionRenderer subclass instead.'
             )
 
         if cls.get_dom_element_id is not BaseAction.get_dom_element_id:
-            RemovedInReviewBoard90Warning.warn(
+            RemovedInReviewBoard10_0Warning.warn(
                 f'{cls.__name__}.get_dom_element_id is deprecated and '
-                f'support will be removed in Review Board 9.'
+                f'support will be removed in Review Board 10.'
             )
 
     @property
-    @func_deprecated(RemovedInReviewBoard90Warning, message=(
+    @func_deprecated(RemovedInReviewBoard10_0Warning, message=(
         '%(func_name)s is deprecated and support will be removed in '
         '%(product)s %(version)s. Please use ActionPlacement.parent_action '
         'instead.'
@@ -888,10 +888,10 @@ class BaseAction:
         """The parent of this action, if this is an item in a group.
 
         Deprecated:
-            7.1:
+            8.0:
             This has been replaced by
             :py:attr:`ActionPlacement.parent_action`. It will be removed in
-            Review Board 9.
+            Review Board 10.
         """
         if (placements := self.placements):
             return placements[0].parent_action
@@ -899,7 +899,7 @@ class BaseAction:
         return None
 
     @property
-    @func_deprecated(RemovedInReviewBoard90Warning, message=(
+    @func_deprecated(RemovedInReviewBoard10_0Warning, message=(
         '%(func_name)s is deprecated and support will be removed in '
         '%(product)s %(version)s. Please use ActionPlacement.child_actions '
         'instead.'
@@ -908,10 +908,10 @@ class BaseAction:
         """The children of this action, if this is a group.
 
         Deprecated:
-            7.1:
+            8.0:
             This has been replaced by
             :py:attr:`ActionPlacement.child_actions`. It will be removed in
-            Review Board 9.
+            Review Board 10.
         """
         if (placements := self.placements):
             return placements[0].child_actions
@@ -919,7 +919,7 @@ class BaseAction:
         return []
 
     @property
-    @func_deprecated(RemovedInReviewBoard90Warning, message=(
+    @func_deprecated(RemovedInReviewBoard10_0Warning, message=(
         '%(func_name)s is deprecated and support will be removed in '
         '%(product)s %(version)s. Please use ActionPlacement.depth '
         'instead.'
@@ -928,8 +928,8 @@ class BaseAction:
         """The depth of the action.
 
         Deprecated:
-            7.1:
-            This is scheduled for removal in Review Board 9. This has been
+            8.0:
+            This is scheduled for removal in Review Board 10. This has been
             replaced by :py:attr:`ActionPlacement.depth`.
 
         Type:
@@ -1383,9 +1383,9 @@ class BaseAction:
             return mark_safe('')
 
         if placement is None:
-            RemovedInReviewBoard90Warning.warn(
+            RemovedInReviewBoard10_0Warning.warn(
                 f'{type(self).__name__}.render() must be passed a placement= '
-                f'argument. This will be required in Review Board 9.'
+                f'argument. This will be required in Review Board 10.'
             )
 
             if not (placements := self.placements):
@@ -1537,10 +1537,10 @@ class BaseAction:
             return mark_safe('')
 
         if placement is None:
-            RemovedInReviewBoard90Warning.warn(
+            RemovedInReviewBoard10_0Warning.warn(
                 f'{type(self).__name__}.render_js() must be passed a '
                 f'placement= argument. This will be required in '
-                f'Review Board 9.'
+                f'Review Board 10.'
             )
 
             if not (placements := self.placements):

@@ -22,7 +22,7 @@ from pygments.lexers import (find_lexer_class,
                              guess_lexer_for_filename)
 
 from reviewboard.codesafety import code_safety_checker_registry
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
 from reviewboard.diffviewer.diffutils import (get_filediff_encodings,
                                               get_line_changed_regions,
@@ -1138,7 +1138,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
        grab a patched file for the interdiff version.
     """
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def __init__(
         self,
         request: HttpRequest,

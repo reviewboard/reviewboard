@@ -9,7 +9,7 @@ from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
 from housekeeping import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -89,7 +89,7 @@ class Unfuddle(BaseHostingService):
         'svn': 'Subversion',
     }
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def check_repository(
         self,
         *,
@@ -128,7 +128,7 @@ class Unfuddle(BaseHostingService):
         self._api_get_repository(unfuddle_account_domain, unfuddle_repo_name,
                                  tool_name)
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def authorize(
         self,
         *,

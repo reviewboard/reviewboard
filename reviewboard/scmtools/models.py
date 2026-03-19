@@ -23,7 +23,7 @@ from djblets.log import log_timed
 from djblets.util.decorators import cached_property
 from housekeeping import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -564,7 +564,7 @@ class Repository(models.Model):
             'password': password,
         }
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def get_or_create_hooks_uuid(
         self,
         *,
@@ -634,7 +634,7 @@ class Repository(models.Model):
 
         return encodings or [self.FALLBACK_ENCODING]
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def get_file(
         self,
         *,
@@ -731,7 +731,7 @@ class Repository(models.Model):
             ],
             large_data=True)[0]
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def get_file_exists(
         self,
         *,
@@ -888,7 +888,7 @@ class Repository(models.Model):
         """
         return f'repository-commit:{self.pk}:{commit_id}'
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def get_commits(
         self,
         *,
@@ -1007,7 +1007,7 @@ class Repository(models.Model):
             else:
                 return self.get_scmtool().get_change(revision)
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def normalize_patch(
         self,
         patch: bytes,
@@ -1104,7 +1104,7 @@ class Repository(models.Model):
         """
         return user.has_perm('scmtools.change_repository', self.local_site)
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def archive(
         self,
         *,

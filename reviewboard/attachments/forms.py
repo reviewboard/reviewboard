@@ -17,7 +17,7 @@ from reviewboard.attachments.errors import FileTooBigError
 from reviewboard.attachments.mimetypes import get_uploaded_file_mimetype
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.diffutils import get_sha256
 from reviewboard.reviews.models import ReviewRequestDraft
 
@@ -80,7 +80,7 @@ class UploadFileForm(forms.Form):
 
         return history
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def create(
         self,
         *,

@@ -11,7 +11,7 @@ from django.utils.safestring import SafeString
 
 from reviewboard.actions.renderers import MenuActionGroupRenderer
 from reviewboard.actions.tests.base import TestActionsRegistry, TestMenuAction
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.testing import TestCase
 
 
@@ -109,7 +109,7 @@ class MenuActionGroupRendererTests(TestCase):
 
         # We already test for the deprecation warning message in the action
         # tests. This just suppresses warning output for the test run.
-        with self.assertWarns(RemovedInReviewBoard90Warning):
+        with self.assertWarns(RemovedInReviewBoard10_0Warning):
             action = MyAction()
 
         placement = action.get_placement('review-request')

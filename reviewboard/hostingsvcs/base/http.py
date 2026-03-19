@@ -27,7 +27,7 @@ from django.utils.encoding import force_str
 from djblets.log import log_timed
 from djblets.util.decorators import cached_property
 
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 
 if TYPE_CHECKING:
     from urllib.request import BaseHandler
@@ -288,9 +288,9 @@ class HostingServiceHTTPRequest:
         """
         class_name = type(self).__name__
 
-        RemovedInReviewBoard80Warning.warn(
+        RemovedInReviewBoard90Warning.warn(
             f'{class_name}.data is deprecated in favor of '
-            f'{class_name}.body. This will be removed in Review Board 8.'
+            f'{class_name}.body. This will be removed in Review Board 9.'
         )
 
         return self.body
@@ -691,10 +691,10 @@ class HostingServiceHTTPResponse:
         """
         class_name = type(self).__name__
 
-        RemovedInReviewBoard80Warning.warn(
+        RemovedInReviewBoard90Warning.warn(
             f'Accessing {class_name} by index is deprecated. Please use '
             f'{class_name}.data or {class_name}.headers instead. This '
-            'will be removed in Review Board 8.'
+            'will be removed in Review Board 9.'
         )
 
         if i == 0:

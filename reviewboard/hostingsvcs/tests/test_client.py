@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from kgb import SpyAgency
 
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base import (HostingServiceClient,
                                           HostingServiceHTTPRequest,
                                           HostingServiceHTTPResponse)
@@ -260,12 +260,12 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         # One for each item in the tuple, + 1 to detect the bounds.
         expected_warnings: list[ExpectedWarning] = [
             {
-                'cls': RemovedInReviewBoard80Warning,
+                'cls': RemovedInReviewBoard90Warning,
                 'message': (
                     'Accessing HostingServiceHTTPResponse by index is '
                     'deprecated. Please use HostingServiceHTTPResponse.data '
                     'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
+                    'be removed in Review Board 9.'
                 ),
             }
             for _i in range(3)
@@ -327,12 +327,12 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         # One for each item in the tuple, + 1 to detect the bounds.
         expected_warnings: list[ExpectedWarning] = [
             {
-                'cls': RemovedInReviewBoard80Warning,
+                'cls': RemovedInReviewBoard90Warning,
                 'message': (
                     'Accessing HostingServiceHTTPResponse by index is '
                     'deprecated. Please use HostingServiceHTTPResponse.data '
                     'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
+                    'be removed in Review Board 9.'
                 ),
             }
             for _i in range(3)
@@ -393,12 +393,12 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         # One for each item in the tuple, + 1 to detect the bounds.
         expected_warnings: list[ExpectedWarning] = [
             {
-                'cls': RemovedInReviewBoard80Warning,
+                'cls': RemovedInReviewBoard90Warning,
                 'message': (
                     'Accessing HostingServiceHTTPResponse by index is '
                     'deprecated. Please use HostingServiceHTTPResponse.data '
                     'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
+                    'be removed in Review Board 9.'
                 ),
             }
             for _i in range(3)
@@ -460,12 +460,12 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         # One for each item in the tuple, + 1 to detect the bounds.
         expected_warnings: list[ExpectedWarning] = [
             {
-                'cls': RemovedInReviewBoard80Warning,
+                'cls': RemovedInReviewBoard90Warning,
                 'message': (
                     'Accessing HostingServiceHTTPResponse by index is '
                     'deprecated. Please use HostingServiceHTTPResponse.data '
                     'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
+                    'be removed in Review Board 9.'
                 ),
             }
             for _i in range(3)
@@ -529,12 +529,12 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         # One for each item in the tuple, + 1 to detect the bounds.
         expected_warnings: list[ExpectedWarning] = [
             {
-                'cls': RemovedInReviewBoard80Warning,
+                'cls': RemovedInReviewBoard90Warning,
                 'message': (
                     'Accessing HostingServiceHTTPResponse by index is '
                     'deprecated. Please use HostingServiceHTTPResponse.data '
                     'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
+                    'be removed in Review Board 9.'
                 ),
             }
             for _i in range(3)
@@ -598,12 +598,12 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         # One for each item in the tuple, + 1 to detect the bounds.
         expected_warnings: list[ExpectedWarning] = [
             {
-                'cls': RemovedInReviewBoard80Warning,
+                'cls': RemovedInReviewBoard90Warning,
                 'message': (
                     'Accessing HostingServiceHTTPResponse by index is '
                     'deprecated. Please use HostingServiceHTTPResponse.data '
                     'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
+                    'be removed in Review Board 9.'
                 ),
             }
             for _i in range(3)
@@ -667,12 +667,12 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         # One for each item in the tuple, + 1 to detect the bounds.
         expected_warnings: list[ExpectedWarning] = [
             {
-                'cls': RemovedInReviewBoard80Warning,
+                'cls': RemovedInReviewBoard90Warning,
                 'message': (
                     'Accessing HostingServiceHTTPResponse by index is '
                     'deprecated. Please use HostingServiceHTTPResponse.data '
                     'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
+                    'be removed in Review Board 9.'
                 ),
             }
             for _i in range(3)
@@ -737,12 +737,12 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         # One for each item in the tuple, + 1 to detect the bounds.
         expected_warnings: list[ExpectedWarning] = [
             {
-                'cls': RemovedInReviewBoard80Warning,
+                'cls': RemovedInReviewBoard90Warning,
                 'message': (
                     'Accessing HostingServiceHTTPResponse by index is '
                     'deprecated. Please use HostingServiceHTTPResponse.data '
                     'or HostingServiceHTTPResponse.headers instead. This will '
-                    'be removed in Review Board 8.'
+                    'be removed in Review Board 9.'
                 ),
             }
             for _i in range(3)
@@ -830,10 +830,10 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         message = (
             'HostingServiceClient.json_delete is deprecated. Please use '
             'HostingServiceClient.http_delete instead. This will be removed '
-            'in Review Board 8.'
+            'in Review Board 9.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard80Warning, message):
+        with self.assertWarns(RemovedInReviewBoard90Warning, message):
             rsp, headers = self.client.json_delete(
                 url='http://example.com',
                 headers={
@@ -881,10 +881,10 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         message = (
             'HostingServiceClient.json_get is deprecated. Please use '
             'HostingServiceClient.http_get instead. This will be removed '
-            'in Review Board 8.'
+            'in Review Board 9.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard80Warning, message):
+        with self.assertWarns(RemovedInReviewBoard90Warning, message):
             rsp, headers = self.client.json_get(
                 url='http://example.com',
                 headers={
@@ -935,10 +935,10 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         message = (
             'HostingServiceClient.json_post is deprecated. Please use '
             'HostingServiceClient.http_post instead. This will be removed '
-            'in Review Board 8.'
+            'in Review Board 9.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard80Warning, message):
+        with self.assertWarns(RemovedInReviewBoard90Warning, message):
             rsp, headers = self.client.json_post(
                 url='http://example.com',
                 body='test body\U0001f60b',
@@ -992,10 +992,10 @@ class HostingServiceClientTests(SpyAgency, TestCase):
         message = (
             'HostingServiceClient.json_post is deprecated. Please use '
             'HostingServiceClient.http_post instead. This will be removed '
-            'in Review Board 8.'
+            'in Review Board 9.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard80Warning, message):
+        with self.assertWarns(RemovedInReviewBoard90Warning, message):
             rsp, headers = self.client.json_post(
                 url='http://example.com',
                 body=b'test body\x01\x02\x03',

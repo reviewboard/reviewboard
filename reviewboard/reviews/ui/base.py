@@ -23,7 +23,7 @@ from typing_extensions import TypeAlias, TypedDict
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import (FileAttachment,
                                             get_latest_file_attachments)
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.reviews.context import (make_review_request_context,
                                          should_view_draft)
@@ -360,7 +360,7 @@ class ReviewUI(Generic[
             By default, Review UIs are always enabled.
         """
         if 'file_attachment' in kwargs:
-            RemovedInReviewBoard80Warning.warn(
+            RemovedInReviewBoard90Warning.warn(
                 'The file_attachment argument to ReviewUI.is_enabled_for is '
                 'deprecated. Please pass obj= instead.')
 
@@ -1170,9 +1170,9 @@ class FileAttachmentReviewUI(ReviewUI):
             A tuple of ``(best_score, review_ui)``, or ``(0, None)`` if one
             could not be found.
         """
-        RemovedInReviewBoard80Warning.warn(
+        RemovedInReviewBoard90Warning.warn(
             'FileAttachmentReviewUI.get_best_handler is deprecated and will '
-            'be removed in Review Board 8.0.')
+            'be removed in Review Board 9.')
 
         best_score = 0
         best_fit = None
@@ -1209,9 +1209,9 @@ class FileAttachmentReviewUI(ReviewUI):
             The Review UI for the attachment, or ``None`` if a suitable one
             could not be found.
         """
-        RemovedInReviewBoard80Warning.warn(
+        RemovedInReviewBoard90Warning.warn(
             'FileAttachmentReviewUI.for_type is deprecated and will '
-            'be removed in Review Board 8.0. Callers should instead use '
+            'be removed in Review Board 9. Callers should instead use '
             'ReviewUI.for_object')
 
         if attachment.mimetype:
@@ -1306,7 +1306,7 @@ def unregister_ui(review_ui: type[ReviewUI]) -> None:
     review_ui_registry.unregister(review_ui)
 
 
-@func_deprecated(RemovedInReviewBoard80Warning)
+@func_deprecated(RemovedInReviewBoard90Warning)
 def is_review_ui_enabled_for(
     *,
     review_ui: ReviewUI[FileAttachment, FileAttachmentComment,
@@ -1349,7 +1349,7 @@ def is_review_ui_enabled_for(
 
     try:
         if 'file_attachment' in params:
-            RemovedInReviewBoard80Warning.warn(
+            RemovedInReviewBoard90Warning.warn(
                 'The file_attachment parameter to ReviewUI.is_enabled_for '
                 'has been removed. Please use obj= instead in Review UI %r'
                 % review_ui)

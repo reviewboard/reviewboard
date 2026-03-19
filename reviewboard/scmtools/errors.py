@@ -8,7 +8,7 @@ from django.utils.encoding import force_str
 from django.utils.translation import gettext as _
 from housekeeping import ClassDeprecatedMixin
 
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.ssh.errors import SSHAuthenticationError
 
 if TYPE_CHECKING:
@@ -218,11 +218,11 @@ class AuthenticationError(SSHAuthenticationError, SCMError):
 class UnverifiedCertificateError(
     ClassDeprecatedMixin,
     SCMError,
-    warning_cls=RemovedInReviewBoard80Warning,
+    warning_cls=RemovedInReviewBoard90Warning,
     init_deprecation_msg=(
         'UnverifiedCertificateError is deprecated in favor of '
         'reviewboard.certs.errors.CertificateVerificationError, and '
-        'will be removed in Review Board 8.'
+        'will be removed in Review Board 9.'
     )
 ):
     """An error representing an unverified SSL certificate.
@@ -231,7 +231,7 @@ class UnverifiedCertificateError(
         6.0:
         This is deprecated in favor of
         :py:class:`reviewboard.certs.errors.CertificateVerificationError`,
-        and will be removed in Review Board 8.
+        and will be removed in Review Board 9.
     """
 
     ######################

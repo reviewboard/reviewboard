@@ -19,17 +19,6 @@ class BaseRemovedInReviewBoardVersionWarning(BaseRemovedInWarning):
     product = 'Review Board'
 
 
-class RemovedInReviewBoard80Warning(BaseRemovedInReviewBoardVersionWarning):
-    """Deprecations for features scheduled for removal in Review Board 8.0.
-
-    Note that this class will itself be removed in Review Board 8.0. If you
-    need to check against Review Board deprecation warnings, please see
-    :py:class:`BaseRemovedInReviewBoardVersionWarning`.
-    """
-
-    version = '8.0'
-
-
 class RemovedInReviewBoard90Warning(BaseRemovedInReviewBoardVersionWarning):
     """Deprecations for features scheduled for removal in Review Board 9.0.
 
@@ -43,6 +32,19 @@ class RemovedInReviewBoard90Warning(BaseRemovedInReviewBoardVersionWarning):
     version = '9.0'
 
 
+class RemovedInReviewBoard10_0Warning(BaseRemovedInReviewBoardVersionWarning):
+    """Deprecations for features scheduled for removal in Review Board 10.0.
+
+    Note that this class will itself be removed in Review Board 10.0. If you
+    need to check against Review Board deprecation warnings, please see
+    :py:class:`BaseRemovedInReviewBoardVersionWarning`. Alternatively, you
+    can use the alias for this class,
+    :py:data:`RemovedInNextReviewBoardVersionWarning`.
+    """
+
+    version = '10.0'
+
+
 #: An alias for the next release of Review Board where features will be
 #: removed.
-RemovedInNextReviewBoardVersionWarning = RemovedInReviewBoard80Warning
+RemovedInNextReviewBoardVersionWarning = RemovedInReviewBoard90Warning

@@ -22,7 +22,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.backends import default_backend
 from django.utils.encoding import force_bytes, force_str
 
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.http import (HostingServiceHTTPRequest,
                                                HostingServiceHTTPResponse)
 from reviewboard.scmtools.certs import Certificate
@@ -802,10 +802,10 @@ class HostingServiceClient:
             urllib.error.URLError:
                 When there is an error communicating with the URL.
         """
-        RemovedInReviewBoard80Warning.warn(
+        RemovedInReviewBoard90Warning.warn(
             '%(class_name)s.json_delete is deprecated. Please use '
             '%(class_name)s.http_delete instead. This will be removed in '
-            'Review Board 8.'
+            'Review Board 9.'
             % {
                 'class_name': type(self).__name__,
             })
@@ -854,10 +854,10 @@ class HostingServiceClient:
             urllib.error.URLError:
                 When there is an error communicating with the URL.
         """
-        RemovedInReviewBoard80Warning.warn(
+        RemovedInReviewBoard90Warning.warn(
             '%(class_name)s.json_get is deprecated. Please use '
             '%(class_name)s.http_get instead. This will be removed in '
-            'Review Board 8.'
+            'Review Board 9.'
             % {
                 'class_name': type(self).__name__,
             })
@@ -906,10 +906,10 @@ class HostingServiceClient:
             urllib.error.URLError:
                 When there is an error communicating with the URL.
         """
-        RemovedInReviewBoard80Warning.warn(
+        RemovedInReviewBoard90Warning.warn(
             '%(class_name)s.json_post is deprecated. Please use '
             '%(class_name)s.http_post instead. This will be removed in '
-            'Review Board 8.'
+            'Review Board 9.'
             % {
                 'class_name': type(self).__name__,
             })

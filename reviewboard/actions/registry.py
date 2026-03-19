@@ -23,7 +23,7 @@ from reviewboard.actions.base import (ActionAttachmentPoint,
                                       BaseAction,
                                       BaseGroupAction)
 from reviewboard.actions.renderers import ButtonActionRenderer
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.registries.registry import OrderedRegistry, Registry
 
 
@@ -426,7 +426,7 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
                 if placement.parent_id is None or include_children:
                     yield action
 
-    @func_deprecated(RemovedInReviewBoard90Warning, message=(
+    @func_deprecated(RemovedInReviewBoard10_0Warning, message=(
         '%(func_name)s is deprecated and support will be removed in '
         '%(product)s %(version)s. Please use '
         'action.get_placement(...).child_actions instead.'

@@ -11,7 +11,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _, gettext
 from housekeeping import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
@@ -399,7 +399,7 @@ class CodebaseHQ(BaseHostingService):
 
         self.client = CodebaseHQClient(self)
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def authorize(
         self,
         *,
@@ -486,7 +486,7 @@ class CodebaseHQ(BaseHostingService):
         """
         return decrypt_password(self.account.data['password'])
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def check_repository(
         self,
         *,

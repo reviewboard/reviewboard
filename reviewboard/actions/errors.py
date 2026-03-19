@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from housekeeping import ClassDeprecatedMixin
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 
 
 class ActionError(Exception):
@@ -29,7 +29,7 @@ class MissingActionRendererError(ActionError):
 
 class DepthLimitExceededError(ClassDeprecatedMixin,
                               ValueError,
-                              warning_cls=RemovedInReviewBoard90Warning):
+                              warning_cls=RemovedInReviewBoard10_0Warning):
     """An error that occurs when the maximum depth limit is exceeded.
 
     Actions cannot be arbitrarily nested. For example, if the depth limit is 2,
@@ -47,8 +47,8 @@ class DepthLimitExceededError(ClassDeprecatedMixin,
        ])
 
     Deprecated:
-        7.1:
-        This class is no longer used. It will be removed in Review Board 9.
+        8.0:
+        This class is no longer used. It will be removed in Review Board 10.
 
     Version Added:
         6.0

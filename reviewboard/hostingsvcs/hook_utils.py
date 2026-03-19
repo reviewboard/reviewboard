@@ -11,7 +11,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from housekeeping import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
@@ -42,7 +42,7 @@ def get_git_branch_name(
         return ref_name
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+@deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
 def get_repository_for_hook(
     *,
     repository_id: int,
@@ -91,7 +91,7 @@ def get_repository_for_hook(
     return get_object_or_404(Repository, q)
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+@deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
 def get_review_request_id(
     *,
     commit_message: str,
@@ -160,7 +160,7 @@ def get_review_request_id(
     return review_request_id
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+@deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
 def close_review_request(
     *,
     review_request: ReviewRequest,
@@ -199,7 +199,7 @@ def close_review_request(
                  review_request_id, review_request.status)
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+@deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
 def close_all_review_requests(
     *,
     review_request_id_to_commits: Mapping[int | None, Sequence[str]],

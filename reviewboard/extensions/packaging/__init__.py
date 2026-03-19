@@ -15,7 +15,7 @@ from __future__ import annotations
 
 from housekeeping import ClassMovedMixin, func_moved
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 import reviewboard.extensions.packaging.setuptools_backend as \
     setuptools_backend
 import reviewboard.extensions.packaging.static_media as static_media
@@ -23,7 +23,7 @@ import reviewboard.extensions.packaging.static_media as static_media
 
 class RBStaticMediaBuildContext(ClassMovedMixin,
                                 static_media.RBStaticMediaBuildContext,
-                                warning_cls=RemovedInReviewBoard90Warning):
+                                warning_cls=RemovedInReviewBoard10_0Warning):
     """Context for performing a static media build for an extension.
 
     This will set up some default NPM workspace paths needed for building
@@ -42,7 +42,7 @@ class RBStaticMediaBuildContext(ClassMovedMixin,
 
 class RBStaticMediaBuilder(ClassMovedMixin,
                            static_media.RBStaticMediaBuilder,
-                           warning_cls=RemovedInReviewBoard90Warning):
+                           warning_cls=RemovedInReviewBoard10_0Warning):
     """Static media builder for Review Board extensions.
 
     This will take care of building static media files. As part of this, it
@@ -62,7 +62,7 @@ class RBStaticMediaBuilder(ClassMovedMixin,
 
 class BuildStaticFiles(ClassMovedMixin,
                        setuptools_backend.BuildStaticFiles,
-                       warning_cls=RemovedInReviewBoard90Warning):
+                       warning_cls=RemovedInReviewBoard10_0Warning):
     """Builds static files for the extension.
 
     This will build the static media files used by the extension. JavaScript
@@ -80,7 +80,7 @@ class BuildStaticFiles(ClassMovedMixin,
     """
 
 
-@func_moved(RemovedInReviewBoard90Warning,
+@func_moved(RemovedInReviewBoard10_0Warning,
             new_func=setuptools_backend.setup)
 def setup(**setup_kwargs):
     """Build an extension package.

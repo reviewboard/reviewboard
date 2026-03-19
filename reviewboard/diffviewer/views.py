@@ -31,8 +31,8 @@ from pygments.lexers import get_lexer_by_name
 from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.deprecation import (
-    RemovedInReviewBoard80Warning,
     RemovedInReviewBoard90Warning,
+    RemovedInReviewBoard10_0Warning,
 )
 from reviewboard.diffviewer.commit_utils import (
     SerializedCommitHistoryDiffEntry,
@@ -322,7 +322,7 @@ class DiffViewerView(TemplateView):
 
         return response
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def get_context_data(
         self,
         *,
@@ -680,7 +680,7 @@ class DiffFragmentView(View):
 
         return response
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def make_etag(
         self,
         *,
@@ -867,7 +867,7 @@ class DiffFragmentView(View):
             'diff_file': diff_file,
         }
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def create_renderer(
         self,
         *,

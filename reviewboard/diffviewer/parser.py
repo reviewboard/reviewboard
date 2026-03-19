@@ -16,7 +16,7 @@ from pydiffx import DiffType, DiffX
 from pydiffx.errors import DiffXParseError
 from typing_extensions import TypeAlias
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.diffviewer.errors import DiffParserError
 from reviewboard.scmtools.core import HEAD, PRE_CREATION, Revision, UNKNOWN
 
@@ -99,7 +99,7 @@ class ParsedDiff:
     #: parent commit ID as the parent revision.
     uses_commit_ids_as_revisions: bool
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def __init__(
         self,
         *,
@@ -197,7 +197,7 @@ class ParsedDiffChange:
     #: A weak reference to the parent ParsedDiff.
     _parent: weakref.ref[ParsedDiff]
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def __init__(
         self,
         *,
@@ -389,7 +389,7 @@ class ParsedDiffFile:
     #: A weak reference to the parent ParsedDiffChange.
     _parent: Optional[weakref.ref[ParsedDiffChange]]
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def __init__(
         self,
         *,
@@ -425,10 +425,10 @@ class ParsedDiffFile:
                 This will be required in Review Board 6.0.
         """
         if parser is not None or parsed_diff_change is None:
-            RemovedInReviewBoard90Warning.warn(
+            RemovedInReviewBoard10_0Warning.warn(
                 'ParsedDiffFile.__init__(parser=[...]) is deprecated in favor '
                 'of parsed_diff_change=[...], which will be required in '
-                'Review Board 8.')
+                'Review Board 10.')
 
         if parsed_diff_change is not None:
             parsed_diff_change.files.append(self)
@@ -580,7 +580,7 @@ class BaseDiffParser:
     #:     7.0.2
     has_per_file_revisions: bool = True
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def __init__(
         self,
         *,

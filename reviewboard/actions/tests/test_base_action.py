@@ -17,7 +17,7 @@ from reviewboard.actions.errors import MissingActionRendererError
 from reviewboard.actions.renderers import (ButtonActionRenderer,
                                            DefaultActionRenderer)
 from reviewboard.actions.tests.base import SpecialButtonActionRenderer
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
@@ -55,28 +55,28 @@ class BaseActionTests(TestCase):
 
         warning_list: list[ExpectedWarning] = [
             {
-                'cls': RemovedInReviewBoard90Warning,
+                'cls': RemovedInReviewBoard10_0Warning,
                 'message': (
                     'MyAction.template_name is deprecated and support will '
-                    'be removed in Review Board 9. Please move any custom '
+                    'be removed in Review Board 10. Please move any custom '
                     'rendering to a reviewboard.actions.renderers.'
                     'BaseActionRenderer subclass instead.'
                 ),
             },
             {
-                'cls': RemovedInReviewBoard90Warning,
+                'cls': RemovedInReviewBoard10_0Warning,
                 'message': (
                     'MyAction.js_view_class is deprecated and support will '
-                    'be removed in Review Board 9. Please move any custom '
+                    'be removed in Review Board 10. Please move any custom '
                     'rendering to a reviewboard.actions.renderers.'
                     'BaseActionRenderer subclass instead.'
                 ),
             },
             {
-                'cls': RemovedInReviewBoard90Warning,
+                'cls': RemovedInReviewBoard10_0Warning,
                 'message': (
                     'MyAction.get_js_view_data is deprecated and support will '
-                    'be removed in Review Board 9. Please move any custom '
+                    'be removed in Review Board 10. Please move any custom '
                     'rendering to a reviewboard.actions.renderers.'
                     'BaseActionRenderer subclass instead.'
                 ),

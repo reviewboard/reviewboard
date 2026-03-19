@@ -12,7 +12,7 @@ from django.utils.translation import gettext as _
 from housekeeping import deprecate_non_keyword_only_args
 from typing_extensions import TypedDict
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.diffviewer.errors import EmptyDiffError
 from reviewboard.scmtools.core import (FileLookupContext,
                                        PRE_CREATION,
@@ -69,7 +69,7 @@ class _PreparedDiffInfo(TypedDict):
     parser: BaseDiffParser
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+@deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
 def create_filediffs(
     *,
     diff_file_contents: bytes,

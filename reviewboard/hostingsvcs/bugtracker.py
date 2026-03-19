@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from housekeeping import ClassMovedMixin
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base import bug_tracker
 
 
 class BugTracker(ClassMovedMixin,
                  bug_tracker.BaseBugTracker,
-                 warning_cls=RemovedInReviewBoard90Warning):
+                 warning_cls=RemovedInReviewBoard10_0Warning):
     """An interface to a bug tracker.
 
     Deprecated:
