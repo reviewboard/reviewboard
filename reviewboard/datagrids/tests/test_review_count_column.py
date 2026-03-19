@@ -6,6 +6,8 @@ Version Added:
 
 from __future__ import annotations
 
+from django.utils.safestring import SafeString
+
 from reviewboard.datagrids.columns import ReviewCountColumn
 from reviewboard.datagrids.tests.base import BaseColumnTestCase
 
@@ -28,7 +30,7 @@ class ReviewCountColumnTests(BaseColumnTestCase):
 
         value = self.column.render_data(self.stateful_column, review_request)
 
-        self.assertIs(type(value), str)
+        self.assertIsInstance(value, SafeString)
         self.assertEqual(value, '0')
 
     def test_render_data_with_reviews(self) -> None:
@@ -40,7 +42,7 @@ class ReviewCountColumnTests(BaseColumnTestCase):
 
         value = self.column.render_data(self.stateful_column, review_request)
 
-        self.assertIs(type(value), str)
+        self.assertIsInstance(value, SafeString)
         self.assertEqual(value, '3')
 
     def test_to_json_with_zero_reviews(self) -> None:

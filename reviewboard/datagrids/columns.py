@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-from functools import reduce
 from typing import TYPE_CHECKING
 
 from django.db.models import Count, Q
 from django.template.defaultfilters import date
 from django.urls import NoReverseMatch
-from django.utils.html import (conditional_escape, escape, format_html,
-                               format_html_join)
+from django.utils.html import escape, format_html
 from django.utils.safestring import mark_safe
-from django.utils.translation import gettext_lazy as _, gettext, ngettext
+from django.utils.translation import gettext, gettext_lazy as _, ngettext
 from djblets.datagrid.grids import CheckboxColumn, Column, DateTimeColumn
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -22,11 +20,23 @@ from reviewboard.reviews.templatetags.reviewtags import render_star
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+    from datetime import datetime
+    from typing import Any, Final, NotRequired, TypedDict
+
+    from django.contrib.auth.models import User
     from django.db.models import QuerySet
     from django.utils.safestring import SafeString
     from djblets.datagrid.grids import StatefulColumn
+    from typelets.django.strings import StrPromise
 
-    from reviewboard.accounts.models import StarrableObject
+    from reviewboard.accounts.models import (StarrableObject,
+                                             User as RBUser)
+    from reviewboard.reviews.models import Review
+
+    class _BugsColumnData(TypedDict):
+        id: str
+        url: NotRequired[str]
 
 
 class BaseStarColumn(Column):
@@ -37,17 +47,13 @@ class BaseStarColumn(Column):
     The star is interactive, allowing the user to star or unstar the item.
     """
 
+    detailed_label = _('Starred')
+    image_alt = _('Starred')
+    image_class = 'rb-icon rb-icon-star-on'
+    shrink = True
+
     #: The starrable model handled by the column.
     starrable_model: type[StarrableObject]
-
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(BaseStarColumn, self).__init__(
-            image_class='rb-icon rb-icon-star-on',
-            image_alt=_('Starred'),
-            detailed_label=_('Starred'),
-            shrink=True,
-            *args, **kwargs)
 
     def augment_queryset(
         self,
@@ -95,10 +101,41 @@ class BaseStarColumn(Column):
                 The starrable model object for the row.
 
         Returns:
-            str:
+            django.utils.safestring.SafeString:
             The rendered data as HTML.
         """
         return render_star(state.datagrid.request.user, obj)
+
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: StarrableObject,
+    ) -> bool:
+        """Return the raw value for the star state.
+
+        This will determine whether the object is starred and save it
+        for lookup during rendering.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (django.db.models.Model):
+                The starrable model object for the row.
+
+        Returns:
+            bool:
+            The star state for the object.
+        """
+        user = state.datagrid.request.user
+
+        return (
+            user.is_authenticated and
+            user.get_profile().is_object_starred(obj)
+        )
 
 
 class UsernameColumn(Column):
@@ -114,14 +151,23 @@ class UsernameColumn(Column):
 
     AVATAR_SIZE = 24
 
-    def __init__(self, label=_('Username'), user_relation=[], *args, **kwargs):
+    label = _('Username')
+    css_class = 'submitter-column'
+    shrink = True
+    sortable = True
+    link = True
+    link_css_class = 'user'
+
+    def __init__(
+        self,
+        user_relation: (Sequence[str] | None) = None,
+        *args,
+        **kwargs,
+    ) -> None:
         """Initialize the column.
 
         Args:
-            label (unicode, optional):
-                The label for the column.
-
-            user_relation (list of unicode, optional):
+            user_relation (list of str, optional):
                 A list of fields forming a relation path to the user. This can
                 be left blank if representing the user.
 
@@ -131,20 +177,20 @@ class UsernameColumn(Column):
             **kwargs (dict):
                 Additional keyword arguments to pass to the column.
         """
+        if user_relation is None:
+            user_relation = []
+
         self._user_relation = user_relation
 
-        super(UsernameColumn, self).__init__(
-            label=label,
-            db_field='__'.join(user_relation + ['username']),
-            css_class='submitter-column',
-            shrink=True,
-            sortable=True,
-            link=True,
+        super().__init__(
+            db_field='__'.join([*user_relation, 'username']),
             link_func=self._link_user,
-            link_css_class='user',
             *args, **kwargs)
 
-    def get_user(self, obj):
+    def get_user(
+        self,
+        obj: Any,
+    ) -> RBUser:
         """Return the user associated with this object.
 
         Args:
@@ -152,7 +198,7 @@ class UsernameColumn(Column):
                 The object provided to the column.
 
         Returns:
-            django.contrib.auth.models.User:
+            reviewboard.accounts.models.User:
             The resulting user.
         """
         # Look up the user in the provided obj by traversing the relation.
@@ -164,7 +210,11 @@ class UsernameColumn(Column):
 
         return user
 
-    def render_data(self, state, obj):
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: Any,
+    ) -> SafeString:
         """Render the user's name and avatar as HTML.
 
         Args:
@@ -175,7 +225,7 @@ class UsernameColumn(Column):
                 The object being rendered in the datagrid.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The HTML for the column.
         """
         user = self.get_user(obj)
@@ -199,7 +249,11 @@ class UsernameColumn(Column):
 
         return format_html('{0}{1}', avatar_html, username)
 
-    def augment_queryset(self, state, queryset):
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
         """Add additional queries to the queryset.
 
         This will select fields for the user and the user's profile, to
@@ -225,7 +279,12 @@ class UsernameColumn(Column):
 
         return queryset.select_related(*fields)
 
-    def _link_user(self, state, obj, *args):
+    def _link_user(
+        self,
+        state: StatefulColumn,
+        obj: Any,
+        *args,
+    ) -> str:
         """Return the URL to link the user associated with this object.
 
         Args:
@@ -239,7 +298,7 @@ class UsernameColumn(Column):
                 Additional keyword arguments provided to the method.
 
         Returns:
-            unicode:
+            str:
             The URL for the user.
         """
         return local_site_reverse(
@@ -253,7 +312,11 @@ class UsernameColumn(Column):
 class FullNameColumn(Column):
     """Shows the full name of the user when appropriate."""
 
-    def augment_queryset(self, state, queryset):
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
         """Add additional queries to the queryset.
 
         This will select fields for the user and the user's profile, to
@@ -272,29 +335,36 @@ class FullNameColumn(Column):
         """
         return queryset.select_related('profile')
 
-    def render_data(self, state, user):
-        """Render the full name, or blank if not visible to the user.
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: RBUser,
+    ) -> str | None:
+        """Return the raw value for the full name.
+
+        If the profile is private, the full name will not be provided.
+
+        Version Added:
+            7.1
 
         Args:
-            state (djblets.datagrid.grids.StatefulColumn):
-                The column state.
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
 
-            user (django.contrib.auth.models.User):
-                The user whose full name is to be rendered.
+            obj (reviewboard.accounts.models.User):
+                The user for the row.
 
         Returns:
-            unicode:
-            Either the full name (if visible to the user) or an empty string.
+            str:
+            The full name, or ``None`` if the profile is private.
         """
-        profile = user.get_profile()
+        profile = obj.get_profile()
+        request_user = state.datagrid.request.user
 
-        if user.is_profile_visible(state.datagrid.request.user):
-            display_name = \
-                profile.get_display_name(state.datagrid.request.user)
-        else:
-            display_name = ''
+        if obj.is_profile_visible(request_user):
+            return profile.get_display_name(request_user)
 
-        return escape(display_name)
+        return None
 
 
 class BugsColumn(Column):
@@ -304,73 +374,174 @@ class BugsColumn(Column):
     was configured for the repository the review request's change is on.
     """
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        # Note that we're enabling linking but overriding the link function
-        # to return None. This is to disable the automatic linking to the
-        # review request, so that the cell isn't generally clickable,
-        # preventing visual and interaction issues with the bug links.
-        super(BugsColumn, self).__init__(
-            label=_('Bugs'),
-            css_class='bugs',
-            link=False,
-            shrink=True,
-            sortable=False,
-            *args, **kwargs)
+    label = _('Bugs')
+    css_class = 'bugs'
+    shrink = True
+    sortable = False
+    link = False
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
+
+        This will include the repository along with each review request.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         return queryset.select_related('repository')
 
-    def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
-        bugs = review_request.get_bug_list()
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request being rendered for this row.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered HTML.
+        """
+        result: list[SafeString] = []
+
+        for bug_info in self.get_raw_object_value(state, obj):
+            url = bug_info.get('url')
+            bug_id = bug_info['id']
+
+            if url:
+                html = format_html(
+                    '<a class="bug" href="{}">{}</a>',
+                    url, bug_id,
+                )
+            else:
+                html = format_html(
+                    '<span class="bug">{}</span>',
+                    bug_id,
+                )
+
+            result.append(html)
+
+        return mark_safe(', '.join(result))
+
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> Sequence[_BugsColumnData]:
+        """Return the raw value for the bugs information.
+
+        This will return the list of bug IDs and URLs (if present) from the
+        review request.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request for the row.
+
+        Returns:
+            list of _BugsColumnData:
+            The list of bug information.
+        """
+        review_request = obj
         repository = review_request.repository
-        local_site_name = None
+
+        # Determine the Local Site name for the review request, if any.
+        local_site_name: (str | None) = None
 
         if review_request.local_site:
             local_site_name = review_request.local_site.name
 
+        result: list[_BugsColumnData]
+        bugs = obj.get_bug_list()
+
         if repository and repository.bug_tracker:
-            links = []
+            result = []
 
             for bug in bugs:
+                bug_info: _BugsColumnData = {
+                    'id': bug,
+                }
+
                 try:
-                    url = local_site_reverse(
+                    bug_info['url'] = local_site_reverse(
                         'bug_url',
                         local_site_name=local_site_name,
-                        args=[review_request.display_id, bug])
-                    links.append(
-                        format_html('<a class="bug" href="{0}">{1}</a>',
-                                    url, bug))
+                        args=[review_request.display_id, bug],
+                    )
                 except NoReverseMatch:
-                    links.append(escape(bug))
+                    pass
 
-            return ', '.join(links)
+                result.append(bug_info)
+        else:
+            result = [
+                {
+                    'id': bug,
+                }
+                for bug in bugs
+            ]
 
-        return format_html_join(
-            ', ',
-            '<span class="bug">{0}</span>',
-            ((bug,) for bug in bugs)
-        )
+        return result
 
 
 class ReviewRequestCheckboxColumn(CheckboxColumn):
     """A column containing a check-box."""
 
-    def render_data(self, state, obj):
-        """Return the rendered contents of the column."""
-        if self.is_selectable(state, obj):
-            checked = ''
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
 
-            if self.is_selected(state, obj):
-                checked = 'checked="true"'
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the DataGrid instance.
 
-            return ('<input type="checkbox" data-object-id="%s" '
-                    'data-checkbox-name="%s" %s />'
-                    % (obj.display_id, escape(self.checkbox_name), checked))
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request being rendered for this row.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered HTML.
+        """
+        if not self.is_selectable(state, obj):
+            return mark_safe('')
+
+        if self.is_selected(state, obj):
+            checked = mark_safe('checked="true"')
         else:
-            return ''
+            checked = mark_safe('')
+
+        return format_html(
+            '<input type="checkbox" data-object-id="{}" '
+            'data-checkbox-name="{}" {}>',
+            obj.display_id,
+            self.checkbox_name,
+            checked,
+        )
 
 
 class DateTimeSinceColumn(DateTimeColumn):
@@ -380,74 +551,155 @@ class DateTimeSinceColumn(DateTimeColumn):
     number of minutes, hours, days, etc. ago is correct.
     """
 
-    def render_data(self, state, obj):
-        """Return the rendered contents of the column."""
-        return '<time class="timesince" datetime="%s">%s</time>' % (
-            date(getattr(obj, self.field_name), 'c'),
-            super(DateTimeSinceColumn, self).render_data(state, obj))
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: Any,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (object):
+                The object being rendered for this row.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered HTML.
+        """
+        value = self.get_raw_object_value(state, obj)
+
+        if value is None:
+            return mark_safe('')
+
+        return format_html(
+            '<time class="timesince" datetime="{}">{}</time>',
+            date(value, 'c'),
+            super().render_data(state, obj),
+        )
 
 
 class DiffUpdatedColumn(DateTimeColumn):
     """Shows the date/time that the diff was last updated."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(DiffUpdatedColumn, self).__init__(
-            label=_('Diff Updated'),
-            db_field='diffset_history__last_diff_updated',
-            field_name='last_diff_updated',
-            sortable=True,
-            link=False,
-            *args, **kwargs)
+    label = _('Diff Updated')
+    db_field = 'diffset_history__last_diff_updated'
+    sortable = True
+    link = False
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
+
+        This will include the diffset history along with each review request.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         return queryset.select_related('diffset_history')
 
-    def render_data(self, state, obj):
-        """Return the rendered contents of the column."""
-        if obj.diffset_history.last_diff_updated:
-            return super(DiffUpdatedColumn, self).render_data(
-                state, obj.diffset_history)
-        else:
-            return ''
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> datetime | None:
+        """Return the diff updated timestamp.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request to return the value for.
+
+        Returns:
+            datetime.datetime:
+            The diff updated timestamp, or ``None`` if there's no diff.
+        """
+        if ((diffset_history := obj.diffset_history) and
+            (last_diff_updated := diffset_history.last_diff_updated)):
+            return last_diff_updated
+
+        return None
 
 
 class DiffUpdatedSinceColumn(DateTimeSinceColumn):
     """Shows the elapsed time since the diff was last updated."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(DiffUpdatedSinceColumn, self).__init__(
-            label=_('Diff Updated'),
-            db_field='diffset_history__last_diff_updated',
-            field_name='last_diff_updated',
-            sortable=True,
-            link=False,
-            *args, **kwargs)
+    label = _('Diff Updated')
+    db_field = 'diffset_history__last_diff_updated'
+    sortable = True
+    link = False
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
+
+        This will include the diffset history along with each review request.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         return queryset.select_related('diffset_history')
 
-    def render_data(self, state, obj):
-        """Return the rendered contents of the column."""
-        if obj.diffset_history.last_diff_updated:
-            return super(DiffUpdatedSinceColumn, self).render_data(
-                state, obj.diffset_history)
-        else:
-            return ''
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> datetime | None:
+        """Return the diff updated timestamp.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request to return the value for.
+
+        Returns:
+            datetime.datetime:
+            The diff updated timestamp, or ``None`` if there's no diff.
+        """
+        if obj.diffset_history and obj.diffset_history.last_diff_updated:
+            return obj.diffset_history.last_diff_updated
+
+        return None
 
 
 class GroupMemberCountColumn(Column):
     """Shows the number of users that are part of a review group."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(GroupMemberCountColumn, self).__init__(
-            link=True,
-            link_func=self.link_to_object,
-            *args, **kwargs)
+    link = True
 
     def augment_queryset_for_data(
         self,
@@ -482,7 +734,7 @@ class GroupMemberCountColumn(Column):
         self,
         state: StatefulColumn,
         obj: Group,
-    ) -> str:
+    ) -> SafeString:
         """Return the rendered contents of the column.
 
         Args:
@@ -493,65 +745,194 @@ class GroupMemberCountColumn(Column):
                 The object being rendered for this row.
 
         Returns:
-            str:
-            The rendered data as HTML.
+            django.utils.safestring.SafeString:
+            The rendered HTML.
         """
-        return str(getattr(obj, 'column_group_member_count', ''))
+        return escape(str(self.get_raw_object_value(state, obj)))
 
-    def link_to_object(self, state, group, value):
-        """Return the link to the object in the column."""
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: Group,
+    ) -> int:
+        """Return the raw value for the group membership count.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.Group):
+                The review group for the row.
+
+        Returns:
+            int:
+            The group membership count.
+        """
+        return getattr(obj, 'column_group_member_count', 0)
+
+    @staticmethod
+    def link_func(
+        state: StatefulColumn,
+        obj: Group,
+        value: str,
+    ) -> str:
+        """Return the link to the object in the column.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            obj (reviewboard.reviews.models.Group):
+                The review group for the row.
+
+            value (str):
+                The rendered data.
+
+        Returns:
+            str:
+            The URL to link to.
+        """
         return local_site_reverse('group-members',
                                   request=state.datagrid.request,
-                                  args=[group.name])
+                                  args=[obj.name])
 
 
 class GroupsColumn(Column):
     """Shows the list of groups requested to review the review request."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(GroupsColumn, self).__init__(
-            label=_('Groups'),
-            detailed_label=_('Target Groups'),
-            sortable=False,
-            shrink=False,
-            *args, **kwargs)
+    label = _('Groups')
+    detailed_label = _('Target Groups')
+    sortable = False
+    shrink = False
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
+
+        This will pre-fetch the review groups for each review request.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         return queryset.prefetch_related('target_groups')
 
-    def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
-        groups = review_request.target_groups.all()
-        return reduce(lambda a, d: a + d.name + ' ', groups, '')
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the datagrid.
+
+            obj (reviewboard.reviews.models.review_request.ReviewRequest):
+                The review request.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered HTML.
+        """
+        return escape(' '.join(
+            group.name
+            for group in self.get_raw_object_value(state, obj)
+        ))
+
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> Sequence[Group]:
+        """Return the list of review groups.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request to return the value for.
+
+        Returns:
+            list of reviewboard.reviews.models.Group:
+            The list of review groups.
+        """
+        return list(obj.target_groups.all())
 
 
 class MyCommentsColumn(Column):
     """Shows if the current user has reviewed the review request."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(MyCommentsColumn, self).__init__(
-            image_class='rb-icon rb-icon-datagrid-comment-draft',
-            image_alt=_('My Comments'),
-            detailed_label=_('My Comments'),
-            shrink=True,
-            *args, **kwargs)
+    detailed_label = _('My Comments')
+    image_alt = _('My Comments')
+    image_class = 'rb-icon rb-icon-datagrid-comment-draft'
+    shrink = True
 
-        # XXX It'd be nice to be able to sort on this, but datagrids currently
-        # can only sort based on stored (in the DB) values, not computed
-        # values.
+    #: A mapping of computed statuses to icon CSS classes.
+    #:
+    #: Version Added:
+    #:     7.1
+    _ICON_CLASSES: Final[Mapping[str, str]] = {
+        'has-draft-review': 'rb-icon-datagrid-comment-draft',
+        'has-review': 'rb-icon-datagrid-comment',
+        'has-ship-it': 'rb-icon-datagrid-comment-shipit',
+    }
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
+    #: A mapping of computed statuses to image alt text.
+    #:
+    #: Version Added:
+    #:     7.1
+    _IMAGE_ALTS: Final[Mapping[str, StrPromise]] = {
+        'has-draft-review': _('Comments drafted'),
+        'has-review': _('Comments published'),
+        'has-ship-it': _('Comments published. Ship it!'),
+    }
+
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
+
+        This will add subqueries for determining whether there are
+        posted reviews, draft reviews, or Ship It! reviews.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting augmented QuerySet.
+        """
         user = state.datagrid.request.user
 
         if user.is_anonymous:
             return queryset
 
         query_dict = {
-            'user_id': str(user.id),
+            'user_id': str(user.pk),
         }
 
         return queryset.extra(select={
@@ -580,31 +961,80 @@ class MyCommentsColumn(Column):
             """ % query_dict,
         })
 
-    def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request being rendered for this row.
+        """
+        info = self.get_raw_object_value(state, obj)
+
+        if not info:
+            return mark_safe('')
+
+        status = info['status']
+
+        return format_html(
+            '<div class="rb-icon {}" title="{}"></div>',
+            self._ICON_CLASSES[status],
+            self._IMAGE_ALTS[status],
+        )
+
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> Mapping[str, Any]:
+        """Return the raw value for review status.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request for the row.
+
+        Returns:
+            dict:
+            Information on the review status.
+        """
         user = state.datagrid.request.user
 
-        if user.is_anonymous or review_request.mycomments_my_reviews == 0:
-            return ''
+        if user.is_anonymous or obj.mycomments_my_reviews == 0:
+            return {}
+
+        has_draft_reviews = bool(getattr(obj, 'mycomments_private_reviews'))
+        has_shipit_reviews = bool(getattr(obj, 'mycomments_shipit_reviews'))
+        status: str = ''
 
         # Priority is ranked in the following order:
         #
         # 1) Non-public (draft) reviews
         # 2) Public reviews marked "Ship It"
         # 3) Public reviews not marked "Ship It"
-        if review_request.mycomments_private_reviews > 0:
-            icon_class = 'rb-icon-datagrid-comment-draft'
-            image_alt = _('Comments drafted')
+        if has_draft_reviews:
+            status = 'has-draft-review'
+        elif has_shipit_reviews:
+            status = 'has-ship-it'
         else:
-            if review_request.mycomments_shipit_reviews > 0:
-                icon_class = 'rb-icon-datagrid-comment-shipit'
-                image_alt = _('Comments published. Ship it!')
-            else:
-                icon_class = 'rb-icon-datagrid-comment'
-                image_alt = _('Comments published')
+            status = 'has-review'
 
-        return '<div class="rb-icon %s" title="%s"></div>' % \
-               (icon_class, image_alt)
+        return {
+            'has_draft_reviews': has_draft_reviews,
+            'has_ship_its': has_shipit_reviews,
+            'status': status,
+        }
 
 
 class NewUpdatesColumn(Column):
@@ -614,27 +1044,59 @@ class NewUpdatesColumn(Column):
     or reviews since the user last saw it.
     """
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(NewUpdatesColumn, self).__init__(
-            image_class='rb-icon rb-icon-new-updates',
-            image_alt=_('New Updates'),
-            detailed_label=_('New Updates'),
-            shrink=True,
-            *args, **kwargs)
+    detailed_label = _('New Updates')
+    image_alt = _('New Updates')
+    image_class = 'rb-icon rb-icon-new-updates'
+    shrink = True
 
-    def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
 
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The group or review request being rendered for this row.
+        """
+        new_review_count = self.get_raw_object_value(state, obj)
+
+        if new_review_count > 0:
+            return format_html(
+                '<div class="{}" title="{}"></div>',
+                self.image_class, self.image_alt,
+            )
+
+        return mark_safe('')
+
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> int:
+        """Return the raw value for the new review count.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request for the row.
+
+        Returns:
+            int:
+            The new review count for the review request.
+        """
         # Review requests for un-authenticated users will not contain the
-        # new_review_count attribute, so confirm its existence before
-        # attempting to access.
-        if (hasattr(review_request, 'new_review_count') and
-            review_request.new_review_count > 0):
-            return '<div class="%s" title="%s" />' % \
-                   (self.image_class, self.image_alt)
-
-        return ''
+        # new_review_count attribute.
+        return getattr(obj, 'new_review_count', 0)
 
 
 class PendingCountColumn(Column):
@@ -681,7 +1143,7 @@ class PendingCountColumn(Column):
         self,
         state: StatefulColumn,
         obj: Group,
-    ) -> str:
+    ) -> SafeString:
         """Return the rendered contents of the column.
 
         Args:
@@ -693,76 +1155,198 @@ class PendingCountColumn(Column):
                 The review request.
 
         Returns:
-            django.utils.safestring.SafeText:
-            The rendered column.
+            django.utils.safestring.SafeString:
+            The rendered HTML.
         """
-        return str(getattr(obj, 'column_pending_review_request_count', ''))
+        return escape(str(self.get_raw_object_value(state, obj)))
+
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: Group,
+    ) -> int:
+        """Return the raw value for the pending review request count.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.Group):
+                The review request for the row.
+
+        Returns:
+            int:
+            The pending review request count.
+        """
+        return getattr(obj, 'column_pending_review_request_count', 0)
 
 
 class PeopleColumn(Column):
     """Shows the list of people requested to review the review request."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(PeopleColumn, self).__init__(
-            label=_('People'),
-            detailed_label=_('Target People'),
-            sortable=False,
-            shrink=False,
-            *args, **kwargs)
+    label = _('People')
+    detailed_label = _('Target People')
+    sortable = False
+    shrink = False
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
+
+        This will pre-fetch the reviewers for each review request.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         return queryset.prefetch_related('target_people')
 
-    def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
-        people = review_request.target_people.all()
-        return reduce(lambda a, d: a + d.username + ' ', people, '')
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the datagrid.
+
+            obj (reviewboard.reviews.models.review_request.ReviewRequest):
+                The review request.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered HTML.
+        """
+        return escape(' '.join(
+            user.username
+            for user in self.get_raw_object_value(state, obj)
+        ))
+
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> Sequence[User]:
+        """Return the list of reviewers.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request to return the value for.
+
+        Returns:
+            list of django.contrib.auth.models.User:
+            The list of reviewers.
+        """
+        return list(obj.target_people.all())
 
 
 class RepositoryColumn(Column):
     """Shows the name of the repository the review request's change is on."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(RepositoryColumn, self).__init__(
-            label=_('Repository'),
-            db_field='repository__name',
-            shrink=True,
-            sortable=True,
-            link=False,
-            css_class='repository-column',
-            *args, **kwargs)
+    field_name = 'repository'
+    label = _('Repository')
+    db_field = 'repository__name'
+    css_class = 'repository-column'
+    shrink = True
+    sortable = True
+    link = False
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
+
+        This will include the repository for each review request.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         return queryset.select_related('repository')
 
-    def render_data(self, state, obj):
-        """Return the rendered contents of the column."""
-        return super(RepositoryColumn, self).render_data(state, obj) or ''
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the datagrid.
+
+            obj (reviewboard.reviews.models.review_request.ReviewRequest):
+                The review request.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered HTML.
+        """
+        if obj.repository_id is None:
+            return mark_safe('')
+
+        return escape(obj.repository.name)
 
 
 class ReviewCountColumn(Column):
     """Shows the number of published reviews for a review request."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(ReviewCountColumn, self).__init__(
-            label=_('Reviews'),
-            detailed_label=_('Number of Reviews'),
-            shrink=True,
-            link=True,
-            link_func=self.link_to_object,
-            *kwargs, **kwargs)
+    label = _('Reviews')
+    detailed_label = _('Number of Reviews')
+    shrink = True
+    link = True
 
-    def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
-        return str(review_request.publicreviewcount_count)
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
+        This will perform a subquery to return a public review count for
+        each review request.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         return queryset.extra(select={
             'publicreviewcount_count': """
                 SELECT COUNT(*)
@@ -774,9 +1358,72 @@ class ReviewCountColumn(Column):
             """
         })
 
-    def link_to_object(self, state, review_request, value):
-        """Return the link to the object in the column."""
-        return '%s#last-review' % review_request.get_absolute_url()
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the datagrid.
+
+            obj (reviewboard.reviews.models.review_request.ReviewRequest):
+                The review request.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered HTML for the column.
+        """
+        return escape(str(self.get_raw_object_value(state, obj)))
+
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> int:
+        """Return the count value for the review request.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request to return the value for.
+
+        Returns:
+            int:
+            The review count value.
+        """
+        return getattr(obj, 'publicreviewcount_count')
+
+    @staticmethod
+    def link_func(
+        state: StatefulColumn,
+        obj: ReviewRequest,
+        value: str,
+    ) -> str:
+        """Return the link to the object in the column.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request for the row.
+
+            value (str):
+                The rendered data.
+
+        Returns:
+            str:
+            The URL to link to.
+        """
+        return '%s#last-review' % obj.get_absolute_url()
 
 
 class ReviewGroupStarColumn(BaseStarColumn):
@@ -791,26 +1438,31 @@ class ReviewGroupStarColumn(BaseStarColumn):
 class ReviewRequestIDColumn(Column):
     """Displays the ID of the review request."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(ReviewRequestIDColumn, self).__init__(
-            label=_('ID'),
-            detailed_label=_('Review Request ID'),
-            shrink=True,
-            link=True,
-            sortable=True,
-            *args, **kwargs)
+    label = _('ID')
+    detailed_label = _('Review Request ID')
+    field_name = 'display_id'
+    shrink = True
+    sortable = True
+    link = True
 
-    def get_sort_field(self, state):
-        """Return the model field for sorting this column."""
+    def get_sort_field(
+        self,
+        state: StatefulColumn,
+    ) -> str:
+        """Return the model field for sorting this column.
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+        Returns:
+            str:
+            The sort field.
+        """
         if state.datagrid.local_site:
             return 'local_id'
         else:
             return 'id'
-
-    def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
-        return review_request.display_id
 
 
 class ReviewRequestStarColumn(BaseStarColumn):
@@ -849,42 +1501,36 @@ class ShipItColumn(Column):
           update to the review request.
     """
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column.
+    detailed_label = _('Ship It!/Issue Counts')
+    db_field = 'shipit_count'
+    image_alt = _('Ship It!/Issue Counts')
+    image_class = 'rb-icon rb-icon-datagrid-column-shipits-issues'
+    shrink = True
+    sortable = True
 
-        Args:
-            *args (tuple):
-                Additional arguments to pass to the parent constructor.
-
-            **kwargs (dict):
-                Additional keyword arguments to pass to the parent constructor.
-        """
-        super(ShipItColumn, self).__init__(
-            image_class='rb-icon rb-icon-datagrid-column-shipits-issues',
-            image_alt=_('Ship It!/Issue Counts'),
-            detailed_label=_('Ship It!/Issue Counts'),
-            db_field='shipit_count',
-            sortable=True,
-            shrink=True,
-            *args, **kwargs)
-
-    def render_data(self, state, review_request):
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
         """Return the rendered contents of the column.
 
         Args:
             state (djblets.datagrid.grids.StatefulColumn):
                 The state for the datagrid.
 
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
+            obj (reviewboard.reviews.models.review_request.ReviewRequest):
                 The review request.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered HTML for the column.
         """
-        open_issues = review_request.issue_open_count
-        verifying_issues = review_request.issue_verifying_count
+        info = self.get_raw_object_value(state, obj)
+
+        open_issues = info['issue_open_count']
+        verifying_issues = info['issue_verifying_count']
+        shipit_count = info['shipit_count']
 
         if open_issues > 0 and verifying_issues > 0:
             return self._render_counts(
@@ -943,41 +1589,78 @@ class ShipItColumn(Column):
                         'verifying_issue_count': verifying_issues,
                     }
                 ))
-        elif review_request.shipit_count:
+        elif shipit_count > 0:
             container_css_classes = ['shipit-count-container']
 
-            if (review_request.last_review_activity_timestamp and
-                review_request.last_updated and
-                (review_request.last_review_activity_timestamp <
-                 review_request.last_updated)):
+            if info.get('shipits_stale'):
                 container_css_classes.append('-is-stale')
                 aria_label = ngettext(
                     "%(shipit_count)d Ship It! (New updates to review)",
                     "%(shipit_count)d Ship It's! (New updates to review)",
-                    review_request.shipit_count)
+                    shipit_count)
             else:
                 aria_label = ngettext(
                     "%(shipit_count)d Ship It!",
                     "%(shipit_count)d Ship It's!",
-                    review_request.shipit_count)
+                    shipit_count)
 
             return self._render_counts(
                 [{
-                    'count': review_request.shipit_count,
+                    'count': shipit_count,
                     'css_class': 'shipit-count',
                     'icon_name': 'shipit',
                 }],
                 aria_label=aria_label % {
-                    'shipit_count': review_request.shipit_count,
+                    'shipit_count': shipit_count,
                 },
                 container_css_class=' '.join(container_css_classes))
         else:
-            return ''
+            return mark_safe('')
 
-    def _render_counts(self,
-                       count_details,
-                       aria_label,
-                       container_css_class='issue-count-container'):
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> Mapping[str, Any]:
+        """Return the summary and labels for a review request.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request to calculate summary information for.
+
+        Returns:
+            dict:
+            The summary and labels for the review request.
+        """
+        review_request = obj
+        open_issues = review_request.issue_open_count
+        verifying_issues = review_request.issue_verifying_count
+        shipit_count = review_request.shipit_count
+
+        return {
+            'issue_open_count': open_issues,
+            'issue_verifying_count': verifying_issues,
+            'shipit_count': shipit_count,
+            'shipits_stale': bool(
+                review_request.last_review_activity_timestamp and
+                review_request.last_updated and
+                (review_request.last_review_activity_timestamp <
+                 review_request.last_updated)
+            ),
+        }
+
+    def _render_counts(
+        self,
+        count_details: Sequence[Mapping[str, Any]],
+        aria_label: str,
+        container_css_class: str = 'issue-count-container',
+    ) -> SafeString:
         """Render the counts for the column.
 
         This will render a container bubble in the column and render each
@@ -998,21 +1681,21 @@ class ShipItColumn(Column):
                     count (int):
                         The count to show for the indicator.
 
-                    css_class (unicode, optional):
+                    css_class (str, optional):
                         The CSS class to use for the indicator.
 
-                    icon_name (unicode, optional):
+                    icon_name (str, optional):
                         The name of the icon to use for the indicator.
 
-            aria_label (unicode):
+            aria_label (str):
                 The label to use for the ``aria-label`` attribute and the
                 ``title`` attribute.
 
-            container_css_class (unicode, optional):
+            container_css_class (str, optional):
                 The optional CSS class name for the outer container.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The resulting HTML for the counts bubble.
         """
         # Note that the HTML is very whitespace-sensitive, so don't try to
@@ -1035,10 +1718,12 @@ class ShipItColumn(Column):
                     '</span>'
                     '{count}'
                     '</span>',
-                    **dict({
+                    **{
                         'css_class': 'issue-count',
                         'icon_name': 'open-issues',
-                    }, **count_detail))
+                        **count_detail,
+                    },
+                )
                 for count_detail in count_details
             )))
 
@@ -1050,19 +1735,35 @@ class SummaryColumn(Column):
     to the summary.
     """
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(SummaryColumn, self).__init__(
-            label=_('Summary'),
-            expand=True,
-            link=True,
-            link_css_class='review-request-link',
-            css_class='summary',
-            sortable=True,
-            *args, **kwargs)
+    label = _('Summary')
+    css_class = 'summary'
+    expand = True
+    sortable = True
+    link = True
+    link_css_class = 'review-request-link'
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
+
+        This will perform subqueries to retrieve draft summaries and
+        archive/mute states for the review requests, in order to show
+        labels before the summaries.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         user = state.datagrid.request.user
 
         if user.is_anonymous:
@@ -1082,85 +1783,189 @@ class SummaryColumn(Column):
                        reviews_reviewrequest.id
                    AND accounts_reviewrequestvisit.user_id = %(user_id)s
             """ % {
-                'user_id': str(user.id)
+                'user_id': str(user.pk),
             }
         })
 
-    def render_data(self, state, review_request):
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
         """Return the rendered contents of the column.
 
         Args:
             state (djblets.datagrid.grids.StatefulColumn):
                 The state for the datagrid.
 
-            review_request (reviewboard.reviews.models.review_request.
-                            ReviewRequest):
+            obj (reviewboard.reviews.models.review_request.ReviewRequest):
                 The review request.
 
         Returns:
-            django.utils.safestring.SafeText:
+            django.utils.safestring.SafeString:
             The rendered column.
         """
-        summary = review_request.summary
-        labels = []
+        info = self.get_raw_object_value(state, obj)
+        summary = info['summary']
+        labels = info['labels']
 
-        if review_request.submitter_id == state.datagrid.request.user.id:
-            if review_request.draft_summary is not None:
-                summary = review_request.draft_summary
-                labels.append(('label-draft', _('Draft')))
-            elif (not review_request.public and
-                  review_request.status == ReviewRequest.PENDING_REVIEW):
-                labels.append(('label-draft', _('Draft')))
+        label_status_map = {
+            'completed': 'submitted',
+        }
 
-        # review_request.visibility is not defined when the user is not
-        # logged in.
-        if state.datagrid.request.user.is_authenticated:
-            if review_request.visibility == ReviewRequestVisit.ARCHIVED:
-                labels.append(('label-archived', _('Archived')))
-            elif review_request.visibility == ReviewRequestVisit.MUTED:
-                labels.append(('label-muted', _('Muted')))
+        result: list[str] = []
 
-        if review_request.status == ReviewRequest.SUBMITTED:
-            labels.append(('label-submitted', _('Completed')))
-        elif review_request.status == ReviewRequest.DISCARDED:
-            labels.append(('label-discarded', _('Discarded')))
+        for label_info in labels:
+            status = label_info['status']
 
-        result = [
-            format_html_join('', '<label class="{0}">{1}</label>', labels)
-        ]
+            result.append(format_html(
+                '<label class="label-{}">{}</label>',
+                label_status_map.get(status, status),
+                label_info['label'],
+            ))
 
         if summary:
-            result.append(format_html('<span>{0}</span>', summary))
+            result.append(format_html('<span>{}</span>', summary))
         else:
-            result.append(format_html('<span class="no-summary">{0}</span>',
+            result.append(format_html('<span class="no-summary">{}</span>',
                                       _('No Summary')))
 
         return mark_safe(''.join(result))
 
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> Mapping[str, Any]:
+        """Return the summary and labels for a review request.
 
-class ReviewSummaryColumn(SummaryColumn):
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request to calculate summary information for.
+
+        Returns:
+            dict:
+            The summary and labels for the review request.
+        """
+        review_request = obj
+        summary = review_request.summary
+        labels: list[Mapping[str, str]] = []
+
+        if review_request.submitter_id == state.datagrid.request.user.id:
+            draft_summary = getattr(review_request, 'draft_summary')
+
+            if draft_summary is not None:
+                summary = draft_summary
+                labels.append({
+                    'label': gettext('Draft'),
+                    'status': 'draft',
+                })
+            elif (not review_request.public and
+                  review_request.status == ReviewRequest.PENDING_REVIEW):
+                labels.append({
+                    'label': gettext('Draft'),
+                    'status': 'draft',
+                })
+
+        # review_request.visibility is not defined when the user is not
+        # logged in.
+        if state.datagrid.request.user.is_authenticated:
+            visibility = getattr(review_request, 'visibility')
+
+            if visibility == ReviewRequestVisit.ARCHIVED:
+                labels.append({
+                    'label': gettext('Archived'),
+                    'status': 'archived',
+                })
+            elif visibility == ReviewRequestVisit.MUTED:
+                labels.append({
+                    'label': gettext('Muted'),
+                    'status': 'muted',
+                })
+
+        if review_request.status == ReviewRequest.SUBMITTED:
+            labels.append({
+                'label': gettext('Completed'),
+                'status': 'completed',
+            })
+        elif review_request.status == ReviewRequest.DISCARDED:
+            labels.append({
+                'label': gettext('Discarded'),
+                'status': 'discarded',
+            })
+
+        return {
+            'labels': labels,
+            'summary': summary,
+        }
+
+
+class ReviewSummaryColumn(Column):
     """Shows the summary of the review request of a review.
 
     This does not (yet) prepend the draft/submitted/discarded state, if any,
     to the summary.
     """
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(SummaryColumn, self).__init__(
-            label=_('Review Request Summary'),
-            expand=True,
-            link=True,
-            css_class='summary',
-            *args, **kwargs)
+    label = _('Review Request Summary')
+    css_class = 'summary'
+    expand = True
+    sortable = True
+    link = True
+    link_css_class = 'review-request-link'
 
-    def render_data(self, state, review):
-        """Return the rendered contents of the column."""
-        return conditional_escape(review.review_request.summary)
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
+        This will load the review requests along with each review.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         return queryset.select_related('review_request')
+
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: Review,
+    ) -> str:
+        """Return the raw value for review summary.
+
+        This will fetch the summary from the associated review request.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.Review):
+                The review being rendered.
+
+        Returns:
+            str:
+            The summary of the associated review request.
+        """
+        return obj.review_request.summary
 
 
 class ToMeColumn(Column):
@@ -1170,82 +1975,191 @@ class ToMeColumn(Column):
     list.
     """
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        raquo = '\u00BB'
+    label = '\u00BB'
+    detailed_label = _('To Me')
+    detailed_label_html = _('\u00BB To Me')
+    shrink = True
 
-        super(ToMeColumn, self).__init__(
-            label=raquo,
-            detailed_label=_('To Me'),
-            detailed_label_html=(gettext('%s To Me') % raquo),
-            shrink=True,
-            *args, **kwargs)
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
+        """Add additional queries to the queryset.
 
-    def augment_queryset(self, state, queryset):
-        """Add additional queries to the queryset."""
+        This will load the PKs of the review requests directed to the
+        user and store them as state on the column for rendering.
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The column state.
+
+            queryset (django.db.models.query.QuerySet):
+                The queryset to augment.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The resulting queryset.
+        """
         user = state.datagrid.request.user
 
         if user.is_authenticated:
-            state.all_to_me = set(
-                user.directed_review_requests.filter(
-                    pk__in=state.datagrid.id_list).values_list('pk',
-                                                               flat=True))
+            pks = set(
+                user.directed_review_requests
+                .filter(pk__in=state.datagrid.id_list)
+                .values_list('pk', flat=True)
+            )
         else:
-            state.all_to_me = set()
+            pks = set()
+
+        state.extra_data['all_to_me'] = pks
 
         return queryset
 
-    def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
-        if review_request.pk in state.all_to_me:
-            return ('<div title="%s"><b>&raquo;</b></div>'
-                    % (self.detailed_label))
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
 
-        return ''
+        If the object was directed to the user, an indicator will be
+        shown.
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request the column applies to.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered HTML.
+        """
+        if self.get_raw_object_value(state, obj):
+            return format_html(
+                '<div title="{}"><b>&raquo;</b></div>',
+                self.detailed_label,
+            )
+
+        return mark_safe('')
+
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> bool:
+        """Return the "to me" state as a boolean.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request for the row.
+
+        Returns:
+            bool:
+            ``True`` if the column was directed to the user. ``False`` if
+            it was not.
+        """
+        return obj.pk in state.extra_data['all_to_me']
 
 
 class DiffSizeColumn(Column):
     """Indicates line add/delete counts for the latest diffset."""
 
-    def __init__(self, *args, **kwargs):
-        """Initialize the column."""
-        super(DiffSizeColumn, self).__init__(
-            label=_('Diff Size'),
-            sortable=False,
-            shrink=True,
-            *args, **kwargs)
+    label = _('Diff Size')
+    shrink = True
 
-    def render_data(self, state, review_request):
-        """Return the rendered contents of the column."""
-        if review_request.repository_id is None:
-            return ''
+    def render_data(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> SafeString:
+        """Return the rendered contents of the column.
 
-        diffsets = list(review_request.diffset_history.diffsets.all())
+        This will format HTML showing the diff's insert and delete
+        line counts.
 
-        if not diffsets:
-            return ''
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
 
-        diffset = diffsets[-1]
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request the column applies to.
 
-        counts = diffset.get_total_line_counts()
-        insert_count = counts.get('raw_insert_count')
-        delete_count = counts.get('raw_delete_count')
-        result = []
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered HTML.
+        """
+        counts = self.get_raw_object_value(state, obj)
 
-        if insert_count:
-            result.append('<span class="diff-size-column insert">+%d</span>' %
-                          insert_count)
+        if counts:
+            insert_count = counts.get('raw_insert_count')
+            delete_count = counts.get('raw_delete_count')
+            result: list[SafeString] = []
 
-        if delete_count:
-            result.append('<span class="diff-size-column delete">-%d</span>' %
-                          delete_count)
+            if insert_count:
+                result.append(format_html(
+                    '<span class="diff-size-column insert">+{}</span>',
+                    insert_count,
+                ))
 
-        if result:
-            return '&nbsp;'.join(result)
+            if delete_count:
+                result.append(format_html(
+                    '<span class="diff-size-column delete">-{}</span>',
+                    delete_count,
+                ))
 
-        return ''
+            if result:
+                return mark_safe('&nbsp;'.join(result))
 
-    def augment_queryset(self, state, queryset):
+        return mark_safe('')
+
+    def get_raw_object_value(
+        self,
+        state: StatefulColumn,
+        obj: ReviewRequest,
+    ) -> Mapping[str, int] | None:
+        """Return the raw value for the diff size information.
+
+        This will return the line count information for the diffset.
+
+        Version Added:
+            7.1
+
+        Args:
+            state (djblets.datagrids.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.ReviewRequest):
+                The review request for the row.
+
+        Returns:
+            dict:
+            The list of diff size information.
+        """
+        if obj.repository_id is not None:
+            diffset_history = obj.diffset_history
+            assert diffset_history is not None
+
+            diffsets = list(diffset_history.diffsets.all())
+
+            if diffsets:
+                return diffsets[-1].get_total_line_counts()
+
+        return None
+
+    def augment_queryset(
+        self,
+        state: StatefulColumn,
+        queryset: QuerySet,
+    ) -> QuerySet:
         """Add additional queries to the queryset.
 
         This will prefetch the diffsets and filediffs needed to perform the

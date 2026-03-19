@@ -62,3 +62,20 @@ class ReviewGroupStarColumnTests(BaseColumnTestCase):
 
         self.assertIsInstance(value, SafeString)
         self.assertEqual(value, '')
+
+    def test_to_json_not_starred(self) -> None:
+        """Testing ReviewGroupStarColumn.to_json when not starred"""
+        group = self.create_review_group()
+
+        self.assertIs(self.column.to_json(self.stateful_column, group),
+                      False)
+
+    def test_to_json_starred(self) -> None:
+        """Testing ReviewGroupStarColumn.to_json when starred"""
+        group = self.create_review_group()
+
+        profile = self.request.user.get_profile()
+        profile.star_review_group(group)
+
+        self.assertIs(self.column.to_json(self.stateful_column, group),
+                      True)

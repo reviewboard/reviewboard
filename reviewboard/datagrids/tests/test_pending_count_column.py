@@ -6,6 +6,8 @@ Version Added:
 
 from __future__ import annotations
 
+from django.utils.safestring import SafeString
+
 from reviewboard.datagrids.columns import PendingCountColumn
 from reviewboard.datagrids.tests.base import BaseColumnTestCase
 
@@ -28,7 +30,7 @@ class PendingCountColumnTests(BaseColumnTestCase):
 
         value = self.column.render_data(self.stateful_column, group)
 
-        self.assertIs(type(value), str)
+        self.assertIsInstance(value, SafeString)
         self.assertEqual(value, '0')
 
     def test_render_data_with_pending(self) -> None:
@@ -40,5 +42,27 @@ class PendingCountColumnTests(BaseColumnTestCase):
 
         value = self.column.render_data(self.stateful_column, group)
 
-        self.assertIs(type(value), str)
+        self.assertIsInstance(value, SafeString)
         self.assertEqual(value, '4')
+
+    def test_to_json_with_zero_pending(self) -> None:
+        """Testing PendingCountColumn.to_json with zero pending"""
+        group = self.create_review_group()
+
+        # This is normally set by the column's augment_queryset_for_data().
+        group.column_pending_review_request_count = 0
+
+        self.assertEqual(
+            self.column.to_json(self.stateful_column, group),
+            0)
+
+    def test_to_json_with_pending(self) -> None:
+        """Testing PendingCountColumn.to_json with pending"""
+        group = self.create_review_group()
+
+        # This is normally set by the column's augment_queryset_for_data().
+        group.column_pending_review_request_count = 4
+
+        self.assertEqual(
+            self.column.to_json(self.stateful_column, group),
+            4)

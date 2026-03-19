@@ -148,14 +148,14 @@ class BaseColumnTestCase(TestCase):
     #:
     #: Type:
     #:     djblets.datagrid.columns.Column
-    column: Optional[Column] = None
+    column: Column
 
     fixtures = ['test_users']
 
     def setUp(self) -> None:
         super().setUp()
 
-        assert self.column is not None
+        assert getattr(self, 'column', None) is not None
 
         class TestDataGrid(DataGrid):
             column = self.column
@@ -164,5 +164,5 @@ class BaseColumnTestCase(TestCase):
         self.request = request_factory.get('/')
         self.request.user = User.objects.get(username='doc')
 
-        self.grid = TestDataGrid(self.request)
+        self.grid = TestDataGrid(request=self.request)
         self.stateful_column = self.grid.get_stateful_column(self.column)

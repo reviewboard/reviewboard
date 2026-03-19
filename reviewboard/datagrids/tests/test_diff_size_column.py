@@ -6,6 +6,8 @@ Version Added:
 
 from __future__ import annotations
 
+from django.utils.safestring import SafeString
+
 from reviewboard.datagrids.columns import DiffSizeColumn
 from reviewboard.datagrids.tests.base import BaseColumnTestCase
 
@@ -26,6 +28,7 @@ class DiffSizeColumnTests(BaseColumnTestCase):
 
         value = self.column.render_data(self.stateful_column, review_request)
 
+        self.assertIsInstance(value, SafeString)
         self.assertEqual(value, '')
 
     def test_render_data_with_repository_no_diff(self) -> None:
@@ -36,6 +39,7 @@ class DiffSizeColumnTests(BaseColumnTestCase):
 
         value = self.column.render_data(self.stateful_column, review_request)
 
+        self.assertIsInstance(value, SafeString)
         self.assertEqual(value, '')
 
     def test_render_data_with_inserts_and_deletes(self) -> None:
@@ -53,6 +57,7 @@ class DiffSizeColumnTests(BaseColumnTestCase):
 
         value = self.column.render_data(self.stateful_column, review_request)
 
+        self.assertIsInstance(value, SafeString)
         self.assertHTMLEqual(
             value,
             '<span class="diff-size-column insert">+10</span>&nbsp;'
@@ -73,6 +78,7 @@ class DiffSizeColumnTests(BaseColumnTestCase):
 
         value = self.column.render_data(self.stateful_column, review_request)
 
+        self.assertIsInstance(value, SafeString)
         self.assertHTMLEqual(
             value,
             '<span class="diff-size-column insert">+7</span>')
@@ -92,6 +98,39 @@ class DiffSizeColumnTests(BaseColumnTestCase):
 
         value = self.column.render_data(self.stateful_column, review_request)
 
+        self.assertIsInstance(value, SafeString)
         self.assertHTMLEqual(
             value,
             '<span class="diff-size-column delete">-3</span>')
+
+    def test_to_json_with_no_repository(self) -> None:
+        """Testing DiffSizeColumn.to_json with no repository"""
+        review_request = self.create_review_request(publish=True)
+
+        self.assertIsNone(self.column.to_json(self.stateful_column,
+                                              review_request))
+
+    def test_to_json_with_diff(self) -> None:
+        """Testing DiffSizeColumn.to_json with diff"""
+        review_request = self.create_review_request(
+            create_repository=True,
+            publish=True)
+        diffset = self.create_diffset(review_request)
+        self.create_filediff(
+            diffset,
+            extra_data={
+                'raw_insert_count': 10,
+                'raw_delete_count': 5,
+            })
+
+        self.assertEqual(
+            self.column.to_json(self.stateful_column, review_request),
+            {
+                'delete_count': 5,
+                'equal_count': None,
+                'insert_count': 10,
+                'raw_delete_count': 5,
+                'raw_insert_count': 10,
+                'replace_count': None,
+                'total_line_count': None,
+            })
