@@ -5,7 +5,7 @@
 Review Board 7.0.5 Release Notes
 ================================
 
-**Release date**: TBD
+**Release date**: March 19, 2026
 
 
 Installation/Upgrade
@@ -36,6 +36,26 @@ Support_>`_.
 
 
 .. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Review Board Installer Updates
+------------------------------
+
+The following Linux distributions are now supported by the
+:ref:`Review Board Installer <installation-installer>`.
+
+* Amazon Linux 2 and 2023
+* CentOS Stream 8-10
+* Debian 10-13
+* Fedora 36-43
+* openSUSE Leap 15-16
+* openSUSE Tumbleweed
+* Red Hat Enterprise Linux 8-10
+* Rocky Linux 8-10
+* Ubuntu 18.04-25.10
+
+Several installation issues with modern Python environments have also been
+addressed.
 
 
 Packaging
