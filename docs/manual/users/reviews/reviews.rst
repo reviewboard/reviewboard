@@ -30,6 +30,8 @@ be edited until published using the :ref:`review banner
 Let's take a look at the parts of a review:
 
 
+.. _ship-it:
+
 1. Ship It!
 ===========
 

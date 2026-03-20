@@ -2,7 +2,12 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from djblets.extensions.hooks import ExtensionHook, ExtensionHookPoint
+
+if TYPE_CHECKING:
+    from reviewboard.reviews.models import ReviewRequest
 
 
 class ReviewRequestApprovalHook(ExtensionHook, metaclass=ExtensionHookPoint):
@@ -11,9 +16,19 @@ class ReviewRequestApprovalHook(ExtensionHook, metaclass=ExtensionHookPoint):
     Extensions can use this to hook into the process for determining
     review request approval, which may impact any scripts integrating
     with Review Board to, for example, allow committing to a repository.
+
+    .. seealso::
+
+        * :ref:`ReviewRequestApprovalHook Developer Guide
+          <review-request-approval-hook>`
     """
 
-    def is_approved(self, review_request, prev_approved, prev_failure):
+    def is_approved(
+        self,
+        review_request: ReviewRequest,
+        prev_approved: bool,
+        prev_failure: str | None,
+    ) -> bool | tuple[bool, str | None]:
         """Determine if the review request is approved.
 
         This function is provided with the review request and the previously
@@ -39,7 +54,7 @@ class ReviewRequestApprovalHook(ExtensionHook, metaclass=ExtensionHookPoint):
                 The previously-calculated approval result, either from another
                 hook or by Review Board.
 
-            prev_failure (unicode):
+            prev_failure (str):
                 The previously-calculated approval failure message, either
                 from another hook or by Review Board.
 

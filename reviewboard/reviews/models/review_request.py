@@ -605,11 +605,12 @@ class ReviewRequest(BaseReviewRequestDetails):
         at least one Ship It!, and doesn't have any open issues.
 
         Extensions may customize approval by providing their own
-        ReviewRequestApprovalHook.
+        :py:class:`~reviewboard.extensions.hooks.ReviewRequestApprovalHook`.
 
-        Returns:
-            bool:
-            Whether the review request is approved.
+        .. seealso::
+
+            * :ref:`ReviewRequestApprovalHook Developer Guide
+              <review-request-approval-hook>`
         """
         if not hasattr(self, '_approved'):
             self._calculate_approval()
@@ -617,17 +618,19 @@ class ReviewRequest(BaseReviewRequestDetails):
         return self._approved
 
     @property
-    def approval_failure(self) -> str:
+    def approval_failure(self) -> str | None:
         """An error indicating why a review request isn't approved.
 
         If ``approved`` is ``False``, this will provide the text describing
         why it wasn't approved.
 
         Extensions may customize approval by providing their own
-        ReviewRequestApprovalHook.
+        :py:class:`~reviewboard.extensions.hooks.ReviewRequestApprovalHook`.
 
-        Type:
-            str
+        .. seealso::
+
+            * :ref:`ReviewRequestApprovalHook Developer Guide
+              <review-request-approval-hook>`
         """
         if not hasattr(self, '_approval_failure'):
             self._calculate_approval()

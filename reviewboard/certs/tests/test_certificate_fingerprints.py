@@ -51,6 +51,28 @@ class CertificateFingerprintTests(CertificateTestCase):
         self.assertIsNone(fingerprints.sha1)
         self.assertIsNone(fingerprints.sha256)
 
+    def test_from_string_with_sha1(self) -> None:
+        """Testing CertificateFingerprints.from_string with SHA-1"""
+        fingerprints = CertificateFingerprints.from_string(TEST_SHA1)
+
+        assert fingerprints is not None
+        self.assertEqual(fingerprints.sha1, TEST_SHA1)
+        self.assertIsNone(fingerprints.sha256)
+
+    def test_from_string_with_sha256(self) -> None:
+        """Testing CertificateFingerprints.from_string with SHA-256"""
+        fingerprints = CertificateFingerprints.from_string(TEST_SHA256)
+
+        assert fingerprints is not None
+        self.assertIsNone(fingerprints.sha1)
+        self.assertEqual(fingerprints.sha256, TEST_SHA256)
+
+    def test_from_string_with_bad_string(self) -> None:
+        """Testing CertificateFingerprints.from_string with bad string"""
+        fingerprints = CertificateFingerprints.from_string('AA:BB:CC')
+
+        self.assertIsNone(fingerprints)
+
     def test_from_x509_cert(self) -> None:
         """Testing CertificateFingerprints.from_x509_cert"""
         fingerprints = CertificateFingerprints.from_x509_cert(

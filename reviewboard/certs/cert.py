@@ -149,6 +149,39 @@ class CertificateFingerprints:
                    sha256=sha256)
 
     @classmethod
+    def from_string(
+        cls,
+        fingerprint: str,
+    ) -> Self | None:
+        """Return a new instance from a single fingerprint string.
+
+        This will normalize the provided fingerprint (stripping any
+        whitespace), determine if this is SHA-1 or SHA-256, and then return a
+        new instance if the value is supported.
+
+        Version Added:
+            7.1
+
+        Args:
+            fingerprint (str):
+                The fingerprint string in ``AA:BB:CC...`` format.
+
+        Returns:
+            reviewboard.certs.cert.CertificateFingerprints:
+            The resulting fingerprints instance, or ``None`` if the
+            string length doesn't match a known algorithm.
+        """
+        fingerprint = fingerprint.strip()
+        length = len(fingerprint)
+
+        if length == 59:
+            return cls(sha1=fingerprint)
+        elif length == 95:
+            return cls(sha256=fingerprint)
+
+        return None
+
+    @classmethod
     def from_x509_cert(
         cls,
         x509_cert: x509.Certificate,
