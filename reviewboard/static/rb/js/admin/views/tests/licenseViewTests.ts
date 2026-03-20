@@ -63,7 +63,7 @@ suite('rb/admin/views/LicenseView', () => {
             const view = new LicenseView({
                 model: new License({
                     actionTarget: 'provider1:license1',
-                    expiresDate: new Date('2025-04-23T00:00:00'),
+                    expiresDate: new Date('2025-04-23T00:00:00-07:00'),
                     gracePeriodDaysRemaining: 4,
                     licenseID: 'license1',
                     productName: 'Test Product',
@@ -108,7 +108,7 @@ suite('rb/admin/views/LicenseView', () => {
             const view = new LicenseView({
                 model: new License({
                     actionTarget: 'provider1:license1',
-                    expiresDate: new Date('2025-04-23T00:00:00'),
+                    expiresDate: new Date('2025-04-23T00:00:00-07:00'),
                     gracePeriodDaysRemaining: 4,
                     licenseID: 'license1',
                     productName: 'Test Product',
@@ -154,7 +154,7 @@ suite('rb/admin/views/LicenseView', () => {
             const view = new LicenseView({
                 model: new License({
                     actionTarget: 'provider1:license1',
-                    expiresDate: new Date('2025-01-01T00:00:00'),
+                    expiresDate: new Date('2025-01-01T00:00:00-08:00'),
                     licenseID: 'license1',
                     productName: 'Test Product',
                     status: LicenseStatus.HARD_EXPIRED,
@@ -467,7 +467,7 @@ suite('rb/admin/views/LicenseView', () => {
                         url: 'https://example.com/action2',
                     },
                 ],
-                expiresDate: new Date('2025-04-23T00:00:00'),
+                expiresDate: new Date('2025-04-23T00:00:00-07:00'),
                 gracePeriodDaysRemaining: 4,
                 status: LicenseStatus.LICENSED,
                 summary: 'New license summary',
