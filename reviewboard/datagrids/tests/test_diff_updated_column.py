@@ -6,9 +6,9 @@ Version Added:
 
 from __future__ import annotations
 
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 
-from django.utils import timezone
+from django.utils import timezone as django_timezone
 
 from reviewboard.datagrids.columns import DiffUpdatedColumn
 from reviewboard.datagrids.tests.base import BaseColumnTestCase
@@ -36,7 +36,7 @@ class DiffUpdatedColumnTests(BaseColumnTestCase):
         assert review_request.diffset_history is not None
 
         review_request.diffset_history.last_diff_updated = \
-            datetime(2026, 1, 1, 12, 30, 40, tzinfo=UTC)
+            datetime(2026, 1, 1, 12, 30, 40, tzinfo=timezone.utc)
 
         value = self.column.render_data(self.stateful_column, review_request)
 
@@ -64,7 +64,8 @@ class DiffUpdatedColumnTests(BaseColumnTestCase):
 
         # This is normally set by augmenting the queryset when the diff is
         # added to the history.
-        review_request.diffset_history.last_diff_updated = timezone.now()
+        review_request.diffset_history.last_diff_updated = \
+            django_timezone.now()
 
         result = self.column.to_json(self.stateful_column, review_request)
 
