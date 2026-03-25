@@ -4,9 +4,7 @@ import externalGlobals from 'rollup-plugin-external-globals';
 import path from 'path';
 import resolve from '@rollup/plugin-node-resolve';
 
-import {
-    makeReviewBoardRollupConfig,
-} from '@beanbag/reviewboard/packaging/js/rollup-common.mjs';
+import { makeReviewBoardRollupConfig } from './rollup-common.mjs';
 
 
 export function buildReviewBoardExtensionConfig(options) {
