@@ -1275,35 +1275,41 @@ class BaseCommaEditableField(BaseEditableField[Sequence[TFieldValue]]):
 
         assert isinstance(info, dict)
 
-        if 'removed' in info:
-            values = info['removed']
-
-            if not self.one_line_per_change_entry:
-                values = [values]
-
-            removed_items = format_html_join('', '{}', (
-                (_legacy_mark_safe(
-                    self.render_change_entry_removed_value_html(info, [value]),
+        if (values := info.get('removed')):
+            if self.one_line_per_change_entry:
+                removed_items = format_html_join('', '{}', (
+                    (_legacy_mark_safe(
+                        self.render_change_entry_removed_value_html(
+                            info, [value]),
+                        self,
+                        'render_change_entry_removed_value_html'),)
+                    for value in values
+                ))
+            else:
+                removed_items = _legacy_mark_safe(
+                    self.render_change_entry_removed_value_html(
+                        info, values),
                     self,
-                    'render_change_entry_removed_value_html'),)
-                for value in values
-            ))
+                    'render_change_entry_removed_value_html')
         else:
             removed_items = mark_safe('')
 
-        if 'added' in info:
-            values = info['added']
-
-            if not self.one_line_per_change_entry:
-                values = [values]
-
-            added_items = format_html_join('', '{}', (
-                (_legacy_mark_safe(
-                    self.render_change_entry_added_value_html(info, [value]),
+        if (values := info.get('added')):
+            if self.one_line_per_change_entry:
+                added_items = format_html_join('', '{}', (
+                    (_legacy_mark_safe(
+                        self.render_change_entry_added_value_html(
+                            info, [value]),
+                        self,
+                        'render_change_entry_added_value_html'),)
+                    for value in values
+                ))
+            else:
+                added_items = _legacy_mark_safe(
+                    self.render_change_entry_added_value_html(
+                        info, values),
                     self,
-                    'render_change_entry_added_value_html'),)
-                for value in values
-            ))
+                    'render_change_entry_added_value_html')
         else:
             added_items = mark_safe('')
 
