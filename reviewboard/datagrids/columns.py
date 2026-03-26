@@ -1916,7 +1916,6 @@ class ReviewSummaryColumn(Column):
     label = _('Review Request Summary')
     css_class = 'summary'
     expand = True
-    sortable = True
     link = True
     link_css_class = 'review-request-link'
 
