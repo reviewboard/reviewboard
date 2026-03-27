@@ -22,7 +22,7 @@ class LicensingFeature(Feature):
 
     feature_id = 'licensing'
     name = _('Licensing Support')
-    level = FeatureLevel.EXPERIMENTAL
+    level = FeatureLevel.STABLE
     summary = _('Support for managing licensed Review Board products.')
 
 
