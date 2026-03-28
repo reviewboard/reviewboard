@@ -1,4 +1,4 @@
-{% load accounts avatars djblets_utils i18n reviewtags %}
+{% load accounts djblets_utils i18n reviewtags %}
 
 <div class="rb-c-review-request__field"
      id="issue-summary"
@@ -82,12 +82,7 @@
        <p>{{comment.text|render_markdown:comment.rich_text|striptags|truncatewords:20}}</p>
       </td>
       <td>
-       <a href="{% url 'user' comment.review_obj.user %}" class="user">{% spaceless %}
- {%  if siteconfig_settings.avatars_enabled %}
-        {% avatar comment.review_obj.user 24 %}
- {%  endif %}
-        <span>{{reviewer_name}}</span>
-       {% endspaceless %}</a>
+{%   include "ui/components/user.html" with user=comment.review_obj.user show_avatar=True %}
       </td>
       <td>
        <time class="timesince" datetime="{{comment.timestamp|date:'c'}}">{{comment.timestamp}}</time>

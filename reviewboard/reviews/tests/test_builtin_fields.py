@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
@@ -10,17 +12,23 @@ from django.urls import resolve
 from django.utils.safestring import SafeText
 
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.reviews.builtin_fields import (CommitListField,
-                                                FileAttachmentsField)
+from reviewboard.reviews.builtin_fields import (BugsField,
+                                                CommitListField,
+                                                FileAttachmentsField,
+                                                ReviewRequestPageDataMixin)
 from reviewboard.reviews.detail import ReviewRequestPageData
+from reviewboard.reviews.fields import BaseReviewRequestField
 from reviewboard.reviews.models import ReviewRequestDraft
 from reviewboard.testing.testcase import TestCase
+
+if TYPE_CHECKING:
+    from typelets.funcs import KwargsDict
 
 
 class FieldsTestCase(TestCase):
     """Base test case for built-in fields."""
 
-    field_cls = None
+    field_cls: type[BaseReviewRequestField]
 
     def make_field(self, review_request):
         """Return an instance of the field to test with.
@@ -38,11 +46,17 @@ class FieldsTestCase(TestCase):
         """
         request = self.build_review_request_get(review_request)
 
-        data = ReviewRequestPageData(review_request, request)
-        data.query_data_pre_etag()
-        data.query_data_post_etag()
+        kwargs: KwargsDict = {
+            'request': request,
+        }
 
-        return self.field_cls(review_request, request=request, data=data)
+        if issubclass(self.field_cls, ReviewRequestPageDataMixin):
+            data = ReviewRequestPageData(review_request, request)
+            data.query_data_pre_etag()
+            data.query_data_post_etag()
+            kwargs['data'] = data
+
+        return self.field_cls(review_request, **kwargs)
 
     def build_review_request_get(self, review_request):
         """Return an HTTP GET request for the review request.
@@ -1370,3 +1384,94 @@ class FileAttachmentsFieldTests(FieldsTestCase):
         with assert_queries(queries):
             field.get_change_entry_sections_html(
                 changedesc.fields_changed[field.field_id])
+
+
+class BugsFieldTests(FieldsTestCase):
+    """Unit tests for BugsField.
+
+    Version Added:
+        7.1
+    """
+
+    field_cls = BugsField
+    fixtures = ['test_users']
+
+    def test_render_change_entry_html_with_added_and_removed(self) -> None:
+        """Testing BugsField.render_change_entry_html with bugs added and
+        removed
+        """
+        review_request = self.create_review_request(
+            public=True,
+            bugs_closed='123,456',
+            target_people=[User.objects.get(username='doc')])
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.bugs_closed = '456,789'
+        draft.save()
+
+        review_request.publish(user=review_request.submitter)
+        changedesc = review_request.changedescs.latest()
+
+        field = self.make_field(review_request)
+
+        result = field.render_change_entry_html(
+            changedesc.fields_changed[field.field_id])
+
+        self.assertIsInstance(result, SafeText)
+        self.assertIn('123', result)
+        self.assertIn('789', result)
+
+        # Make sure bugs are rendered as plain text, not as Python list
+        # representations (e.g., "['123']").
+        self.assertNotIn('[', result)
+        self.assertNotIn(']', result)
+
+    def test_render_change_entry_html_with_only_added(self) -> None:
+        """Testing BugsField.render_change_entry_html with only bugs added"""
+        review_request = self.create_review_request(
+            public=True,
+            bugs_closed='123',
+            target_people=[User.objects.get(username='doc')])
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.bugs_closed = '123,456'
+        draft.save()
+
+        review_request.publish(user=review_request.submitter)
+        changedesc = review_request.changedescs.latest()
+
+        field = self.make_field(review_request)
+
+        result = field.render_change_entry_html(
+            changedesc.fields_changed[field.field_id])
+
+        self.assertIsInstance(result, SafeText)
+        self.assertIn('456', result)
+        self.assertNotIn('[', result)
+        self.assertNotIn(']', result)
+
+    def test_render_change_entry_html_with_only_removed(self) -> None:
+        """Testing BugsField.render_change_entry_html with only bugs
+        removed
+        """
+        review_request = self.create_review_request(
+            public=True,
+            bugs_closed='123,456',
+            target_people=[User.objects.get(username='doc')])
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.bugs_closed = '123'
+        draft.save()
+
+        review_request.publish(user=review_request.submitter)
+        changedesc = review_request.changedescs.latest()
+
+        field = self.make_field(review_request)
+
+        result = field.render_change_entry_html(
+            changedesc.fields_changed[field.field_id])
+
+        self.assertIsInstance(result, SafeText)
+        self.assertIn('456', result)
+        self.assertNotIn('[', result)
+        self.assertNotIn(']', result)

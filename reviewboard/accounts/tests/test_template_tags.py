@@ -361,10 +361,18 @@ class UserBadgesTests(TestCase):
 
         self.assertHTMLEqual(
             rendered,
-            '<div class="rb-c-user-badges">'
-            '<span class="rb-c-user-badge">Badge 1</span>'
-            '<span class="rb-c-user-badge custom-badge-css">Badge 2</span>'
-            '</div>')
+            '<span class="rb-c-user-badges"'
+            '      aria-label="Badges"'
+            '      role="list">'
+            ' <span class="rb-c-user-badge"'
+            '       role="listitem">'
+            '  Badge 1'
+            ' </span>'
+            ' <span class="rb-c-user-badge custom-badge-css"'
+            '       role="listitem">'
+            '  Badge 2'
+            ' </span>'
+            '</span>')
 
     def test_with_badges_with_crash(self) -> None:
         """Testing {% user_badges %} with crash in get_user_badges()"""
@@ -409,9 +417,14 @@ class UserBadgesTests(TestCase):
 
         self.assertHTMLEqual(
             rendered,
-            '<div class="rb-c-user-badges">'
-            '<span class="rb-c-user-badge">Badge 1</span>'
-            '</div>')
+            '<span class="rb-c-user-badges"'
+            '      aria-label="Badges"'
+            '      role="list">'
+            ' <span class="rb-c-user-badge"'
+            '       role="listitem">'
+            '  Badge 1'
+            ' </span>'
+            '</span>')
 
 
 class UserProfileDisplayNameTests(TestCase):

@@ -79,6 +79,7 @@ class UserBadge:
 
             attrs: list[tuple[str, str]] = [
                 ('class', ' '.join(css_classes)),
+                ('role', 'listitem'),
             ]
 
             return format_html(
