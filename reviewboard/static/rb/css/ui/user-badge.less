@@ -9,15 +9,21 @@
  *
  * Version Added:
  *     7.1
+
+ * DOM Attributes:
+ *     role (string):
+ *         Set to "listitem".
  *
  * Structure:
- *     <span class="rb-c-user-badge [...]">
+ *     <span class="rb-c-user-badge [...]"
+ *           role="listitem">
  *      text...
  *     </span>
  */
 .rb-c-user-badge {
   background: var(--ink-p-cool-grey-300);
   border-radius: var(--ink-u-border-radius-l);
+  color: var(--ink-p-fg);
   font-size: var(--ink-u-font-s);
   font-weight: normal;
   padding: var(--ink-u-spacing-xs) var(--ink-u-spacing-sm);
@@ -30,10 +36,19 @@
  * Version Added:
  *     7.1
  *
+ * DOM Attributes:
+ *     aria-label (string):
+ *         Set to "Badges", or something more specific.
+ *
+ *     role (string):
+ *         Set to "list".
+ *
  * Structure:
- *     <div class="rb-c-user-badges">
- *      <div class="rb-c-user-badge ...">...</div> [1+]
- *     </div>
+ *     <span class="rb-c-user-badges"
+ *           role="list"
+ *           aria-label="Badges">
+ *      <span class="rb-c-user-badge ...">...</span> [1+]
+ *     </span>
  */
 .rb-c-user-badges {
   display: inline-flex;

@@ -7,19 +7,18 @@ export default {
     tags: ['autodocs'],
     title: 'Review Board/Components/Users/User Badges',
 
-    render: attrs => {
+    render: (options: {
+        badges: string[],
+    }) => {
         return paint`
-            <div class="rb-c-user-badges">
-             <span class="rb-c-user-badge">Badge 1</span>
-             <span class="rb-c-user-badge">Badge 2</span>
-             <span class="rb-c-user-badge">Badge 3</span>
-             <span class="rb-c-user-badge">
-              Very long badge with a long name that should help us test
-              some wrapping probably and we'll just keep going for a while
-              until we're seeing the wrap and this is probably enough.
-             </span>
-             <span class="rb-c-user-badge">Badge 5</span>
-            </div>
+            <span class="rb-c-user-badges"
+                  role="list"
+                  aria-label="Badges">
+             ${options.badges.map(badge => paint`
+               <span class="rb-c-user-badge"
+                     role="listitem">${badge}</span>
+             `)}
+            </span>
         `;
     },
 

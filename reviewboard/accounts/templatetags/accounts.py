@@ -12,6 +12,7 @@ from django.contrib.auth.models import User
 from django.utils import dateformat, timezone
 from django.utils.html import escape, format_html, format_html_join
 from django.utils.safestring import SafeString, mark_safe
+from django.utils.translation import gettext as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.templatetags.djblets_js import json_dumps
 
@@ -225,7 +226,12 @@ def user_badges(
     ))
 
     if badges_html:
-        return format_html('<div class="rb-c-user-badges">{}</div>',
-                           badges_html)
+        return format_html(
+            '<span class="rb-c-user-badges"'
+            ' aria-label="{label}"'
+            ' role="list">{badges_html}</span>',
+            label=_('Badges'),
+            badges_html=badges_html,
+        )
     else:
         return mark_safe('')

@@ -25,7 +25,10 @@ class UserBadgeTests(TestCase):
 
         self.assertHTMLEqual(
             badge.render_to_string(),
-            '<span class="rb-c-user-badge">My Badge</span>')
+            '<span class="rb-c-user-badge"'
+            '      role="listitem">'
+            ' My Badge'
+            '</span>')
 
     def test_render_to_string_with_css_class(self) -> None:
         """Testing UserBadge.render_to_string with css_class"""
@@ -36,4 +39,7 @@ class UserBadgeTests(TestCase):
 
         self.assertHTMLEqual(
             badge.render_to_string(),
-            '<span class="rb-c-user-badge class1 class2">My Badge</span>')
+            '<span class="rb-c-user-badge class1 class2"'
+            '      role="listitem">'
+            ' My Badge'
+            '</span>')
