@@ -154,33 +154,32 @@
           white-space: nowrap;
         }
 
-        .avatar {
-          @_offset: @_common-vars[@avatar-margin-vert-offset];
+        .rb-c-user {
+          white-space: nowrap;
 
-          /*
-           * We're aiming to keep all text aligned across the row, and
-           * because of this we can't vertically align the avatar and the
-           * text exactly. We also can't let the avatar take up too much
-           * vertical space on the row.
-           *
-           * So, we're offsetting the vertical margins a bit to reduce the
-           * space required (offsetting into the cell's padding a bit
-           * instead) and attempting to align the resulting avatar with the
-           * top of the text. This creates a mostly-vertically-centered look
-           * while keeping the text aligned.
-           */
-          margin: -@_offset @_common-vars[@avatar-margin-right]
-                  -@_offset 0;
-          vertical-align: text-top;
+          &__avatar {
+            @_offset: @_common-vars[@avatar-margin-vert-offset];
+
+            /*
+             * We're aiming to keep all text aligned across the row.
+             * rb-c-user takes care of baseline alignment for the avatar and
+             * text, and the rest of the row is also using baseline, so this
+             * should work.
+             *
+             * We also can't let the avatar take up too much vertical space on
+             * the row. So, we're offsetting the vertical margins a bit to
+             * reduce the space required (offsetting into the cell's padding
+             * a bit instead). This creates a mostly-vertically-centered look
+             * while keeping the text aligned.
+             */
+            margin-top: -@_offset;
+            margin-bottom: -@_offset;
+          }
         }
 
         .rb-icon {
           float: left;
           margin-right: @_common-vars[@status-icon-margin-right];
-        }
-
-        .user {
-          white-space: nowrap;
         }
       }
     }

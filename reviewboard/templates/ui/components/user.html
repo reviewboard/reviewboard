@@ -1,0 +1,31 @@
+{% load accounts avatars djblets_utils i18n %}
+
+{% spaceless %}
+{%  definevar "user_show_avatar" as_type=bool %}
+{%   block user_show_avatar %}{{show_avatar|default_if_none:False}}{% endblock %}
+{%  enddefinevar %}
+
+{%  definevar "user_avatar_size" as_type=int %}
+{%   block user_avatar_size %}{{avatar_size|default:24}}{% endblock %}
+{%  enddefinevar %}
+
+{%  definevar "user_show_badges" as_type=bool %}
+{%   block user_show_badges %}{{show_badges|default_if_none:False}}{% endblock %}
+{%  enddefinevar %}
+
+{%  block component %}
+<span class="rb-c-user">
+ <a class="user" href="{% url "user" user %}">
+{%   if user_show_avatar and siteconfig_settings.avatars_enabled %}
+ <span class="rb-c-user__avatar">
+  {% avatar user user_avatar_size %}
+ </span>
+{%   endif %}
+  {% user_profile_display_name user %}
+ </a>
+{%   if user_show_badges %}
+{%    user_badges user %}
+{%   endif %}
+</span>
+{%  endblock component %}
+{% endspaceless %}

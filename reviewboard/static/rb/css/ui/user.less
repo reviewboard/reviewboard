@@ -1,0 +1,48 @@
+/**
+ * A standard display for a reference to a user.
+ *
+ * This will show a user's display name, optionally show any avatar and
+ * badges for the user, and display a tooltip when hovering over the
+ * avatar/display name.
+ *
+ * Version Added:
+ *     7.1
+ *
+ * Structure:
+ *     <span class="rb-c-user">
+ *      <a class="user"
+ *         href="@{url}">
+ *       [<span class="rb-c-user__avatar">...</span>]
+ *       @{display_name}
+ *      </a>
+ *      [<span class="rb-c-user-badges">...</span>]
+ *     </span>
+ */
+.rb-c-user {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--ink-u-spacing-m);
+
+  > a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--ink-u-spacing-s);
+  }
+
+  /**
+   * Container for a displayed avatar.
+   *
+   * This can take any standard avatar display as a child.
+   *
+   * Structure:
+   *     <span class="rb-c-user__avatar">
+   *      (
+   *       <img class="avatar djblets-o-avatar" .../>
+   *       |
+   *       <span class="avatar djblets-o-avatar" ...>...</span>
+   *      )
+   *     </span>
+   */
+  &__avatar {
+  }
+}
