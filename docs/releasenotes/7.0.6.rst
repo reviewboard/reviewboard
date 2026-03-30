@@ -1,0 +1,61 @@
+.. default-intersphinx:: djblets5.x rb7.x
+
+
+================================
+Review Board 7.0.6 Release Notes
+================================
+
+**Release date**: TBD
+
+
+:doc:`Review Board 7.0.5 <7.0.5>` was pulled due to a critical bug. This
+release contains all of the fixes and improvements from that version as well.
+
+
+Installation/Upgrade
+====================
+
+Review Board 7.0.6 is compatible with Python 3.8 - 3.13.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To upgrade to this release in an existing Review Board environment, run:
+
+.. code-block:: console
+
+    $ rb-site manage /path/to/sitedir pip install ReviewBoard==7.0.6
+    $ rb-site upgrade /path/to/sitedir
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* `Power Pack for Review Board <https://www.reviewboard.org/powerpack/>`_
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+For assistance with your server, `talk to us about support <Review Board
+Support_>`_.
+
+
+.. _Review Board Support: https://www.reviewboard.org/support/
+
+
+Bug Fixes
+=========
+
+* Review Board 7.0.5 shipped with a critical bug causing editable fields to
+  become non-editable. That issue is now fixed.
+
+* Fixed the :guilabel:`Save and add another` button in some admin forms not
+  working correctly.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Daniel Casares-Iglesias
+* David Trowbridge
+* Michelle Aubin
