@@ -83,6 +83,7 @@ class JSUserSessionInfoTests(TestCase):
                 'confirmShipIt': True,
                 'defaultUseRichText': True,
                 'enableDesktopNotifications': True,
+                'enableSpellChecking': None,
                 'fullName': 'Test User',
                 'mutedReviewRequestsURL':
                     '/api/users/test/muted-review-requests/',
@@ -151,6 +152,7 @@ class JSUserSessionInfoTests(TestCase):
                 'confirmShipIt': True,
                 'defaultUseRichText': True,
                 'enableDesktopNotifications': True,
+                'enableSpellChecking': None,
                 'fullName': 'Test User',
                 'mutedReviewRequestsURL':
                     '/s/local-site-1/api/users/test/muted-review-requests/',
@@ -212,6 +214,7 @@ class JSUserSessionInfoTests(TestCase):
                     'confirmShipIt': True,
                     'defaultUseRichText': False,
                     'enableDesktopNotifications': True,
+                    'enableSpellChecking': None,
                     'fullName': 'Test User',
                     'mutedReviewRequestsURL':
                         '/api/users/test/muted-review-requests/',
@@ -251,6 +254,7 @@ class JSUserSessionInfoTests(TestCase):
                     'confirmShipIt': True,
                     'defaultUseRichText': True,
                     'enableDesktopNotifications': True,
+                    'enableSpellChecking': None,
                     'fullName': 'Test User',
                     'mutedReviewRequestsURL':
                         '/api/users/test/muted-review-requests/',

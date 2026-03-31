@@ -16,6 +16,7 @@
     },
     "devDependencies": {
         "@babel/plugin-external-helpers": "^7.27.1",
+        "@beanbag/codemirror-speak-and-spell": "^1.0.1",
         "@beanbag/frontend-buildkit": "^2.0.0",
         "@beanbag/jasmine-suites": "^3.0.0",
         "@beanbag/js-buildkit": "^1.0.3",

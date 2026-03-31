@@ -292,6 +292,16 @@ interface UserSessionAttrs extends ModelAttributes {
     /** Whether to enable desktop notifications. */
     enableDesktopNotifications: boolean;
 
+    /**
+     * Whether to enable spell checking.
+     *
+     * If ``null``, then the default for the system or browser is used.
+     *
+     * Version Added:
+     *     7.1
+     */
+    enableSpellChecking: boolean | null;
+
     /** The user's full name. */
     fullName: string;
 
@@ -406,6 +416,7 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
         defaultUseRichText: false,
         diffsShowExtraWhitespace: false,
         enableDesktopNotifications: false,
+        enableSpellChecking: null,
         fullName: null,
         loginURL: null,
         mutedReviewRequestsURL: null,
