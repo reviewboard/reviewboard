@@ -24,6 +24,8 @@ from reviewboard.site.urlresolvers import local_site_reverse
 if TYPE_CHECKING:
     from django.template.context import Context
 
+    from reviewboard.accounts.models import Profile
+
 
 logger = logging.getLogger(__name__)
 register = template.Library()
@@ -82,7 +84,7 @@ def js_user_session_info(context):
     if authenticated:
         # Authenticated users.
         siteconfig = SiteConfiguration.objects.get_current()
-        profile = request.user.get_profile()
+        profile: Profile = request.user.get_profile()
         username = user.username
         avatar_urls = {}
         avatar_html = {}
@@ -125,6 +127,7 @@ def js_user_session_info(context):
                 'confirmShipIt': profile.should_confirm_ship_it,
                 'enableDesktopNotifications':
                     profile.should_enable_desktop_notifications,
+                'enableSpellChecking': profile.should_enable_spell_checking,
                 'quickAccessActionIDs': profile.quick_access_actions,
             })
         else:

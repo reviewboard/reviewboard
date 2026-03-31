@@ -371,6 +371,48 @@ class Profile(models.Model):
         self.settings['enable_desktop_notifications'] = enabled
 
     @property
+    def should_enable_spell_checking(self) -> bool | None:
+        """Return whether spell checking should be used for this user.
+
+        If set to ``None``, Review Board will choose the default. This is the
+        default if not explicitly changed.
+
+        Version Added:
+            7.1
+
+        Type:
+            bool:
+            ``True`` if the user has spell checking enabled.
+            ``False`` if the user has spell checking disabled.
+            ``None`` to use the default for the system or browser.
+        """
+        if (profile_settings := self.settings):
+            return profile_settings.get('enable_spell_checking', None)
+
+        return None
+
+    @should_enable_spell_checking.setter
+    def should_enable_spell_checking(
+        self,
+        enabled: bool | None,
+    ) -> None:
+        """Set whether spell checking should be used for this user.
+
+        This can be set to ``None`` to use the default.
+
+        Version Added:
+            7.1
+
+        Args:
+            enabled (bool):
+                The new value for the setting.
+        """
+        if enabled is None:
+            self.settings.pop('enable_spell_checking', None)
+        else:
+            self.settings['enable_spell_checking'] = enabled
+
+    @property
     def quick_access_actions(self) -> Sequence[str]:
         """The IDs of the user's enabled Quick Access actions.
 

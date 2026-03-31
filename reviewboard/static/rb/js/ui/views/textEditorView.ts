@@ -83,6 +83,24 @@ class CodeMirrorWrapper extends BaseView<
      *         Options for the wrapper.
      */
     initialize(options: EditorWrapperOptions) {
+        let enableSpellChecking =
+            UserSession.instance.get('enableSpellChecking');
+
+        /*
+         * This setting allows for 3 possible values: true, false, or null.
+         *
+         * A null value means we'll use the best default setting for the
+         * environment. Right now, that's to turn spell checking off.
+         *
+         * With our Speak-and-Spell plugin, spell checking seems pretty
+         * reliable for the most part, but we may experience browsers that
+         * do a poor job. So this is where we'd dynamically turn it on or off
+         * if we get reports about certain browsers.
+         */
+        if (enableSpellChecking === null) {
+            enableSpellChecking = false;
+        }
+
         const codeMirrorOptions = {
             electricChars: false,
             extraKeys: {
@@ -92,6 +110,7 @@ class CodeMirrorWrapper extends BaseView<
                 'Shift-Tab': false,
                 'Tab': false,
             },
+            inputStyle: enableSpellChecking ? 'contenteditable' : 'textarea',
             lineWrapping: true,
             mode: {
                 highlightFormatting: true,
@@ -108,15 +127,18 @@ class CodeMirrorWrapper extends BaseView<
                     list3: 'rb-markdown-list3',
                 },
             },
+            speakAndSpell: enableSpellChecking,
+            spellcheck: enableSpellChecking,
             styleSelectedText: true,
             theme: 'rb default',
             viewportMargin: options.autoSize ? Infinity : 10,
         };
 
-        this._codeMirror = new CodeMirror(options.parentEl,
-                                          codeMirrorOptions);
+        const parentEl = options.parentEl;
+        const codeMirror = new CodeMirror(parentEl, codeMirrorOptions);
+        this._codeMirror = codeMirror;
 
-        const wrapperEl = this._codeMirror.getWrapperElement();
+        const wrapperEl = codeMirror.getWrapperElement();
         wrapperEl.classList.add('rb-c-text-editor__textarea', '-is-rich');
         this.setElement(wrapperEl);
 
@@ -124,9 +146,9 @@ class CodeMirrorWrapper extends BaseView<
             this.$el.css('min-height', options.minHeight);
         }
 
-        this._codeMirror.on('viewportChange',
-                            () => this.$el.triggerHandler('resize'));
-        this._codeMirror.on('change', () => this.trigger('change'));
+        codeMirror.on('viewportChange',
+                      () => this.$el.triggerHandler('resize'));
+        codeMirror.on('change', () => this.trigger('change'));
     }
 
     /**
@@ -215,11 +237,12 @@ class CodeMirrorWrapper extends BaseView<
      *         The text to insert.
      */
     insertLine(text: string) {
+        const codeMirror = this._codeMirror;
         let position;
 
-        if (this._codeMirror.hasFocus()) {
-            const cursor = this._codeMirror.getCursor();
-            const line = this._codeMirror.getLine(cursor.line);
+        if (codeMirror.hasFocus()) {
+            const cursor = codeMirror.getCursor();
+            const line = codeMirror.getLine(cursor.line);
             position = CodeMirror.Pos(cursor.line, line.length - 1);
 
             if (line.length !== 0) {
@@ -238,7 +261,7 @@ class CodeMirrorWrapper extends BaseView<
             text = '\n' + text;
         }
 
-        this._codeMirror.replaceRange(text, position);
+        codeMirror.replaceRange(text, position);
     }
 
     /**

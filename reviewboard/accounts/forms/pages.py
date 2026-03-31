@@ -13,6 +13,7 @@ from django.contrib.auth.views import RedirectURLMixin
 from django.forms import widgets
 from django.http import HttpResponseRedirect
 from django.urls import reverse
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 from djblets.avatars.forms import (
     AvatarSettingsForm as DjbletsAvatarSettingsForm)
@@ -93,6 +94,20 @@ class AccountSettingsForm(AccountPageForm):
         label=_('Always use Markdown for text fields'),
         required=False)
 
+    enable_spell_checking = forms.NullBooleanField(
+        label=_('Enable spell checking for Markdown text fields'),
+        required=False,
+        help_text=mark_safe(_(
+            '<strong>This feature is in beta.</strong> Spell checking in '
+            'Markdown text fields may not work right in all browsers.'
+        )),
+        widget=forms.Select(choices=(
+            ('', _('Default (disabled)')),
+            (True, _('Enabled')),
+            (False, _('Disabled')),
+        )),
+    )
+
     should_send_email = forms.BooleanField(
         label=_('Get e-mail notification for review requests and reviews'),
         required=False)
@@ -117,6 +132,7 @@ class AccountSettingsForm(AccountPageForm):
         'open_an_issue': 'open_an_issue',
         'should_confirm_ship_it': 'confirm_ship_it',
         'should_enable_desktop_notifications': 'enable_desktop_notifications',
+        'should_enable_spell_checking': 'enable_spell_checking',
         'should_send_email': 'should_send_email',
         'should_send_own_updates': 'should_send_own_updates',
         'timezone': 'timezone',
@@ -177,8 +193,13 @@ class AccountSettingsForm(AccountPageForm):
                     'timezone',
                     'confirm_ship_it',
                     'open_an_issue',
-                    'default_use_rich_text',
                     'syntax_highlighting',
+                ),
+            }),
+            (_('Text Editing'), {
+                'fields': (
+                    'default_use_rich_text',
+                    'enable_spell_checking',
                 ),
             }),
             (_('Notifications'), {
