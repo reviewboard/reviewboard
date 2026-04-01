@@ -25,7 +25,7 @@ from pygments.lexers import (find_lexer_class,
 from reviewboard.codesafety import code_safety_checker_registry
 from reviewboard.deprecation import (
     RemovedInReviewBoard90Warning,
-    RemovedInReviewBoard10_0Warning,
+    RemovedInReviewBoard11_0Warning,
 )
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
 from reviewboard.diffviewer.diffutils import (
@@ -1989,7 +1989,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         return force_str(hashlib.sha1(content).hexdigest())
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
+@deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
 def compute_chunk_last_header(
     *,
     lines: Sequence[DiffLine],
