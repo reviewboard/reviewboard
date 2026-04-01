@@ -14,7 +14,7 @@ import {
  * Information on a button in the dialog.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface DialogButtonInfo {
     /** The class to apply to the button element. */
@@ -54,7 +54,7 @@ export interface DialogButtonInfo {
  * Options for the DialogView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface DialogViewOptions {
     /** The body to show in the dialog. */
@@ -85,7 +85,7 @@ export interface DialogViewOptions {
  * when constructing the view by passing them as options.
  *
  * Deprecated:
- *     8.0:
+ *     9.0:
  *     This view has been deprecated in favor of the Dialog component from
  *     @beanbag/ink.
  */

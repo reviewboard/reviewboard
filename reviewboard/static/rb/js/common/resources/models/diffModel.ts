@@ -18,7 +18,7 @@ import {
  * Attributes for the Diff model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface DiffAttrs extends BaseResourceAttrs {
     /** The base directory for diff filenames within the repository. */
@@ -36,7 +36,7 @@ export interface DiffAttrs extends BaseResourceAttrs {
  * Resource data for the Diff model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface DiffResourceData extends BaseResourceResourceData {
     basedir: string;

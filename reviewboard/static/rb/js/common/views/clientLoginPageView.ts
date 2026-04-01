@@ -17,7 +17,7 @@ import {
  * Options for the ClientLoginPageView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface ClientLoginPageViewOptions extends PageViewOptions {
     /** The name of the client. */
@@ -60,7 +60,7 @@ export interface ClientLoginPageViewOptions extends PageViewOptions {
  * it to Review Board for a user.
  *
  * Version Changed:
- *     8.0:
+ *     9.0:
  *     Renamed from ClientLoginView to ClientLoginPageView and updated to
  *     inherit from PageView.
  *

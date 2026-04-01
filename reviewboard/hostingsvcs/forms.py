@@ -24,10 +24,10 @@ class HostingServiceAuthForm(forms.BaseHostingServiceAuthForm):
     """Base form for handling authentication information for a hosting account.
 
     Deprecated:
-        8.0:
+        9.0:
         This has been moved to :py:class:`reviewboard.hostingsvcs.base.forms.
         BaseHostingServiceAuthForm`. The legacy import will be removed in
-        Review Board 10.
+        Review Board 11.
     """
 
 
@@ -43,10 +43,10 @@ class HostingServiceForm(forms.BaseHostingServiceRepositoryForm):
     """Base form for collecting information for a hosting service repository.
 
     Deprecated:
-        8.0:
+        9.0:
         This has been moved to :py:class:`reviewboard.hostingsvcs.base.forms.
         BaseHostingServiceRepositoryForm`. The legacy import will be removed in
-        Review Board 10.
+        Review Board 11.
     """
 
 

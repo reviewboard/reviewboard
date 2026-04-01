@@ -18,7 +18,7 @@ import {
  * Attributes for the FileDiff model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface FileDiffAttrs extends BaseResourceAttrs {
     /**
@@ -40,7 +40,7 @@ export interface FileDiffAttrs extends BaseResourceAttrs {
  * Resource data for the FileDiff model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface FileDiffResourceData extends BaseResourceResourceData {
     dest_file: string;

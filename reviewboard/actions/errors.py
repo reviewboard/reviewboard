@@ -47,8 +47,8 @@ class DepthLimitExceededError(ClassDeprecatedMixin,
        ])
 
     Deprecated:
-        8.0:
-        This class is no longer used. It will be removed in Review Board 10.
+        9.0:
+        This class is no longer used. It will be removed in Review Board 11.
 
     Version Added:
         6.0

@@ -19,7 +19,7 @@ import {
  * Attributes for the ResourceListItem model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface ResourceListItemAttrs<
     TResource extends BaseResource = BaseResource,

@@ -20,7 +20,7 @@ import {
  * Attributes for the RepositoryCommit model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface RepositoryCommitAttrs extends BaseResourceAttrs {
     /**
@@ -58,7 +58,7 @@ export interface RepositoryCommitAttrs extends BaseResourceAttrs {
  * Resource data for the RepositoryCommit model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface RepositoryCommitResourceData
 extends BaseResourceResourceData {

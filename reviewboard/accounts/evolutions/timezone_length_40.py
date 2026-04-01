@@ -1,7 +1,7 @@
 """Increase max_length of Profile.timezone from 30 to 40.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations

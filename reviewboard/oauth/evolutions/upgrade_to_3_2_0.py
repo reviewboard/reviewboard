@@ -1,7 +1,7 @@
 """Upgrade custom overridden models from oauth2_provider from 1.6.3 to 3.2.0.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations

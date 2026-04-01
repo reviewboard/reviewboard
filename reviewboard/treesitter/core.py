@@ -1,7 +1,7 @@
 """Core interfaces for working with Tree Sitter.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ def get_language(
     """Get a tree sitter language object.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         language_name (str):
@@ -48,7 +48,7 @@ def get_parser(
     """Get a tree sitter parser.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         language_name (str):
@@ -73,7 +73,7 @@ def get_queries(
     """Get queries for a given language.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         language_name (reviewboard.treesitter.language.SupportedLanguage):

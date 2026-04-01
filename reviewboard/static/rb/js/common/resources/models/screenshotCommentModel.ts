@@ -25,7 +25,7 @@ import {
  * Attributes for the ScreenshotComment model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface ScreenshotCommentAttrs extends BaseCommentAttrs {
     /** Height of the comment region, in pixels. */
@@ -55,7 +55,7 @@ export interface ScreenshotCommentAttrs extends BaseCommentAttrs {
  * Resource data for the ScreenshotComment model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface ScreenshotCommentResourceData
 extends BaseCommentResourceData {

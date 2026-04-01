@@ -28,7 +28,7 @@ class DiffCommitsValidationInfoFile(TypedDict):
     caller as fully opaque.
 
     Version Added:
-        8.0
+        9.0
     """
 
     #: The file's name.
@@ -47,7 +47,7 @@ class DiffCommitsValidationInfoFilesByType(TypedDict):
     caller as fully opaque.
 
     Version Added:
-        8.0
+        9.0
     """
 
     #: The list of added files.
@@ -70,7 +70,7 @@ class DiffCommitValidationInfo(TypedDict):
     caller as fully opaque.
 
     Version Added:
-        8.0
+        9.0
     """
 
     #: The commit ID of the parent commit.
@@ -86,7 +86,7 @@ class DiffCommitValidationInfo(TypedDict):
 #: payload.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 SerializedCommitHistoryDiffEntryType: TypeAlias = Literal[
     'added',
     'modified',
@@ -123,7 +123,7 @@ class SerializedCommitHistoryDiffEntry(TypedDict):
 #: caller as fully opaque.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 DiffCommitsValidationInfo: TypeAlias = dict[str, DiffCommitValidationInfo]
 
 
@@ -449,7 +449,7 @@ class CommitHistoryDiffEntry:
     #: The valid entry types.
     #:
     #: Version Changed:
-    #:     8.0:
+    #:     9.0:
     #:     Renamed from ``entry_types`` and changed the type to a set.
     ENTRY_TYPES: set[SerializedCommitHistoryDiffEntryType] = {
         COMMIT_ADDED,

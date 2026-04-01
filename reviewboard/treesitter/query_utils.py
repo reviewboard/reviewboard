@@ -1,7 +1,7 @@
 """Methods for interacting with Tree Sitter queries.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 #: An edit to make to queries.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 #:
 #: Tuple:
 #:     0 (int):
@@ -44,7 +44,7 @@ def get_query_language() -> tree_sitter.Language:
     """Return a language object for the query language.
 
     Version Added:
-        8.0
+        9.0
 
     Returns:
         tree_sitter.Language:
@@ -60,7 +60,7 @@ def apply_edits(
     """Apply edits to a query file.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         content (bytes):
@@ -88,7 +88,7 @@ def get_set3_directive_query() -> tree_sitter.Query:
     """Return a query for finding set! directives with 3 arguments.
 
     Version Added:
-        8.0
+        9.0
 
     Returns:
         tree_sitter.Query:
@@ -120,7 +120,7 @@ def get_set3_edits(
     them out.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         tree (tree_sitter.Tree):
@@ -146,7 +146,7 @@ def get_lua_match_query() -> tree_sitter.Query:
     """Return a query for finding all lua-match? predicates.
 
     Version Added:
-        8.0
+        9.0
 
     Returns:
         tree_sitter.Query:
@@ -171,7 +171,7 @@ def get_lua_match_edits(
     not-match? predicates (using Python regexes).
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         tree (tree_sitter.Tree):
@@ -237,7 +237,7 @@ def get_gsub_query() -> tree_sitter.Query:
     """Return a query for finding all gsub! directives.
 
     Version Added:
-        8.0
+        9.0
 
     Returns:
         tree_sitter.Query:
@@ -261,7 +261,7 @@ def get_gsub_edits(
     pattern arguments to Python regex patterns.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         tree (tree_sitter.Tree):
@@ -319,7 +319,7 @@ def get_all_predicates_query() -> tree_sitter.Query:
     """Return a query for finding all predicates.
 
     Version Added:
-        8.0
+        9.0
 
     Returns:
         tree_sitter.Query:
@@ -339,7 +339,7 @@ def apply_standard_query_edits(
     """Apply standard edits to queries.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         queries (bytes):
@@ -367,7 +367,7 @@ def get_all_predicate_names(
     """Return all the predicate names used in the queries.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         tree (tree_sitter.Tree):

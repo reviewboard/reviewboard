@@ -42,7 +42,7 @@ class RBUserCreationForm(AdminUserCreationForm):
     """A variation of AdminUserCreationForm that allows "." in the username.
 
     Version Changed:
-        8.0:
+        9.0:
         Changed base class to AdminUserCreationForm from UserCreationForm to
         match change in Django 5.
     """

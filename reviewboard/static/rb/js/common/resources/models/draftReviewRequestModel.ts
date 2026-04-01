@@ -27,7 +27,7 @@ import { type UserResourceData } from './userModel';
  * Attributes for the DraftReviewRequest model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface DraftReviewRequestAttrs extends BaseResourceAttrs {
     /** The branch field content. */
@@ -81,7 +81,7 @@ export interface DraftReviewRequestAttrs extends BaseResourceAttrs {
  * Resource data for the DraftReviewRequest model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface DraftReviewRequestResourceData
 extends BaseResourceResourceData {
@@ -229,7 +229,7 @@ export class DraftReviewRequest extends BaseResource<
      * server in order to ensure that the appropriate fields are all there.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -251,7 +251,7 @@ export class DraftReviewRequest extends BaseResource<
             !(options.success || options.error || options.complete),
             dedent`
                 RB.DraftReviewRequest.publish was called using callbacks. This
-                has been removed in Review Board 8.0 in favor of promises.
+                has been removed in Review Board 9.0 in favor of promises.
             `);
 
         await this.ready();

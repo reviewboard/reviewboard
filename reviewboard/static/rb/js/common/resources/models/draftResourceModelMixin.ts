@@ -39,7 +39,7 @@ export const DraftResourceModelMixin = {
      * Otherwise, we delegate to the parent's ready().
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -62,7 +62,7 @@ export const DraftResourceModelMixin = {
               options.ready),
             dedent`
                 RB.DraftResourceModelMixin.ready was called using callbacks.
-                This has been removed in Review Board 8.0 in favor of
+                This has been removed in Review Board 9.0 in favor of
                 promises.
             `);
 
@@ -90,7 +90,7 @@ export const DraftResourceModelMixin = {
      * look up the draft the next time an operation is performed.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -112,7 +112,7 @@ export const DraftResourceModelMixin = {
             !(options.success || options.error || options.complete),
             dedent`
                 RB.DraftResourceModelMixin.destroy was called using callbacks.
-                This has been removed in Review Board 8.0 in favor of
+                This has been removed in Review Board 9.0 in favor of
                 promises.
             `);
 

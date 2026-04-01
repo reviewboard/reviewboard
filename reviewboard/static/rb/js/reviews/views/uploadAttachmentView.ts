@@ -23,7 +23,7 @@ import { ReviewRequestEditor } from '../models/reviewRequestEditorModel';
  * Options for the UploadAttachmentView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface UploadAttachmentViewOptions extends DialogViewOptions {
     /**

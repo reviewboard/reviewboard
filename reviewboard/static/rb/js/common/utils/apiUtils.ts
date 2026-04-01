@@ -15,7 +15,7 @@ import { UserSession } from '../models/userSessionModel';
  * An extended XHR object that includes API-related error fields.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface ExtendedXHR extends JQueryXHR {
     /** The payload from the API response. */
@@ -100,7 +100,7 @@ $.ajaxTransport('arraybuffer blob', function(options, origOptions, jqXHR) {
  * Options for the setActivityIndicator method.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface SetActivityIndicatorOptions {
     /**
@@ -178,7 +178,7 @@ export function setActivityIndicator(
  * Options for the API.request method.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface APIRequestOptions
 extends JQuery.AjaxSettings, SetActivityIndicatorOptions {
@@ -649,7 +649,7 @@ export function promiseToCallbacks<T>(
  * This is used to facilitate unit tests so jasmine can spy on these methods.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export const API = {
     promiseToCallbacks,

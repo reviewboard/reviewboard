@@ -98,7 +98,7 @@ class NoWrapperHtmlFormatter(_HtmlFormatter):
 #: The tag for a diff chunk.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 DiffChunkTag: TypeAlias = Literal[
     'delete',
     'equal',
@@ -110,7 +110,7 @@ DiffChunkTag: TypeAlias = Literal[
 #: A line in the diff.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 DiffLine: TypeAlias = tuple[
     # [0] Virtual line number (row number in the two-column diff).
     int,
@@ -145,7 +145,7 @@ class DiffChunk(TypedDict):
     """Definition for a chunk in the diff.
 
     Version Added:
-        8.0
+        9.0
     """
 
     #: The type of change.
@@ -170,7 +170,7 @@ class DiffChunk(TypedDict):
 #: Type for information about a header in a file.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 HeaderInfo = Mapping[str, str] | None
 
 
@@ -923,7 +923,7 @@ class RawDiffChunkGenerator:
         and other metadata.
 
         Version Changed:
-            8.0:
+            9.0:
             Changed to return a DiffLine tuple instead of a heterogenous list.
 
         Args:
@@ -1431,7 +1431,7 @@ class RawDiffChunkGenerator:
         of the specified lines on both the original and modified files.
 
         Version Changed:
-            8.0:
+            9.0:
             Made the arguments keyword-only.
 
         Args:
@@ -1598,7 +1598,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
     #: don't want old data in the cache to cause errors.
     #:
     #: Version Added:
-    #:     8.0
+    #:     9.0
     CACHE_FORMAT_VERSION = 1
 
     @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
@@ -2007,7 +2007,7 @@ def compute_chunk_last_header(
     returned as a convenience.
 
     Version Changed:
-        8.0:
+        9.0:
         * Made arguments keyword-only.
         * Changed to take in and return a 2-tuple instead of a 2-element list.
 

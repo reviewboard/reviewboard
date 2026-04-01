@@ -19,7 +19,7 @@ import {
  * Options for the RepositoryCommits collection.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface RepositoryCommitsOptions {
     /** The branch to fetch commits from. */
@@ -163,7 +163,7 @@ export class RepositoryCommits extends BaseCollection<
      * this if they want callbacks to fire.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -190,7 +190,7 @@ export class RepositoryCommits extends BaseCollection<
             !(options.success || options.error || options.complete),
             dedent`
                 RB.RepositoryCommits.fetchNext was called using callbacks.
-                This has been removed in Review Board 8.0 in favor of promises.
+                This has been removed in Review Board 9.0 in favor of promises.
             `);
 
         if (this.canFetchNext()) {

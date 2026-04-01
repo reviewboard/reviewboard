@@ -1,7 +1,7 @@
 """Debug helpers for working with Tree Sitter.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 #: Debug flag for TreeSitter highlighting.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 DEBUG_TREESITTER = (os.environ.get('RB_DEBUG_TREESITTER', '') == '1')
 
 
@@ -26,7 +26,7 @@ def print_tree(
     """Print a tree to stdout.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         tree (tree_sitter.Tree):

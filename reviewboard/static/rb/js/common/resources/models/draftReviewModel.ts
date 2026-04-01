@@ -91,7 +91,7 @@ export class DraftReview extends Review<
      * triggered.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -113,7 +113,7 @@ export class DraftReview extends Review<
             !(options.success || options.error || options.complete),
             dedent`
                 RB.DraftReview.publish was called using callbacks. This has
-                been removed in Review Board 8.0 in favor of promises.
+                been removed in Review Board 9.0 in favor of promises.
             `);
 
         this.trigger('publishing');

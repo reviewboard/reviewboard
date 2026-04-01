@@ -1,7 +1,7 @@
 """Tests for reviewboard.treesitter language detection functionality.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations

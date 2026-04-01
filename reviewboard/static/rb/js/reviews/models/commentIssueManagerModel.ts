@@ -556,7 +556,7 @@ export class CommentIssueManager extends BaseModel<
         this.trigger(`issueStatusUpdated:${commentType}:${comment.id}`,
                      eventPayload);
 
-        /* Deprecated as of Review Board 8.0. */
+        /* Deprecated as of Review Board 9.0. */
         this.trigger('issueStatusUpdated', comment, oldIssueStatus,
                      rspComment.timestamp, commentType);
     }

@@ -18,7 +18,7 @@ import {
  * Attributes for the Screenshot model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface ScreenshotAttrs extends BaseResourceAttrs {
     /** The screenshot's caption. */
@@ -36,7 +36,7 @@ export interface ScreenshotAttrs extends BaseResourceAttrs {
  * Resource data for the Screenshot model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface ScreenshotResourceData extends BaseResourceResourceData {
     caption: string;

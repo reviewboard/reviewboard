@@ -2,7 +2,7 @@
 """Update the TreeSitter language information.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 #: MIME types for each supported language.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 LANGUAGE_MIME_TYPES: Mapping[str, list[str]] = {
     'actionscript': [],
     'ada': ['text/x-ada'],
@@ -366,7 +366,7 @@ LANGUAGE_MIME_TYPES: Mapping[str, list[str]] = {
 
 #: reviewboard.treesitter module directory.
 #: Version Added:
-#:     8.0
+#:     9.0
 module_dir = Path(__file__).parents[3] / 'reviewboard' / 'treesitter'
 
 
@@ -375,7 +375,7 @@ class GrammarInfo:
     """Information about a grammar.
 
     Version Added:
-        8.0
+        9.0
     """
 
     #: A list of filename suffixes that this language applies to.
@@ -395,7 +395,7 @@ def load_grammar_info(
     """Load grammar info from JSON data.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         base_path (pathlib.Path):
@@ -439,7 +439,7 @@ def get_grammars(
     """Yield the grammar blobs for a package.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         path (pathlib.Path):
@@ -478,7 +478,7 @@ def load_grammars(
     """Load the grammar information.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         vendor_path (pathlib.Path):
@@ -548,7 +548,7 @@ def parse_arguments(
     """Parse the command-line arguments and return the results.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         args (list of bytes):

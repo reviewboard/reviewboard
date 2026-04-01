@@ -17,7 +17,7 @@ class _DiffData:
     """Storage class for data used in the Myers diff algorithm.
 
     Version Changed:
-        8.0:
+        9.0:
         Moved out of the MyersDiffer class.
     """
 
@@ -34,7 +34,7 @@ class _DiffData:
     #: A set of line numbers which have been modified.
     #:
     #: Version Changed:
-    #:     8.0:
+    #:     9.0:
     #:     Changed from a dict[int, bool] to a set.
     modified: set[int]
 

@@ -178,7 +178,7 @@ export class ReviewGroup extends BaseResource<
      * Mark a review group as starred or unstarred.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -205,7 +205,7 @@ export class ReviewGroup extends BaseResource<
             !(options.success || options.error || options.complete),
             dedent`
                 RB.ReviewGroup.setStarred was called using callbacks. This has
-                been removed in Review Board 8.0 in favor of promises.
+                been removed in Review Board 9.0 in favor of promises.
             `);
 
         const watched = UserSession.instance.watchedGroups;
@@ -221,7 +221,7 @@ export class ReviewGroup extends BaseResource<
      * success or failure.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -247,7 +247,7 @@ export class ReviewGroup extends BaseResource<
             !(options.success || options.error || options.complete),
             dedent`
                 RB.ReviewGroup.addUser was called using callbacks. This has
-                been removed in Review Board 8.0 in favor of promises.
+                been removed in Review Board 9.0 in favor of promises.
             `);
 
         const url = this.url() + 'users/';
@@ -273,7 +273,7 @@ export class ReviewGroup extends BaseResource<
      * success or failure.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -299,7 +299,7 @@ export class ReviewGroup extends BaseResource<
             !(options.success || options.error || options.complete),
             dedent`
                 RB.ReviewGroup.removeUser was called using callbacks. This has
-                been removed in Review Board 8.0 in favor of promises.
+                been removed in Review Board 9.0 in favor of promises.
             `);
 
         const url = this.url() + 'users/';

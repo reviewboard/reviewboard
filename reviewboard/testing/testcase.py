@@ -100,7 +100,7 @@ if TYPE_CHECKING:
 #:          The modified revision of the file.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 FileDiffDetails: TypeAlias = tuple[int, str, str, str, str]
 
 

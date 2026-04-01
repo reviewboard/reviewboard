@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.treesitter.lua_patterns.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations

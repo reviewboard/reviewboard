@@ -2,7 +2,7 @@
  * Action for logging out via POST request.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 
 import {
@@ -19,7 +19,7 @@ import { Action } from './actionModel';
  * with a CSRF token, as required by Django's LogoutView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 @spina
 export class LogoutAction extends Action {

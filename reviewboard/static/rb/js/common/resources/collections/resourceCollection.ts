@@ -223,7 +223,7 @@ export class ResourceCollection<
      * pages.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -241,7 +241,7 @@ export class ResourceCollection<
             !(options.success || options.error || options.complete),
             dedent`
                 RB.ResourceCollection.fetch was called using callbacks. This
-                has been removed in Review Board 8.0 in favor of promises.
+                has been removed in Review Board 9.0 in favor of promises.
             `);
 
         const data = _.extend({}, options.data);
@@ -309,7 +309,7 @@ export class ResourceCollection<
      * by providing `reset: false` in options.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -330,7 +330,7 @@ export class ResourceCollection<
         if (options.success || options.error || options.complete) {
             console.error(dedent`
                 RB.ResourceCollection.fetchPrev was called using callbacks.
-                This has been removed in Review Board 8.0 in favor of
+                This has been removed in Review Board 9.0 in favor of
                 promises.
             `);
         }
@@ -358,7 +358,7 @@ export class ResourceCollection<
      * by providing `reset: false` in options.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -379,7 +379,7 @@ export class ResourceCollection<
         if (options.success || options.error || options.complete) {
             console.error(dedent`
                 RB.ResourceCollection.fetchNext was called using callbacks.
-                This has been removed in Review Board 8.0 in favor of
+                This has been removed in Review Board 9.0 in favor of
                 promises.
             `);
         }
@@ -409,7 +409,7 @@ export class ResourceCollection<
      * This can end up slowing down the server. Use it carefully.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -430,7 +430,7 @@ export class ResourceCollection<
         if (options.success || options.error || options.complete) {
             console.error(dedent`
                 RB.ResourceCollection.fetchAll was called using callbacks.
-                This has been removed in Review Board 8.0 in favor of
+                This has been removed in Review Board 9.0 in favor of
                 promises.
             `);
         }

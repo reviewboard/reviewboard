@@ -52,7 +52,7 @@ export const ArrayBufferTypes = {
  *         the resulting :js:class:`ArrayBuffer` as an argument.
  *
  *         Deprecated:
- *             8.0:
+ *             9.0:
  *             Deprecated in favor of async/promise style usage.
  *
  * Returns:
@@ -89,7 +89,7 @@ export function readBlobAsArrayBuffer(
  *         the resulting string as an argument.
  *
  *         Deprecated:
- *             8.0:
+ *             9.0:
  *             Deprecated in favor of async/promise style usage.
  *
  * Returns:
@@ -128,7 +128,7 @@ export function readBlobAsString(
  *         provided for the blobs.
  *
  *         Deprecated:
- *             8.0:
+ *             9.0:
  *             Deprecated in favor of async/promise style usage.
  */
 export function readManyBlobsAsArrayBuffers(
@@ -163,7 +163,7 @@ export function readManyBlobsAsArrayBuffers(
  *         blobs.
  *
  *         Deprecated:
- *             8.0:
+ *             9.0:
  *             Deprecated in favor of async/promise style usage.
  */
 export function readManyBlobsAsStrings(
@@ -186,7 +186,7 @@ export function readManyBlobsAsStrings(
  * Schema for an array buffer.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface ArrayBufferSchema {
     /**
@@ -308,7 +308,7 @@ export function buildBlob(
  *         the resulting value as an argument.
  *
  *         Deprecated:
- *              8.0:
+ *              9.0:
  *              Deprecated in favor of async/promise style usage.
  *
  * Returns:
@@ -355,7 +355,7 @@ function _readBlobAs<T extends (ArrayBuffer | string)>(
  *         an argument per value loaded.
  *
  *         Deprecated:
- *              8.0:
+ *              9.0:
  *              Deprecated in favor of async/promise style usage.
  *
  * Returns:

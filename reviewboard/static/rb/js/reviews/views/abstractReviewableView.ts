@@ -128,7 +128,7 @@ export class AbstractReviewableView<
                 Deprecation notice: Reviewable subclass is missing
                 defaultCommentBlockFields. Rename reviewableIDField to
                 defaultCommentBlockFields, and make it a list. This will
-                be removed in Review Board 8.0.
+                be removed in Review Board 9.0.
             `);
             defaultCommentBlockFields = [this.model.reviewableIDField];
         }

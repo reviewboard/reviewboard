@@ -24,7 +24,7 @@ import { API } from 'reviewboard/common';
  * Attributes for tho OAuthTokenItem model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface OAuthTokenItemAttrs extends ListItemAttrs {
     /** The URL to the OAuth token list resource. */
@@ -82,7 +82,7 @@ class OAuthTokenItemView extends ConfigFormsListItemView<OAuthTokenItem> {
  * Options for the OAuthTokenView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface OAuthTokenViewOptions {
     /** The serialized token data. */

@@ -74,7 +74,7 @@ _T = TypeVar('_T')
 #: Type definition for differing regions inside a line.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 DiffRegions: TypeAlias = Optional[Sequence[tuple[int, int]]]
 
 

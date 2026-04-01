@@ -5,7 +5,7 @@
  * parts of the codebase use the resource data.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 
 import {
@@ -17,7 +17,7 @@ import {
  * Resource data for the user model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface UserResourceData extends BaseResourceResourceData {
     email: string;

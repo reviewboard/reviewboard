@@ -26,7 +26,7 @@ import {
  * Attributes for the FileAttachmentComment model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface FileAttachmentCommentAttrs extends BaseCommentAttrs {
     /**
@@ -76,7 +76,7 @@ export interface FileAttachmentCommentAttrs extends BaseCommentAttrs {
  * Resource data for the FileAttachmentComment.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface FileAttachmentCommentResourceData
 extends BaseCommentResourceData {

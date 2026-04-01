@@ -1,7 +1,7 @@
 """Password hasher to use when running tests.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ class TestPasswordHasher(BasePasswordHasher):
     Do not use this for production!
 
     Version Added:
-        8.0
+        9.0
     """
 
     algorithm = 'base64'

@@ -17,7 +17,7 @@ import {
  * Options for the DiffFragmentQueue.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface DiffFragmentQueueOptions {
     /** The prefix to use for container element IDs. */
@@ -37,7 +37,7 @@ export interface DiffFragmentQueueOptions {
  * Options for the loadDiff operation.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface LoadDiffOptions {
     /**
@@ -58,7 +58,7 @@ export interface LoadDiffOptions {
  * Data for a queued fragment load operation.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface QueuedLoad {
     /** The ID of the comment to load the fragment for. */
@@ -76,7 +76,7 @@ interface QueuedLoad {
  * batch the loads to only fetch at most one set of fragments per file.
  *
  * Version Changed:
- *     8.0:
+ *     9.0:
  *     Changed to be a regular class instead of a view subclass, and renamed
  *     from DiffFragmentQueueView.
  */

@@ -20,7 +20,7 @@ import {
  * Attributes for the BaseCommentReply model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface BaseCommentReplyAttrs extends BaseResourceAttrs {
     /** The text format type to request for text in all responses. */
@@ -57,7 +57,7 @@ export interface BaseCommentReplyAttrs extends BaseResourceAttrs {
  * Resource data for the BaseCommentReply model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface BaseCommentReplyResourceData
 extends BaseResourceResourceData {

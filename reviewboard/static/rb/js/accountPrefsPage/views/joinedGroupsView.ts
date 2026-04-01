@@ -29,7 +29,7 @@ import {
  * Attributes for the GroupMembershipItem model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface GroupMembershipItemAttrs extends ListItemAttrs {
     /** The display name of the group. */
@@ -197,7 +197,7 @@ class GroupMembershipItemView extends ConfigFormsListItemView<
  * Options for the SiteGroupsView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface SiteGroupsViewOptions {
     /** Data for the groups in the site. */
@@ -309,7 +309,7 @@ class SiteGroupsView extends BaseView<
  * Options for the JoinedGroupsView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface JoinedGroupsViewOptions {
     /** The initial set of groups, grouped by local site. */

@@ -21,7 +21,7 @@ import {
  * Attributes for the UserFileAttachment model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface UserFileAttachmentAttrs extends BaseResourceAttrs {
     /** The file attachment's caption. */
@@ -46,7 +46,7 @@ export interface UserFileAttachmentAttrs extends BaseResourceAttrs {
  * Resource data for the UserFileAttachment model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface UserFileAttachmentResourceData
 extends BaseResourceResourceData {

@@ -18,7 +18,7 @@ import { type LoadDiffOptions } from '../utils/diffFragmentQueue';
  * Options for the DiffFragmentView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface DiffFragmentViewOptions {
     /**

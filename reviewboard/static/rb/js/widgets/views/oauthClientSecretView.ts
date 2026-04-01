@@ -14,7 +14,7 @@ import { API } from 'reviewboard/common';
  * Options for the OAuthClientSecretView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface OAuthClientSecretViewOptions {
     /** The URL of the API endpoint for the OAuth application. */

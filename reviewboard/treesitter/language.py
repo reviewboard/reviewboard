@@ -1,7 +1,7 @@
 """Utilities for and information about Tree Sitter languages.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 #: The supported languages as a set.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 SUPPORTED_LANGUAGES: set[SupportedLanguage] = set(get_args(SupportedLanguage))
 
 
@@ -34,7 +34,7 @@ SUPPORTED_LANGUAGES: set[SupportedLanguage] = set(get_args(SupportedLanguage))
 #: select the most likely one.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 # TODO: make this configurable the way we do with Pygments lexers.
 LANGUAGE_OVERRIDES: Mapping[str, SupportedLanguage] = {
     '.h': 'c',
@@ -48,7 +48,7 @@ LANGUAGE_OVERRIDES: Mapping[str, SupportedLanguage] = {
 #: Markdown info string to language mappings for injection.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 MARKDOWN_INFO_STRING_LANGUAGES: Mapping[str, SupportedLanguage] = {
     'asm': 'asm',
     'assembly': 'asm',
@@ -156,7 +156,7 @@ def get_language_name_for_file(
     """Get the Tree Sitter language name for a given file.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         filename (str):
@@ -191,7 +191,7 @@ def get_language_name_for_info_string(
     """Get the Tree Sitter language name from Markdown code block info string.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         info_string (str):
@@ -221,7 +221,7 @@ def get_language_name_for_mimetype(
     """Get language name for a mimetype.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         mimetype (str):

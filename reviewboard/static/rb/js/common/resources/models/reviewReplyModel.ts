@@ -216,7 +216,7 @@ export class ReviewReply extends BaseResource<
      * After successfully publishing, "published" will be triggered.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -238,7 +238,7 @@ export class ReviewReply extends BaseResource<
             !(options.success || options.error || options.complete),
             dedent`
                 RB.ReviewReply.publish was called using callbacks. This has
-                been removed in Review Board 8.0 in favor of promises.
+                been removed in Review Board 9.0 in favor of promises.
             `);
 
         this.trigger('publishing');
@@ -269,7 +269,7 @@ export class ReviewReply extends BaseResource<
      * this will discard the reply.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -292,7 +292,7 @@ export class ReviewReply extends BaseResource<
             !(options.success || options.error || options.complete),
             dedent`
                 RB.ReviewReply.discardIfEmpty was called using callbacks. This
-                has been removed in Review Board 8.0 in favor of promises.
+                has been removed in Review Board 9.0 in favor of promises.
             `);
 
         await this.ready();

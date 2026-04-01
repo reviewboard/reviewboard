@@ -361,7 +361,7 @@ export class BaseResource<
      * If we fail to load the resource, objects.error() will be called instead.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -384,7 +384,7 @@ export class BaseResource<
                          options.ready),
             dedent`
                 BaseResource.ready was called using callbacks. This has been
-                removed in Review Board 8.0 in favor of promises.
+                removed in Review Board 9.0 in favor of promises.
             `);
 
         const parentObject = this.get('parentObject');
@@ -415,7 +415,7 @@ export class BaseResource<
      * instead.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -437,7 +437,7 @@ export class BaseResource<
             !(options.success || options.error || options.complete),
             dedent`
                 BaseResource.ensureCreated was called using callbacks. This
-                has been removed in Review Board 8.0 in favor of promises.
+                has been removed in Review Board 9.0 in favor of promises.
             `);
 
         await this.ready();
@@ -461,7 +461,7 @@ export class BaseResource<
      * this object.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -483,7 +483,7 @@ export class BaseResource<
             !(options.success || options.error || options.complete),
             dedent`
                 BaseResource.fetch was called using callbacks. This has been
-                removed in Review Board 8.0 in favor of promises.
+                removed in Review Board 9.0 in favor of promises.
             `);
 
         if (this.isNew()) {
@@ -528,7 +528,7 @@ export class BaseResource<
      * If we fail to save the resource, options.error() will be called.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -552,7 +552,7 @@ export class BaseResource<
             !(options.success || options.error || options.complete),
             dedent`
                 BaseResource.save was called using callbacks. This has been
-                removed in Review Board 8.0 in favor of promises.
+                removed in Review Board 9.0 in favor of promises.
             `);
 
         this.trigger('saving', options);
@@ -719,7 +719,7 @@ export class BaseResource<
      * this object's list resource URL for an object to be deleted.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -741,7 +741,7 @@ export class BaseResource<
             !(options.success || options.error || options.complete),
             dedent`
                 BaseResource.destroy was called using callbacks. This has been
-                removed in Review Board 8.0 in favor of promises.
+                removed in Review Board 9.0 in favor of promises.
             `);
 
         this.trigger('destroying', options);

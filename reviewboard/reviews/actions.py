@@ -1047,7 +1047,7 @@ class BaseReviewRequestAction(BaseAction):
         6.0:
         New code should be written using
         :py:class:`reviewboard.actions.base.BaseAction`. This class will be
-        removed in 8.0.
+        removed in 9.0.
     """
 
     apply_to = all_review_request_url_names
@@ -1197,7 +1197,7 @@ class BaseReviewRequestMenuAction(BaseMenuAction):
         6.0:
         New code should be written using
         :py:class:`reviewboard.actions.base.BaseMenuAction`. This class will be
-        removed in 8.0.
+        removed in 9.0.
     """
 
     apply_to = all_review_request_url_names

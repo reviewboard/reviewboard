@@ -19,7 +19,7 @@ import {
  * Attributes for the APIToken model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface APITokenAttrs extends BaseResourceAttrs {
     /**
@@ -76,7 +76,7 @@ export interface APITokenAttrs extends BaseResourceAttrs {
  * Resource data for the APIToken model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface APITokenResourceData extends BaseResourceResourceData {
     expires: string;

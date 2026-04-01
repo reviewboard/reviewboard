@@ -13,7 +13,7 @@ import {
  * Options for FormView.setSubformVisibility.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface SetSubformVisibilityOptions {
     /** The registered group for the subforms. */

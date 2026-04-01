@@ -16,7 +16,7 @@ These migrations are recorded in
 :py:func:`~reviewboard.upgrade.post_upgrade_reset_oauth2_provider`.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations

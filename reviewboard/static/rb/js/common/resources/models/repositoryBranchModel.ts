@@ -18,7 +18,7 @@ import {
  * Attributes for the RepositoryBranch model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface RepositoryBranchAttrs extends BaseResourceAttrs {
     /** The ID of the commit on the tip of the branch. */
@@ -42,7 +42,7 @@ export interface RepositoryBranchAttrs extends BaseResourceAttrs {
  * Resource data for the RepositoryBranch model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface RepositoryBranchResourceData
 extends BaseResourceResourceData {

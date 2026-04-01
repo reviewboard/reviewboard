@@ -1,7 +1,7 @@
 """Utility for converting Lua patterns to Python regexes.
 
 Version Added:
-    8.0
+    9.0
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 #: Translations for Lua character classes.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 LUA_TO_PYTHON_CLASSES = {
     '%%': '%',
     '%A': '[^A-Za-z]',
@@ -44,7 +44,7 @@ LUA_TO_PYTHON_CLASSES = {
 #: Special characters which need to be escaped.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 SPECIAL_CHARS = '.^$*+?{}[]\\|()-'
 
 
@@ -57,7 +57,7 @@ def _translate_lua_char_class(
     This preserves only necessary escapes.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         contents (str):
@@ -120,7 +120,7 @@ def lua_pattern_to_python(
     """Convert a Lua pattern to Python regex.
 
     Version Added:
-        8.0
+        9.0
 
     Args:
         pattern (str):

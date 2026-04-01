@@ -24,7 +24,7 @@ import { API } from 'reviewboard/common';
  * Attributes for the OAuthAppItem model
  *
  * Version Added
- *     8.0
+ *     9.0
  */
 interface OAuthAppItemAttrs extends ListItemAttrs {
     /** The URL to the application list resource. */
@@ -65,7 +65,7 @@ interface OAuthAppItemAttrs extends ListItemAttrs {
  * Options for parsing an OAuthItem.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface OAuthAppItemOptions {
     /** The base for the URL for the edit view. */
@@ -186,7 +186,7 @@ class OAuthAppItemView extends ConfigFormsListItemView<OAuthAppItem> {
  * Options for the OAuthApplicationsView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface OAuthApplicationsViewOptions {
     /** The serialized application information. */

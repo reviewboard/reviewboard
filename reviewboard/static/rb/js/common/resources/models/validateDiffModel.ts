@@ -18,7 +18,7 @@ import {
  * Attributes for the ValidateDiffModel.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface ValidateDiffAttrs extends DiffAttrs {
     /** The local-site prefix to use for URLs. */
@@ -33,7 +33,7 @@ export interface ValidateDiffAttrs extends DiffAttrs {
  * Resource data for the ValidateDiffModel.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface ValidateDiffResourceData extends DiffResourceData {
     repository: number;

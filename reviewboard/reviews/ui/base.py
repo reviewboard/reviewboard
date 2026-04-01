@@ -1321,7 +1321,7 @@ def is_review_ui_enabled_for(
         7.0.3:
         Use :py:meth:`~reviewboard.attachments.models.FileAttachment.
         is_review_ui_accessible_by` instead. This function will be removed
-        in 8.0.
+        in 9.0.
 
     Version Added:
         7.0.2

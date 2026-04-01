@@ -26,7 +26,7 @@ import {
  * Attributes for the DiffComment model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface DiffCommentAttrs extends BaseCommentAttrs {
     /**
@@ -68,7 +68,7 @@ export interface DiffCommentAttrs extends BaseCommentAttrs {
  * Resource data for the DiffComment model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface DiffCommentResourceData extends BaseCommentResourceData {
     base_filediff_id: number;

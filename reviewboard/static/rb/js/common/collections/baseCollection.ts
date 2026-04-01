@@ -32,7 +32,7 @@ export class BaseCollection<
      * takes a context parameter for callbacks and can return promises.
      *
      * Version Changed:
-     *     8.0:
+     *     9.0:
      *     Removed callbacks and the context parameter.
      *
      * Version Changed:
@@ -55,7 +55,7 @@ export class BaseCollection<
             !(options.success || options.error),
             dedent`
                 RB.BaseCollection.fetch was called using callbacks. This has
-                been removed in Review Board 8.0 in favor of promises.
+                been removed in Review Board 9.0 in favor of promises.
             `);
 
         return new Promise((resolve, reject) => {

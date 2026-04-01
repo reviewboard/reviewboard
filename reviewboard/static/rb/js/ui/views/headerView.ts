@@ -13,7 +13,7 @@ import {
  * Options for the HeaderView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface HeaderViewOptions {
     /**

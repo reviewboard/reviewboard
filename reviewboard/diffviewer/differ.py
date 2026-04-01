@@ -42,7 +42,7 @@ class DiffCompatVersion:
 #: The potential values for opcode tags.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 DiffOpcodeTag: TypeAlias = Literal[
     'delete',
     'equal',
@@ -55,7 +55,7 @@ DiffOpcodeTag: TypeAlias = Literal[
 #: The structure used for opcodes.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 DiffOpcode: TypeAlias = tuple[
     DiffOpcodeTag,  # tag
     int,  # i1
@@ -68,7 +68,7 @@ DiffOpcode: TypeAlias = tuple[
 #: The structure used for opcodes with metadata.
 #:
 #: Version Added:
-#:     8.0
+#:     9.0
 DiffOpcodeWithMetadata: TypeAlias = tuple[
     DiffOpcodeTag,  # tag
     int,  # i1
@@ -95,7 +95,7 @@ class Differ:
     #: The diff compatibility version.
     #:
     #: Version Changed:
-    #:     8.0:
+    #:     9.0:
     #:     Changed to not allow ``None`` values.
     compat_version: int
 
@@ -108,7 +108,7 @@ class Differ:
     #: Interesting lines in the file.
     #:
     #: Version Changed:
-    #:     8.0:
+    #:     9.0:
     #:     Changed from a 2-element list to a 2-tuple.
     interesting_lines: tuple[
         dict[str, list[tuple[int, str]]],

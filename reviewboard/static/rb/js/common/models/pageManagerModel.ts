@@ -20,7 +20,7 @@ import { type Page } from './pageModel';
  * Attributes for the PageManager model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface PageManagerAttrs extends ModelAttributes {
     /** The page instance. */
@@ -35,7 +35,7 @@ interface PageManagerAttrs extends ModelAttributes {
  * Declaration for a class type of a Page model subclass.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface PageModelClass<
     TPage extends Page,
@@ -54,7 +54,7 @@ interface PageModelClass<
  * Declaration for a class type of a PageView subclass.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface PageViewClass<
     TPage extends Page,
@@ -74,7 +74,7 @@ interface PageViewClass<
  * Options for the PageManager.setupPage operation.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface SetupPageOptions<
     TPage extends Page = Page,

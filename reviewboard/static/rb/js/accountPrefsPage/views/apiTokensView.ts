@@ -62,7 +62,7 @@ const POLICY_LABELS = {
  * Attributes for the APITokenItem model.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface APITokenItemAttrs extends ResourceListItemAttrs<APIToken> {
     /**
@@ -331,7 +331,7 @@ class APITokenItem extends ConfigFormsResourceListItem<
  * Options for the APITokenItemCollection.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface APITokenItemCollectionOptions {
     /** The URL prefix to use for the local site, if present. */
@@ -387,7 +387,7 @@ class APITokenItemCollection extends BaseCollection<
  * Options for the PolicyEditorView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface PolicyEditorViewOptions extends DialogViewOptions {
     /**
@@ -959,7 +959,7 @@ class APITokenItemView extends ConfigFormsListItemView<APITokenItem> {
  * Options for the SiteAPITokensView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 interface SiteAPITokensViewOptions {
     /** The list of existing API tokens. */
@@ -1114,7 +1114,7 @@ class SiteAPITokensView extends BaseView<
  * Options for the APITokensView.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export interface APITokensViewOptions {
     /** Initial contents of the tokens list. */

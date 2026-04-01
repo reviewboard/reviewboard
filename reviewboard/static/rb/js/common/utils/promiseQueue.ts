@@ -2,7 +2,7 @@
  * A queue for running multiple promises in sequence.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 
 
@@ -12,7 +12,7 @@
  * This is either a promise, or a method that returns a promise.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 type Task = Promise<unknown> | ((abort: AbortSignal) => Promise<unknown>);
 
@@ -21,7 +21,7 @@ type Task = Promise<unknown> | ((abort: AbortSignal) => Promise<unknown>);
  * A queue for running multiple promises in sequence.
  *
  * Version Added:
- *     8.0
+ *     9.0
  */
 export class PromiseQueue {
     /**********************
