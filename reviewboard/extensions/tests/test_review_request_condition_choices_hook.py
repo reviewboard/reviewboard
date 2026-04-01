@@ -1,7 +1,7 @@
 """Tests for reviewboard.extensions.hooks.ReviewRequestConditionChoicesHook.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations

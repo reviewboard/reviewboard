@@ -1,7 +1,7 @@
 """An interface to a bug tracker.
 
 Version Changed:
-    7.1:
+    8.0:
     Renamed this module from ``reviewboard.hostingsvcs.bugtracker``.
 """
 
@@ -24,7 +24,7 @@ class BugInfo(TypedDict):
     """Information about a bug.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The description of the bug.
@@ -47,7 +47,7 @@ class BaseBugTracker:
     bug trackers.
 
     Version Changed:
-        7.1:
+        8.0:
         Moved and renamed from
         ``reviewboard.hostingsvcs.bugtracker.BugTracker``.
     """
@@ -118,7 +118,7 @@ class BaseBugTracker:
         """Return a key to use when caching fetched bug information.
 
         Version Changed:
-            7.1:
+            8.0:
             Changed to return a list of strings for the cache key, which
             :py:func:`djblets.cache.backend.cache_memoize` will use to create a
             safely escaped cache key.

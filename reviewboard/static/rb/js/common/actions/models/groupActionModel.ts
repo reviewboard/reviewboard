@@ -20,7 +20,7 @@ export interface GroupActionAttrs extends ActionAttrs {
      * The IDs of the child actions, grouped by attachment point ID.
      *
      * Version Changed:
-     *     7.1:
+     *     8.0:
      *     This is now organized by attachment point ID.
      */
     children: Record<string, string[]>;

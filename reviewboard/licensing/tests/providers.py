@@ -1,7 +1,7 @@
 """License providers common to unit tests.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ class BasicTestsLicenseProvider(BaseLicenseProvider):
     This also provides a custom ``test`` action and license updating.
 
     Version Added:
-        7.1
+        8.0
     """
 
     license_provider_id = 'basic-tests-provider'
@@ -334,7 +334,7 @@ class ExpiredTestsLicenseProvider(BaseLicenseProvider):
       Expired, in grace period as of 2 days ago.
 
     Version Added:
-        7.1
+        8.0
     """
 
     license_provider_id = 'expired-tests-provider'

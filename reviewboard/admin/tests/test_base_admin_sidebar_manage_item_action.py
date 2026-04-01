@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.admin.actions.BaseAdminSidebarManageItemAction.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ class BaseAdminSidebarManageItemActionTests(TestCase):
     """Unit tests for BaseAdminSidebarManageItemAction.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_get_add_item_url_with_result(self) -> None:

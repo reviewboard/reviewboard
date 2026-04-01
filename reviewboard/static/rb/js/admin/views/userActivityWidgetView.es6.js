@@ -106,7 +106,7 @@ RB.Admin.UserActivityWidgetView = RB.Admin.WidgetView.extend({
      * Return the label for a slice in the pie chart.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Args:
      *     label (string, unused):

@@ -2,7 +2,7 @@
  * Extension hook for extending the comment dialog.
  *
  * Version Changed:
- *     7.1:
+ *     8.0:
  *     This is now an ESM module supporting TypeScript.
  */
 
@@ -24,7 +24,7 @@ import {
  * Attributes for CommentDialogHook.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface CommentDialogHookAttrs extends ExtensionHookAttrs {
     /** The view type to construct in the comment dialog. */
@@ -41,7 +41,7 @@ export interface CommentDialogHookAttrs extends ExtensionHookAttrs {
  * the comment dialog and augment the contents of the dialog.
  *
  * Version Changed:
- *     7.1:
+ *     8.0:
  *     This is now a modern ES6-style class and supports typing using
  *     TypeScript.
  */

@@ -2,7 +2,7 @@
  * ESLint configuration.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 
 import beanbag from '@beanbag/eslint-plugin';

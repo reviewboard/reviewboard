@@ -125,7 +125,7 @@ class Assembla(BaseHostingService):
         which repository on the server to use.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:
@@ -198,7 +198,7 @@ class Assembla(BaseHostingService):
         will be used by the SCMTool.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:

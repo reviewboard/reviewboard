@@ -1596,7 +1596,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
         This can be overridden by the caller to another value.
 
         Version Changed:
-            7.1:
+            8.0:
             * Made all arguments keyword-only.
             * Added the ``send_name`` argument.
 
@@ -1623,7 +1623,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
                 Whether to send the name in the payload.
 
                 Version Added:
-                    7.1
+                    8.0
 
         Returns:
             dict:

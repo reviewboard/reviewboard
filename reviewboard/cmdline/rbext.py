@@ -724,7 +724,7 @@ class CreateCommand(BaseCommand):
         """Create the content for a pyproject.toml file.
 
         Version Changed:
-            7.1:
+            8.0:
             Added ``author``, ``author_email``, ``class_name``, ``summary``,
             and ``version`` arguments.
 
@@ -733,19 +733,19 @@ class CreateCommand(BaseCommand):
                 The name of the author of the extension.
 
                 Version Added:
-                    7.1
+                    8.0
 
             author_email (str):
                 The e-mail address of the author of the extension.
 
                 Version Added:
-                    7.1
+                    8.0
 
             class_name (str):
                 The name of the extension class.
 
                 Version Added:
-                    7.1
+                    8.0
 
             package_name (str):
                 The name of the package.
@@ -754,13 +754,13 @@ class CreateCommand(BaseCommand):
                 A summary of the package.
 
                 Version Added:
-                    7.1
+                    8.0
 
             version (str):
                 The version of the package.
 
                 Version Added:
-                    7.1
+                    8.0
 
         Returns:
             str:

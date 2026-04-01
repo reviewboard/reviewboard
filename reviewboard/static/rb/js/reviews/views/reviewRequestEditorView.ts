@@ -675,7 +675,7 @@ export class ReviewRequestEditorView extends BaseView<
      * Prompt the user to load an unpublished draft.
      *
      * Version Changed:
-     *     7.1:
+     *     8.0:
      *     This function is now asynchronous, returning a Promise.
      *
      * Returns:
@@ -830,7 +830,7 @@ export class ReviewRequestEditorView extends BaseView<
      * closing the review request.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Returns:
      *     Promise<void>:
@@ -886,7 +886,7 @@ export class ReviewRequestEditorView extends BaseView<
      * This will prompt for confirmation before closing the review request.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Returns:
      *     Promise<void>:
@@ -932,7 +932,7 @@ export class ReviewRequestEditorView extends BaseView<
      * This will prompt for confirmation before closing the review request.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Returns:
      *     Promise<void>:
@@ -985,7 +985,7 @@ export class ReviewRequestEditorView extends BaseView<
      * will be deleted.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Returns:
      *     Promise<void>:

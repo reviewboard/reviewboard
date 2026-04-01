@@ -475,7 +475,7 @@ class ReviewRequest(BaseReviewRequestDetails):
     #: extension authors. Please us :py:meth:`get_diffsets` directly.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     _diffsets_with_filediffs: bool
 
     #: The cached review request draft.
@@ -492,7 +492,7 @@ class ReviewRequest(BaseReviewRequestDetails):
     #: extension authors. Please us :py:meth:`get_latest_diffset` directly.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     _latest_diffset: Optional[DiffSet]
 
     @staticmethod
@@ -970,7 +970,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         inconsistencies in repeated calls.
 
         Version Changed:
-            7.1:
+            8.0:
             The result of this is now cached by this object.
 
         Version Changed:
@@ -1208,7 +1208,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         This will also fetch all associated FileDiffs.
 
         Version Changed:
-            7.1:
+            8.0:
             Added the ``with_filediffs`` argument.
 
         Version Changed:
@@ -1232,7 +1232,7 @@ class ReviewRequest(BaseReviewRequestDetails):
                 this will update the cache with the pre-fetched files.
 
                 Version Added:
-                    7.1
+                    8.0
 
         Returns:
             list of reviewboard.diffviewer.models.DiffSet:
@@ -1297,7 +1297,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         The result is cached on this object for future calls.
 
         Version Changed:
-            7.1:
+            8.0:
             The result is now cached.
 
         Returns:
@@ -2199,7 +2199,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         * :py:meth:`get_latest_diffset`
 
         Version Added:
-            7.1
+            8.0
         """
         d = self.__dict__
 

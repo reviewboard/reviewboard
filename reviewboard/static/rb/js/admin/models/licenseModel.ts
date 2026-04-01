@@ -5,7 +5,7 @@
  * system, including license status tracking, updates, and management.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 
 import {
@@ -26,7 +26,7 @@ import {
  * The current status of a license.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export enum LicenseStatus {
     /** No license is currently active. */
@@ -47,7 +47,7 @@ export enum LicenseStatus {
  * The status of a license check operation.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export enum LicenseCheckStatus {
     /** Checking for an updated license. */
@@ -79,7 +79,7 @@ export enum LicenseCheckStatus {
  * This is returned by Review Board.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface CheckUpdatesProcessResponsePayload {
     /** The current status of the license check. */
@@ -94,7 +94,7 @@ export interface CheckUpdatesProcessResponsePayload {
  * Options for calling an action on the license provider.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface CallActionOptions {
     /** The name of the action. */
@@ -112,7 +112,7 @@ export interface CallActionOptions {
  * A displayed action that can be taken on a license.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface LicenseAction {
     /** The unique identifier for this action. */
@@ -139,7 +139,7 @@ export interface LicenseAction {
  * A displayed line item for the license.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface LicenseLineItem {
     /**
@@ -162,7 +162,7 @@ export interface LicenseLineItem {
  * Attributes for a license.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface LicenseAttrs {
     /** The target used for any actions invoked on behalf of the license. */
@@ -235,7 +235,7 @@ export interface LicenseAttrs {
  * Options for a license.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface LicenseOptions {
     /** CSRF token for any actions performed on this license. */
@@ -250,7 +250,7 @@ export interface LicenseOptions {
  * operations.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 @spina({
     prototypeAttrs: ['actionBuilders'],

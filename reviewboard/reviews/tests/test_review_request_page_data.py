@@ -56,25 +56,25 @@ class ReviewRequestPageDataTests(TestCase):
     #: This covers all comment types.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     all_comments: list[BaseComment]
 
     #: The test change descriptions created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     changedescs: list[ChangeDescription]
 
     #: The test diff comments created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     diff_comments: list[Comment]
 
     #: The test DiffSets created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     diffsets: list[DiffSet]
 
     #: The test draft created.
@@ -83,67 +83,67 @@ class ReviewRequestPageDataTests(TestCase):
     #: The test file attachment comments created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     file_attachment_comments: list[FileAttachmentComment]
 
     #: The test file attachments created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     file_attachments: list[FileAttachment]
 
     #: The test FileDiffs created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     filediffs: list[FileDiff]
 
     #: The test general comments created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     general_comments: list[GeneralComment]
 
     #: The test inactive file attachments created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     inactive_screenshots: list[Screenshot]
 
     #: The test inactive screenshots created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     inactive_file_attachments: list[FileAttachment]
 
     #: The test issue counts created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     issue_counts: dict[str, int]
 
     #: The test reviews created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     reviews: list[Review]
 
     #: The test screenshot comments created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     screenshot_comments: list[ScreenshotComment]
 
     #: The test screenshots created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     screenshots: list[Screenshot]
 
     #: The test status updates created.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     status_updates: list[StatusUpdate]
 
     def test_query_data_pre_etag(self) -> None:
@@ -1743,7 +1743,7 @@ class ReviewRequestPageDataTests(TestCase):
         """Perform a test of state from pre-ETag calculations.
 
         Version Changed:
-            7.1:
+            8.0:
             Added the following argument: ``expected_queries``,
             ``expect_diffs``.
 
@@ -1752,7 +1752,7 @@ class ReviewRequestPageDataTests(TestCase):
                 A function returning a list of expected queries.
 
                 Version Added:
-                    7.1
+                    8.0
 
             entry_classes (list of type, optional):
                 The list of entry classes available for the page data.
@@ -1764,7 +1764,7 @@ class ReviewRequestPageDataTests(TestCase):
                 Whether to expect diffs in the results.
 
                 Version Added:
-                    7.1
+                    8.0
 
             expect_draft (bool, optional):
                 Whether to expect a review request draft in the results.
@@ -1836,7 +1836,7 @@ class ReviewRequestPageDataTests(TestCase):
         """Perform a test of state from post-ETag calculations.
 
         Version Changed:
-            7.1:
+            8.0:
             Added the following argument: ``expected_queries``,
 
         Args:
@@ -1844,7 +1844,7 @@ class ReviewRequestPageDataTests(TestCase):
                 A function returning a list of expected queries.
 
                 Version Added:
-                    7.1
+                    8.0
 
             entry_classes (list of type, optional):
                 The list of entry classes available for the page data.
@@ -1966,7 +1966,7 @@ class ReviewRequestPageDataTests(TestCase):
         """Populate review request state to test against.
 
         Version Changed:
-            7.1:
+            8.0:
             Added the following arguments: ``enable_changedescs``,
             ``enable_diff_comments``, ``enable_diffs``, ``enable_draft``,
             ``enable_file_attachment_comments``, ``enable_file_attachments``,
@@ -1979,19 +1979,19 @@ class ReviewRequestPageDataTests(TestCase):
                 Whether to enable change descriptions in the database.
 
                 Version Added:
-                    7.1
+                    8.0
 
             enable_diff_comments (bool, optional):
                 Whether to enable diff comments in the database.
 
                 Version Added:
-                    7.1
+                    8.0
 
             enable_diffs (bool, optional):
                 Whether to enable diffs in the database.
 
                 Version Added:
-                    7.1
+                    8.0
 
             enable_draft (bool, optional):
                 Whether to enable a draft for the revie request in the
@@ -2001,43 +2001,43 @@ class ReviewRequestPageDataTests(TestCase):
                 Whether to enable file attachment comments in the database.
 
                 Version Added:
-                    7.1
+                    8.0
 
             enable_file_attachments (bool, optional):
                 Whether to enable file attachments in the database.
 
                 Version Added:
-                    7.1
+                    8.0
 
             enable_general_comments (bool, optional):
                 Whether to enable general comments in the database.
 
                 Version Added:
-                    7.1
+                    8.0
 
             enable_reviews (bool, optional):
                 Whether to enable reviews in the database.
 
                 Version Added:
-                    7.1
+                    8.0
 
             enable_screenshot_comments (bool, optional):
                 Whether to enable screenshot comments in the database.
 
                 Version Added:
-                    7.1
+                    8.0
 
             enable_screenshots (bool, optional):
                 Whether to enable screenshots in the database.
 
                 Version Added:
-                    7.1
+                    8.0
 
             enable_status_updates (bool, optional):
                 Whether to enable Status Updates in the database.
 
                 Version Added:
-                    7.1
+                    8.0
         """
         now = timezone.now()
         days_offset: int = 0

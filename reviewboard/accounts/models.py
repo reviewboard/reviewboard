@@ -54,7 +54,7 @@ logger = logging.getLogger(__name__)
 #: A type alias for an object that can be starred by a user profile.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 StarrableObject: TypeAlias = Union[Group, ReviewRequest]
 
 
@@ -62,7 +62,7 @@ class UserLocalSiteStats(TypedDict):
     """Statistics about a user's Local Site relationships.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The list of IDs of LocalSites for which the user is an administrator.
@@ -297,7 +297,7 @@ class Profile(models.Model):
         """Whether to prompt to confirm publishing a Ship It! review.
 
         Version Added:
-            7.1
+            8.0
         """
         return (not self.settings or
                 self.settings.get('confirm_ship_it', True))
@@ -310,7 +310,7 @@ class Profile(models.Model):
         """Set whether to prompt to confirm publishing a Ship It! review.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             confirm_ship_it (bool):
@@ -342,7 +342,7 @@ class Profile(models.Model):
         enable desktop notifications by default.
 
         Version Changed:
-            7.1:
+            8.0:
             This property can now be changed.
 
         Type:
@@ -362,7 +362,7 @@ class Profile(models.Model):
         """Set whether desktop notifications should be used for this user.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             enabled (bool):
@@ -378,7 +378,7 @@ class Profile(models.Model):
         default if not explicitly changed.
 
         Version Added:
-            7.1
+            8.0
 
         Type:
             bool:
@@ -401,7 +401,7 @@ class Profile(models.Model):
         This can be set to ``None`` to use the default.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             enabled (bool):
@@ -417,7 +417,7 @@ class Profile(models.Model):
         """The IDs of the user's enabled Quick Access actions.
 
         Version Added:
-            7.1
+            8.0
 
         Type:
             list of str
@@ -430,12 +430,12 @@ class Profile(models.Model):
         quick_access_actions = settings.get('quick_access_action_ids', [])
 
         if not quick_access_actions:
-            # Check if we have any legacy (early-7.1) actions stored. If so,
+            # Check if we have any legacy (early-8.0) actions stored. If so,
             # convert them.
             #
             # This only impacts actions stored on RBCommons during the time
             # in which this feature was deployed there, before actions were
-            # reworked later in 7.1's development. This can all be removed
+            # reworked later in 8.0's development. This can all be removed
             # once stored settings there are all updated.
             legacy_quick_access_actions = settings.get('quick_access_actions')
 
@@ -473,7 +473,7 @@ class Profile(models.Model):
         """Set the IDs of the user's enabled Quick Access actions.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             action_ids (list of str):
@@ -684,7 +684,7 @@ class Profile(models.Model):
         will fall back to querying the database.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             obj (StarrableObject):
@@ -893,7 +893,7 @@ class Profile(models.Model):
         of these objects.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             model (type):
@@ -919,7 +919,7 @@ class Profile(models.Model):
         and is recommended when working with bulk lists of groups.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             pks (list):
@@ -945,7 +945,7 @@ class Profile(models.Model):
         requests.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             pks (list):
@@ -1043,7 +1043,7 @@ class Profile(models.Model):
         """Populate the star cache from state in the database.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             pks (list):
@@ -1325,7 +1325,7 @@ class _ReviewBoardUser(BaseUser):
     checking.
 
     Version Added:
-        7.1
+        8.0
     """
 
     ######################

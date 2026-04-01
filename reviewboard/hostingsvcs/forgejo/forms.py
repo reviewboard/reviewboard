@@ -1,7 +1,7 @@
 """Hosting service support for Forgejo.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ class ForgejoForm(BaseHostingServiceRepositoryForm):
     """Hosting service form for Forgejo.
 
     Version Added:
-        7.1
+        8.0
     """
 
     repository_owner = forms.CharField(

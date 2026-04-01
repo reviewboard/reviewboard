@@ -1,7 +1,7 @@
 """Unit tests for the Forgejo hosting service.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ class ForgejoTestCase(HostingServiceTestCase[Forgejo]):
     """Base class for Forgejo test suites.
 
     Version Added:
-        7.1
+        8.0
     """
 
     service_name = 'forgejo'
@@ -64,7 +64,7 @@ class ForgejoTests(ForgejoTestCase):
     """Unit tests for the Forgejo hosting service.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_service_support(self) -> None:
@@ -739,7 +739,7 @@ class ForgejoClientTests(ForgejoTestCase):
     """Unit tests for the ForgejoClient
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_get_http_credentials_with_token(self) -> None:
@@ -912,7 +912,7 @@ class ForgejoCloseSubmittedHookTests(ForgejoTestCase):
     """Unit tests for the Forgejo close-submitted webhook.
 
     Version Added:
-        7.1
+        8.0
     """
 
     fixtures = ['test_users', 'test_scmtools']

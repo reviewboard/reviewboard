@@ -1,7 +1,7 @@
 """Information on product licenses.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -31,7 +31,7 @@ class LicenseStatus(Enum):
     """The status of a license.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The license has not yet been activated.
@@ -51,7 +51,7 @@ class LicenseLineItem(TypedDict):
     """A line item to show for a license.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The content for the line item.
@@ -79,7 +79,7 @@ class LicenseInfo:
     fully-featured license model.
 
     Version Added:
-        7.1
+        8.0
     """
 
     ######################
@@ -389,7 +389,7 @@ if TYPE_CHECKING:
 #: term.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 _DEFAULT_SUMMARY_FORMATS: _DefaultSummaryFormats = {
     LicenseStatus.UNLICENSED: {
         (): _('{product} is not licensed!'),

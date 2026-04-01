@@ -1,7 +1,7 @@
 """Built-in actions for the admins app.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -51,7 +51,7 @@ class BaseAdminSidebarGroupAction(BaseGroupAction):
     at the end of the items for the group.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: A template hook point to include at the bottom of the items.
@@ -65,7 +65,7 @@ class BaseAdminSidebarManageItemAction(BaseAction):
     and item counts.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The admin site name used for URL resolution.
@@ -206,7 +206,7 @@ class AdminSidebarActionGroupRenderer(SidebarActionGroupRenderer):
     action group has a ``sidebar_hook_point`` attribute.
 
     Version Added:
-        7.1
+        8.0
     """
 
     template_name = 'admin/actions/sidebar_group_action.html'
@@ -220,7 +220,7 @@ class AdminMainNavGroupAction(BaseAdminSidebarGroupAction):
     """Administration navigation group action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-main-nav-group'
@@ -236,7 +236,7 @@ class AdminDashboardNavAction(BaseAction):
     """Administration -> Dashboard navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-dashboard-nav'
@@ -253,7 +253,7 @@ class AdminLicensesNavAction(BaseAction):
     """Administration -> Licenses navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-licenses-nav'
@@ -270,7 +270,7 @@ class AdminSecurityCenterNavAction(BaseAction):
     """Administration -> Security navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-security-center-nav'
@@ -287,7 +287,7 @@ class AdminExtensionsNavAction(BaseAction):
     """Administration -> Extensions navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-extensions-nav'
@@ -304,7 +304,7 @@ class AdminIntegrationsNavAction(BaseAction):
     """Administration -> Integrations navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-integrations-nav'
@@ -321,7 +321,7 @@ class AdminDatabaseNavAction(BaseAction):
     """Administration -> Database navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-database-nav'
@@ -342,7 +342,7 @@ class AdminSettingsNavGroupAction(BaseAdminSidebarGroupAction):
     """Settings navigation group action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-nav-group'
@@ -358,7 +358,7 @@ class AdminSettingsGeneralNavAction(BaseAction):
     """Settings -> General navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-general-nav'
@@ -375,7 +375,7 @@ class AdminSettingsAuthenticationNavAction(BaseAction):
     """Settings -> Authentication navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-auth-nav'
@@ -392,7 +392,7 @@ class AdminSettingsAvatarsNavAction(BaseAction):
     """Settings -> Avatars navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-avatars-nav'
@@ -409,7 +409,7 @@ class AdminSettingsEmailNavAction(BaseAction):
     """Settings -> E-Mail navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-email-nav'
@@ -426,7 +426,7 @@ class AdminSettingsReviewsNavAction(BaseAction):
     """Settings -> Review Workflow navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-reviews-nav'
@@ -443,7 +443,7 @@ class AdminSettingsDiffsNavAction(BaseAction):
     """Settings -> Diff Viewer navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-diffs-nav'
@@ -460,7 +460,7 @@ class AdminSettingsLoggingNavAction(BaseAction):
     """Settings -> Logging navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-logging-nav'
@@ -477,7 +477,7 @@ class AdminSettingsSSHNavAction(BaseAction):
     """Settings -> SSH navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-ssh-nav'
@@ -494,7 +494,7 @@ class AdminSettingsStorageNavAction(BaseAction):
     """Settings -> File Storage navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-storage-nav'
@@ -511,7 +511,7 @@ class AdminSettingsPrivacyNavAction(BaseAction):
     """Settings -> User Privacy navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-privacy-nav'
@@ -528,7 +528,7 @@ class AdminSettingsSupportNavAction(BaseAction):
     """Settings -> Support navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-support-nav'
@@ -545,7 +545,7 @@ class AdminSettingsSearchNavAction(BaseAction):
     """Settings -> Search navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-settings-search-nav'
@@ -570,7 +570,7 @@ class AdminSidebarManageActionRenderer(SidebarItemActionRenderer):
     from cache.
 
     Version Added:
-        7.1
+        8.0
     """
 
     template_name = 'admin/actions/sidebar_item_action.html'
@@ -652,7 +652,7 @@ class AdminSidebarManageActionGroupRenderer(AdminSidebarActionGroupRenderer):
     fetched by the item renderer as needed if not found in the cache.
 
     Version Added:
-        7.1
+        8.0
     """
 
     default_item_renderer_cls = AdminSidebarManageActionRenderer
@@ -745,7 +745,7 @@ class AdminManageNavGroupAction(BaseAdminSidebarGroupAction):
     """Manage navigation group action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-manage-nav-group'
@@ -763,7 +763,7 @@ class AdminManageUsersNavAction(BaseAdminSidebarManageItemAction):
     """Manage -> Users navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-manage-users-nav'
@@ -780,7 +780,7 @@ class AdminManageReviewGroupsNavAction(BaseAdminSidebarManageItemAction):
     """Manage -> Review Groups navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-manage-review-groups-nav'
@@ -797,7 +797,7 @@ class AdminManageDefaultReviewersNavAction(BaseAdminSidebarManageItemAction):
     """Manage -> Default Reviewers navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-manage-default-reviewers-nav'
@@ -814,7 +814,7 @@ class AdminManageRepositoriesNavAction(BaseAdminSidebarManageItemAction):
     """Manage -> Repositories navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-manage-repositories-nav'
@@ -831,7 +831,7 @@ class AdminManageWebHooksNavAction(BaseAdminSidebarManageItemAction):
     """Manage -> WebHooks navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-manage-webhooks-nav'
@@ -848,7 +848,7 @@ class AdminManageHostingAccountsNavAction(BaseAdminSidebarManageItemAction):
     """Manage -> Hosting Accounts navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-manage-hosting-accounts-nav'
@@ -865,7 +865,7 @@ class AdminManageOAuth2AppsNavAction(BaseAdminSidebarManageItemAction):
     """Manage -> OAuth2 Applications navigation action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     action_id = 'admin-manage-oauth-app-nav'
@@ -885,7 +885,7 @@ def get_default_admin_actions() -> Iterator[BaseAction]:
     be called by any other callers.
 
     Version Added:
-        7.1
+        8.0
 
     Yields:
         reviewboard.actions.base.BaseAction:
@@ -935,7 +935,7 @@ def get_default_admin_attachment_points() -> Iterator[ActionAttachmentPoint]:
     meant to be called by any other callers.
 
     Version Added:
-        7.1
+        8.0
 
     Yields:
         reviewboard.actions.base.ActionAttachmentPoint:
@@ -959,7 +959,7 @@ def _get_manage_action_item_url(
     Any errors will be caught and logged.
 
     Version Added:
-        7.1
+        8.0
 
     Args:
         action (reviewboard.actions.base.BaseAction):
@@ -992,7 +992,7 @@ def _get_manage_action_item_count(
     Any errors will be caught and logged.
 
     Version Added:
-        7.1
+        8.0
 
     Args:
         action (reviewboard.actions.base.BaseAction):
@@ -1022,7 +1022,7 @@ def _invalidate_cache_for_model(
     invalidated.
 
     Version Added:
-        7.1
+        8.0
 
     Args:
         model (type):
@@ -1052,7 +1052,7 @@ def _on_post_save(
     shown.
 
     Version Added:
-        7.1
+        8.0
 
     Args:
         sender (type):
@@ -1081,7 +1081,7 @@ def _on_post_delete(
     shown.
 
     Version Added:
-        7.1
+        8.0
 
     Args:
         sender (type):

@@ -1,7 +1,7 @@
 """Client for Forgejo.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -55,7 +55,7 @@ class ForgejoClient(HostingServiceClient):
     """Hosting service client for Forgejo.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: Regex for index lines in the diff.

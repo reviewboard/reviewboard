@@ -557,7 +557,7 @@ export class DiffViewerPageView extends ReviewablePageView<
      *         exclude the review UI's static media in the rendered output.
      *
      *         Version Added:
-     *             7.1
+     *             8.0
      *
      */
     queueLoadDiff(

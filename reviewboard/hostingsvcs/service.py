@@ -37,10 +37,10 @@ class HostingService(ClassMovedMixin,
     """An interface to a hosting service for repositories and bug trackers.
 
     Deprecated:
-        7.1:
+        8.0:
         This has been moved to :py:class:`reviewboard.hostingsvcs.base.
         hosting_service.BaseHostingService`. The legacy import will be removed
-        in Review Board 9.
+        in Review Board 10.
     """
 
 
@@ -50,10 +50,10 @@ class HostingServiceClient(ClassMovedMixin,
     """Client for communicating with a hosting service's API.
 
     Deprecated:
-        7.1:
+        8.0:
         This has been moved to :py:class:`reviewboard.hostingsvcs.base.client.
         HostingServiceClient`. The legacy import will be removed in Review
-        Board 9.
+        Board 10.
     """
 
 
@@ -63,10 +63,10 @@ class HostingServiceHTTPRequest(ClassMovedMixin,
     """A request that can use any HTTP method.
 
     Deprecated:
-        7.1:
+        8.0:
         This has been moved to :py:class:`reviewboard.hostingsvcs.base.http.
         HostingServiceHTTPRequest`. The legacy import will be removed in Review
-        Board 9.
+        Board 10.
     """
 
 
@@ -76,10 +76,10 @@ class HostingServiceHTTPResponse(ClassMovedMixin,
     """An HTTP response from the server.
 
     Deprecated:
-        7.1:
+        8.0:
         This has been moved to :py:class:`reviewboard.hostingsvcs.base.http.
         HostingServiceHTTPRequest`. The legacy import will be removed in Review
-        Board 9.
+        Board 10.
     """
 
 

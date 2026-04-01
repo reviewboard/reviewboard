@@ -102,7 +102,7 @@ def _log_and_raise(
     intended to help with debugging bad calls to the HTTP code.
 
     Version Changed:
-        7.1:
+        8.0:
         Modified to take in the offending value.
 
     Version Added:

@@ -256,7 +256,7 @@ class ReviewRequestPageData:
     #: A mapping from Review IDs to an assigned StatusUpdate.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     status_updates_by_review_id: Mapping[int, StatusUpdate]
 
     #: Whether the status updates feature is enabled for this review request.

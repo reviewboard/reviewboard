@@ -759,7 +759,7 @@ class GitHub(BaseHostingService, BaseBugTracker):
         the repository was not found, and return cleanly if it was found.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:
@@ -825,7 +825,7 @@ class GitHub(BaseHostingService, BaseBugTracker):
         """Authorize an account for the hosting service.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:

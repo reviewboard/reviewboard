@@ -115,14 +115,14 @@ class FileDiffResource(WebAPIResource):
             'description': 'The SHA256 hash of the original file. This may '
                            'be ``None``, in which case it will be populated '
                            'when the diff is next viewed.',
-            'added_in': '7.1',
+            'added_in': '8.0',
         },
         'patched_sha256': {
             'type': StringFieldType,
             'description': 'The SHA256 hash of the patched file. This may '
                            'be ``None``, in which case it will be populated '
                            'when the diff is next viewed.',
-            'added_in': '7.1',
+            'added_in': '8.0',
         },
         'status': {
             'type': StringFieldType,

@@ -706,7 +706,7 @@ class ReviewBoardGateway(BaseHostingService):
         future requests to the API.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:

@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 #: Generic type for a field's value.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 TFieldValue = TypeVar('TFieldValue',
                       bound=Any,
                       default=Any)
@@ -63,7 +63,7 @@ class ReviewRequestFieldChangeEntrySection(TypedDict):
     Each section can have a title/label and the HTML of the changed content.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The rendered HTML showing the changes.
@@ -733,10 +733,10 @@ class BaseReviewRequestField(Generic[TFieldValue]):
         change how the value itself will be rendered in the string.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -789,10 +789,10 @@ class BaseReviewRequestField(Generic[TFieldValue]):
         """Render the change entry for an added value to HTML.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -838,10 +838,10 @@ class BaseReviewRequestField(Generic[TFieldValue]):
         """Render the change entry for a removed value to HTML.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -890,10 +890,10 @@ class BaseReviewRequestField(Generic[TFieldValue]):
         This can be overridden to customize how the value is displayed.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -990,10 +990,10 @@ class BaseReviewRequestField(Generic[TFieldValue]):
         This must use ``value`` instead of ``self.value``.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -1070,10 +1070,10 @@ class BaseReviewRequestField(Generic[TFieldValue]):
         from the database.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Returns:
@@ -1195,10 +1195,10 @@ class BaseCommaEditableField(BaseEditableField[Sequence[TFieldValue]]):
         of rendered items will be separated by a comma and a space.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -1223,10 +1223,10 @@ class BaseCommaEditableField(BaseEditableField[Sequence[TFieldValue]]):
         By default, this will convert the item to text and then escape it.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -1254,10 +1254,10 @@ class BaseCommaEditableField(BaseEditableField[Sequence[TFieldValue]]):
         properly escaped.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -1330,10 +1330,10 @@ class BaseCommaEditableField(BaseEditableField[Sequence[TFieldValue]]):
         comma and a space.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -1366,10 +1366,10 @@ class BaseCommaEditableField(BaseEditableField[Sequence[TFieldValue]]):
         This can be overridden to customize how the value is displayed.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -1525,10 +1525,10 @@ class BaseTextAreaField(BaseEditableField[str]):
         the text will be escaped.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -1578,10 +1578,10 @@ class BaseTextAreaField(BaseEditableField[str]):
         properly escaped.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -1642,7 +1642,7 @@ class BaseTextAreaField(BaseEditableField[str]):
         """Render all lines of a diff.
 
         Version Changed:
-            7.1:
+            8.0:
             All arguments are now keyword-only arguments.
 
         Args:
@@ -1704,7 +1704,7 @@ class BaseTextAreaField(BaseEditableField[str]):
         """Render all lines in an equal/insert/delete chunk.
 
         Version Changed:
-            7.1:
+            8.0:
             All arguments are now keyword-only arguments.
 
         Args:
@@ -1752,7 +1752,7 @@ class BaseTextAreaField(BaseEditableField[str]):
         """Render all lines in a replace chunk.
 
         Version Changed:
-            7.1:
+            8.0:
             All arguments are now keyword-only arguments.
 
         Args:
@@ -1864,10 +1864,10 @@ class BaseCheckboxField(BaseReviewRequestField[bool]):
         properly escaped.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -1916,10 +1916,10 @@ class BaseCheckboxField(BaseReviewRequestField[bool]):
         """Render the value for a change description string to HTML.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -1968,10 +1968,10 @@ class BaseCheckboxField(BaseReviewRequestField[bool]):
         element, this just returns the empty string.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Returns:
@@ -2032,10 +2032,10 @@ class BaseDropdownField(BaseReviewRequestField[str]):
         """Render the value for a change description string to HTML.
 
         Version Changed:
-            7.1:
+            8.0:
             This is now expected to return a
             :py:class:`~django.utils.safestring.SafeString`, and this will
-            be required in Review Board 9. Subclasses must use functions
+            be required in Review Board 10. Subclasses must use functions
             like :py:func:`django.utils.html.format_html()`.
 
         Args:
@@ -2242,7 +2242,7 @@ def _legacy_mark_safe(
     This will be removed in Review Board 9.
 
     Version Added:
-        7.1
+        8.0
 
     Args:
         s (str or django.utils.safestring.SafeString):

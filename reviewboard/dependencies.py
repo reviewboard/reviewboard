@@ -198,7 +198,7 @@ def build_dependency_list(
     package build backend.
 
     Version Changed:
-        7.1:
+        8.0:
         * Added the ``local_packages`` argument.
 
     Args:
@@ -213,7 +213,7 @@ def build_dependency_list(
             be found.
 
             Version Added:
-                7.1
+                8.0
 
     Returns:
         list of str:

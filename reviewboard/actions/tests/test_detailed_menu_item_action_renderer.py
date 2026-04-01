@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.actions.renderers.DetailedMenuItemActionRenderer.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ class DetailedMenuItemActionRendererTests(TestCase):
     """Unit tests for DetailedMenuItemActionRenderer.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_render(self) -> None:

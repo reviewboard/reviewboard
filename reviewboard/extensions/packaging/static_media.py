@@ -1,7 +1,7 @@
 """A builder for static media files for extension packages.
 
 Version Added:
-    7.1:
+    8.0:
     This moved from the top-level :py:mod:`reviewboard.extensions.packaging`.
 """
 
@@ -34,7 +34,7 @@ class RBStaticMediaBuildContext(StaticMediaBuildContext):
     Review Board extensions.
 
     Version Changed:
-        7.1:
+        8.0:
         This moved from :py:mod:`reviewboard.extensions.packaging`.
 
     Version Added:
@@ -87,7 +87,7 @@ class RBStaticMediaBuilder(StaticMediaBuilder):
     compile against Review Board JavaScript/TypeScript modules.
 
     Version Changed:
-        7.1:
+        8.0:
         This moved from :py:mod:`reviewboard.extensions.packaging`.
 
     Version Added:

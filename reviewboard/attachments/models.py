@@ -259,7 +259,7 @@ class FileAttachment(models.Model):
         """The SHA256 hash of the file.
 
         Version Added:
-            7.1
+            8.0
         """
         checksum: (str | None) = self.extra_data.get('sha256_checksum')
 

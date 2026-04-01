@@ -3,7 +3,7 @@
 See :ref:`review-request-condition-choices-hook` for instructions.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ class ReviewRequestConditionChoicesHook(
     See :ref:`review-request-condition-choices-hook` for instructions.
 
     Version Added:
-        7.1
+        8.0
     """
 
     registry = review_request_condition_choices

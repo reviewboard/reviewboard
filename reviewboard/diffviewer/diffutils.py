@@ -2708,7 +2708,7 @@ def get_sha256(
     """Return a SHA256 hash for the provided content.
 
     Version Added:
-        7.1
+        8.0
 
     Args:
         content (bytes or django.core.files.File):

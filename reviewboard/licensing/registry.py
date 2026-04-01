@@ -1,7 +1,7 @@
 """Registry management for license providers.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ class LicenseProviderRegistry(OrderedRegistry[BaseLicenseProvider]):
     This is used to register new license providers and look them up by ID.
 
     Version Added:
-        7.1
+        8.0
     """
 
     lookup_attrs = ('license_provider_id',)
@@ -43,5 +43,5 @@ class LicenseProviderRegistry(OrderedRegistry[BaseLicenseProvider]):
 #: The registry managing license providers.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 license_provider_registry = LicenseProviderRegistry()

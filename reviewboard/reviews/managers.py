@@ -245,7 +245,7 @@ class FileAttachmentCommentManager(CommentManager):
     """A manager for FileAttachmentComment models.
 
     Version Added:
-        7.1.0
+        8.0
     """
 
     def for_file_attachment(

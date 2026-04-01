@@ -504,5 +504,5 @@ class ReviewRequestConditionChoices(ConditionChoices):
 #: This can be used in condition fields or to register new conditions.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 review_request_condition_choices = ReviewRequestConditionChoices()

@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.datagrids.columns.MyCommentsColumn.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ class MyCommentsColumnTests(BaseColumnTestCase):
     """Unit tests for reviewboard.datagrids.columns.MyCommentsColumn.
 
     Version Added:
-        7.1
+        8.0
     """
 
     column = MyCommentsColumn()

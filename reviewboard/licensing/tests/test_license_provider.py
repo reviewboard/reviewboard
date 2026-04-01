@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.licensing.provider.BaseLicenseProvider.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ class BaseLicenseProviderTests(kgb.SpyAgency, TestCase):
     """Unit tests for BaseLicenseProvider.
 
     Version Added:
-        7.1
+        8.0
     """
 
     ######################

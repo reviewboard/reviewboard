@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.accounts.user_details.UserBadge.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ class UserBadgeTests(TestCase):
     """Unit tests for UserBadge.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_render_to_string(self) -> None:

@@ -132,7 +132,7 @@ export class DiffReviewable
      *         exclude the review UI's static media in the rendered output.
      *
      *         Version Added:
-     *             7.1
+     *             8.0
      *
      * Returns:
      *     Promise:
@@ -254,7 +254,7 @@ export class DiffReviewable
      *         exclude the review UI's static media in the rendered output.
      *
      *         Version Added:
-     *             7.1
+     *             8.0
      *
      * Returns:
      *     string:

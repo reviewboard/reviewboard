@@ -4,7 +4,7 @@
  * This is a re-export of the base extension infrastructure found in Djblets.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 
 export {

@@ -1,7 +1,7 @@
 """Hosting service for Forgejo.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ class Forgejo(BaseHostingService, BaseBugTracker):
     """Hosting service for Forgejo.
 
     Version Added:
-        7.1
+        8.0
     """
 
     hosting_service_id = 'forgejo'

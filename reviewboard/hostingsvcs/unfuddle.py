@@ -105,7 +105,7 @@ class Unfuddle(BaseHostingService):
         the repository was not found, and return cleanly if it was found.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:
@@ -143,7 +143,7 @@ class Unfuddle(BaseHostingService):
         provided password, encrypted, for use in later API requests.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:

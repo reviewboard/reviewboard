@@ -1390,7 +1390,7 @@ class BugsFieldTests(FieldsTestCase):
     """Unit tests for BugsField.
 
     Version Added:
-        7.1
+        8.0
     """
 
     field_cls = BugsField

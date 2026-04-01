@@ -40,8 +40,8 @@ export interface ActionAttrs {
      * used carefully.
      *
      * Deprecated:
-     *     7.1:
-     *     This is scheduled for removal in Review Board 9. This was only
+     *     8.0:
+     *     This is scheduled for removal in Review Board 10. This was only
      *     ever used for menu items. It's no longer set. Custom menu items
      *     should instead set the ``data-custom-rendered="true"`` attribute
      *     on the custom element.
@@ -77,7 +77,7 @@ export interface ActionAttrs {
      * It's always optional.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     verboseLabel: string | null;
 
@@ -95,7 +95,7 @@ export interface ActionAttrs {
  * interface when extending this.
  *
  * Version Changed:
- *     7.1:
+ *     8.0:
  *     * This is now the preferred place to put any action activation code.
  *       Multiple views could wrap a single action.
  *
@@ -128,7 +128,7 @@ export class Action<
      * By default, this does nothing.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Returns:
      *     Promise<void>:

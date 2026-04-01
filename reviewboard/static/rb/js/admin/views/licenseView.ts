@@ -2,7 +2,7 @@
  * View for managing a license.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 
 import {
@@ -32,7 +32,7 @@ import {
  * A mapping of license check statuses to localized description strings.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 const CHECK_STATUS_TEXT: Record<LicenseCheckStatus, string> = {
     [LicenseCheckStatus.NO_LICENSE]: _`
@@ -65,7 +65,7 @@ const CHECK_STATUS_TEXT: Record<LicenseCheckStatus, string> = {
  * Options for adding a detail item for a license.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface AddLicenseDetailOptions {
     /** HTML attributes for the item's container element. */
@@ -83,7 +83,7 @@ export interface AddLicenseDetailOptions {
  * Options passed to a license action handler.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface LicenseActionHandlerOptions {
     /** The ID of the action. */
@@ -111,7 +111,7 @@ export interface LicenseActionHandlerOptions {
  * license, such as managing a license or uploading new license data.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 @spina({
     prototypeAttrs: ['actionBuilders'],

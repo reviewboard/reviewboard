@@ -507,7 +507,7 @@ class BaseHostingService:
         """Authorize an account for the hosting service.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:
@@ -572,7 +572,7 @@ class BaseHostingService:
         HostingServiceForm as keyword arguments.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:

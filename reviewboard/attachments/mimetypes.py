@@ -289,7 +289,7 @@ def is_mimetype_supported(
     """Return whether the mimetype is supported by any review UI.
 
     Version Added:
-        7.1
+        8.0
 
     Args:
         mimetype (str):

@@ -2,7 +2,7 @@
  * Base support for custom Review Dialog comment hook views.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 
 import * as Backbone from 'backbone';
@@ -19,7 +19,7 @@ import { type Extension } from '../models/extensionModel';
  * Options for BaseReviewDialogCommentHookView.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface ReviewDialogCommentHookViewOptions
 extends Backbone.ViewOptions {
@@ -36,7 +36,7 @@ extends Backbone.ViewOptions {
  * extension and can then render into the dialog or hook into behavior.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 @spina
 export class BaseReviewDialogCommentHookView extends BaseView<
@@ -78,7 +78,7 @@ export class BaseReviewDialogCommentHookView extends BaseView<
  * generics.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export type BaseReviewDialogCommentHookViewClass =
     new (options: ReviewDialogCommentHookViewOptions) =>

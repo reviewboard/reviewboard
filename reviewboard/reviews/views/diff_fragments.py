@@ -514,14 +514,14 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         """Return an ETag identifying this render.
 
         Version Added:
-            7.1.0
+            8.0
 
         Args:
             request (django.http.HttpRequest):
                 The request from the client.
 
                 Version Added:
-                    7.1.0
+                    8.0
 
             **kwargs (dict):
                 Additional keyword arguments passed to the function.
@@ -601,7 +601,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         file attachments, if review UIs are involved, disabling caching.
 
         Version Changed:
-            7.1:
+            8.0:
             * Deprecated non-keyword arguments.
             * Added the ``request`` parameter.
 
@@ -720,7 +720,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         attachments for storage and review.
 
         Version Added:
-            7.1.0
+            8.0
 
         Args:
             request (django.http.HttpRequest):

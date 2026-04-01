@@ -1,7 +1,7 @@
 """Licensing feature flags.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ class LicensingFeature(Feature):
     Administration UI and in banners when necessary.
 
     Version Added:
-        7.1
+        8.0
     """
 
     feature_id = 'licensing'
@@ -29,5 +29,5 @@ class LicensingFeature(Feature):
 #: Feature flag for license management.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 licensing_feature = LicensingFeature()

@@ -1,7 +1,7 @@
 """Base support for action renderers.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 #: prevent rendering.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 ActionSubgroupRendererType: TypeAlias = Optional[Union[
     Type['BaseActionGroupRenderer'],
     Literal['self'],
@@ -56,7 +56,7 @@ class BaseActionRenderer:
     their needs.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The name of the template to use for rendering action JavaScript.
@@ -318,7 +318,7 @@ class BaseActionGroupRenderer(BaseActionRenderer):
     a default renderer class for items within the group.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The default class for rendering any non-group items within the group.
@@ -460,7 +460,7 @@ class DefaultActionGroupRenderer(BaseActionGroupRenderer):
     renderer than this.
 
     Version Added:
-        7.1
+        8.0
     """
 
     template_name = 'actions/group_action.html'
@@ -472,7 +472,7 @@ class ButtonActionRenderer(BaseActionRenderer):
     This will render a button that reflects and activates the action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     js_view_class = 'RB.Actions.ButtonActionView'
@@ -486,7 +486,7 @@ class MenuItemActionRenderer(BaseActionRenderer):
     a :py:class:`ActionGroupMenuRenderer`.
 
     Version Added:
-        7.1
+        8.0
     """
 
     js_view_class = 'RB.Actions.MenuItemActionView'
@@ -500,7 +500,7 @@ class MenuActionGroupRenderer(BaseActionGroupRenderer):
     as a registered Ink menu item available to the menu.
 
     Version Added:
-        7.1
+        8.0
     """
 
     default_item_renderer_cls: ClassVar[type[BaseActionRenderer]] = \
@@ -516,7 +516,7 @@ class DetailedMenuItemActionRenderer(MenuItemActionRenderer):
     helping provide more guidance beyond a standard menu item.
 
     Version Added:
-        7.1
+        8.0
     """
 
     template_name = 'actions/detailed_menuitem_action.html'
@@ -529,7 +529,7 @@ class DetailedMenuActionGroupRenderer(MenuActionGroupRenderer):
     helping provide more guidance beyond a standard menu item.
 
     Version Added:
-        7.1
+        8.0
     """
 
     default_item_renderer_cls: ClassVar[type[BaseActionRenderer]] = \
@@ -546,7 +546,7 @@ class SidebarItemActionRenderer(BaseActionRenderer):
     presentation will show as active.
 
     Version Added:
-        7.1
+        8.0
     """
 
     template_name = 'actions/sidebar_item_action.html'
@@ -586,7 +586,7 @@ class SidebarActionGroupRenderer(BaseActionGroupRenderer):
     anther subgroup, due to space limitations in the sidebar).
 
     Version Added:
-        7.1
+        8.0
     """
 
     default_item_renderer_cls: ClassVar[type[BaseActionRenderer]] = \

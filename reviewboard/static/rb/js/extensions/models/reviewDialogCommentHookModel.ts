@@ -2,7 +2,7 @@
  * Extension hook for extending a comment in the Review Dialog.
  *
  * Version Changed:
- *     7.1:
+ *     8.0:
  *     This is now an ESM module supporting TypeScript.
  */
 
@@ -22,7 +22,7 @@ import {
  * Attributes for ReviewDialogCommentHook.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface ReviewDialogCommentHookAttrs extends ExtensionHookAttrs {
     /** The view type to construct in the comment section. */
@@ -42,7 +42,7 @@ export interface ReviewDialogCommentHookAttrs extends ExtensionHookAttrs {
  * provided view will be created and passed the comment as the view's model.
  *
  * Version Changed:
- *     7.1:
+ *     8.0:
  *     This is now a modern ES6-style class and supports typing using
  *     TypeScript.
  */
