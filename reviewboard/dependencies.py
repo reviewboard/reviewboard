@@ -15,6 +15,12 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+    from typing import TypeAlias
+
+    _DependencyMap: TypeAlias = Mapping[
+        str,
+        str | Sequence[Mapping[str, str]],
+    ]
 
     from djblets.dependencies import Dependency
 
@@ -54,7 +60,7 @@ djblets_version = '~=6.0a0.dev0'
 ###########################################################################
 
 #: All dependencies required to install Review Board.
-package_dependencies: Mapping[str, Dependency] = {
+package_dependencies: _DependencyMap = {
     'bleach': '~=6.0.0',
     'cryptography': '~=46.0.5',
     'Django': django_version,
@@ -101,7 +107,7 @@ package_dependencies: Mapping[str, Dependency] = {
 #: These dependencies are not used when simply developing Review Board.
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
-package_only_dependencies = {
+package_only_dependencies: _DependencyMap = {
     'rbintegrations': '>=4.0,<6',
 }
 
@@ -114,7 +120,7 @@ _dependency_warning_count = 0
 
 
 def build_dependency_list(
-    deps: Mapping[str, Dependency],
+    deps: _DependencyMap = package_dependencies,
     version_prefix: str = '',
     *,
     local_packages: Mapping[str, str] = {},
@@ -130,7 +136,7 @@ def build_dependency_list(
         * Added the ``local_packages`` argument.
 
     Args:
-        deps (dict):
+        deps (dict, optional):
             A dictionary of dependencies.
 
         version_prefix (str, optional):
@@ -167,6 +173,19 @@ def build_dependency_list(
                 f'{dep_name}{version_prefix}{dep_details}')
 
     return sorted(new_deps, key=lambda s: s.lower())
+
+
+def build_editable_exclude_deps() -> Sequence[str]:
+    """Return a list of dependencies to exclude from editable builds.
+
+    Version Added:
+        7.1
+
+    Returns:
+        list of str:
+        The list of dependencies to exclude.
+    """
+    return build_dependency_list(package_only_dependencies)
 
 
 def _dependency_message(

@@ -9,7 +9,7 @@ from django.utils.translation import gettext_lazy as _
 from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import get_hostname
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -106,7 +106,7 @@ class Assembla(BaseHostingService):
         """
         return '%s-%s' % (get_hostname(), project_id.replace('/', '-'))
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def check_repository(
         self,
         *,
@@ -183,7 +183,7 @@ class Assembla(BaseHostingService):
                 scmtool_class=scmtool_class,
                 **kwargs)
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def authorize(
         self,
         *,

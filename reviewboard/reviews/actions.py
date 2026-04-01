@@ -18,7 +18,7 @@ from reviewboard.actions.renderers import (BaseActionRenderer,
                                            DetailedMenuActionGroupRenderer,
                                            MenuActionGroupRenderer)
 from reviewboard.admin.read_only import is_site_read_only_for
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.reviews.features import (general_comments_feature,
                                           unified_banner_feature)
 from reviewboard.reviews.models import ReviewRequest
@@ -1059,9 +1059,9 @@ class BaseReviewRequestAction(BaseAction):
 
         By default, actions are top-level and have no children.
         """
-        RemovedInReviewBoard80Warning.warn(
+        RemovedInReviewBoard90Warning.warn(
             'BaseReviewRequestAction is deprecated and will be removed in '
-            'Review Board 8.0. Please update your code to use '
+            'Review Board 9. Please update your code to use '
             'reviewboard.actions.base.BaseAction')
 
         super().__init__()
@@ -1386,9 +1386,9 @@ def register_actions(
         DepthLimitExceededError:
             The maximum depth limit is exceeded.
     """
-    RemovedInReviewBoard80Warning.warn(
+    RemovedInReviewBoard90Warning.warn(
         'register_actions has been deprecated and will be removed in '
-        'Review Board 8.0. Please update your code to use '
+        'Review Board 9. Please update your code to use '
         'reviewboard.actions.actions_registry.')
 
     if parent_id:
@@ -1420,9 +1420,9 @@ def unregister_actions(
         KeyError:
             An unregistration is attempted before it's registered.
     """
-    RemovedInReviewBoard80Warning.warn(
+    RemovedInReviewBoard90Warning.warn(
         'unregister_actions has been deprecated and will be removed in '
-        'Review Board 8.0. Please update your code to use '
+        'Review Board 9. Please update your code to use '
         'reviewboard.actions.actions_registry.')
 
     for action_id in action_ids:
@@ -1446,8 +1446,8 @@ def clear_all_actions() -> None:
         This will clear **all** actions, even if they were registered in
         separate extensions.
     """
-    RemovedInReviewBoard80Warning.warn(
+    RemovedInReviewBoard90Warning.warn(
         'clear_all_actions has been deprecated and will be removed in '
-        'Review Board 8.0. Please update your code to use '
+        'Review Board 9. Please update your code to use '
         'reviewboard.actions.actions_registry.')
     actions_registry.reset()

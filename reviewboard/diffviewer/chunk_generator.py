@@ -24,7 +24,7 @@ from pygments.lexers import (find_lexer_class,
 
 from reviewboard.codesafety import code_safety_checker_registry
 from reviewboard.deprecation import (
-    RemovedInReviewBoard80Warning,
+    RemovedInReviewBoard90Warning,
     RemovedInReviewBoard10_0Warning,
 )
 from reviewboard.diffviewer.differ import DiffCompatVersion, get_differ
@@ -1601,7 +1601,7 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
     #:     8.0
     CACHE_FORMAT_VERSION = 1
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def __init__(
         self,
         request: HttpRequest,

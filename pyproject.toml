@@ -1,9 +1,8 @@
 [build-system]
 requires = [
-    'setuptools>=75,<82',
+    'buildthings~=1.0',
 ]
-build-backend = 'build-backend'
-backend-path = ['.']
+build-backend = 'buildthings.backend'
 
 [project]
 name = 'ReviewBoard'
@@ -115,5 +114,75 @@ include = ['reviewboard*']
 namespaces = false
 
 [tool.setuptools.dynamic]
-dependencies = { file = 'package-requirements.txt' }
 version = { attr = 'reviewboard.__version__' }
+
+
+[tool.buildthings]
+dependencies = { attr = 'reviewboard.dependencies.build_dependency_list' }
+dynamic = ['exclude-deps']
+
+
+[tool.buildthings.isolation]
+# Support .local-packages across all build types for in-development
+# deployments.
+local-packages-path = '.local-packages'
+
+# We currently require using Review Board and Djblets as part of the build
+# process, so install those dependencies. We don't need developer deps.
+include-install-deps = true
+
+
+# Editable build information.
+[tool.buildthings.editable]
+exclude-deps = { attr = 'reviewboard.dependencies.build_editable_exclude_deps' }
+
+
+[tool.buildthings.editable.npm]
+install = true
+python-modules = ['djblets']
+
+
+# Source distribution build steps.
+#
+# For source distributions, we'll build static media files and i18n files.
+#
+# Djblets is included as an npm workspace. NPM modules will be installed
+# in order to build the static media.
+[tool.buildthings.sdist.npm]
+install = true
+python-modules = ['djblets']
+
+
+[[tool.buildthings.sdist.extra-build-steps]]
+label = "Building static media..."
+command = "{python} ./contrib/internal/build-media.py"
+
+
+[[tool.buildthings.sdist.extra-build-steps]]
+label = "Building i18n..."
+command = "{python} ./contrib/internal/build-i18n.py"
+
+
+# Wheel distribution build steps.
+#
+# For wheel distributions, we'll build static media files and i18n files.
+#
+# Djblets is included as an npm workspace. NPM modules will be installed
+# in order to build the static media.
+#
+# In the future, we'll want to disable these in order to build from a
+# source distribution, which will aid third-parties in consuming our source
+# builds.
+[tool.buildthings.wheel.npm]
+install = true
+python-modules = ['djblets']
+
+
+[[tool.buildthings.wheel.extra-build-steps]]
+label = "Building static media..."
+command = "{python} ./contrib/internal/build-media.py"
+
+
+[[tool.buildthings.wheel.extra-build-steps]]
+label = "Building i18n..."
+command = "{python} ./contrib/internal/build-i18n.py"

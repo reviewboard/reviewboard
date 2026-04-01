@@ -13,7 +13,7 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.actions import actions_registry
 from reviewboard.actions.base import AttachmentPoint
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.reviews.actions import (
     AddGeneralCommentAction,
     BaseReviewRequestAction,
@@ -183,12 +183,12 @@ class ActionRegistrationTests(ActionsTestCase):
 
     deprecation_message = (
         'BaseReviewRequestAction is deprecated and will be removed in '
-        'Review Board 8.0. Please update your code to use '
+        'Review Board 9. Please update your code to use '
         'reviewboard.actions.base.BaseAction')
 
     def test_action_register_methods(self) -> None:
         """Testing BaseReviewRequestAction.register and unregister"""
-        with self.assertWarns(RemovedInReviewBoard80Warning,
+        with self.assertWarns(RemovedInReviewBoard90Warning,
                               self.deprecation_message):
             foo_action = FooAction()
             foo_action.register()
@@ -204,7 +204,7 @@ class ActionRegistrationTests(ActionsTestCase):
         """Testing BaseReviewRequestAction.register and unregister with
         parent
         """
-        with self.assertWarns(RemovedInReviewBoard80Warning,
+        with self.assertWarns(RemovedInReviewBoard90Warning,
                               self.deprecation_message):
             bar_action = BarAction('action-1')
             foo_action = FooAction()
@@ -229,7 +229,7 @@ class ActionRegistrationTests(ActionsTestCase):
 
     def test_menuaction_register_methods(self) -> None:
         """Testing BaseReviewRequestMenuAction.register and unregister"""
-        with self.assertWarns(RemovedInReviewBoard80Warning,
+        with self.assertWarns(RemovedInReviewBoard90Warning,
                               self.deprecation_message):
             foo_action = FooAction()
             bar_action = BarAction('action-1', [foo_action])
@@ -259,7 +259,7 @@ class ActionRegistrationTests(ActionsTestCase):
         """Testing BaseReviewRequestMenuAction.register and unregister with
         parent
         """
-        with self.assertWarns(RemovedInReviewBoard80Warning,
+        with self.assertWarns(RemovedInReviewBoard90Warning,
                               self.deprecation_message):
             foo_action = FooAction()
             bar_action = BarAction('action-1', [foo_action])

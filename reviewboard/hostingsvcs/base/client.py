@@ -22,6 +22,7 @@ from cryptography.x509.oid import NameOID
 from cryptography.hazmat.backends import default_backend
 from django.utils.encoding import force_bytes, force_str
 
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.http import (HostingServiceHTTPRequest,
                                                HostingServiceHTTPResponse)
 from reviewboard.scmtools.certs import Certificate

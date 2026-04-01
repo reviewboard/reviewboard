@@ -27,7 +27,7 @@ from typing_extensions import TypedDict
 
 from reviewboard.attachments.mimetypes import guess_mimetype
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.diffviewer.diffutils import (get_file_chunks_in_range,
                                               get_last_header_before_line,
                                               get_last_line_number_in_diff,
@@ -585,7 +585,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
 
         return etag
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def create_renderer(
         self,
         *,

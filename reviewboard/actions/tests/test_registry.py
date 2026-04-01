@@ -20,7 +20,7 @@ from reviewboard.actions.tests.base import (
     TestNestedMenuAction,
     TooDeeplyNestedAction,
 )
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.testing import TestCase
 
 
@@ -298,11 +298,11 @@ class ActionsRegistryTests(TestCase):
 
         message = (
             'reviewboard.actions.base.BaseAction.child_actions() is '
-            'deprecated and support will be removed in Review Board 9.0. '
+            'deprecated and support will be removed in Review Board 10.0. '
             'Please use ActionPlacement.child_actions instead.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard90Warning, message):
+        with self.assertWarns(RemovedInReviewBoard10_0Warning, message):
             self.assertIn(action, menu_action.child_actions)
 
         self.assertIs(

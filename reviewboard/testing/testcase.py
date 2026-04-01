@@ -43,7 +43,7 @@ from reviewboard.attachments.models import (FileAttachment,
 from reviewboard.certs.cert import (Certificate,
                                     CertificateBundle,
                                     CertificateFingerprints)
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import (DiffCommit, DiffSet, DiffSetHistory,
                                            FileDiff)
@@ -624,11 +624,11 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             **kwargs)
 
     @func_deprecated(
-        RemovedInReviewBoard90Warning,
+        RemovedInReviewBoard10_0Warning,
         message=(
             'assertQueries() has been deprecated in favor of '
             'django_assert_queries.assert_queries(), and will be removed in '
-            'Review Board 9.'
+            'Review Board 10.'
         ),
     )
     def assertQueries(

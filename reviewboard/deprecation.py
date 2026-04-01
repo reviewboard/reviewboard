@@ -21,17 +21,6 @@ class BaseRemovedInReviewBoardVersionWarning(BaseRemovedInWarning):
     product = 'Review Board'
 
 
-class RemovedInReviewBoard80Warning(BaseRemovedInReviewBoardVersionWarning):
-    """Deprecations for features scheduled for removal in Review Board 8.0.
-
-    Note that this class will itself be removed in Review Board 8.0. If you
-    need to check against Review Board deprecation warnings, please see
-    :py:class:`BaseRemovedInReviewBoardVersionWarning`.
-    """
-
-    version = '8.0'
-
-
 class RemovedInReviewBoard90Warning(BaseRemovedInReviewBoardVersionWarning):
     """Deprecations for features scheduled for removal in Review Board 9.0.
 

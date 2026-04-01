@@ -8,7 +8,7 @@ from django.http import HttpResponse
 from django.urls import NoReverseMatch, path
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.base.registry import hosting_service_registry
 from reviewboard.hostingsvcs.service import (register_hosting_service,
@@ -132,18 +132,18 @@ class HostingServiceRegistrationTests(TestCase):
             '`reviewboard.hostingsvcs.service.register_hosting_service()` '
             'has moved to `reviewboard.hostingsvcs.base.registry.'
             'HostingServiceRegistry.register`. The old function is '
-            'deprecated and will be removed in Review Board 9.0.'
+            'deprecated and will be removed in Review Board 10.0.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard90Warning, message):
+        with self.assertWarns(RemovedInReviewBoard10_0Warning, message):
             register_hosting_service('dummy-service', self._DummyService)
 
         message = (
             '`reviewboard.hostingsvcs.service.unregister_hosting_service()` '
             'has moved to `reviewboard.hostingsvcs.base.registry.'
             'HostingServiceRegistry.unregister_by_id`. The old function is '
-            'deprecated and will be removed in Review Board 9.0.'
+            'deprecated and will be removed in Review Board 10.0.'
         )
 
-        with self.assertWarns(RemovedInReviewBoard90Warning, message):
+        with self.assertWarns(RemovedInReviewBoard10_0Warning, message):
             unregister_hosting_service('dummy-service')

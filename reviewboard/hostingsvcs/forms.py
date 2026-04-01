@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing_extensions import deprecated
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base import forms
 
 
@@ -18,16 +18,16 @@ from reviewboard.hostingsvcs.base import forms
     '`reviewboard.hostingsvcs.forms.HostingServiceAuthForm` has moved '
     'to `reviewboard.hostingsvcs.base.forms.BaseHostingServiceAuthForm`. '
     'The old class name is deprecated and will be removed in Review Board '
-    '9.0',
-    category=RemovedInReviewBoard90Warning)
+    '10.',
+    category=RemovedInReviewBoard10_0Warning)
 class HostingServiceAuthForm(forms.BaseHostingServiceAuthForm):
     """Base form for handling authentication information for a hosting account.
 
     Deprecated:
-        7.1:
+        8.0:
         This has been moved to :py:class:`reviewboard.hostingsvcs.base.forms.
         BaseHostingServiceAuthForm`. The legacy import will be removed in
-        Review Board 9.
+        Review Board 10.
     """
 
 
@@ -37,17 +37,16 @@ class HostingServiceAuthForm(forms.BaseHostingServiceAuthForm):
     '`reviewboard.hostingsvcs.forms.HostingServiceForm` has moved '
     'to `reviewboard.hostingsvcs.base.forms.'
     'BaseHostingServiceRepositoryForm`. The old class name is deprecated and '
-    'will be removed in Review Board '
-    '9.0',
-    category=RemovedInReviewBoard90Warning)
+    'will be removed in Review Board 10.',
+    category=RemovedInReviewBoard10_0Warning)
 class HostingServiceForm(forms.BaseHostingServiceRepositoryForm):
     """Base form for collecting information for a hosting service repository.
 
     Deprecated:
-        7.1:
+        8.0:
         This has been moved to :py:class:`reviewboard.hostingsvcs.base.forms.
         BaseHostingServiceRepositoryForm`. The legacy import will be removed in
-        Review Board 9.
+        Review Board 10.
     """
 
 

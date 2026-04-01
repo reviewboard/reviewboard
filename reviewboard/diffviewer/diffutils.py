@@ -26,8 +26,8 @@ from typelets.runtime import raise_invalid_type
 from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.attachments.mimetypes import guess_mimetype
-from reviewboard.deprecation import (RemovedInReviewBoard80Warning,
-                                     RemovedInReviewBoard90Warning)
+from reviewboard.deprecation import (RemovedInReviewBoard90Warning,
+                                     RemovedInReviewBoard10_0Warning)
 from reviewboard.diffviewer.commit_utils import exclude_ancestor_filediffs
 from reviewboard.diffviewer.errors import DiffTooBigError, PatchError
 from reviewboard.diffviewer.filetypes import (HEADER_EXTENSIONS,
@@ -1145,7 +1145,7 @@ def get_filediffs_match(filediff1, filediff2):
               filediff1.patched_sha1 == filediff2.patched_sha1)))
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+@deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
 def get_diff_files(
     *,
     diffset: DiffSet,
@@ -1246,9 +1246,9 @@ def get_diff_files(
     assert base_filediff is None or interfilediff is None
 
     if diff_settings is None:
-        RemovedInReviewBoard90Warning.warn(
+        RemovedInReviewBoard10_0Warning.warn(
             'get_diff_files was called without a diff_settings argument. '
-            'This argument will become mandatory in Review Board 9.0')
+            'This argument will become mandatory in Review Board 10.')
         diff_settings = DiffSettings.create(request=request)
 
     if (diffset.commit_count > 0 and
@@ -1546,7 +1546,7 @@ def get_diff_files(
             key=lambda f: f['interfilediff'] or f['filediff'])
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
+@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
 def populate_diff_chunks(
     files: Sequence[SerializedDiffFile],
     *,

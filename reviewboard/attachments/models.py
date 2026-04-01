@@ -19,7 +19,7 @@ from typing_extensions import TypeAlias
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.managers import FileAttachmentManager
 from reviewboard.attachments.mimetypes import MimetypeHandler
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.diffutils import get_sha256
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.models import Repository
@@ -463,7 +463,7 @@ class FileAttachment(models.Model):
             params = signature(review_ui.is_enabled_for).parameters
 
             if 'file_attachment' in params:
-                RemovedInReviewBoard80Warning.warn(
+                RemovedInReviewBoard90Warning.warn(
                     'The file_attachment parameter to ReviewUI.is_enabled_for '
                     'has been removed. Please use obj= instead in Review UI %r'
                     % review_ui)

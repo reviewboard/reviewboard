@@ -22,7 +22,7 @@ from django.views.decorators.http import require_POST
 from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import build_server_url, get_server_url
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
@@ -745,7 +745,7 @@ class GitHub(BaseHostingService, BaseBugTracker):
                             name)
         return plan_data[key]
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def check_repository(
         self,
         *,
@@ -812,7 +812,7 @@ class GitHub(BaseHostingService, BaseBugTracker):
                     gettext('This is a public repository, but you have '
                             'selected a private plan.'))
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def authorize(
         self,
         *,

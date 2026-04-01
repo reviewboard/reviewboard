@@ -10,7 +10,7 @@ from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
 from housekeeping import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
@@ -225,7 +225,7 @@ class Kiln(BaseHostingService):
         },
     }
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def check_repository(
         self,
         *,
@@ -275,7 +275,7 @@ class Kiln(BaseHostingService):
                 'found. Please verify that the information exactly matches '
                 'the configuration on Kiln.'))
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def authorize(
         self,
         *,

@@ -12,8 +12,8 @@ from typing_extensions import NotRequired, TypedDict
 
 from reviewboard.accounts.models import ReviewRequestVisit
 from reviewboard.admin.server import build_server_url
-from reviewboard.deprecation import (RemovedInReviewBoard80Warning,
-                                     RemovedInReviewBoard90Warning)
+from reviewboard.deprecation import (RemovedInReviewBoard90Warning,
+                                     RemovedInReviewBoard10_0Warning)
 from reviewboard.diffviewer.models import DiffSet
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -150,7 +150,7 @@ class ReviewRequestContext(TypedDict):
     viewing_user_draft: bool
 
 
-@deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
+@deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
 def make_review_request_context(
     *,
     request: HttpRequest,
@@ -342,9 +342,9 @@ def make_review_request_context(
     }
 
     if extra_context:
-        RemovedInReviewBoard90Warning.warn(
+        RemovedInReviewBoard10_0Warning.warn(
             'The extra_context argument to make_review_request_context is '
-            'deprecated and will be removed in Review Board 9.0.')
+            'deprecated and will be removed in Review Board 10.')
 
         context.update(extra_context)
 

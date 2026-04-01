@@ -20,7 +20,7 @@ from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import ALREADY_REGISTERED, NOT_REGISTERED
 from typing_extensions import TypeVar, TypedDict
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.diffviewer.diffutils import get_line_changed_regions
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.templatetags.difftags import highlightregion
@@ -2259,10 +2259,10 @@ def _legacy_mark_safe(
         The safe string.
     """
     if not isinstance(s, SafeString):
-        RemovedInReviewBoard90Warning.warn(
+        RemovedInReviewBoard10_0Warning.warn(
             f'{type(obj).__name__}.{func_name}() must return an HTML-safe '
             'string (using format_html() or similar). This will be required '
-            'in Review Board 9.',
+            'in Review Board 10.',
             stacklevel=3)
 
         s = mark_safe(s)

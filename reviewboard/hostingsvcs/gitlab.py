@@ -18,7 +18,7 @@ from djblets.cache.backend import cache_memoize
 from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.support import get_kb_url
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
     BaseHostingServiceRepositoryForm,
@@ -307,7 +307,7 @@ class GitLab(BaseHostingService):
         }),
     ]
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def check_repository(
         self,
         *,
@@ -340,7 +340,7 @@ class GitLab(BaseHostingService):
             self._get_repository_owner(plan, kwargs),
             self._get_repository_name(plan, kwargs))
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def authorize(
         self,
         *,

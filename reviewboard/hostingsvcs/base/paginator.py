@@ -14,7 +14,7 @@ from typing import Any, Callable, Generic, TYPE_CHECKING, TypeVar, Union
 from housekeeping import deprecate_non_keyword_only_args
 from typing_extensions import NotRequired, TypeAlias, TypedDict
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -153,7 +153,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
     #:     int
     total_count: int | None
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def __init__(
         self,
         *,
@@ -398,7 +398,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     #:     str
     url: str | None
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def __init__(
         self,
         *,

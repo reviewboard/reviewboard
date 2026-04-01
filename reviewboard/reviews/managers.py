@@ -13,7 +13,7 @@ from django.db.models.query import QuerySet
 from django.utils.text import slugify
 from housekeeping.functions import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.signals import review_request_diffset_uploaded
 from reviewboard.scmtools.errors import ChangeNumberInUseError
@@ -317,7 +317,7 @@ class DefaultReviewerManager(Manager):
 class ReviewGroupManager(Manager):
     """A manager for Group models."""
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def accessible(self,
                    user,
                    *,

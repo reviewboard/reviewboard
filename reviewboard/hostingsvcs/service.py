@@ -21,7 +21,7 @@ import logging
 
 from housekeeping import ClassMovedMixin, func_moved
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base import client, http
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.base.registry import hosting_service_registry
@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 
 class HostingService(ClassMovedMixin,
                      BaseHostingService,
-                     warning_cls=RemovedInReviewBoard90Warning):
+                     warning_cls=RemovedInReviewBoard10_0Warning):
     """An interface to a hosting service for repositories and bug trackers.
 
     Deprecated:
@@ -46,7 +46,7 @@ class HostingService(ClassMovedMixin,
 
 class HostingServiceClient(ClassMovedMixin,
                            client.HostingServiceClient,
-                           warning_cls=RemovedInReviewBoard90Warning):
+                           warning_cls=RemovedInReviewBoard10_0Warning):
     """Client for communicating with a hosting service's API.
 
     Deprecated:
@@ -59,7 +59,7 @@ class HostingServiceClient(ClassMovedMixin,
 
 class HostingServiceHTTPRequest(ClassMovedMixin,
                                 http.HostingServiceHTTPRequest,
-                                warning_cls=RemovedInReviewBoard90Warning):
+                                warning_cls=RemovedInReviewBoard10_0Warning):
     """A request that can use any HTTP method.
 
     Deprecated:
@@ -72,7 +72,7 @@ class HostingServiceHTTPRequest(ClassMovedMixin,
 
 class HostingServiceHTTPResponse(ClassMovedMixin,
                                  http.HostingServiceHTTPResponse,
-                                 warning_cls=RemovedInReviewBoard90Warning):
+                                 warning_cls=RemovedInReviewBoard10_0Warning):
     """An HTTP response from the server.
 
     Deprecated:
@@ -94,7 +94,7 @@ def get_hosting_services() -> list[type[BaseHostingService]]:
     return list(hosting_service_registry)
 
 
-@func_moved(RemovedInReviewBoard90Warning,
+@func_moved(RemovedInReviewBoard10_0Warning,
             new_func=hosting_service_registry.get_hosting_service)
 def get_hosting_service(
     name: str,
@@ -114,7 +114,7 @@ def get_hosting_service(
     return hosting_service_registry.get_hosting_service(name)
 
 
-@func_moved(RemovedInReviewBoard90Warning,
+@func_moved(RemovedInReviewBoard10_0Warning,
             new_func=hosting_service_registry.register)
 def register_hosting_service(
     name: str,
@@ -145,7 +145,7 @@ def register_hosting_service(
     hosting_service_registry.register(cls)
 
 
-@func_moved(RemovedInReviewBoard90Warning,
+@func_moved(RemovedInReviewBoard10_0Warning,
             new_func=hosting_service_registry.unregister_by_id)
 def unregister_hosting_service(
     name: str,

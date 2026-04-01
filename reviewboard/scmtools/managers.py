@@ -10,7 +10,7 @@ from django.db.models import Manager, Q
 from django.db.models.query import QuerySet
 from housekeeping.functions import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard80Warning
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
@@ -177,7 +177,7 @@ class ToolManager(Manager['Tool']):
 class RepositoryManager(Manager['Repository']):
     """A manager for Repository models."""
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard80Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def accessible(
         self,
         user: Union[AnonymousUser, User],

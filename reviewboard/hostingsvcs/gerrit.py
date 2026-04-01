@@ -14,7 +14,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from djblets.util.decorators import cached_property
 from housekeeping import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
@@ -297,7 +297,7 @@ class Gerrit(BaseHostingService):
         },
     }
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def check_repository(
         self,
         *,
@@ -402,7 +402,7 @@ class Gerrit(BaseHostingService):
                     }
                 )
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def authorize(
         self,
         *,
