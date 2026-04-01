@@ -12,6 +12,7 @@ from reviewboard.diffviewer.diffutils import (convert_to_unicode,
                                               get_filediff_encodings,
                                               get_original_file,
                                               get_patched_file)
+from reviewboard.diffviewer.errors import PatchError
 from reviewboard.diffviewer.views import DownloadPatchErrorBundleView
 from reviewboard.reviews.views.diff_fragments import ReviewsDiffFragmentView
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
@@ -80,9 +81,18 @@ class DownloadDiffFileView(ReviewRequestViewMixin, View):
             raise Http404
 
         if self.file_type == self.TYPE_MODIFIED:
-            data = get_patched_file(source_data=data,
-                                    filediff=filediff,
-                                    request=request)
+            try:
+                data = get_patched_file(source_data=data,
+                                        filediff=filediff,
+                                        request=request)
+            except PatchError:
+                logger.exception(
+                    'Could not patch file "%s" (revision %s) for filediff '
+                    'ID %s',
+                    filediff.dest_detail, revision, filediff_id,
+                    extra={'request': request})
+
+                raise Http404
 
         encoding_list = get_filediff_encodings(filediff)
         data = convert_to_unicode(data, encoding_list)[1]
