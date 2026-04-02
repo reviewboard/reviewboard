@@ -12,7 +12,7 @@ import re
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, TYPE_CHECKING, Type, TypeVar
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from cryptography import x509
@@ -32,8 +32,12 @@ from reviewboard.certs.errors import (CertificateNotFoundError,
                                       InvalidCertificateFormatError)
 
 if TYPE_CHECKING:
+    from typing import TypeVar
+
     from typelets.django.json import (SerializableDjangoJSONDict,
                                       SerializableDjangoJSONDictImmutable)
+
+    _T = TypeVar('_T')
 
 
 logger = logging.getLogger(__name__)
@@ -42,15 +46,14 @@ logger = logging.getLogger(__name__)
 _CERT_PEM_RE = re.compile(
     br'-----BEGIN CERTIFICATE-----[\r\n]+'
     br'[A-Za-z0-9+/\r\n]+=*[\r\n]+'
-    br'-----END CERTIFICATE-----')
+    br'-----END CERTIFICATE-----'
+)
 
 _PRIVATE_KEY_PEM_RE = re.compile(
     br'-----BEGIN PRIVATE KEY-----[\r\n]+'
     br'[A-Za-z0-9+/\r\n]+=*[\r\n]+'
-    br'-----END PRIVATE KEY-----')
-
-
-_T = TypeVar('_T')
+    br'-----END PRIVATE KEY-----'
+)
 
 
 def _format_fingerprint(
@@ -110,16 +113,10 @@ class CertificateFingerprints:
     """
 
     #: The human-readable SHA1 fingerprint.
-    #:
-    #: Type:
-    #:     str
-    sha1: Optional[str] = None
+    sha1: (str | None) = None
 
     #: The human-readable SHA256 fingerprint.
-    #:
-    #: Type:
-    #:     str
-    sha256: Optional[str] = None
+    sha256: (str | None) = None
 
     @classmethod
     def from_json(
@@ -218,8 +215,8 @@ class CertificateFingerprints:
     def __init__(
         self,
         *,
-        sha1: Optional[str] = None,
-        sha256: Optional[str] = None,
+        sha1: (str | None) = None,
+        sha256: (str | None) = None,
     ) -> None:
         """Initialize the certificate fingerprints instance.
 
@@ -395,37 +392,22 @@ class Certificate:
     #:
     #: If available, it will match the format specified in
     #: :py:attr:`data_format`.
-    #:
-    #: Type:
-    #:     bytes
-    cert_data: Optional[bytes]
+    cert_data: bytes | None
 
     #: The format for the loaded certificate and private key data.
-    #:
-    #: Type:
-    #:     CertDataFormat
     data_format: CertDataFormat
 
     #: The hostname that would serve this certificate.
     #:
     #: Note that this may be a wildcard domain (e.g., ``*.example.com``).
-    #:
-    #: Type:
-    #:     str
     hostname: str
 
     #: The loaded private key data, if available.
     #:
     #: This will match the format specified in :py:attr:`data_format`.
-    #:
-    #: Type:
-    #:     bytes
-    key_data: Optional[bytes]
+    key_data: bytes | None
 
     #: The port on the host that would serve this certificate.
-    #:
-    #: Type:
-    #:     int
     port: int
 
     #: The purpose set for a certificate.
@@ -442,50 +424,35 @@ class Certificate:
     #: If not provided during construction, this will be loaded from
     #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
     #: provided).
-    #:
-    #: Type:
-    #:     CertificateFingerprints
-    _fingerprints: Unsettable[Optional[CertificateFingerprints]]
+    _fingerprints: Unsettable[CertificateFingerprints | None]
 
     #: The issuer (usually the hostname) of the certificate.
     #:
     #: If not provided during construction, this will be loaded from
     #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
     #: provided).
-    #:
-    #: Type:
-    #:     str
-    _issuer: Unsettable[Optional[str]]
+    _issuer: Unsettable[str | None]
 
     #: The subject (usually the hostname) of the certificate.
     #:
     #: If not provided during construction, this will be loaded from
     #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
     #: provided).
-    #:
-    #: Type:
-    #:     str
-    _subject: Unsettable[Optional[str]]
+    _subject: Unsettable[str | None]
 
     #: The first date/time in which the certificate is valid.
     #:
     #: If not provided during construction, this will be loaded from
     #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
     #: provided).
-    #:
-    #: Type:
-    #:     datetime
-    _valid_from: Unsettable[Optional[datetime]]
+    _valid_from: Unsettable[datetime | None]
 
     #: The last date/time in which the certificate is valid.
     #:
     #: If not provided during construction, this will be loaded from
     #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
     #: provided).
-    #:
-    #: Type:
-    #:     datetime
-    _valid_through: Unsettable[Optional[datetime]]
+    _valid_through: Unsettable[datetime | None]
 
     @classmethod
     def create_from_files(
@@ -773,7 +740,7 @@ class Certificate:
         self._valid_through = valid_through
 
     @property
-    def fingerprints(self) -> Optional[CertificateFingerprints]:
+    def fingerprints(self) -> CertificateFingerprints | None:
         """Fingerprints for the certificate.
 
         Type:
@@ -795,7 +762,7 @@ class Certificate:
         return fingerprints
 
     @cached_property
-    def x509_cert(self) -> Optional[x509.Certificate]:
+    def x509_cert(self) -> x509.Certificate | None:
         """A Cryptography X509 Certificate representing this certificate.
 
         This will be created from the loaded from the certificate data stored
@@ -820,7 +787,7 @@ class Certificate:
         return x509.load_pem_x509_certificate(self.cert_data)
 
     @property
-    def subject(self) -> Optional[str]:
+    def subject(self) -> str | None:
         """The subject of the certificate.
 
         Type:
@@ -835,7 +802,7 @@ class Certificate:
         return subject
 
     @property
-    def issuer(self) -> Optional[str]:
+    def issuer(self) -> str | None:
         """The issuer of the certificate.
 
         Type:
@@ -850,7 +817,7 @@ class Certificate:
         return issuer
 
     @property
-    def valid_from(self) -> Optional[datetime]:
+    def valid_from(self) -> datetime | None:
         """The date/time in which the certificate is first valid.
 
         Type:
@@ -865,7 +832,7 @@ class Certificate:
         return valid_from
 
     @property
-    def valid_through(self) -> Optional[datetime]:
+    def valid_through(self) -> datetime | None:
         """The last date/time in which the certificate is valid.
 
         Type:
@@ -1035,9 +1002,9 @@ class Certificate:
 
     def _get_x509_attr(
         self,
-        attr_type: Type[_T],
+        attr_type: type[_T],
         field_name: str,
-    ) -> Optional[_T]:
+    ) -> _T | None:
         """Return a normalized value for an X509.Certificate attribute.
 
         Any "Name" fields will be converted to a string.
@@ -1055,7 +1022,7 @@ class Certificate:
             object:
             The resulting value, or ``None``.
         """
-        value: Optional[_T] = None
+        value: (_T | None) = None
         x509_cert = self.x509_cert
 
         if x509_cert is not None:
@@ -1114,23 +1081,14 @@ class CertificateBundle:
     ######################
 
     #: The loaded data of the certificate bundle.
-    #:
-    #: Type:
-    #:     bytes
     bundle_data: bytes
 
     #: The format for the loaded certificate and private key data.
-    #:
-    #: Type:
-    #:     CertDataFormat
     data_format: CertDataFormat
 
     #: The name of this bundle.
     #:
     #: This is in :term:`slug` format.
-    #:
-    #: Type:
-    #:     str
     name: str
 
     @classmethod

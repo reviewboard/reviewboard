@@ -7,7 +7,7 @@ Version Added:
 from __future__ import annotations
 
 from enum import IntEnum
-from typing import List, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.utils.translation import gettext as _, ngettext as N_
 
@@ -83,7 +83,7 @@ class CertificateNotFoundError(CertificateStorageError):
 
     def __init__(
         self,
-        msg: Optional[str] = None,
+        msg: (str | None) = None,
     ) -> None:
         """Initialize the error.
 
@@ -106,23 +106,17 @@ class InvalidCertificateFormatError(CertificateStorageError):
     ######################
 
     #: The loaded certificate data.
-    #:
-    #: Type:
-    #:     bytes
     data: bytes
 
     #: The optional path to the certificate file.
-    #:
-    #: Type:
-    #:     str
-    path: Optional[str]
+    path: str | None
 
     def __init__(
         self,
-        msg: Optional[str] = None,
+        msg: (str | None) = None,
         *,
         data: bytes,
-        path: Optional[str] = None,
+        path: (str | None) = None,
     ) -> None:
         """Initialize the error.
 
@@ -172,42 +166,30 @@ class CertificateVerificationError(BaseCertificateError):
     ######################
 
     #: The certificate details being presented, if available.
-    #:
-    #: Type:
-    #:     reviewboard.certs.cert.Certificate
-    certificate: Optional[Certificate]
+    certificate: Certificate | None
 
     #: The reason the certificate could not be verified.
-    #:
-    #: Type:
-    #:     CertificateVerificationFailureCode
     code: CertificateVerificationFailureCode
 
     #: Detailed text specifying why the certificate was not verified.
     #:
     #: This may represent an underlying error string from OpenSSL or another
     #: library.
-    #:
-    #: Type:
-    #:     str
-    detail_msg: Optional[str]
+    detail_msg: str | None
 
     #: A generic message for the certificate error.
     #:
     #: This won't include the extra certificate details, allowing a handler
     #: to represent those details separately.
-    #:
-    #: Type:
-    #:     str
     generic_msg: str
 
     def __init__(
         self,
-        msg: Optional[str] = None,
+        msg: (str | None) = None,
         *,
         code: CertificateVerificationFailureCode,
-        certificate: Optional[Certificate] = None,
-        detail_msg: Optional[str] = None,
+        certificate: (Certificate | None) = None,
+        detail_msg: (str | None) = None,
     ) -> None:
         """Initialize the error message.
 
@@ -239,7 +221,7 @@ class CertificateVerificationError(BaseCertificateError):
 
     def build_message(
         self,
-        msg: Optional[str],
+        msg: str | None,
     ) -> str:
         """Return a message for the error.
 
@@ -265,7 +247,7 @@ class CertificateVerificationError(BaseCertificateError):
             str:
             The resulting message for the error.
         """
-        hostname: Optional[str] = None
+        hostname: (str | None) = None
 
         certificate = self.certificate
         code = self.code
@@ -365,8 +347,8 @@ class CertificateVerificationError(BaseCertificateError):
             str:
             The certificate details to show.
         """
-        fingerprints: Optional[CertificateFingerprints] = None
-        cert_details: List[str] = []
+        fingerprints: (CertificateFingerprints | None) = None
+        cert_details: list[str] = []
         certificate = self.certificate
 
         if certificate is not None:
@@ -384,7 +366,7 @@ class CertificateVerificationError(BaseCertificateError):
             # Normalize the fingerprints, making sure we never have to work
             # with empty fingerprints.
             if fingerprints is not None and not fingerprints.is_empty():
-                fingerprint_pairs: List[str] = []
+                fingerprint_pairs: list[str] = []
 
                 if fingerprints.sha1:
                     fingerprint_pairs.append(_('SHA1=%s')

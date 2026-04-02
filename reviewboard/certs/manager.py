@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import os
 import ssl
-from typing import Final, Optional, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 from urllib.parse import urlparse
 
 from django.core.cache import cache
@@ -32,6 +32,8 @@ from reviewboard.certs.errors import (CertificateNotFoundError,
 from reviewboard.certs.storage import cert_storage_backend_registry
 
 if TYPE_CHECKING:
+    from typing import Final
+
     from typelets.funcs import KwargsDict
     from typelets.django.json import SerializableDjangoJSONDictImmutable
     from typing_extensions import NotRequired, TypeAlias
@@ -63,17 +65,11 @@ class CertificateFilePaths(TypedDict):
     """
 
     #: The absolute path to a certificate file.
-    #:
-    #: Type:
-    #:     str
     cert_file: str
 
     #: The absolute path to a private key file.
     #:
     #: This is only included if a private key is present.
-    #:
-    #: Type:
-    #:     str
     key_file: NotRequired[str]
 
 
@@ -106,9 +102,6 @@ class CertificateManager:
     """
 
     #: The ID of the default storage backend.
-    #:
-    #: Type:
-    #:     str
     DEFAULT_STORAGE_ID: Final[str] = 'file'
 
     ######################
@@ -119,16 +112,10 @@ class CertificateManager:
     #:
     #: All storage backends will have a subdirectory within here that they
     #: can use for reading/writing certificate storage data.
-    #:
-    #: Type:
-    #:     str
     _root_storage_path: str
 
     #: A loaded instance of the current storage backend.
-    #:
-    #: Type:
-    #:     reviewboard.certs.storage.base.BaseCertificateStorageBackend
-    _storage_backend: Optional[_CertStorageBackend]
+    _storage_backend: _CertStorageBackend | None
 
     def __init__(self) -> None:
         """Initialize the certificate manager."""
@@ -196,7 +183,7 @@ class CertificateManager:
         self,
         bundle: CertificateBundle,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> BaseStoredCertificateBundle:
         """Add a root CA bundle to storage.
 
@@ -224,7 +211,7 @@ class CertificateManager:
         self,
         *,
         name: str,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Delete a root CA bundle from storage.
 
@@ -253,8 +240,8 @@ class CertificateManager:
         self,
         *,
         name: str,
-        local_site: Optional[LocalSite] = None,
-    ) -> Optional[CertificateBundle]:
+        local_site: (LocalSite | None) = None,
+    ) -> CertificateBundle | None:
         """Return a CA bundle.
 
         Args:
@@ -284,7 +271,7 @@ class CertificateManager:
     def get_ca_bundles_dir(
         self,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> str:
         """Return a path containing all CA bundle files.
 
@@ -304,7 +291,7 @@ class CertificateManager:
         self,
         certificate: Certificate,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> BaseStoredCertificate:
         """Add a certificate to storage.
 
@@ -544,7 +531,7 @@ class CertificateManager:
         hostname: str,
         port: int,
         fingerprints: CertificateFingerprints,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Mark a certificate as verified.
 
@@ -601,7 +588,7 @@ class CertificateManager:
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Remove verification information for a certificate.
 
@@ -643,8 +630,8 @@ class CertificateManager:
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
-    ) -> Optional[CertificateFingerprints]:
+        local_site: (LocalSite | None) = None,
+    ) -> CertificateFingerprints | None:
         """Return certificate fingerprints from storage.
 
         Args:
@@ -693,7 +680,7 @@ class CertificateManager:
         hostname: str,
         port: int,
         latest_fingerprints: CertificateFingerprints,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> bool:
         """Return whether a certificate is verified.
 
@@ -806,7 +793,7 @@ class CertificateManager:
         self,
         *,
         url: str,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> KwargsDict:
         """Return SSL-related keyword arguments for a urlopen request.
 
@@ -848,7 +835,7 @@ class CertificateManager:
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
     ) -> str:
         """Return a cache key for verification.
 
@@ -883,8 +870,5 @@ class CertificateManager:
 #:
 #: Version Added:
 #:     6.0
-#:
-#: Type:
-#:     CertificateManager
 cert_manager: Final[CertificateManager] = \
     cast(CertificateManager, SimpleLazyObject(CertificateManager))

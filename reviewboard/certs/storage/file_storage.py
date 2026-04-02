@@ -10,8 +10,7 @@ import json
 import logging
 import os
 import re
-from typing import (Any, Dict, Iterator, Optional, Tuple, TYPE_CHECKING,
-                    Type, cast)
+from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
 from django.core.cache import cache
@@ -37,7 +36,8 @@ from reviewboard.certs.storage.base import (BaseCertificateStorageBackend,
 from reviewboard.site.models import AnyOrAllLocalSites, LocalSite
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Iterator, Mapping, Sequence
+    from typing import Any
 
 
 logger = logging.getLogger(__name__)
@@ -54,23 +54,14 @@ class FileStoredDataMixin:
     """
 
     #: The directory name where this class's data will be stored.
-    #:
-    #: Type:
-    #:     str
     storage_dir: str
 
     #: The display name of this stored data object.
     #:
     #: This will be used in error messages.
-    #:
-    #: Type:
-    #:     str
     storage_name: str
 
     #: A regex used to parse storage IDs.
-    #:
-    #: Type:
-    #:     re.Pattern
     storage_id_re: re.Pattern
 
     @classmethod
@@ -111,7 +102,7 @@ class FileStoredDataMixin:
                 })
 
         local_site_name = m.group('local_site')
-        local_site: Optional[LocalSite] = None
+        local_site: (LocalSite | None) = None
 
         if local_site_name is not None:
             try:
@@ -121,7 +112,7 @@ class FileStoredDataMixin:
                 # result and avoids crashing unnecessarily.
                 local_site = LocalSite(name=local_site_name)
 
-        result: Dict[str, Any] = dict(m.groupdict(),
+        result: dict[str, Any] = dict(m.groupdict(),
                                       local_site=local_site)
 
         # This is somewhat hacky, in that we're assuming knowledge of a
@@ -176,16 +167,10 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
     _port: int
 
     #: The path to the certificate file.
-    #:
-    #: Type:
-    #:     str
     _cert_file_path: str
 
     #: The path to the key file, if found.
-    #:
-    #: Type:
-    #:     str
-    _key_file_path: Optional[str]
+    _key_file_path: str | None
 
     #: The hostname used as part of a storage ID.
     #:
@@ -357,7 +342,7 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
         self,
         *,
         data_format: CertDataFormat = CertDataFormat.PEM,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return the filesystem path to a certificate private key.
 
         Not all certificates will have an associated private key. If one is
@@ -436,9 +421,6 @@ class FileStoredCertificateBundle(FileStoredDataMixin,
     ######################
 
     #: The path to the CA bundle file.
-    #:
-    #: Type:
-    #:     str
     _bundle_file_path: str
 
     #: The associated name of the CA bundle.
@@ -453,10 +435,10 @@ class FileStoredCertificateBundle(FileStoredDataMixin,
         self,
         *,
         bundle_file_path: str,
-        name: Optional[str] = None,
-        bundle: Optional[CertificateBundle] = None,
-        local_site: Optional[LocalSite] = None,
-        storage_id: Optional[str] = None,
+        name: (str | None) = None,
+        bundle: (CertificateBundle | None) = None,
+        local_site: (LocalSite | None) = None,
+        storage_id: (str | None) = None,
         **kwargs,
     ) -> None:
         """Initialize the stored CA bundle information>
@@ -597,9 +579,6 @@ class FileStoredCertificateFingerprints(FileStoredDataMixin,
     ######################
 
     #: The path to the fingerprints file.
-    #:
-    #: Type:
-    #:     str
     _fingerprints_file_path: str
 
     #: The hostname associated with the certificate fingerprints.
@@ -831,7 +810,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         self,
         bundle: CertificateBundle,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
     ) -> FileStoredCertificateBundle:
         """Add a root CA bundle to storage.
@@ -883,7 +862,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         self,
         *,
         name: str,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
     ) -> None:
         """Delete a root CA bundle from storage.
@@ -955,9 +934,9 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         self,
         *,
         name: str,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
-    ) -> Optional[FileStoredCertificateBundle]:
+    ) -> FileStoredCertificateBundle | None:
         """Return a root CA bundle in storage.
 
         Args:
@@ -998,7 +977,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         self,
         storage_id: str,
         **kwargs,
-    ) -> Optional[FileStoredCertificateBundle]:
+    ) -> FileStoredCertificateBundle | None:
         """Return a root CA bundle in storage identified by ID.
 
         Args:
@@ -1065,7 +1044,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
     def get_ca_bundles_dir(
         self,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> str:
         """Return a path containing all CA bundle files.
 
@@ -1087,7 +1066,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         self,
         certificate: Certificate,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
     ) -> FileStoredCertificate:
         """Add a certificate to storage.
@@ -1173,7 +1152,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         hostname: str,
         port: int,
         purpose: CertPurpose,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
     ) -> None:
         """Delete a certificate from storage.
@@ -1379,7 +1358,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         self,
         storage_id: str,
         **kwargs,
-    ) -> Optional[FileStoredCertificate]:
+    ) -> FileStoredCertificate | None:
         """Return a certificate from storage identified by ID.
 
         Args:
@@ -1442,7 +1421,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             reviewboard.cert.errors.CertificateStorageError:
                 There was an error iterating through stored certificates.
         """
-        key_file_path: Optional[str]
+        key_file_path: str | None
 
         entries = self._iter_stored_data_files(
             stored_data_cls=FileStoredCertificate,
@@ -1486,7 +1465,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
     ) -> FileStoredCertificateFingerprints:
         """Add verified certificate fingerprints to storage.
@@ -1562,7 +1541,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
     ) -> None:
         """Delete certificate fingerprints from storage.
@@ -1642,9 +1621,9 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
-    ) -> Optional[FileStoredCertificateFingerprints]:
+    ) -> FileStoredCertificateFingerprints | None:
         """Return certificate fingerprints from storage.
 
         Args:
@@ -1690,7 +1669,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         self,
         storage_id: str,
         **kwargs,
-    ) -> Optional[FileStoredCertificateFingerprints]:
+    ) -> FileStoredCertificateFingerprints | None:
         """Return certificate fingerprints from storage identified by ID.
 
         Args:
@@ -1760,7 +1739,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
     def _invalidate_stats_cache(
         self,
         *,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
     ) -> None:
         """Invalidate the file storage stats cache information.
 
@@ -1777,10 +1756,10 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
 
     def _iter_stored_data_dirs(
         self,
-        stored_data_cls: Type[FileStoredDataMixin],
+        stored_data_cls: type[FileStoredDataMixin],
         *,
         local_site: AnyOrAllLocalSites = None,
-    ) -> Iterator[Tuple[str, Optional[LocalSite]]]:
+    ) -> Iterator[tuple[str, LocalSite | None]]:
         """Iterate through data directories.
 
         This will yield absolute paths to directories where data may be
@@ -1855,13 +1834,13 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
 
     def _iter_stored_data_files(
         self,
-        stored_data_cls: Type[FileStoredDataMixin],
+        stored_data_cls: type[FileStoredDataMixin],
         *,
         file_pattern: re.Pattern,
         local_site: AnyOrAllLocalSites = None,
         start: int = 0,
         subdirs: (Sequence[str] | None) = None,
-    ) -> Iterator[Tuple[str, Optional[LocalSite], re.Match]]:
+    ) -> Iterator[tuple[str, LocalSite | None, re.Match]]:
         """Iterate through all files in the specified data directories.
 
         This will iterate through all the files in each data directory
@@ -1950,9 +1929,9 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
 
     def _build_data_dir_path(
         self,
-        stored_data_cls: Type[FileStoredDataMixin],
+        stored_data_cls: type[FileStoredDataMixin],
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> str:
         """Return a path to a data file.
 
@@ -2066,7 +2045,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         ext: str,
         purpose: CertPurpose,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return a path to a certificate file.
 
         Version Changed:
@@ -2119,7 +2098,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         *,
         name: str,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return a path to a CA bundle file.
 
         Args:
@@ -2158,7 +2137,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         hostname: str,
         port: int,
         **kwargs,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return a path to a certificate fingerprints file.
 
         Args:

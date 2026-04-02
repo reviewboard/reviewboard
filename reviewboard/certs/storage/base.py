@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Generic, Iterator, Optional, TYPE_CHECKING, TypeVar
+from typing import Generic, TYPE_CHECKING, TypeVar
 
 from typing_extensions import TypedDict
 
@@ -16,7 +16,7 @@ from reviewboard.certs.cert import CertDataFormat, CertPurpose
 from reviewboard.certs.errors import CertificateNotFoundError
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Iterator, Mapping
 
     from typelets.django.strings import StrOrPromise
 
@@ -41,15 +41,9 @@ class BaseStoredData(ABC):
     ######################
 
     #: The Local Site owning this stored certificate.
-    #:
-    #: Type:
-    #:     reviewboard.site.models.LocalSite
-    local_site: Optional[LocalSite]
+    local_site: LocalSite | None
 
     #: The storage backend managing this certificate.
-    #:
-    #: Type:
-    #:     BaseCertificateStorageBackend
     storage: BaseCertificateStorageBackend
 
     #: A unique ID for this data in the storage backend.
@@ -62,8 +56,8 @@ class BaseStoredData(ABC):
         self,
         *,
         storage: BaseCertificateStorageBackend,
-        storage_id: Optional[str] = None,
-        local_site: Optional[LocalSite] = None,
+        storage_id: (str | None) = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the stored data.
 
@@ -130,10 +124,7 @@ class BaseStoredCertificate(BaseStoredData):
     purpose: CertPurpose
 
     #: The certificate data being stored.
-    #:
-    #: Type:
-    #:     reviewboard.certs.cert.Certificate
-    _certificate: Optional[Certificate]
+    _certificate: Certificate | None
 
     def __init__(
         self,
@@ -243,7 +234,7 @@ class BaseStoredCertificate(BaseStoredData):
         self,
         *,
         data_format: CertDataFormat = CertDataFormat.PEM,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return the filesystem path to a certificate private key.
 
         Not all certificates will have an associated private key. If one is
@@ -301,18 +292,15 @@ class BaseStoredCertificateBundle(BaseStoredData):
     ######################
 
     #: The certificate bundle data being stored.
-    #:
-    #: Type:
-    #:     reviewboard.certs.cert.CertificateBundle
-    _bundle: Optional[CertificateBundle]
+    _bundle: CertificateBundle | None
 
     def __init__(
         self,
         *,
         storage: BaseCertificateStorageBackend,
-        bundle: Optional[CertificateBundle] = None,
-        storage_id: Optional[str] = None,
-        local_site: Optional[LocalSite] = None,
+        bundle: (CertificateBundle | None) = None,
+        storage_id: (str | None) = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the stored certificate.
 
@@ -410,18 +398,15 @@ class BaseStoredCertificateFingerprints(BaseStoredData):
     ######################
 
     #: The fingerprints data being stored.
-    #:
-    #: Type:
-    #:     reviewboard.certs.cert.CertificateFingerprints
-    _fingerprints: Optional[CertificateFingerprints]
+    _fingerprints: CertificateFingerprints | None
 
     def __init__(
         self,
         *,
         storage: BaseCertificateStorageBackend,
-        fingerprints: Optional[CertificateFingerprints] = None,
-        storage_id: Optional[str] = None,
-        local_site: Optional[LocalSite] = None,
+        fingerprints: (CertificateFingerprints | None) = None,
+        storage_id: (str | None) = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the stored certificate.
 
@@ -516,13 +501,16 @@ class StorageStats(TypedDict):
 
 _StoredCertT = TypeVar(
     '_StoredCertT',
-    bound=BaseStoredCertificate)
+    bound=BaseStoredCertificate,
+)
 _StoredCertBundleT = TypeVar(
     '_StoredCertBundleT',
-    bound=BaseStoredCertificateBundle)
+    bound=BaseStoredCertificateBundle,
+)
 _StoredCertFingerprintsT = TypeVar(
     '_StoredCertFingerprintsT',
-    bound=BaseStoredCertificateFingerprints)
+    bound=BaseStoredCertificateFingerprints,
+)
 
 
 class BaseCertificateStorageBackend(
@@ -575,18 +563,12 @@ class BaseCertificateStorageBackend(
     #: The ID of this storage backend.
     #:
     #: This must be provided by subclasses, and must be unique.
-    #:
-    #: Type:
-    #:     str
-    backend_id: Optional[str] = None
+    backend_id: (str | None) = None
 
     #: The display name of the storage backend.
     #:
     #: This must be provided by subclasses.
-    #:
-    #: Type:
-    #:     str
-    name: Optional[StrOrPromise] = ''
+    name: (StrOrPromise | None) = ''
 
     ######################
     # Instance variables #
@@ -597,9 +579,6 @@ class BaseCertificateStorageBackend(
     #: This is set when constructing the backend, and should not be changed.
     #: All filesystem operations must be limited to directories under this
     #: path.
-    #:
-    #: Type:
-    #:     str
     storage_path: str
 
     def __init__(
@@ -653,7 +632,7 @@ class BaseCertificateStorageBackend(
         self,
         bundle: CertificateBundle,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> _StoredCertBundleT:
         """Add a root CA bundle to storage.
 
@@ -684,7 +663,7 @@ class BaseCertificateStorageBackend(
         self,
         *,
         name: str,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Delete a root CA bundle from storage.
 
@@ -740,8 +719,8 @@ class BaseCertificateStorageBackend(
         self,
         *,
         name: str,
-        local_site: Optional[LocalSite] = None,
-    ) -> Optional[_StoredCertBundleT]:
+        local_site: (LocalSite | None) = None,
+    ) -> _StoredCertBundleT | None:
         """Return a root CA bundle in storage.
 
         Args:
@@ -767,7 +746,7 @@ class BaseCertificateStorageBackend(
     def get_stored_ca_bundle_by_id(
         self,
         storage_id: str,
-    ) -> Optional[_StoredCertBundleT]:
+    ) -> _StoredCertBundleT | None:
         """Return a root CA bundle in storage identified by ID.
 
         Args:
@@ -816,7 +795,7 @@ class BaseCertificateStorageBackend(
     def get_ca_bundles_dir(
         self,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> str:
         """Return a path containing all CA bundle files.
 
@@ -837,7 +816,7 @@ class BaseCertificateStorageBackend(
         self,
         certificate: Certificate,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> _StoredCertT:
         """Add a certificate to storage.
 
@@ -870,7 +849,7 @@ class BaseCertificateStorageBackend(
         hostname: str,
         port: int,
         purpose: CertPurpose,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Delete a certificate from storage.
 
@@ -947,7 +926,7 @@ class BaseCertificateStorageBackend(
         hostname: str,
         port: int,
         purpose: CertPurpose,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> _StoredCertT | None:
         """Return a certificate from storage.
 
@@ -990,7 +969,7 @@ class BaseCertificateStorageBackend(
     def get_stored_certificate_by_id(
         self,
         storage_id: str,
-    ) -> Optional[_StoredCertT]:
+    ) -> _StoredCertT | None:
         """Return a certificate from storage identified by ID.
 
         Args:
@@ -1058,7 +1037,7 @@ class BaseCertificateStorageBackend(
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> _StoredCertFingerprintsT:
         """Add verified certificate fingerprints to storage.
 
@@ -1097,7 +1076,7 @@ class BaseCertificateStorageBackend(
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Delete certificate fingerprints from storage.
 
@@ -1189,8 +1168,8 @@ class BaseCertificateStorageBackend(
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
-    ) -> Optional[_StoredCertFingerprintsT]:
+        local_site: (LocalSite | None) = None,
+    ) -> _StoredCertFingerprintsT | None:
         """Return certificate fingerprints from storage.
 
         Args:
@@ -1219,7 +1198,7 @@ class BaseCertificateStorageBackend(
     def get_stored_fingerprints_by_id(
         self,
         storage_id: str,
-    ) -> Optional[_StoredCertFingerprintsT]:
+    ) -> _StoredCertFingerprintsT | None:
         """Return certificate fingerpritns from storage identified by ID.
 
         Args:
