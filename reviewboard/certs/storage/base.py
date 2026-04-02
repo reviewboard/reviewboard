@@ -12,10 +12,12 @@ from typing import Generic, Iterator, Optional, TYPE_CHECKING, TypeVar
 
 from typing_extensions import TypedDict
 
-from reviewboard.certs.cert import CertDataFormat
+from reviewboard.certs.cert import CertDataFormat, CertPurpose
 from reviewboard.certs.errors import CertificateNotFoundError
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from typelets.django.strings import StrOrPromise
 
     from reviewboard.certs.cert import (Certificate,
@@ -54,10 +56,7 @@ class BaseStoredData(ABC):
     #:
     #: This should be considered an opaque value outside of the storage
     #: backend.
-    #:
-    #: Type:
-    #:     str
-    storage_id: Optional[str]
+    storage_id: str
 
     def __init__(
         self,
@@ -75,12 +74,30 @@ class BaseStoredData(ABC):
             storage_id (str, optional):
                 The opaque ID of the stored data in the backend.
 
+                If not provided, :py:meth:`build_storage_id` will be called
+                to generate a new ID.
+
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site owning this stored certificate.
         """
         self.storage = storage
-        self.storage_id = storage_id
         self.local_site = local_site
+
+        # Use the storage ID if provided, or build a new one off of computed
+        # state if not.
+        self.storage_id = storage_id or self.build_storage_id()
+
+    def build_storage_id(self) -> str:
+        """Return a new storage ID for the stored data.
+
+        Version Added:
+            8.0
+
+        Returns:
+            str:
+            The new storage ID.
+        """
+        raise NotImplementedError
 
 
 class BaseStoredCertificate(BaseStoredData):
@@ -103,6 +120,15 @@ class BaseStoredCertificate(BaseStoredData):
     # Instance variables #
     ######################
 
+    #: The purpose set for a certificate.
+    #:
+    #: This defines whether the certificate is used for trusting a remote
+    #: server or authenticating Review Board with a service.
+    #:
+    #: Version Added:
+    #:     8.0
+    purpose: CertPurpose
+
     #: The certificate data being stored.
     #:
     #: Type:
@@ -113,11 +139,16 @@ class BaseStoredCertificate(BaseStoredData):
         self,
         *,
         storage: BaseCertificateStorageBackend,
-        certificate: Optional[Certificate] = None,
-        storage_id: Optional[str] = None,
-        local_site: Optional[LocalSite] = None,
+        certificate: (Certificate | None) = None,
+        purpose: (CertPurpose | None) = None,
+        storage_id: (str | None) = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the stored certificate.
+
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             storage (BaseCertificateStorageBackend):
@@ -126,16 +157,48 @@ class BaseStoredCertificate(BaseStoredData):
             certificate (reviewboard.certs.cert.Certificate, optional):
                 The certificate data being stored.
 
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The purpose of the certificate.
+
+                This sets whether the certificate should be used to trust
+                a remote server or authenticate Review Board.
+
+                If ``certificate`` is set, this must either match or not be
+                provided. If it's not set, then this must be provided.
+
+                Version Added:
+                    8.0
+
             storage_id (str, optional):
                 The opaque ID of the stored data in the backend.
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site owning this stored certificate.
+
+        Raises:
+            ValueError:
+                One or more arguments were not provided or contained invalid
+                values.
         """
+        if certificate:
+            if not purpose:
+                purpose = certificate.purpose
+            elif certificate.purpose != purpose:
+                raise ValueError(
+                    'The provided purpose= argument must match the purpose '
+                    'of the provided certificate=.'
+                )
+        elif not purpose:
+            raise ValueError(
+                'Either certificate= or purpose= must be provided.'
+            )
+
+        self.purpose = purpose
+        self._certificate = certificate
+
         super().__init__(storage=storage,
                          storage_id=storage_id,
                          local_site=local_site)
-        self._certificate = certificate
 
     @property
     def certificate(self) -> Certificate:
@@ -430,8 +493,17 @@ class StorageStats(TypedDict):
     #: The number of stored CA bundles.
     ca_bundle_count: int
 
-    #: The number of stored certificates.
+    #: The total number of stored certificates.
+    #:
+    #: This must be a sum of all the values in
+    #: :py:attr:`cert_counts_by_purpose`.
     cert_count: int
+
+    #: The number of stored certificates by purpose.
+    #:
+    #: Version Added:
+    #:     8.0
+    cert_counts_by_purpose: Mapping[CertPurpose, int]
 
     #: The number of stored verified fingerprints.
     fingerprint_count: int
@@ -490,6 +562,11 @@ class BaseCertificateStorageBackend(
     * :py:meth:`iter_stored_ca_bundles`
     * :py:meth:`iter_stored_certificates`
     * :py:meth:`iter_stored_fingerprints`
+
+    Version Changed:
+        8.0:
+        All certificate storage methods have been updated to take a
+        ``purpose`` parameter, which is now considered mandatory.
 
     Version Added:
         6.0
@@ -792,9 +869,14 @@ class BaseCertificateStorageBackend(
         *,
         hostname: str,
         port: int,
+        purpose: CertPurpose,
         local_site: Optional[LocalSite] = None,
     ) -> None:
         """Delete a certificate from storage.
+
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             hostname (str):
@@ -802,6 +884,15 @@ class BaseCertificateStorageBackend(
 
             port (int):
                 The port on the host serving the certificate.
+
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The purpose of the certificate to delete.
+
+                This indicates whether the certificate to match is used
+                to trust a remote server or authenticate Review Board.
+
+                Version Added:
+                    8.0
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 An optional LocalSite that owns the certificate.
@@ -818,7 +909,9 @@ class BaseCertificateStorageBackend(
         stored_certificate = self.get_stored_certificate(
             hostname=hostname,
             port=port,
-            local_site=local_site)
+            local_site=local_site,
+            purpose=purpose,
+        )
 
         if stored_certificate is None:
             raise CertificateNotFoundError()
@@ -853,9 +946,14 @@ class BaseCertificateStorageBackend(
         *,
         hostname: str,
         port: int,
+        purpose: CertPurpose,
         local_site: Optional[LocalSite] = None,
-    ) -> Optional[_StoredCertT]:
+    ) -> _StoredCertT | None:
         """Return a certificate from storage.
+
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             hostname (str):
@@ -863,6 +961,15 @@ class BaseCertificateStorageBackend(
 
             port (int):
                 The port on the host serving the certificate.
+
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The purpose of the certificate to fetch.
+
+                This indicates whether the certificate is used to trust a
+                remote server or authenticate Review Board.
+
+                Version Added:
+                    8.0
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 An optional LocalSite that owns the certificate.
@@ -904,12 +1011,26 @@ class BaseCertificateStorageBackend(
     def iter_stored_certificates(
         self,
         *,
+        purpose: CertPurpose,
         local_site: AnyOrAllLocalSites = None,
         start: int = 0,
     ) -> Iterator[_StoredCertT]:
         """Iterate through all certificates in storage.
 
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
+
         Args:
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The purpose of the certificates to filter for.
+
+                This will limit results to certificates that match the given
+                purpose.
+
+                Version Added:
+                    8.0
+
             local_site (reviewboard.site.models.LocalSite or
                         reviewboard.site.models.LocalSite.ALL, optional):
                 An optional LocalSite that owns the certificates.

@@ -10,7 +10,8 @@ import json
 import logging
 import os
 import re
-from typing import Any, Dict, Iterator, Optional, Tuple, Type, cast
+from typing import (Any, Dict, Iterator, Optional, Tuple, TYPE_CHECKING,
+                    Type, cast)
 from uuid import uuid4
 
 from django.core.cache import cache
@@ -22,6 +23,7 @@ from djblets.util.filesystem import safe_join
 from djblets.util.functional import iterable_len, lazy_re_compile
 
 from reviewboard.certs.cert import (CertDataFormat,
+                                    CertPurpose,
                                     Certificate,
                                     CertificateBundle,
                                     CertificateFingerprints)
@@ -33,6 +35,9 @@ from reviewboard.certs.storage.base import (BaseCertificateStorageBackend,
                                             BaseStoredCertificateFingerprints,
                                             StorageStats)
 from reviewboard.site.models import AnyOrAllLocalSites, LocalSite
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 
 logger = logging.getLogger(__name__)
@@ -72,7 +77,7 @@ class FileStoredDataMixin:
     def parse_storage_id(
         cls,
         storage_id: str,
-    ) -> Dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Return data extracted from a storage ID.
 
         Args:
@@ -144,7 +149,14 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
     storage_id_re = lazy_re_compile(
         r'^(?:(?P<local_site>[^:]+):)?'
         r'(?P<hostname>[^:]+):'
-        r'(?P<port>\d+)$'
+        r'(?P<port>\d+):'
+        r'(?P<purpose>%(purposes)s)$'
+        % {
+            'purposes': '|'.join(
+                purpose.value
+                for purpose in CertPurpose
+            ),
+        }
     )
 
     ######################
@@ -174,6 +186,42 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
     #: Type:
     #:     str
     _key_file_path: Optional[str]
+
+    #: The hostname used as part of a storage ID.
+    #:
+    #: This is used internally in order to handle wildcard certificates,
+    #: where the certificate hostname will be the requested hostname
+    #: while the storage hostname will contain the wildcard.
+    #:
+    #: Version Added:
+    #:     8.0
+    _storage_hostname: str
+
+    @classmethod
+    def parse_storage_id(
+        cls,
+        storage_id: str,
+    ) -> Mapping[str, Any]:
+        """Return data extracted from a storage ID.
+
+        Args:
+            storage_id (str):
+                The storage ID to parse.
+
+        Returns:
+            dict:
+            A dictionary containing parsed data for this stored data class.
+
+        Raises:
+            reviewboard.cert.errors.CertificateStorageError:
+                The storage ID could not be parsed.
+        """
+        data = super().parse_storage_id(storage_id)
+
+        return {
+            **data,
+            'purpose': CertPurpose(data['purpose']),
+        }
 
     def __init__(
         self,
@@ -230,6 +278,11 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
             **kwargs (dict, optional):
                 Additional keyword arguments to pass to the parent
                 constructor.
+
+        Raises:
+            ValueError:
+                One or more arguments were not provided or contained invalid
+                values.
         """
         # If a certificate is provided, use that as the source for the
         # hostname and port.
@@ -243,28 +296,45 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
             assert hostname is not None
             assert port is not None
 
+        if not storage_hostname:
+            storage_hostname = hostname
+
         self._cert_file_path = cert_file_path
         self._key_file_path = key_file_path
 
         self._hostname = hostname
         self._port = port
-
-        # If a storage ID is not provided, generate one from the provided
-        # arguments. With file-based storage, the ID is always based on
-        # the hostname, port, and any Local Site name.
-        if storage_id is None:
-            if not storage_hostname:
-                storage_hostname = hostname
-
-            storage_id = f'{storage_hostname}:{port}'
-
-            if local_site:
-                storage_id = f'{local_site.name}:{storage_id}'
+        self._storage_hostname = storage_hostname
 
         super().__init__(certificate=certificate,
                          local_site=local_site,
                          storage_id=storage_id,
                          **kwargs)
+
+    def build_storage_id(self) -> str:
+        """Return a new storage ID for the stored data.
+
+        File storage IDs are always based on the hostname, port, purpose, and
+        any Local Site name.
+
+        Version Added:
+            8.0
+
+        Returns:
+            str:
+            The new storage ID.
+        """
+        # If a storage ID is not provided, generate one from the provided
+        # arguments. With file-based storage, the ID is always based on
+        # the hostname, port, and any Local Site name.
+        storage_id = f'{self._storage_hostname}:{self._port}'
+
+        if local_site := self.local_site:
+            storage_id = f'{local_site.name}:{storage_id}'
+
+        storage_id = f'{storage_id}:{self.purpose.value}'
+
+        return storage_id
 
     def get_cert_file_path(
         self,
@@ -321,8 +391,10 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
         return Certificate.create_from_files(
             hostname=self._hostname,
             port=self._port,
+            purpose=self.purpose,
             cert_path=self.get_cert_file_path(),
-            key_path=self.get_key_file_path())
+            key_path=self.get_key_file_path(),
+        )
 
     def __repr__(self) -> str:
         """Return a string representation of the stored certificate.
@@ -332,10 +404,12 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
             The string representation.
         """
         return (
-            '<FileStoredCertificate(storage_id=%r, hostname=%r, port=%r, '
-            'cert_file_path=%r, key_file_path=%r)>'
-            % (self.storage_id, self._hostname, self._port,
-               self._cert_file_path, self._key_file_path)
+            f'<FileStoredCertificate(storage_id={self.storage_id!r},'
+            f' hostname={self._hostname!r},'
+            f' port={self._port!r},'
+            f' purpose={self.purpose},'
+            f' cert_file_path={self._cert_file_path!r},'
+            f' key_file_path={self._key_file_path!r})>'
         )
 
 
@@ -424,19 +498,30 @@ class FileStoredCertificateBundle(FileStoredDataMixin,
         self._name = name
         self._bundle_file_path = bundle_file_path
 
-        # If a storage ID is not provided, generate one from the provided
-        # arguments. With file-based storage, the ID is always based on
-        # the hostname, port, and any Local Site name.
-        if storage_id is None:
-            storage_id = name
-
-            if local_site:
-                storage_id = f'{local_site.name}:{storage_id}'
-
         super().__init__(bundle=bundle,
                          local_site=local_site,
                          storage_id=storage_id,
                          **kwargs)
+
+    def build_storage_id(self) -> str:
+        """Return a new storage ID for the stored CA bundle.
+
+        File storage IDs are always based on the bundle name and Local Site
+        name.
+
+        Version Added:
+            8.0
+
+        Returns:
+            str:
+            The new storage ID.
+        """
+        storage_id = self._name
+
+        if local_site := self.local_site:
+            storage_id = f'{local_site.name}:{storage_id}'
+
+        return storage_id
 
     def get_bundle_file_path(
         self,
@@ -567,18 +652,29 @@ class FileStoredCertificateFingerprints(FileStoredDataMixin,
         self._port = port
         self._fingerprints_file_path = fingerprints_file_path
 
-        # If a storage ID is not provided, generate one from the provided
-        # arguments. With file-based storage, the ID is always based on
-        # the hostname, port, and any Local Site name.
-        if storage_id is None:
-            storage_id = f'{hostname}:{port}'
-
-            if local_site:
-                storage_id = f'{local_site.name}:{storage_id}'
-
         super().__init__(local_site=local_site,
                          storage_id=storage_id,
                          **kwargs)
+
+    def build_storage_id(self) -> str:
+        """Return a new storage ID for the stored fingerprints.
+
+        File storage IDs are always based on the hostname, port, and
+        Local Site name.
+
+        Version Added:
+            8.0
+
+        Returns:
+            str:
+            The new storage ID.
+        """
+        storage_id = f'{self._hostname}:{self._port}'
+
+        if local_site := self.local_site:
+            storage_id = f'{local_site.name}:{storage_id}'
+
+        return storage_id
 
     def load_fingerprints(self) -> CertificateFingerprints:
         """Load and return the certificate fingerprints data from storage.
@@ -637,22 +733,22 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
     for this backend::
 
         cabundles/<slug>.pem
-        certs/<hostname>__<port>.crt
-        certs/<hostname>__<port>.key
-        certs/__.<hostname>__<port>.crt
-        certs/__.<hostname>__<port>.key
+        certs/<purpose>/<hostname>__<port>.crt
+        certs/<purpose>/<hostname>__<port>.key
+        certs/<purpose>/__.<hostname>__<port>.crt
+        certs/<purpose>/__.<hostname>__<port>.key
         fingerprints/<hostname>__<port>.json
         sites/<local_site_name>/cabundles/<slug>.pem
-        sites/<local_site_name>/certs/<hostname>__<port>.crt
-        sites/<local_site_name>/certs/<hostname>__<port>.key
-        sites/<local_site_name>/certs/__.<hostname>__<port>.crt
-        sites/<local_site_name>/certs/__.<hostname>__<port>.key
+        sites/<local_site_name>/certs/<purpose>/<hostname>__<port>.crt
+        sites/<local_site_name>/certs/<purpose>/<hostname>__<port>.key
+        sites/<local_site_name>/certs/<purpose>/__.<hostname>__<port>.crt
+        sites/<local_site_name>/certs/<purpose>/__.<hostname>__<port>.key
         sites/<local_site_name>/fingerprints/<hostname>__<port>.json
 
     Iterating through data involves scanning these directories for information,
     and possibly opening each file. This can involve a lot of IO for large
     numbers of certificates, but is fine in most simple deployments. Using
-    CA bundles, rather than individual certificates, can help keep using
+    CA bundles, rather than individual certificates, can help keep usage
     performant.
 
     For multi-server deployments, Power Pack's synchronized certificate storage
@@ -705,13 +801,23 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             The computed or cached storage statistics.
         """
         def _gen_stats() -> StorageStats:
+            cert_counts_by_purpose: dict[CertPurpose, int] = {}
+            cert_count: int = 0
+
+            for purpose in CertPurpose:
+                count = iterable_len(self.iter_stored_certificates(
+                    purpose=purpose,
+                    local_site=local_site,
+                ))
+                cert_count += count
+                cert_counts_by_purpose[purpose] = count
+
             return StorageStats(
                 ca_bundle_count=iterable_len(
                     self.iter_stored_ca_bundles(
                         local_site=local_site)),
-                cert_count=iterable_len(
-                    self.iter_stored_certificates(
-                        local_site=local_site)),
+                cert_count=cert_count,
+                cert_counts_by_purpose=cert_counts_by_purpose,
                 fingerprint_count=iterable_len(
                     self.iter_stored_fingerprints(
                         local_site=local_site)),
@@ -1012,12 +1118,14 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         """
         hostname = certificate.hostname
         port = certificate.port
+        purpose = certificate.purpose
 
         # Write the certificate.
         cert_file_path = self._build_cert_file_path(
             hostname=hostname,
             port=port,
             ext='crt',
+            purpose=purpose,
             local_site=local_site,
             create_parents_if_missing=True)
         assert cert_file_path
@@ -1030,6 +1138,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             hostname=hostname,
             port=port,
             ext='key',
+            purpose=purpose,
             local_site=local_site)
         assert key_file_path
 
@@ -1052,6 +1161,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         # Build the storage ID for this certificate.
         return FileStoredCertificate(
             certificate=certificate,
+            purpose=purpose,
             cert_file_path=cert_file_path,
             key_file_path=key_file_path,
             local_site=local_site,
@@ -1062,10 +1172,15 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         *,
         hostname: str,
         port: int,
+        purpose: CertPurpose,
         local_site: Optional[LocalSite] = None,
         **kwargs,
     ) -> None:
         """Delete a certificate from storage.
+
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             hostname (str):
@@ -1073,6 +1188,15 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
 
             port (int):
                 The port on the host serving the certificate.
+
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The purpose of the certificate to delete.
+
+                This indicates whether the certificate to match is used
+                to trust a remote server or authenticate Review Board.
+
+                Version Added:
+                    8.0
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 An optional LocalSite that owns the certificate.
@@ -1090,6 +1214,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             hostname=hostname,
             port=port,
             ext='crt',
+            purpose=purpose,
             local_site=local_site,
             if_exists=True)
 
@@ -1100,6 +1225,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             hostname=hostname,
             port=port,
             ext='key',
+            purpose=purpose,
             local_site=local_site,
             if_exists=True)
 
@@ -1164,10 +1290,15 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        purpose: CertPurpose,
+        local_site: (LocalSite | None) = None,
         **kwargs,
-    ) -> Optional[FileStoredCertificate]:
+    ) -> FileStoredCertificate | None:
         """Return a certificate from storage.
+
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             hostname (str):
@@ -1175,6 +1306,15 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
 
             port (int):
                 The port on the host serving the certificate.
+
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The purpose of the certificate to fetch.
+
+                This indicates whether the certificate is used to trust a
+                remote server or authenticate Review Board.
+
+                Version Added:
+                    8.0
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 An optional LocalSite that owns the certificate.
@@ -1196,6 +1336,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             hostname=hostname,
             port=port,
             ext='crt',
+            purpose=purpose,
             local_site=local_site,
             if_exists=True)
 
@@ -1209,6 +1350,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
                 hostname=storage_hostname,
                 port=port,
                 ext='crt',
+                purpose=purpose,
                 local_site=local_site,
                 if_exists=True)
 
@@ -1219,12 +1361,14 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             hostname=storage_hostname,
             port=port,
             ext='key',
+            purpose=purpose,
             local_site=local_site,
             if_exists=True)
 
         return FileStoredCertificate(
             hostname=hostname,
             port=port,
+            purpose=purpose,
             storage_hostname=storage_hostname,
             cert_file_path=cert_file_path,
             key_file_path=key_file_path,
@@ -1259,13 +1403,24 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
     def iter_stored_certificates(
         self,
         *,
+        purpose: CertPurpose,
         local_site: AnyOrAllLocalSites = None,
         start: int = 0,
         **kwargs,
     ) -> Iterator[FileStoredCertificate]:
         """Iterate through all certificates in storage.
 
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
+
         Args:
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The purpose of the certificates to filter for.
+
+                Version Added:
+                    8.0
+
             local_site (reviewboard.site.models.LocalSite or
                         reviewboard.site.models.LocalSite.ALL, optional):
                 An optional LocalSite that owns the certificates.
@@ -1293,14 +1448,22 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             stored_data_cls=FileStoredCertificate,
             file_pattern=self._cert_re,
             local_site=local_site,
-            start=start)
+            start=start,
+            subdirs=(purpose.value,),
+        )
+
+        check_key = (purpose == CertPurpose.CLIENT)
 
         for cert_file_path, cert_local_site, m in entries:
             basename = m.group('basename')
-            key_file_path = os.path.join(os.path.dirname(cert_file_path),
-                                         f'{basename}.key')
 
-            if not os.path.exists(key_file_path):
+            if check_key:
+                key_file_path = os.path.join(os.path.dirname(cert_file_path),
+                                             f'{basename}.key')
+
+                if not os.path.exists(key_file_path):
+                    key_file_path = None
+            else:
                 key_file_path = None
 
             hostname = m.group('hostname')
@@ -1311,6 +1474,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             yield FileStoredCertificate(
                 hostname=hostname,
                 port=int(m.group('port')),
+                purpose=purpose,
                 cert_file_path=cert_file_path,
                 key_file_path=key_file_path,
                 local_site=cert_local_site,
@@ -1696,6 +1860,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         file_pattern: re.Pattern,
         local_site: AnyOrAllLocalSites = None,
         start: int = 0,
+        subdirs: (Sequence[str] | None) = None,
     ) -> Iterator[Tuple[str, Optional[LocalSite], re.Match]]:
         """Iterate through all files in the specified data directories.
 
@@ -1711,6 +1876,10 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         that this may be slower the further into the results the caller
         indexes. For large deployments where this may matter, Power Pack's
         synchronized certificate management is recommended.
+
+        Version Changed:
+            8.0:
+            Added the ``subdirs`` argument.
 
         Args:
             stored_data_cls (type):
@@ -1728,6 +1897,13 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
 
             start (int, optional):
                 The starting index for file results.
+
+            subdirs (list of str, optional):
+                Subdirectories to include between the data file path and
+                the filename.
+
+                Version Added:
+                    8.0
 
         Yields:
             tuple:
@@ -1749,6 +1925,9 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
                                            local_site=local_site)
 
         for dir_entry, dir_local_site in dirs:
+            if subdirs:
+                dir_entry = os.path.join(dir_entry, *subdirs)
+
             if not os.path.exists(dir_entry):
                 continue
 
@@ -1794,13 +1973,18 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
     def _build_data_file_path(
         self,
         *,
-        stored_data_cls: Type[FileStoredDataMixin],
+        stored_data_cls: type[FileStoredDataMixin],
         filename: str,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         create_parents_if_missing: bool = False,
         if_exists: bool = False,
-    ) -> Optional[str]:
+        subdirs: (Sequence[str] | None) = None,
+    ) -> str | None:
         """Return a path to a data file.
+
+        Version Changed:
+            8.0:
+            Added the ``subdirs`` argument.
 
         Args:
             stored_data_cls (type):
@@ -1818,6 +2002,13 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
 
             if_exists (bool, optional):
                 Whether to only return a result if the path exists.
+
+            subdirs (list of str, optional):
+                Subdirectories to include between the data file path and
+                the filename.
+
+                Version Added:
+                    8.0
 
         Returns:
             str:
@@ -1839,6 +2030,10 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
 
         data_path = self._build_data_dir_path(stored_data_cls,
                                               local_site=local_site)
+
+        if subdirs:
+            data_path = os.path.join(data_path, *subdirs)
+
         file_path = safe_join(data_path, filename)
 
         if if_exists and not os.path.exists(file_path):
@@ -1869,9 +2064,14 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         hostname: str,
         port: int,
         ext: str,
+        purpose: CertPurpose,
         **kwargs,
     ) -> Optional[str]:
         """Return a path to a certificate file.
+
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             hostname (str):
@@ -1882,6 +2082,12 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
 
             ext (str):
                 The extension for the filename.
+
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The certificate purpose to include in the filename.
+
+                Version Added:
+                    8.0
 
             **kwargs (dict):
                 Additional keyword arguments to pass to
@@ -1905,6 +2111,7 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             filename=self._build_host_filename(hostname=hostname,
                                                port=port,
                                                ext=ext),
+            subdirs=(purpose.value,),
             **kwargs)
 
     def _build_ca_bundle_file_path(

@@ -10,7 +10,6 @@ import json
 import os
 import shutil
 import ssl
-from typing import Optional, cast
 
 import kgb
 from django.conf import settings
@@ -18,7 +17,7 @@ from django.core.cache import cache
 from djblets.cache.backend import make_cache_key
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard.certs.cert import (CertificateBundle,
+from reviewboard.certs.cert import (CertPurpose, CertificateBundle,
                                     CertificateFingerprints)
 from reviewboard.certs.errors import CertificateNotFoundError
 from reviewboard.certs.manager import CertificateManager, logger
@@ -27,11 +26,12 @@ from reviewboard.certs.storage.file_storage import \
     FileCertificateStorageBackend
 from reviewboard.certs.tests.testcases import (CertificateTestCase,
                                                TEST_CERT_BUNDLE_PEM,
-                                               TEST_CERT_PEM,
-                                               TEST_KEY_PEM,
+                                               TEST_CLIENT_CERT_PEM,
+                                               TEST_CLIENT_KEY_PEM,
                                                TEST_SHA1,
                                                TEST_SHA256,
-                                               TEST_SHA256_2)
+                                               TEST_SHA256_2,
+                                               TEST_TRUST_CERT_PEM)
 
 
 class MyCertificateStorageBackend(FileCertificateStorageBackend):
@@ -39,28 +39,45 @@ class MyCertificateStorageBackend(FileCertificateStorageBackend):
 
 
 class MySSLContext:
-    capath: Optional[str]
-    certfile: Optional[str]
-    keyfile: Optional[str]
+    cadatas: list[bytes | str | None]
+    cafiles: list[str | None]
+    capaths: list[str | None]
+    certfiles: list[str | None]
+    keyfiles: list[str | None]
+    passwords: list[str | None]
 
     def __init__(self) -> None:
-        self.capath = None
-        self.certfile = None
-        self.keyfile = None
+        self.cadatas = []
+        self.cafiles = []
+        self.capaths = []
+        self.certfiles = []
+        self.keyfiles = []
+        self.passwords = []
 
     def load_verify_locations(
         self,
-        capath: str,
+        cafile: (str | None) = None,
+        capath: (str | None) = None,
+        cadata: (bytes | str | None) = None
     ) -> None:
-        self.capath = capath
+        if cafile:
+            self.cafiles.append(cafile)
+
+        if capath:
+            self.capaths.append(capath)
+
+        if cadata:
+            self.cadatas.append(cadata)
 
     def load_cert_chain(
         self,
         certfile: str,
-        keyfile: str,
+        keyfile: (str | None) = None,
+        password: (str | None) = None,
     ) -> None:
-        self.certfile = certfile
-        self.keyfile = keyfile
+        self.certfiles.append(certfile)
+        self.keyfiles.append(keyfile)
+        self.passwords.append(password)
 
 
 class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
@@ -370,27 +387,28 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
             os.path.join(self.certs_path, 'file', 'sites', 'test-site-1',
                          'cabundles'))
 
-    def test_add_certificate(self) -> None:
-        """Testing CertificateManager.add_certificate"""
+    def test_add_certificate_with_trust(self) -> None:
+        """Testing CertificateManager.add_certificate with purpose=trust"""
         cert_manager = CertificateManager()
         storage_backend = cert_manager.storage_backend
 
         cert_path = os.path.join(storage_backend.storage_path, 'certs',
-                                 'example.com__443.crt')
+                                 'trust', 'example.com__443.crt')
         key_path = os.path.join(storage_backend.storage_path, 'certs',
-                                'example.com__443.key')
+                                'trust', 'example.com__443.key')
         fingerprints_path = os.path.join(storage_backend.storage_path,
                                          'fingerprints',
                                          'example.com__443.json')
 
         stored_cert = cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM))
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM))
 
         self.assertIsNotNone(stored_cert)
         self.assertAttrsEqual(
             stored_cert,
             {
                 'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': storage_backend,
             })
         self.assertTrue(os.path.exists(cert_path))
@@ -400,7 +418,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         self.assertIsNone(stored_cert.get_key_file_path())
 
         with open(cert_path, 'rb') as fp:
-            self.assertEqual(fp.read(), TEST_CERT_PEM)
+            self.assertEqual(fp.read(), TEST_TRUST_CERT_PEM)
 
         with open(fingerprints_path, 'rb') as fp:
             self.assertEqual(json.load(fp), {
@@ -411,65 +429,66 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert.certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_TRUST_CERT_PEM,
                 'hostname': 'example.com',
                 'key_data': None,
                 'port': 443,
+                'purpose': CertPurpose.TRUST,
             })
 
-    def test_add_certificate_with_key(self) -> None:
-        """Testing CertificateManager.add_certificate with key"""
+    def test_add_certificate_with_client(self) -> None:
+        """Testing CertificateManager.add_certificate with purpose=client"""
         cert_manager = CertificateManager()
         storage_backend = cert_manager.storage_backend
 
         cert_path = os.path.join(storage_backend.storage_path, 'certs',
-                                 'example.com__443.crt')
+                                 'client', 'example.com__443.crt')
         key_path = os.path.join(storage_backend.storage_path, 'certs',
-                                'example.com__443.key')
-        fingerprints_path = os.path.join(storage_backend.storage_path,
-                                         'fingerprints',
-                                         'example.com__443.json')
+                                'client', 'example.com__443.key')
 
         stored_cert = cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM))
+            self.create_certificate(purpose=CertPurpose.CLIENT,
+                                    cert_data=TEST_CLIENT_CERT_PEM,
+                                    key_data=TEST_CLIENT_KEY_PEM))
 
         self.assertIsNotNone(stored_cert)
         self.assertAttrsEqual(
             stored_cert,
             {
                 'local_site': None,
+                'purpose': CertPurpose.CLIENT,
                 'storage': storage_backend,
             })
         self.assertTrue(os.path.exists(cert_path))
         self.assertTrue(os.path.exists(key_path))
-        self.assertTrue(os.path.exists(fingerprints_path))
         self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
         self.assertEqual(stored_cert.get_key_file_path(), key_path)
 
+        # Fingerprints should not exist for these certificates.
+        self.assertFalse(os.path.exists(os.path.join(
+            storage_backend.storage_path, 'fingerprints',
+            'example.com__443.json')))
+
         with open(cert_path, 'rb') as fp:
-            self.assertEqual(fp.read(), TEST_CERT_PEM)
+            self.assertEqual(fp.read(), TEST_CLIENT_CERT_PEM)
 
         with open(key_path, 'rb') as fp:
-            self.assertEqual(fp.read(), TEST_KEY_PEM)
-
-        with open(fingerprints_path, 'rb') as fp:
-            self.assertEqual(json.load(fp), {
-                'sha1': TEST_SHA1,
-                'sha256': TEST_SHA256,
-            })
+            self.assertEqual(fp.read(), TEST_CLIENT_KEY_PEM)
 
         self.assertAttrsEqual(
             stored_cert.certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_CLIENT_CERT_PEM,
                 'hostname': 'example.com',
-                'key_data': TEST_KEY_PEM,
+                'key_data': TEST_CLIENT_KEY_PEM,
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
-    def test_add_certificate_with_local_site(self) -> None:
-        """Testing CertificateManager.add_certificate with LocalSite"""
+    def test_add_certificate_with_trust_and_local_site(self) -> None:
+        """Testing CertificateManager.add_certificate with purpose=trust and
+        LocalSite
+        """
         local_site = self.create_local_site('test-site-1')
 
         cert_manager = CertificateManager()
@@ -477,16 +496,15 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
 
         site_storage_path = os.path.join(storage_backend.storage_path, 'sites',
                                          'test-site-1')
-        cert_path = os.path.join(site_storage_path, 'certs',
+        cert_path = os.path.join(site_storage_path, 'certs', 'trust',
                                  'example.com__443.crt')
-        key_path = os.path.join(site_storage_path, 'certs',
+        key_path = os.path.join(site_storage_path, 'certs', 'trust',
                                 'example.com__443.key')
         fingerprints_path = os.path.join(site_storage_path, 'fingerprints',
                                          'example.com__443.json')
 
         stored_cert = cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM),
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM),
             local_site=local_site)
 
         self.assertIsNotNone(stored_cert)
@@ -494,19 +512,17 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
             stored_cert,
             {
                 'local_site': local_site,
+                'purpose': CertPurpose.TRUST,
                 'storage': storage_backend,
             })
         self.assertTrue(os.path.exists(cert_path))
-        self.assertTrue(os.path.exists(key_path))
+        self.assertFalse(os.path.exists(key_path))
         self.assertTrue(os.path.exists(fingerprints_path))
         self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
-        self.assertEqual(stored_cert.get_key_file_path(), key_path)
+        self.assertIsNone(stored_cert.get_key_file_path())
 
         with open(cert_path, 'rb') as fp:
-            self.assertEqual(fp.read(), TEST_CERT_PEM)
-
-        with open(key_path, 'rb') as fp:
-            self.assertEqual(fp.read(), TEST_KEY_PEM)
+            self.assertEqual(fp.read(), TEST_TRUST_CERT_PEM)
 
         with open(fingerprints_path, 'rb') as fp:
             self.assertEqual(json.load(fp), {
@@ -517,36 +533,17 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert.certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_TRUST_CERT_PEM,
                 'hostname': 'example.com',
-                'key_data': TEST_KEY_PEM,
+                'key_data': None,
                 'port': 443,
+                'purpose': CertPurpose.TRUST,
             })
 
-    def test_delete_certificate(self) -> None:
-        """Testing CertificateManager.delete_certificate"""
-        cert_manager = CertificateManager()
-        storage_backend = cert_manager.storage_backend
-
-        cert_path = os.path.join(storage_backend.storage_path, 'certs',
-                                 'example.com__443.crt')
-        key_path = os.path.join(storage_backend.storage_path, 'certs',
-                                'example.com__443.key')
-        fingerprints_path = os.path.join(storage_backend.storage_path,
-                                         'fingerprints',
-                                         'example.com__443.json')
-
-        cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM))
-        cert_manager.delete_certificate(hostname='example.com',
-                                        port=443)
-
-        self.assertFalse(os.path.exists(cert_path))
-        self.assertFalse(os.path.exists(key_path))
-        self.assertFalse(os.path.exists(fingerprints_path))
-
-    def test_delete_certificate_with_local_site(self) -> None:
-        """Testing CertificateManager.delete_certificate with LocalSite"""
+    def test_add_certificate_with_client_and_local_site(self) -> None:
+        """Testing CertificateManager.add_certificate with purpose=client and
+        LocalSite
+        """
         local_site = self.create_local_site('test-site-1')
 
         cert_manager = CertificateManager()
@@ -554,17 +551,134 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
 
         site_storage_path = os.path.join(storage_backend.storage_path, 'sites',
                                          'test-site-1')
-        cert_path = os.path.join(site_storage_path, 'certs',
+        cert_path = os.path.join(site_storage_path, 'certs', 'client',
                                  'example.com__443.crt')
-        key_path = os.path.join(site_storage_path, 'certs',
+        key_path = os.path.join(site_storage_path, 'certs', 'client',
+                                'example.com__443.key')
+
+        stored_cert = cert_manager.add_certificate(
+            self.create_certificate(purpose=CertPurpose.CLIENT,
+                                    cert_data=TEST_CLIENT_CERT_PEM,
+                                    key_data=TEST_CLIENT_KEY_PEM),
+            local_site=local_site)
+
+        self.assertIsNotNone(stored_cert)
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                'local_site': local_site,
+                'purpose': CertPurpose.CLIENT,
+                'storage': storage_backend,
+            })
+        self.assertTrue(os.path.exists(cert_path))
+        self.assertTrue(os.path.exists(key_path))
+        self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
+        self.assertEqual(stored_cert.get_key_file_path(), key_path)
+
+        # Fingerprints should not exist for these certificates.
+        self.assertFalse(os.path.exists(os.path.join(
+            storage_backend.storage_path, 'fingerprints',
+            'example.com__443.json')))
+
+        with open(cert_path, 'rb') as fp:
+            self.assertEqual(fp.read(), TEST_CLIENT_CERT_PEM)
+
+        with open(key_path, 'rb') as fp:
+            self.assertEqual(fp.read(), TEST_CLIENT_KEY_PEM)
+
+        self.assertAttrsEqual(
+            stored_cert.certificate,
+            {
+                'cert_data': TEST_CLIENT_CERT_PEM,
+                'hostname': 'example.com',
+                'key_data': TEST_CLIENT_KEY_PEM,
+                'port': 443,
+                'purpose': CertPurpose.CLIENT,
+            })
+
+    def test_delete_certificate_with_trust(self) -> None:
+        """Testing CertificateManager.delete_certificate with purpose=trust"""
+        cert_manager = CertificateManager()
+        storage_backend = cert_manager.storage_backend
+
+        cert_path = os.path.join(storage_backend.storage_path, 'certs',
+                                 'trust', 'example.com__443.crt')
+        key_path = os.path.join(storage_backend.storage_path, 'certs',
+                                'trust', 'example.com__443.key')
+        fingerprints_path = os.path.join(storage_backend.storage_path,
+                                         'fingerprints',
+                                         'example.com__443.json')
+
+        cert_manager.add_certificate(
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM))
+
+        self.assertTrue(os.path.exists(cert_path))
+        self.assertFalse(os.path.exists(key_path))
+        self.assertTrue(os.path.exists(fingerprints_path))
+
+        cert_manager.delete_certificate(hostname='example.com',
+                                        port=443)
+
+        self.assertFalse(os.path.exists(cert_path))
+        self.assertFalse(os.path.exists(key_path))
+        self.assertFalse(os.path.exists(fingerprints_path))
+
+    def test_delete_certificate_with_client(self) -> None:
+        """Testing CertificateManager.delete_certificate with purpose=client"""
+        cert_manager = CertificateManager()
+        storage_backend = cert_manager.storage_backend
+
+        cert_path = os.path.join(storage_backend.storage_path, 'certs',
+                                 'client', 'example.com__443.crt')
+        key_path = os.path.join(storage_backend.storage_path, 'certs',
+                                'client', 'example.com__443.key')
+        fingerprints_path = os.path.join(storage_backend.storage_path,
+                                         'fingerprints',
+                                         'example.com__443.json')
+
+        cert_manager.add_certificate(
+            self.create_certificate(purpose=CertPurpose.CLIENT,
+                                    cert_data=TEST_CLIENT_CERT_PEM,
+                                    key_data=TEST_CLIENT_KEY_PEM))
+
+        self.assertTrue(os.path.exists(cert_path))
+        self.assertTrue(os.path.exists(key_path))
+        self.assertFalse(os.path.exists(fingerprints_path))
+
+        cert_manager.delete_certificate(hostname='example.com',
+                                        port=443,
+                                        purpose=CertPurpose.CLIENT)
+
+        self.assertFalse(os.path.exists(cert_path))
+        self.assertFalse(os.path.exists(key_path))
+        self.assertFalse(os.path.exists(fingerprints_path))
+
+    def test_delete_certificate_with_trust_and_local_site(self) -> None:
+        """Testing CertificateManager.delete_certificate with purpose=trust
+        and LocalSite
+        """
+        local_site = self.create_local_site('test-site-1')
+
+        cert_manager = CertificateManager()
+        storage_backend = cert_manager.storage_backend
+
+        site_storage_path = os.path.join(storage_backend.storage_path, 'sites',
+                                         'test-site-1')
+        cert_path = os.path.join(site_storage_path, 'certs', 'trust',
+                                 'example.com__443.crt')
+        key_path = os.path.join(site_storage_path, 'certs', 'trust',
                                 'example.com__443.key')
         fingerprints_path = os.path.join(site_storage_path, 'fingerprints',
                                          'example.com__443.json')
 
         cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM),
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM),
             local_site=local_site)
+
+        self.assertTrue(os.path.exists(cert_path))
+        self.assertFalse(os.path.exists(key_path))
+        self.assertTrue(os.path.exists(fingerprints_path))
+
         cert_manager.delete_certificate(hostname='example.com',
                                         port=443,
                                         local_site=local_site)
@@ -573,9 +687,48 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         self.assertFalse(os.path.exists(key_path))
         self.assertFalse(os.path.exists(fingerprints_path))
 
-    def test_delete_certificate_with_local_site_mismatch(self) -> None:
-        """Testing CertificateManager.delete_certificate with LocalSite
-        mismatch
+    def test_delete_certificate_with_client_and_local_site(self) -> None:
+        """Testing CertificateManager.delete_certificate with purpose=client
+        and LocalSite
+        """
+        local_site = self.create_local_site('test-site-1')
+
+        cert_manager = CertificateManager()
+        storage_backend = cert_manager.storage_backend
+
+        site_storage_path = os.path.join(storage_backend.storage_path, 'sites',
+                                         'test-site-1')
+        cert_path = os.path.join(site_storage_path, 'certs', 'client',
+                                 'example.com__443.crt')
+        key_path = os.path.join(site_storage_path, 'certs', 'client',
+                                'example.com__443.key')
+        fingerprints_path = os.path.join(site_storage_path, 'fingerprints',
+                                         'example.com__443.json')
+
+        cert_manager.add_certificate(
+            self.create_certificate(purpose=CertPurpose.CLIENT,
+                                    cert_data=TEST_CLIENT_CERT_PEM,
+                                    key_data=TEST_CLIENT_KEY_PEM),
+            local_site=local_site)
+
+        self.assertTrue(os.path.exists(cert_path))
+        self.assertTrue(os.path.exists(key_path))
+        self.assertFalse(os.path.exists(fingerprints_path))
+
+        cert_manager.delete_certificate(hostname='example.com',
+                                        port=443,
+                                        purpose=CertPurpose.CLIENT,
+                                        local_site=local_site)
+
+        self.assertFalse(os.path.exists(cert_path))
+        self.assertFalse(os.path.exists(key_path))
+        self.assertFalse(os.path.exists(fingerprints_path))
+
+    def test_delete_certificate_with_trust_and_local_site_mismatch(
+        self,
+    ) -> None:
+        """Testing CertificateManager.delete_certificate with purpose=trust
+        and LocalSite mismatch
         """
         local_site1 = self.create_local_site('test-site-1')
         local_site2 = self.create_local_site('test-site-2')
@@ -585,16 +738,57 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
 
         site_storage_path = os.path.join(storage_backend.storage_path, 'sites',
                                          'test-site-1')
-        cert_path = os.path.join(site_storage_path, 'certs',
+        cert_path = os.path.join(site_storage_path, 'certs', 'trust',
                                  'example.com__443.crt')
-        key_path = os.path.join(site_storage_path, 'certs',
+        key_path = os.path.join(site_storage_path, 'certs', 'trust',
                                 'example.com__443.key')
         fingerprints_path = os.path.join(site_storage_path, 'fingerprints',
                                          'example.com__443.json')
 
         cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM),
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM),
+            local_site=local_site1)
+
+        message = 'The SSL/TLS certificate was not found.'
+
+        with self.assertRaisesMessage(CertificateNotFoundError, message):
+            cert_manager.delete_certificate(hostname='example.com',
+                                            port=443)
+
+        with self.assertRaisesMessage(CertificateNotFoundError, message):
+            cert_manager.delete_certificate(hostname='example.com',
+                                            port=443,
+                                            local_site=local_site2)
+
+        self.assertTrue(os.path.exists(cert_path))
+        self.assertFalse(os.path.exists(key_path))
+        self.assertTrue(os.path.exists(fingerprints_path))
+
+    def test_delete_certificate_with_client_and_local_site_mismatch(
+        self,
+    ) -> None:
+        """Testing CertificateManager.delete_certificate with purpose=client
+        and LocalSite mismatch
+        """
+        local_site1 = self.create_local_site('test-site-1')
+        local_site2 = self.create_local_site('test-site-2')
+
+        cert_manager = CertificateManager()
+        storage_backend = cert_manager.storage_backend
+
+        site_storage_path = os.path.join(storage_backend.storage_path, 'sites',
+                                         'test-site-1')
+        cert_path = os.path.join(site_storage_path, 'certs', 'client',
+                                 'example.com__443.crt')
+        key_path = os.path.join(site_storage_path, 'certs', 'client',
+                                'example.com__443.key')
+        fingerprints_path = os.path.join(site_storage_path, 'fingerprints',
+                                         'example.com__443.json')
+
+        cert_manager.add_certificate(
+            self.create_certificate(purpose=CertPurpose.CLIENT,
+                                    cert_data=TEST_CLIENT_CERT_PEM,
+                                    key_data=TEST_CLIENT_KEY_PEM),
             local_site=local_site1)
 
         message = 'The SSL/TLS certificate was not found.'
@@ -610,28 +804,36 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
 
         self.assertTrue(os.path.exists(cert_path))
         self.assertTrue(os.path.exists(key_path))
-        self.assertTrue(os.path.exists(fingerprints_path))
+        self.assertFalse(os.path.exists(fingerprints_path))
 
-    def test_get_certificate(self) -> None:
-        """Testing CertificateManager.get_certificate"""
+    def test_get_certificate_with_trust(self) -> None:
+        """Testing CertificateManager.get_certificate with purpose=trust"""
         local_site = self.create_local_site('test-site-1')
 
         cert_manager = CertificateManager()
-        cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM))
 
-        certificate = cert_manager.get_certificate(hostname='example.com',
-                                                   port=443)
+        cert_manager.add_certificate(
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM))
+        cert_manager.add_certificate(
+            self.create_certificate(purpose=CertPurpose.CLIENT,
+                                    cert_data=TEST_CLIENT_CERT_PEM,
+                                    key_data=TEST_CLIENT_KEY_PEM))
+
+        certificate = cert_manager.get_certificate(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.TRUST,
+        )
 
         assert certificate is not None
 
         self.assertAttrsEqual(
             certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_TRUST_CERT_PEM,
                 'hostname': 'example.com',
-                'key_data': TEST_KEY_PEM,
+                'key_data': None,
+                'purpose': CertPurpose.TRUST,
                 'port': 443,
             })
 
@@ -640,31 +842,83 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
                                                        port=443,
                                                        local_site=local_site))
 
-    def test_get_certificate_with_local_site(self) -> None:
-        """Testing CertificateManager.get_certificate"""
-        local_site1 = self.create_local_site('test-site-1')
-        local_site2 = self.create_local_site('test-site-2')
+    def test_get_certificate_with_client(self) -> None:
+        """Testing CertificateManager.get_certificate with purpose=client"""
+        local_site = self.create_local_site('test-site-1')
 
         cert_manager = CertificateManager()
 
-        certificate = cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM),
-            local_site=local_site1)
+        cert_manager.add_certificate(
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM))
+        cert_manager.add_certificate(
+            self.create_certificate(purpose=CertPurpose.CLIENT,
+                                    cert_data=TEST_CLIENT_CERT_PEM,
+                                    key_data=TEST_CLIENT_KEY_PEM))
 
-        certificate = cert_manager.get_certificate(hostname='example.com',
-                                                   port=443,
-                                                   local_site=local_site1)
+        certificate = cert_manager.get_certificate(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+        )
 
         assert certificate is not None
 
         self.assertAttrsEqual(
             certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_CLIENT_CERT_PEM,
                 'hostname': 'example.com',
-                'key_data': TEST_KEY_PEM,
+                'key_data': TEST_CLIENT_KEY_PEM,
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
+            })
+
+        # Make sure it's only accessible on the global site.
+        self.assertIsNone(cert_manager.get_certificate(
+            hostname='example.com',
+            port=443,
+            local_site=local_site,
+            purpose=CertPurpose.CLIENT,
+        ))
+
+    def test_get_certificate_with_trust_and_local_site(self) -> None:
+        """Testing CertificateManager.get_certificate with purpose=trust
+        and LocalSite
+        """
+        local_site1 = self.create_local_site('test-site-1')
+        local_site2 = self.create_local_site('test-site-2')
+
+        cert_manager = CertificateManager()
+
+        cert_manager.add_certificate(
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM),
+            local_site=local_site1,
+        )
+        cert_manager.add_certificate(
+            self.create_certificate(
+                purpose=CertPurpose.CLIENT,
+                cert_data=TEST_CLIENT_CERT_PEM,
+                key_data=TEST_CLIENT_KEY_PEM,
+            ),
+            local_site=local_site1,
+        )
+
+        certificate = cert_manager.get_certificate(
+            hostname='example.com',
+            port=443,
+            local_site=local_site1,
+        )
+
+        assert certificate is not None
+
+        self.assertAttrsEqual(
+            certificate,
+            {
+                'cert_data': TEST_TRUST_CERT_PEM,
+                'hostname': 'example.com',
+                'key_data': None,
+                'port': 443,
+                'purpose': CertPurpose.TRUST,
             })
 
         # Make sure it's only accessible on local_site1.
@@ -674,6 +928,60 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
                                                        port=443,
                                                        local_site=local_site2))
 
+    def test_get_certificate_with_client_and_local_site(self) -> None:
+        """Testing CertificateManager.get_certificate with purpose=client
+        and LocalSite
+        """
+        local_site1 = self.create_local_site('test-site-1')
+        local_site2 = self.create_local_site('test-site-2')
+
+        cert_manager = CertificateManager()
+
+        cert_manager.add_certificate(
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM),
+            local_site=local_site1,
+        )
+        cert_manager.add_certificate(
+            self.create_certificate(
+                purpose=CertPurpose.CLIENT,
+                cert_data=TEST_CLIENT_CERT_PEM,
+                key_data=TEST_CLIENT_KEY_PEM,
+            ),
+            local_site=local_site1,
+        )
+
+        certificate = cert_manager.get_certificate(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+            local_site=local_site1,
+        )
+
+        assert certificate is not None
+
+        self.assertAttrsEqual(
+            certificate,
+            {
+                'cert_data': TEST_CLIENT_CERT_PEM,
+                'hostname': 'example.com',
+                'key_data': TEST_CLIENT_KEY_PEM,
+                'port': 443,
+                'purpose': CertPurpose.CLIENT,
+            })
+
+        # Make sure it's only accessible on local_site1.
+        self.assertIsNone(cert_manager.get_certificate(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+        ))
+        self.assertIsNone(cert_manager.get_certificate(
+            hostname='example.com',
+            port=443,
+            local_site=local_site2,
+            purpose=CertPurpose.CLIENT,
+        ))
+
     def test_get_certificate_with_not_found(self) -> None:
         """Testing CertificateManager.get_certificate with not found"""
         cert_manager = CertificateManager()
@@ -681,52 +989,80 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         self.assertIsNone(cert_manager.get_certificate(hostname='example.com',
                                                        port=443,))
 
-    def test_get_certificate_file_paths(self) -> None:
-        """Testing CertificateManager.get_certificate_file_paths"""
-        cert_manager = CertificateManager()
-        storage_backend = cert_manager.storage_backend
-
-        cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM))
-
-        self.assertEqual(
-            cert_manager.get_certificate_file_paths(hostname='example.com',
-                                                    port=443),
-            {
-                'cert_file': os.path.join(storage_backend.storage_path,
-                                          'certs', 'example.com__443.crt'),
-            })
-
-    def test_get_certificate_file_paths_with_key(self) -> None:
-        """Testing CertificateManager.get_certificate_file_paths with key"""
+    def test_get_certificate_file_paths_with_trust(self) -> None:
+        """Testing CertificateManager.get_certificate_file_paths with
+        purpose=trust
+        """
         local_site = self.create_local_site('test-site-1')
 
         cert_manager = CertificateManager()
         storage_backend = cert_manager.storage_backend
 
         cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM))
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM))
 
         self.assertEqual(
             cert_manager.get_certificate_file_paths(hostname='example.com',
                                                     port=443),
             {
                 'cert_file': os.path.join(storage_backend.storage_path,
-                                          'certs', 'example.com__443.crt'),
-                'key_file': os.path.join(storage_backend.storage_path,
-                                         'certs', 'example.com__443.key'),
+                                          'certs', 'trust',
+                                          'example.com__443.crt'),
             })
 
         # Make sure it's only accessible on the global site.
         self.assertIsNone(cert_manager.get_certificate_file_paths(
             hostname='example.com',
             port=443,
-            local_site=local_site))
+            local_site=local_site,
+        ))
 
-    def test_get_certificate_file_paths_with_local_site(self) -> None:
+    def test_get_certificate_file_paths_with_client(self) -> None:
         """Testing CertificateManager.get_certificate_file_paths with
-        LocalSite
+        purpose=client
+        """
+        local_site = self.create_local_site('test-site-1')
+
+        cert_manager = CertificateManager()
+        storage_backend = cert_manager.storage_backend
+
+        cert_manager.add_certificate(self.create_certificate(
+            cert_data=TEST_TRUST_CERT_PEM,
+        ))
+        cert_manager.add_certificate(self.create_certificate(
+            purpose=CertPurpose.CLIENT,
+            cert_data=TEST_CLIENT_CERT_PEM,
+            key_data=TEST_CLIENT_KEY_PEM,
+        ))
+
+        self.assertEqual(
+            cert_manager.get_certificate_file_paths(
+                hostname='example.com',
+                port=443,
+                purpose=CertPurpose.CLIENT,
+            ),
+            {
+                'cert_file': os.path.join(storage_backend.storage_path,
+                                          'certs', 'client',
+                                          'example.com__443.crt'),
+                'key_file': os.path.join(storage_backend.storage_path,
+                                         'certs', 'client',
+                                         'example.com__443.key'),
+            })
+
+        # Make sure it's only accessible on the global site.
+        self.assertIsNone(cert_manager.get_certificate_file_paths(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+            local_site=local_site,
+        ))
+
+    def test_get_certificate_file_paths_with_trust_and_local_site(
+        self,
+    ) -> None:
+        """Testing CertificateManager.get_certificate_file_paths with
+        purpose=trust and LocalSite
         """
         local_site1 = self.create_local_site('test-site-1')
         local_site2 = self.create_local_site('test-site-2')
@@ -737,29 +1073,93 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
                                          'test-site-1')
 
         cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM),
-            local_site=local_site1)
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM),
+            local_site=local_site1,
+        )
+        cert_manager.add_certificate(
+            self.create_certificate(
+                purpose=CertPurpose.CLIENT,
+                cert_data=TEST_CLIENT_CERT_PEM,
+                key_data=TEST_CLIENT_KEY_PEM,
+            ),
+            local_site=local_site1,
+        )
 
         self.assertEqual(
-            cert_manager.get_certificate_file_paths(hostname='example.com',
-                                                    port=443,
-                                                    local_site=local_site1),
+            cert_manager.get_certificate_file_paths(
+                hostname='example.com',
+                port=443,
+                local_site=local_site1,
+            ),
             {
                 'cert_file': os.path.join(site_storage_path, 'certs',
-                                          'example.com__443.crt'),
-                'key_file': os.path.join(site_storage_path, 'certs',
-                                         'example.com__443.key'),
+                                          'trust', 'example.com__443.crt'),
             })
 
         # Make sure it's only accessible on local_site1.
         self.assertIsNone(cert_manager.get_certificate_file_paths(
             hostname='example.com',
-            port=443))
+            port=443,
+        ))
         self.assertIsNone(cert_manager.get_certificate_file_paths(
             hostname='example.com',
             port=443,
-            local_site=local_site2))
+            local_site=local_site2,
+        ))
+
+    def test_get_certificate_file_paths_with_client_and_local_site(
+        self,
+    ) -> None:
+        """Testing CertificateManager.get_certificate_file_paths with
+        purpose=client and LocalSite
+        """
+        local_site1 = self.create_local_site('test-site-1')
+        local_site2 = self.create_local_site('test-site-2')
+
+        cert_manager = CertificateManager()
+        storage_backend = cert_manager.storage_backend
+        site_storage_path = os.path.join(storage_backend.storage_path, 'sites',
+                                         'test-site-1')
+
+        cert_manager.add_certificate(
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM),
+            local_site=local_site1,
+        )
+        cert_manager.add_certificate(
+            self.create_certificate(
+                purpose=CertPurpose.CLIENT,
+                cert_data=TEST_CLIENT_CERT_PEM,
+                key_data=TEST_CLIENT_KEY_PEM,
+            ),
+            local_site=local_site1,
+        )
+
+        self.assertEqual(
+            cert_manager.get_certificate_file_paths(
+                hostname='example.com',
+                port=443,
+                purpose=CertPurpose.CLIENT,
+                local_site=local_site1,
+            ),
+            {
+                'cert_file': os.path.join(site_storage_path, 'certs',
+                                          'client', 'example.com__443.crt'),
+                'key_file': os.path.join(site_storage_path, 'certs',
+                                         'client', 'example.com__443.key'),
+            })
+
+        # Make sure it's only accessible on local_site1.
+        self.assertIsNone(cert_manager.get_certificate_file_paths(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+        ))
+        self.assertIsNone(cert_manager.get_certificate_file_paths(
+            hostname='example.com',
+            port=443,
+            local_site=local_site2,
+            purpose=CertPurpose.CLIENT,
+        ))
 
     def test_mark_certificate_verified(self) -> None:
         """Testing CertificateManager.mark_certificate_verified"""
@@ -1092,17 +1492,21 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         self.spy_on(ssl.create_default_context,
                     op=kgb.SpyOpReturn(MySSLContext()))
 
-        context = cast(MySSLContext,
-                       cert_manager.build_ssl_context(hostname='example.com',
-                                                      port=443))
+        context = cert_manager.build_ssl_context(hostname='example.com',
+                                                 port=443)
+        assert isinstance(context, MySSLContext)
 
         self.assertAttrsEqual(
             context,
             {
-                'capath': os.path.join(storage_backend.storage_path,
-                                       'cabundles'),
-                'certfile': None,
-                'keyfile': None,
+                'cadatas': [],
+                'cafiles': [],
+                'capaths': [
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
+                ],
+                'certfiles': [],
+                'keyfiles': [],
+                'passwords': [],
             })
 
     def test_build_ssl_context_with_ca_bundle(self) -> None:
@@ -1116,53 +1520,27 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         cert_manager.add_ca_bundle(
             CertificateBundle(bundle_data=TEST_CERT_BUNDLE_PEM,
                               name='my-certs'))
-        cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM))
 
-        context = cast(MySSLContext,
-                       cert_manager.build_ssl_context(hostname='example.com',
-                                                      port=443))
+        context = cert_manager.build_ssl_context(hostname='example.com',
+                                                 port=443)
+        assert isinstance(context, MySSLContext)
 
         self.assertAttrsEqual(
             context,
             {
-                'capath': os.path.join(storage_backend.storage_path,
-                                       'cabundles'),
-                'certfile': os.path.join(storage_backend.storage_path, 'certs',
-                                         'example.com__443.crt'),
-                'keyfile': os.path.join(storage_backend.storage_path, 'certs',
-                                        'example.com__443.key'),
+                'cadatas': [],
+                'cafiles': [],
+                'capaths': [
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
+                ],
+                'certfiles': [],
+                'keyfiles': [],
+                'passwords': [],
             })
 
-    def test_build_ssl_context_with_cert(self) -> None:
-        """Testing CertificateManager.build_ssl_context with certificate"""
-        cert_manager = CertificateManager()
-        storage_backend = cert_manager.storage_backend
-
-        self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(MySSLContext()))
-
-        cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM))
-
-        context = cast(MySSLContext,
-                       cert_manager.build_ssl_context(hostname='example.com',
-                                                      port=443))
-
-        self.assertAttrsEqual(
-            context,
-            {
-                'capath': os.path.join(storage_backend.storage_path,
-                                       'cabundles'),
-                'certfile': os.path.join(storage_backend.storage_path, 'certs',
-                                         'example.com__443.crt'),
-                'keyfile': None,
-            })
-
-    def test_build_ssl_context_with_cert_and_key(self) -> None:
-        """Testing CertificateManager.build_ssl_context with certificate and
-        key
+    def test_build_ssl_context_with_trust_cert(self) -> None:
+        """Testing CertificateManager.build_ssl_context with trust
+        certificate
         """
         cert_manager = CertificateManager()
         storage_backend = cert_manager.storage_backend
@@ -1171,22 +1549,114 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
                     op=kgb.SpyOpReturn(MySSLContext()))
 
         cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM))
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM))
 
-        context = cast(MySSLContext,
-                       cert_manager.build_ssl_context(hostname='example.com',
-                                                      port=443))
+        context = cert_manager.build_ssl_context(hostname='example.com',
+                                                 port=443)
+        assert isinstance(context, MySSLContext)
 
         self.assertAttrsEqual(
             context,
             {
-                'capath': os.path.join(storage_backend.storage_path,
-                                       'cabundles'),
-                'certfile': os.path.join(storage_backend.storage_path, 'certs',
-                                         'example.com__443.crt'),
-                'keyfile': os.path.join(storage_backend.storage_path, 'certs',
-                                        'example.com__443.key'),
+                'cadatas': [],
+                'cafiles': [
+                    os.path.join(storage_backend.storage_path, 'certs',
+                                 'trust', 'example.com__443.crt'),
+                ],
+                'capaths': [
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
+                ],
+                'certfiles': [],
+                'keyfiles': [],
+                'passwords': [],
+            })
+
+    def test_build_ssl_context_with_client_cert(self) -> None:
+        """Testing CertificateManager.build_ssl_context with client
+        certificate
+        """
+        cert_manager = CertificateManager()
+        storage_backend = cert_manager.storage_backend
+
+        self.spy_on(ssl.create_default_context,
+                    op=kgb.SpyOpReturn(MySSLContext()))
+
+        cert_manager.add_certificate(
+            self.create_certificate(purpose=CertPurpose.CLIENT,
+                                    cert_data=TEST_CLIENT_CERT_PEM,
+                                    key_data=TEST_CLIENT_KEY_PEM))
+
+        context = cert_manager.build_ssl_context(hostname='example.com',
+                                                 port=443)
+        assert isinstance(context, MySSLContext)
+
+        self.assertAttrsEqual(
+            context,
+            {
+                'cadatas': [],
+                'cafiles': [],
+                'capaths': [
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
+                ],
+                'certfiles': [
+                    os.path.join(storage_backend.storage_path, 'certs',
+                                 'client', 'example.com__443.crt'),
+                ],
+                'keyfiles': [
+                    os.path.join(storage_backend.storage_path, 'certs',
+                                 'client', 'example.com__443.key'),
+                ],
+                'passwords': [
+                    None,
+                ],
+            })
+
+    def test_build_ssl_context_with_all(self) -> None:
+        """Testing CertificateManager.build_ssl_context with CA bundles,
+        trust certificates, and client certificates
+        """
+        cert_manager = CertificateManager()
+        storage_backend = cert_manager.storage_backend
+
+        self.spy_on(ssl.create_default_context,
+                    op=kgb.SpyOpReturn(MySSLContext()))
+
+        cert_manager.add_ca_bundle(
+            CertificateBundle(bundle_data=TEST_CERT_BUNDLE_PEM,
+                              name='my-certs'))
+        cert_manager.add_certificate(
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM))
+        cert_manager.add_certificate(
+            self.create_certificate(purpose=CertPurpose.CLIENT,
+                                    cert_data=TEST_CLIENT_CERT_PEM,
+                                    key_data=TEST_CLIENT_KEY_PEM))
+
+        context = cert_manager.build_ssl_context(hostname='example.com',
+                                                 port=443)
+        assert isinstance(context, MySSLContext)
+
+        self.assertAttrsEqual(
+            context,
+            {
+                'cadatas': [],
+                'cafiles': [
+                    os.path.join(storage_backend.storage_path,
+                                 'certs', 'trust', 'example.com__443.crt'),
+                ],
+                'capaths': [
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
+                ],
+                'certfiles': [
+                    os.path.join(storage_backend.storage_path, 'certs',
+                                 'client', 'example.com__443.crt'),
+                ],
+                'keyfiles': [
+                    os.path.join(storage_backend.storage_path, 'certs',
+                                 'client', 'example.com__443.key'),
+                ],
+                'passwords': [
+                    None,
+                ],
             })
 
     def test_build_ssl_context_with_local_site(self) -> None:
@@ -1202,27 +1672,63 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
                     op=kgb.SpyOpReturn(MySSLContext()))
 
         cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM),
-            local_site=local_site)
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM),
+            local_site=local_site,
+        )
+        cert_manager.add_certificate(
+            self.create_certificate(
+                purpose=CertPurpose.CLIENT,
+                cert_data=TEST_CLIENT_CERT_PEM,
+                key_data=TEST_CLIENT_KEY_PEM,
+            ),
+            local_site=local_site,
+        )
 
-        context = cast(MySSLContext,
-                       cert_manager.build_ssl_context(hostname='example.com',
-                                                      port=443,
-                                                      local_site=local_site))
+        # These should not be included.
+        cert_manager.add_certificate(
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM),
+        )
+        cert_manager.add_certificate(
+            self.create_certificate(
+                purpose=CertPurpose.CLIENT,
+                cert_data=TEST_CLIENT_CERT_PEM,
+                key_data=TEST_CLIENT_KEY_PEM,
+            ),
+        )
+
+        context = cert_manager.build_ssl_context(hostname='example.com',
+                                                 port=443,
+                                                 local_site=local_site)
+        assert isinstance(context, MySSLContext)
 
         self.assertAttrsEqual(
             context,
             {
-                'capath': os.path.join(site_storage_path, 'cabundles'),
-                'certfile': os.path.join(site_storage_path, 'certs',
-                                         'example.com__443.crt'),
-                'keyfile': os.path.join(site_storage_path, 'certs',
-                                        'example.com__443.key'),
+                'cadatas': [],
+                'cafiles': [
+                    os.path.join(site_storage_path, 'certs', 'trust',
+                                 'example.com__443.crt'),
+                ],
+                'capaths': [
+                    os.path.join(site_storage_path, 'cabundles'),
+                ],
+                'certfiles': [
+                    os.path.join(site_storage_path, 'certs', 'client',
+                                 'example.com__443.crt'),
+                ],
+                'keyfiles': [
+                    os.path.join(site_storage_path, 'certs', 'client',
+                                 'example.com__443.key'),
+                ],
+                'passwords': [
+                    None,
+                ],
             })
 
     def test_build_urlopen_kwargs(self) -> None:
-        """Testing CertificateManager.build_urlopen_kwargs"""
+        """Testing CertificateManager.build_urlopen_kwargs with trust
+        certificate
+        """
         cert_manager = CertificateManager()
         storage_backend = cert_manager.storage_backend
 
@@ -1230,20 +1736,62 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
                     op=kgb.SpyOpReturn(MySSLContext()))
 
         cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM))
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM))
 
         kwargs = cert_manager.build_urlopen_kwargs(url='https://example.com')
 
         self.assertAttrsEqual(
             kwargs.get('context'),
             {
-                'capath': os.path.join(storage_backend.storage_path,
-                                       'cabundles'),
-                'certfile': os.path.join(storage_backend.storage_path,
-                                         'certs', 'example.com__443.crt'),
-                'keyfile': os.path.join(storage_backend.storage_path,
-                                        'certs', 'example.com__443.key'),
+                'cadatas': [],
+                'cafiles': [
+                    os.path.join(storage_backend.storage_path, 'certs',
+                                 'trust', 'example.com__443.crt'),
+                ],
+                'capaths': [
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
+                ],
+                'certfiles': [],
+                'keyfiles': [],
+                'passwords': [],
+            })
+
+    def test_build_urlopen_kwargs_with_client_cert(self) -> None:
+        """Testing CertificateManager.build_urlopen_kwargs with client
+        certificate
+        """
+        cert_manager = CertificateManager()
+        storage_backend = cert_manager.storage_backend
+
+        self.spy_on(ssl.create_default_context,
+                    op=kgb.SpyOpReturn(MySSLContext()))
+
+        cert_manager.add_certificate(
+            self.create_certificate(purpose=CertPurpose.CLIENT,
+                                    cert_data=TEST_CLIENT_CERT_PEM,
+                                    key_data=TEST_CLIENT_KEY_PEM))
+
+        kwargs = cert_manager.build_urlopen_kwargs(url='https://example.com')
+
+        self.assertAttrsEqual(
+            kwargs.get('context'),
+            {
+                'cadatas': [],
+                'cafiles': [],
+                'capaths': [
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
+                ],
+                'certfiles': [
+                    os.path.join(storage_backend.storage_path, 'certs',
+                                 'client', 'example.com__443.crt'),
+                ],
+                'keyfiles': [
+                    os.path.join(storage_backend.storage_path, 'certs',
+                                 'client', 'example.com__443.key'),
+                ],
+                'passwords': [
+                    None,
+                ],
             })
 
     def test_build_urlopen_kwargs_with_port(self) -> None:
@@ -1255,8 +1803,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
                     op=kgb.SpyOpReturn(MySSLContext()))
 
         cert_manager.add_certificate(
-            self.create_certificate(cert_data=TEST_CERT_PEM,
-                                    key_data=TEST_KEY_PEM,
+            self.create_certificate(cert_data=TEST_TRUST_CERT_PEM,
                                     port=8443))
 
         kwargs = cert_manager.build_urlopen_kwargs(
@@ -1265,12 +1812,17 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             kwargs.get('context'),
             {
-                'capath': os.path.join(storage_backend.storage_path,
-                                       'cabundles'),
-                'certfile': os.path.join(storage_backend.storage_path,
-                                         'certs', 'example.com__8443.crt'),
-                'keyfile': os.path.join(storage_backend.storage_path,
-                                        'certs', 'example.com__8443.key'),
+                'cadatas': [],
+                'cafiles': [
+                    os.path.join(storage_backend.storage_path, 'certs',
+                                 'trust', 'example.com__8443.crt'),
+                ],
+                'capaths': [
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
+                ],
+                'certfiles': [],
+                'keyfiles': [],
+                'passwords': [],
             })
 
     def test_build_urlopen_kwargs_with_non_https(self) -> None:

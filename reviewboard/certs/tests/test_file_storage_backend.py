@@ -11,10 +11,11 @@ import os
 import shutil
 import tempfile
 from typing import Optional, TYPE_CHECKING
+from uuid import uuid4
 
 import kgb
 
-from reviewboard.certs.cert import (Certificate,
+from reviewboard.certs.cert import (CertPurpose, Certificate,
                                     CertificateBundle,
                                     CertificateFingerprints)
 from reviewboard.certs.errors import (CertificateNotFoundError,
@@ -25,11 +26,12 @@ from reviewboard.certs.storage.file_storage import (
     FileStoredCertificateFingerprints,
     FileCertificateStorageBackend)
 from reviewboard.certs.tests.testcases import (CertificateTestCase,
+                                               TEST_CLIENT_CERT_PEM,
+                                               TEST_CLIENT_KEY_PEM,
                                                TEST_CERT_BUNDLE_PEM,
-                                               TEST_CERT_PEM,
-                                               TEST_KEY_PEM,
                                                TEST_SHA1,
-                                               TEST_SHA256)
+                                               TEST_SHA256,
+                                               TEST_TRUST_CERT_PEM)
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
@@ -85,15 +87,20 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
         6.0
     """
 
-    def test_init_with_certificate(self) -> None:
-        """Testing FileStoredCertificate.__init__ with certificate"""
+    def test_init_with_certificate_trust(self) -> None:
+        """Testing FileStoredCertificate.__init__ with certificate with
+        purpose=trust
+        """
         storage = self.storage
         stored_cert = FileStoredCertificate(
             storage=storage,
             cert_file_path='/path',
-            certificate=Certificate(hostname='example.com',
-                                    port=443,
-                                    cert_data=b'...'))
+            certificate=Certificate(
+                hostname='example.com',
+                port=443,
+                cert_data=TEST_TRUST_CERT_PEM,
+            ),
+        )
 
         self.assertAttrsEqual(
             stored_cert,
@@ -101,18 +108,52 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
                 '_hostname': 'example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': storage,
-                'storage_id': 'example.com:443',
+                'storage_id': 'example.com:443:trust',
             })
 
-    def test_init_with_hostname_port(self) -> None:
-        """Testing FileStoredCertificate.__init__ with hostname and port"""
+    def test_init_with_certificate_client(self) -> None:
+        """Testing FileStoredCertificate.__init__ with certificate with
+        purpose=client
+        """
+        storage = self.storage
+        stored_cert = FileStoredCertificate(
+            storage=storage,
+            cert_file_path='/path',
+            certificate=Certificate(
+                hostname='example.com',
+                port=443,
+                cert_data=TEST_CLIENT_CERT_PEM,
+                key_data=TEST_CLIENT_KEY_PEM,
+                purpose=CertPurpose.CLIENT,
+            ),
+            purpose=CertPurpose.CLIENT,
+        )
+
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.CLIENT,
+                'storage': storage,
+                'storage_id': 'example.com:443:client',
+            })
+
+    def test_init_with_trust_hostname_port(self) -> None:
+        """Testing FileStoredCertificate.__init__ with purpose=trust and
+        hostname and port
+        """
         storage = self.storage
         stored_cert = FileStoredCertificate(
             storage=storage,
             cert_file_path='/path',
             hostname='example.com',
-            port=443)
+            port=443,
+            purpose=CertPurpose.TRUST,
+        )
 
         self.assertAttrsEqual(
             stored_cert,
@@ -120,12 +161,40 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
                 '_hostname': 'example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': storage,
-                'storage_id': 'example.com:443',
+                'storage_id': 'example.com:443:trust',
             })
 
-    def test_init_with_local_site(self) -> None:
-        """Testing FileStoredCertificate.__init__ with Local Site"""
+    def test_init_with_client_hostname_port(self) -> None:
+        """Testing FileStoredCertificate.__init__ with purpose=client and
+        hostname and port
+        """
+        storage = self.storage
+        stored_cert = FileStoredCertificate(
+            storage=storage,
+            cert_file_path='/path',
+            key_file_path='/path',
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+        )
+
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.CLIENT,
+                'storage': storage,
+                'storage_id': 'example.com:443:client',
+            })
+
+    def test_init_with_trust_local_site(self) -> None:
+        """Testing FileStoredCertificate.__init__ with purpose=trust and
+        Local Site
+        """
         local_site = self.create_local_site(name='test-site')
         storage = self.storage
         stored_cert = FileStoredCertificate(
@@ -133,7 +202,9 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
             cert_file_path='/path',
             hostname='example.com',
             port=443,
-            local_site=local_site)
+            local_site=local_site,
+            purpose=CertPurpose.TRUST,
+        )
 
         self.assertAttrsEqual(
             stored_cert,
@@ -141,31 +212,91 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
                 '_hostname': 'example.com',
                 '_port': 443,
                 'local_site': local_site,
+                'purpose': CertPurpose.TRUST,
                 'storage': storage,
-                'storage_id': 'test-site:example.com:443',
+                'storage_id': 'test-site:example.com:443:trust',
             })
 
-    def test_parse_storage_id(self) -> None:
-        """Testing FileStoredCertificate.parse_storage_id"""
+    def test_init_with_client_local_site(self) -> None:
+        """Testing FileStoredCertificate.__init__ with purpose=client and
+        Local Site
+        """
+        local_site = self.create_local_site(name='test-site')
+        storage = self.storage
+        stored_cert = FileStoredCertificate(
+            storage=storage,
+            cert_file_path='/path',
+            key_file_path='/path',
+            hostname='example.com',
+            port=443,
+            local_site=local_site,
+            purpose=CertPurpose.CLIENT,
+        )
+
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'example.com',
+                '_port': 443,
+                'local_site': local_site,
+                'purpose': CertPurpose.CLIENT,
+                'storage': storage,
+                'storage_id': 'test-site:example.com:443:client',
+            })
+
+    def test_parse_storage_id_trust(self) -> None:
+        """Testing FileStoredCertificate.parse_storage_id with trust cert ID"""
         self.assertEqual(
-            FileStoredCertificate.parse_storage_id('example.com:443'),
+            FileStoredCertificate.parse_storage_id('example.com:443:trust'),
             {
                 'hostname': 'example.com',
                 'local_site': None,
                 'port': 443,
+                'purpose': CertPurpose.TRUST,
             })
 
-    def test_parse_storage_id_with_local_site(self) -> None:
-        """Testing FileStoredCertificate.parse_storage_id with LocalSite"""
+    def test_parse_storage_id_client(self) -> None:
+        """Testing FileStoredCertificate.parse_storage_id with client cert ID
+        """
+        self.assertEqual(
+            FileStoredCertificate.parse_storage_id('example.com:443:client'),
+            {
+                'hostname': 'example.com',
+                'local_site': None,
+                'port': 443,
+                'purpose': CertPurpose.CLIENT,
+            })
+
+    def test_parse_storage_id_with_trust_and_local_site(self) -> None:
+        """Testing FileStoredCertificate.parse_storage_id with trust cert ID
+        and LocalSite
+        """
         local_site = self.create_local_site(name='test-site')
 
         self.assertEqual(
             FileStoredCertificate.parse_storage_id(
-                'test-site:example.com:443'),
+                'test-site:example.com:443:trust'),
             {
                 'hostname': 'example.com',
                 'local_site': local_site,
                 'port': 443,
+                'purpose': CertPurpose.TRUST,
+            })
+
+    def test_parse_storage_id_with_client_and_local_site(self) -> None:
+        """Testing FileStoredCertificate.parse_storage_id with client cert ID
+        and LocalSite
+        """
+        local_site = self.create_local_site(name='test-site')
+
+        self.assertEqual(
+            FileStoredCertificate.parse_storage_id(
+                'test-site:example.com:443:client'),
+            {
+                'hostname': 'example.com',
+                'local_site': local_site,
+                'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
     def test_parse_storage_id_with_local_site_not_found(self) -> None:
@@ -173,7 +304,7 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
         found in database
         """
         result = FileStoredCertificate.parse_storage_id(
-            'bad-site:example.com:443')
+            'bad-site:example.com:443:trust')
 
         self.assertEqual(result['hostname'], 'example.com')
         self.assertEqual(result['port'], 443)
@@ -216,7 +347,9 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
             storage=self.storage,
             cert_file_path='/path/to/cert.crt',
             hostname='example.com',
-            port=443)
+            port=443,
+            purpose=CertPurpose.TRUST,
+        )
 
         self.assertEqual(stored_cert.get_cert_file_path(),
                          '/path/to/cert.crt')
@@ -228,7 +361,9 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
             cert_file_path='/path/to/cert.crt',
             key_file_path='/path/to/cert.key',
             hostname='example.com',
-            port=443)
+            port=443,
+            purpose=CertPurpose.TRUST,
+        )
 
         self.assertEqual(stored_cert.get_key_file_path(),
                          '/path/to/cert.key')
@@ -239,14 +374,16 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
             storage=self.storage,
             cert_file_path='/path/to/cert.crt',
             hostname='example.com',
-            port=443)
+            port=443,
+            purpose=CertPurpose.TRUST,
+        )
 
         self.assertIsNone(stored_cert.get_key_file_path())
 
-    def test_load_certificate(self) -> None:
-        """Testing FileStoredCertificate.load_certificate"""
+    def test_load_certificate_with_trust(self) -> None:
+        """Testing FileStoredCertificate.load_certificate with purpose=trust"""
         cert_fd, cert_file_path = tempfile.mkstemp()
-        os.write(cert_fd, TEST_CERT_PEM)
+        os.write(cert_fd, TEST_TRUST_CERT_PEM)
         os.close(cert_fd)
 
         try:
@@ -254,7 +391,9 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
                 storage=self.storage,
                 cert_file_path=cert_file_path,
                 hostname='example.com',
-                port=443)
+                port=443,
+                purpose=CertPurpose.TRUST,
+            )
 
             certificate = stored_cert.load_certificate()
         finally:
@@ -263,20 +402,22 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_TRUST_CERT_PEM,
                 'hostname': 'example.com',
                 'key_data': None,
                 'port': 443,
+                'purpose': CertPurpose.TRUST,
             })
 
-    def test_load_certificate_with_key(self) -> None:
-        """Testing FileStoredCertificate.load_certificate with key"""
+    def test_load_certificate_with_client(self) -> None:
+        """Testing FileStoredCertificate.load_certificate with purpose=client
+        """
         cert_fd, cert_file_path = tempfile.mkstemp()
-        os.write(cert_fd, TEST_CERT_PEM)
+        os.write(cert_fd, TEST_CLIENT_CERT_PEM)
         os.close(cert_fd)
 
         key_fd, key_file_path = tempfile.mkstemp()
-        os.write(key_fd, TEST_KEY_PEM)
+        os.write(key_fd, TEST_CLIENT_KEY_PEM)
         os.close(key_fd)
 
         try:
@@ -285,7 +426,9 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
                 cert_file_path=cert_file_path,
                 key_file_path=key_file_path,
                 hostname='example.com',
-                port=443)
+                port=443,
+                purpose=CertPurpose.CLIENT,
+            )
 
             certificate = stored_cert.load_certificate()
         finally:
@@ -295,10 +438,11 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_CLIENT_CERT_PEM,
                 'hostname': 'example.com',
-                'key_data': TEST_KEY_PEM,
+                'key_data': TEST_CLIENT_KEY_PEM,
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
     def test_load_certificate_with_error(self) -> None:
@@ -318,7 +462,9 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
                 storage=self.storage,
                 cert_file_path=cert_file_path,
                 hostname='example.com',
-                port=443)
+                port=443,
+                purpose=CertPurpose.TRUST,
+            )
 
             with self.assertRaisesMessage(CertificateStorageError, message):
                 stored_cert.load_certificate()
@@ -669,14 +815,24 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
 
     def test_get_stats(self) -> None:
         """Testing FileCertificateStorageBackend.get_stats"""
+        self.spy_on(uuid4,
+                    op=kgb.SpyOpReturn('06e57e9f-834e-44bf-a8fb-4f6895e434b4'))
+
         backend = self._create_backend(storage_path=self.testdata_dir)
         stats1 = backend.get_stats()
-        state_uuid1 = stats1['state_uuid']
 
-        self.assertEqual(stats1['ca_bundle_count'], 2)
-        self.assertEqual(stats1['cert_count'], 4)
-        self.assertEqual(stats1['fingerprint_count'], 3)
-        self.assertIsNotNone(state_uuid1)
+        self.assertEqual(
+            stats1,
+            {
+                'ca_bundle_count': 2,
+                'cert_count': 6,
+                'cert_counts_by_purpose': {
+                    CertPurpose.CLIENT: 3,
+                    CertPurpose.TRUST: 3,
+                },
+                'fingerprint_count': 3,
+                'state_uuid': '06e57e9f-834e-44bf-a8fb-4f6895e434b4',
+            })
 
         # Make sure this is cached.
         stats2 = backend.get_stats()
@@ -684,6 +840,16 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
 
     def test_get_stats_with_local_site(self) -> None:
         """Testing FileCertificateStorageBackend.get_stats with LocalSite"""
+        self.spy_on(
+            uuid4,
+            op=kgb.SpyOpReturnInOrder([
+                '06e57e9f-834e-44bf-a8fb-4f6895e434b4',
+                '026ae93a-a8d1-4f83-a727-97e1b418372e',
+                '490665cf-12aa-46f9-a70f-a67247e810d4',
+                '83568c5e-ee52-471b-ad4e-6248489a7840',
+            ]),
+        )
+
         backend = self._create_backend(storage_path=self.testdata_dir)
 
         # This site has cabundles, certs, and fingerprints.
@@ -691,20 +857,36 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             local_site=self.create_local_site(name='test-site-1'))
         state_uuid1 = stats['state_uuid']
 
-        self.assertEqual(stats['ca_bundle_count'], 2)
-        self.assertEqual(stats['cert_count'], 1)
-        self.assertEqual(stats['fingerprint_count'], 1)
-        self.assertIsNotNone(state_uuid1)
+        self.assertEqual(
+            stats,
+            {
+                'ca_bundle_count': 2,
+                'cert_count': 1,
+                'cert_counts_by_purpose': {
+                    CertPurpose.CLIENT: 0,
+                    CertPurpose.TRUST: 1,
+                },
+                'fingerprint_count': 1,
+                'state_uuid': '06e57e9f-834e-44bf-a8fb-4f6895e434b4',
+            })
 
         # This site has cabundles, certs, and fingerprints.
         stats = backend.get_stats(
             local_site=self.create_local_site(name='test-site-2'))
         state_uuid2 = stats['state_uuid']
 
-        self.assertEqual(stats['ca_bundle_count'], 1)
-        self.assertEqual(stats['cert_count'], 3)
-        self.assertEqual(stats['fingerprint_count'], 2)
-        self.assertIsNotNone(state_uuid2)
+        self.assertEqual(
+            stats,
+            {
+                'ca_bundle_count': 1,
+                'cert_count': 3,
+                'cert_counts_by_purpose': {
+                    CertPurpose.CLIENT: 1,
+                    CertPurpose.TRUST: 2,
+                },
+                'fingerprint_count': 2,
+                'state_uuid': '026ae93a-a8d1-4f83-a727-97e1b418372e',
+            })
         self.assertNotEqual(state_uuid2, state_uuid1)
 
         # This site has cert directories but no files.
@@ -712,10 +894,18 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             local_site=self.create_local_site(name='test-site-3'))
         state_uuid3 = stats['state_uuid']
 
-        self.assertEqual(stats['ca_bundle_count'], 0)
-        self.assertEqual(stats['cert_count'], 0)
-        self.assertEqual(stats['fingerprint_count'], 0)
-        self.assertIsNotNone(state_uuid3)
+        self.assertEqual(
+            stats,
+            {
+                'ca_bundle_count': 0,
+                'cert_count': 0,
+                'cert_counts_by_purpose': {
+                    CertPurpose.CLIENT: 0,
+                    CertPurpose.TRUST: 0,
+                },
+                'fingerprint_count': 0,
+                'state_uuid': '490665cf-12aa-46f9-a70f-a67247e810d4',
+            })
         self.assertNotEqual(state_uuid3, state_uuid1)
         self.assertNotEqual(state_uuid3, state_uuid2)
 
@@ -724,10 +914,20 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             local_site=self.create_local_site(name='test-site-4'))
         state_uuid4 = stats['state_uuid']
 
-        self.assertEqual(stats['ca_bundle_count'], 0)
-        self.assertEqual(stats['cert_count'], 0)
-        self.assertEqual(stats['fingerprint_count'], 0)
+        self.assertEqual(
+            stats,
+            {
+                'ca_bundle_count': 0,
+                'cert_count': 0,
+                'cert_counts_by_purpose': {
+                    CertPurpose.CLIENT: 0,
+                    CertPurpose.TRUST: 0,
+                },
+                'fingerprint_count': 0,
+                'state_uuid': '83568c5e-ee52-471b-ad4e-6248489a7840',
+            })
         self.assertIsNotNone(state_uuid4)
+
         self.assertNotEqual(state_uuid4, state_uuid1)
         self.assertNotEqual(state_uuid4, state_uuid2)
         self.assertNotEqual(state_uuid4, state_uuid3)
@@ -735,6 +935,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
     def test_get_stats_with_local_site_all(self) -> None:
         """Testing FileCertificateStorageBackend.get_stats with LocalSite.ALL
         """
+        self.spy_on(uuid4,
+                    op=kgb.SpyOpReturn('06e57e9f-834e-44bf-a8fb-4f6895e434b4'))
+
         backend = self._create_backend(storage_path=self.testdata_dir)
 
         self.create_local_site(name='test-site-1')
@@ -742,12 +945,18 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.create_local_site(name='test-site-3')
 
         # This site has certs and fingerprints, but no cabundles.
-        stats = backend.get_stats(local_site=LocalSite.ALL)
-
-        self.assertEqual(stats['ca_bundle_count'], 5)
-        self.assertEqual(stats['cert_count'], 8)
-        self.assertEqual(stats['fingerprint_count'], 6)
-        self.assertIsNotNone(stats['state_uuid'])
+        self.assertEqual(
+            backend.get_stats(local_site=LocalSite.ALL),
+            {
+                'ca_bundle_count': 5,
+                'cert_count': 10,
+                'cert_counts_by_purpose': {
+                    CertPurpose.CLIENT: 4,
+                    CertPurpose.TRUST: 6,
+                },
+                'fingerprint_count': 6,
+                'state_uuid': '06e57e9f-834e-44bf-a8fb-4f6895e434b4',
+            })
 
     def test_add_ca_bundle(self) -> None:
         """Testing FileCertificateStorageBackend.add_ca_bundle"""
@@ -1182,164 +1391,20 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             local_site=local_site))
         self.assertEqual(len(stored_bundles), 0)
 
-    def test_add_certificate(self) -> None:
-        """Testing FileCertificateStorageBackend.add_certificate"""
-        backend = self._create_backend()
-
-        self.spy_on(backend._invalidate_stats_cache)
-
-        stored_cert = backend.add_certificate(
-            Certificate(cert_data=TEST_CERT_PEM,
-                        hostname='example.com',
-                        port=443))
-        cert_path = os.path.join(backend.storage_path, 'certs',
-                                 'example.com__443.crt')
-
-        self.assertIsNotNone(stored_cert)
-        self.assertAttrsEqual(
-            stored_cert,
-            {
-                '_hostname': 'example.com',
-                '_port': 443,
-                'local_site': None,
-                'storage': backend,
-                'storage_id': 'example.com:443',
-            })
-        self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
-        self.assertIsNone(stored_cert.get_key_file_path())
-        self.assertTrue(os.path.exists(cert_path))
-        self.assertAttrsEqual(
-            stored_cert.certificate,
-            {
-                'cert_data': TEST_CERT_PEM,
-                'hostname': 'example.com',
-                'key_data': None,
-                'port': 443,
-            })
-
-        with open(cert_path, 'rb') as fp:
-            self.assertEqual(fp.read(), TEST_CERT_PEM)
-
-        # Make sure this clears cache.
-        self.assertSpyCalledWith(backend._invalidate_stats_cache,
-                                 local_site=None)
-
-    def test_add_certificate_with_key(self) -> None:
-        """Testing FileCertificateStorageBackend.add_certificate with key"""
-        backend = self._create_backend()
-
-        self.spy_on(backend._invalidate_stats_cache)
-
-        stored_cert = backend.add_certificate(
-            Certificate(cert_data=TEST_CERT_PEM,
-                        key_data=TEST_KEY_PEM,
-                        hostname='example.com',
-                        port=443))
-        cert_path = os.path.join(backend.storage_path, 'certs',
-                                 'example.com__443.crt')
-        key_path = os.path.join(backend.storage_path, 'certs',
-                                'example.com__443.key')
-
-        self.assertIsNotNone(stored_cert)
-        self.assertAttrsEqual(
-            stored_cert,
-            {
-                '_hostname': 'example.com',
-                '_port': 443,
-                'local_site': None,
-                'storage': backend,
-                'storage_id': 'example.com:443',
-            })
-        self.assertTrue(os.path.exists(cert_path))
-        self.assertTrue(os.path.exists(key_path))
-        self.assertAttrsEqual(
-            stored_cert.certificate,
-            {
-                'cert_data': TEST_CERT_PEM,
-                'hostname': 'example.com',
-                'key_data': TEST_KEY_PEM,
-                'port': 443,
-            })
-
-        with open(cert_path, 'rb') as fp:
-            self.assertEqual(fp.read(), TEST_CERT_PEM)
-
-        with open(key_path, 'rb') as fp:
-            self.assertEqual(fp.read(), TEST_KEY_PEM)
-
-        # Make sure this clears cache.
-        self.assertSpyCalledWith(backend._invalidate_stats_cache,
-                                 local_site=None)
-
-    def test_add_certificate_with_erase_key(self) -> None:
-        """Testing FileCertificateStorageBackend.add_certificate with erasing
-        key from previous upload
-        """
-        backend = self._create_backend()
-        cert_path = os.path.join(backend.storage_path, 'certs',
-                                 'example.com__443.crt')
-        key_path = os.path.join(backend.storage_path, 'certs',
-                                'example.com__443.key')
-
-        self.spy_on(backend._invalidate_stats_cache)
-
-        self._write_file(cert_path, TEST_CERT_PEM)
-        self._write_file(key_path, TEST_KEY_PEM)
-
-        stored_cert = backend.add_certificate(
-            Certificate(cert_data=TEST_CERT_PEM,
-                        hostname='example.com',
-                        port=443))
-
-        self.assertIsNotNone(stored_cert)
-        self.assertAttrsEqual(
-            stored_cert,
-            {
-                '_hostname': 'example.com',
-                '_port': 443,
-                'local_site': None,
-                'storage': backend,
-                'storage_id': 'example.com:443',
-            })
-        self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
-        self.assertIsNone(stored_cert.get_key_file_path())
-        self.assertTrue(os.path.exists(cert_path))
-        self.assertFalse(os.path.exists(key_path))
-        self.assertAttrsEqual(
-            stored_cert.certificate,
-            {
-                'cert_data': TEST_CERT_PEM,
-                'hostname': 'example.com',
-                'key_data': None,
-                'port': 443,
-            })
-
-        with open(cert_path, 'rb') as fp:
-            self.assertEqual(fp.read(), TEST_CERT_PEM)
-
-        # Make sure this clears cache.
-        self.assertSpyCalledWith(backend._invalidate_stats_cache,
-                                 local_site=None)
-
-    def test_add_certificate_with_local_site(self) -> None:
+    def test_add_certificate_with_trust(self) -> None:
         """Testing FileCertificateStorageBackend.add_certificate with
-        LocalSite
+        purpose=trust
         """
-        local_site = self.create_local_site(name='test-site')
         backend = self._create_backend()
 
         self.spy_on(backend._invalidate_stats_cache)
 
         stored_cert = backend.add_certificate(
-            Certificate(cert_data=TEST_CERT_PEM,
-                        key_data=TEST_KEY_PEM,
+            Certificate(cert_data=TEST_TRUST_CERT_PEM,
                         hostname='example.com',
-                        port=443),
-            local_site=local_site)
-        cert_path = os.path.join(backend.storage_path, 'sites', 'test-site',
-                                 'certs', 'example.com__443.crt')
-        key_path = os.path.join(backend.storage_path, 'sites', 'test-site',
-                                'certs', 'example.com__443.key')
+                        port=443))
+        cert_path = os.path.join(backend.storage_path, 'certs', 'trust',
+                                 'example.com__443.crt')
 
         self.assertIsNotNone(stored_cert)
         self.assertAttrsEqual(
@@ -1347,9 +1412,61 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_hostname': 'example.com',
                 '_port': 443,
-                'local_site': local_site,
+                'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': 'test-site:example.com:443',
+                'storage_id': 'example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
+        self.assertIsNone(stored_cert.get_key_file_path())
+        self.assertTrue(os.path.exists(cert_path))
+        self.assertAttrsEqual(
+            stored_cert.certificate,
+            {
+                'cert_data': TEST_TRUST_CERT_PEM,
+                'hostname': 'example.com',
+                'key_data': None,
+                'port': 443,
+                'purpose': CertPurpose.TRUST,
+            })
+
+        with open(cert_path, 'rb') as fp:
+            self.assertEqual(fp.read(), TEST_TRUST_CERT_PEM)
+
+        # Make sure this clears cache.
+        self.assertSpyCalledWith(backend._invalidate_stats_cache,
+                                 local_site=None)
+
+    def test_add_certificate_with_client(self) -> None:
+        """Testing FileCertificateStorageBackend.add_certificate with
+        purpose=client
+        """
+        backend = self._create_backend()
+
+        self.spy_on(backend._invalidate_stats_cache)
+
+        stored_cert = backend.add_certificate(Certificate(
+            cert_data=TEST_CLIENT_CERT_PEM,
+            key_data=TEST_CLIENT_KEY_PEM,
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+        ))
+        cert_path = os.path.join(backend.storage_path, 'certs', 'client',
+                                 'example.com__443.crt')
+        key_path = os.path.join(backend.storage_path, 'certs', 'client',
+                                'example.com__443.key')
+
+        self.assertIsNotNone(stored_cert)
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': 'example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
         self.assertEqual(stored_cert.get_key_file_path(), key_path)
@@ -1358,17 +1475,127 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert.certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_CLIENT_CERT_PEM,
                 'hostname': 'example.com',
-                'key_data': TEST_KEY_PEM,
+                'key_data': TEST_CLIENT_KEY_PEM,
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
         with open(cert_path, 'rb') as fp:
-            self.assertEqual(fp.read(), TEST_CERT_PEM)
+            self.assertEqual(fp.read(), TEST_CLIENT_CERT_PEM)
 
         with open(key_path, 'rb') as fp:
-            self.assertEqual(fp.read(), TEST_KEY_PEM)
+            self.assertEqual(fp.read(), TEST_CLIENT_KEY_PEM)
+
+        # Make sure this clears cache.
+        self.assertSpyCalledWith(backend._invalidate_stats_cache,
+                                 local_site=None)
+
+    def test_add_certificate_with_trust_and_local_site(self) -> None:
+        """Testing FileCertificateStorageBackend.add_certificate with
+        purpose=trust and LocalSite
+        """
+        local_site = self.create_local_site(name='test-site')
+        backend = self._create_backend()
+
+        self.spy_on(backend._invalidate_stats_cache)
+
+        stored_cert = backend.add_certificate(
+            Certificate(cert_data=TEST_TRUST_CERT_PEM,
+                        hostname='example.com',
+                        port=443),
+            local_site=local_site)
+        cert_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                 'certs', 'trust', 'example.com__443.crt')
+        key_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                'certs', 'trust', 'example.com__443.key')
+
+        self.assertIsNotNone(stored_cert)
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'example.com',
+                '_port': 443,
+                'local_site': local_site,
+                'purpose': CertPurpose.TRUST,
+                'storage': backend,
+                'storage_id': 'test-site:example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
+        self.assertIsNone(stored_cert.get_key_file_path())
+        self.assertTrue(os.path.exists(cert_path))
+        self.assertFalse(os.path.exists(key_path))
+        self.assertAttrsEqual(
+            stored_cert.certificate,
+            {
+                'cert_data': TEST_TRUST_CERT_PEM,
+                'hostname': 'example.com',
+                'key_data': None,
+                'port': 443,
+                'purpose': CertPurpose.TRUST,
+            })
+
+        with open(cert_path, 'rb') as fp:
+            self.assertEqual(fp.read(), TEST_TRUST_CERT_PEM)
+
+        # Make sure this clears cache.
+        self.assertSpyCalledWith(backend._invalidate_stats_cache,
+                                 local_site=local_site)
+
+    def test_add_certificate_with_client_and_local_site(self) -> None:
+        """Testing FileCertificateStorageBackend.add_certificate with
+        purpose=client and LocalSite
+        """
+        local_site = self.create_local_site(name='test-site')
+        backend = self._create_backend()
+
+        self.spy_on(backend._invalidate_stats_cache)
+
+        stored_cert = backend.add_certificate(
+            Certificate(
+                cert_data=TEST_CLIENT_CERT_PEM,
+                key_data=TEST_CLIENT_KEY_PEM,
+                hostname='example.com',
+                port=443,
+                purpose=CertPurpose.CLIENT,
+            ),
+            local_site=local_site)
+        cert_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                 'certs', 'client', 'example.com__443.crt')
+        key_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                'certs', 'client', 'example.com__443.key')
+
+        self.assertIsNotNone(stored_cert)
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'example.com',
+                '_port': 443,
+                'local_site': local_site,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': 'test-site:example.com:443:client',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
+        self.assertEqual(stored_cert.get_key_file_path(), key_path)
+        self.assertTrue(os.path.exists(cert_path))
+        self.assertTrue(os.path.exists(key_path))
+        self.assertAttrsEqual(
+            stored_cert.certificate,
+            {
+                'cert_data': TEST_CLIENT_CERT_PEM,
+                'hostname': 'example.com',
+                'key_data': TEST_CLIENT_KEY_PEM,
+                'port': 443,
+                'purpose': CertPurpose.CLIENT,
+            })
+
+        with open(cert_path, 'rb') as fp:
+            self.assertEqual(fp.read(), TEST_CLIENT_CERT_PEM)
+
+        with open(key_path, 'rb') as fp:
+            self.assertEqual(fp.read(), TEST_CLIENT_KEY_PEM)
 
         # Make sure this clears cache.
         self.assertSpyCalledWith(backend._invalidate_stats_cache,
@@ -1394,16 +1621,16 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
 
         with self.assertRaisesRegex(CertificateStorageError, message):
             backend.add_certificate(
-                Certificate(cert_data=TEST_CERT_PEM,
+                Certificate(cert_data=TEST_TRUST_CERT_PEM,
                             hostname='example.com',
                             port=443))
 
         # Make sure this does not clear cache.
         self.assertSpyNotCalled(backend._invalidate_stats_cache)
 
-    def test_add_certificate_with_ioerror_key(self) -> None:
-        """Testing FileCertificateStorageBackend.add_certificate with IOError
-        writing key
+    def test_add_certificate_with_client_ioerror_key(self) -> None:
+        """Testing FileCertificateStorageBackend.add_certificate with
+        purpose=client and IOError writing key
         """
         backend = self._create_backend()
         cert_path = os.path.join(backend.storage_path, 'example.com__443.crt')
@@ -1421,27 +1648,34 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         )
 
         with self.assertRaisesRegex(CertificateStorageError, message):
-            backend.add_certificate(
-                Certificate(cert_data=TEST_CERT_PEM,
-                            key_data=TEST_KEY_PEM,
-                            hostname='example.com',
-                            port=443))
+            backend.add_certificate(Certificate(
+                cert_data=TEST_CLIENT_CERT_PEM,
+                key_data=TEST_CLIENT_KEY_PEM,
+                hostname='example.com',
+                port=443,
+                purpose=CertPurpose.CLIENT,
+            ))
 
         # Make sure this does not clear cache.
         self.assertSpyNotCalled(backend._invalidate_stats_cache)
 
-    def test_delete_certificate(self) -> None:
-        """Testing FileCertificateStorageBackend.delete_certificate"""
+    def test_delete_certificate_with_trust(self) -> None:
+        """Testing FileCertificateStorageBackend.delete_certificate with
+        purpose=trust
+        """
         backend = self._create_backend()
 
         self.spy_on(backend._invalidate_stats_cache)
 
-        cert_path = os.path.join(backend.storage_path, 'certs',
+        cert_path = os.path.join(backend.storage_path, 'certs', 'trust',
                                  'example.com__443.crt')
-        self._write_file(cert_path, TEST_CERT_PEM)
+        self._write_file(cert_path, TEST_TRUST_CERT_PEM)
 
-        backend.delete_certificate(hostname='example.com',
-                                   port=443)
+        backend.delete_certificate(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.TRUST,
+        )
 
         self.assertFalse(os.path.exists(cert_path))
 
@@ -1449,22 +1683,26 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertSpyCalledWith(backend._invalidate_stats_cache,
                                  local_site=None)
 
-    def test_delete_certificate_with_key(self) -> None:
-        """Testing FileCertificateStorageBackend.delete_certificate with key
+    def test_delete_certificate_with_client(self) -> None:
+        """Testing FileCertificateStorageBackend.delete_certificate with
+        purpose=client
         """
         backend = self._create_backend()
 
         self.spy_on(backend._invalidate_stats_cache)
 
-        cert_path = os.path.join(backend.storage_path, 'certs',
+        cert_path = os.path.join(backend.storage_path, 'certs', 'client',
                                  'example.com__443.crt')
-        key_path = os.path.join(backend.storage_path, 'certs',
+        key_path = os.path.join(backend.storage_path, 'certs', 'client',
                                 'example.com__443.key')
-        self._write_file(cert_path, TEST_CERT_PEM)
-        self._write_file(key_path, TEST_KEY_PEM)
+        self._write_file(cert_path, TEST_CLIENT_CERT_PEM)
+        self._write_file(key_path, TEST_CLIENT_KEY_PEM)
 
-        backend.delete_certificate(hostname='example.com',
-                                   port=443)
+        backend.delete_certificate(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+        )
 
         self.assertFalse(os.path.exists(cert_path))
         self.assertFalse(os.path.exists(key_path))
@@ -1473,9 +1711,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertSpyCalledWith(backend._invalidate_stats_cache,
                                  local_site=None)
 
-    def test_delete_certificate_with_local_site(self) -> None:
+    def test_delete_certificate_with_trust_and_local_site(self) -> None:
         """Testing FileCertificateStorageBackend.delete_certificate with
-        LocalSite
+        purpose=trust and LocalSite
         """
         local_site = self.create_local_site(name='test-site')
         backend = self._create_backend()
@@ -1483,15 +1721,44 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.spy_on(backend._invalidate_stats_cache)
 
         cert_path = os.path.join(backend.storage_path, 'sites', 'test-site',
-                                 'certs', 'example.com__443.crt')
-        key_path = os.path.join(backend.storage_path, 'sites', 'test-site',
-                                'certs', 'example.com__443.key')
-        self._write_file(cert_path, TEST_CERT_PEM)
-        self._write_file(key_path, TEST_KEY_PEM)
+                                 'certs', 'trust', 'example.com__443.crt')
+        self._write_file(cert_path, TEST_TRUST_CERT_PEM)
 
-        backend.delete_certificate(hostname='example.com',
-                                   port=443,
-                                   local_site=local_site)
+        backend.delete_certificate(
+            hostname='example.com',
+            port=443,
+            local_site=local_site,
+            purpose=CertPurpose.TRUST,
+        )
+
+        self.assertFalse(os.path.exists(cert_path))
+
+        # Make sure this clears cache.
+        self.assertSpyCalledWith(backend._invalidate_stats_cache,
+                                 local_site=local_site)
+
+    def test_delete_certificate_with_client_and_local_site(self) -> None:
+        """Testing FileCertificateStorageBackend.delete_certificate with
+        purpose=client and LocalSite
+        """
+        local_site = self.create_local_site(name='test-site')
+        backend = self._create_backend()
+
+        self.spy_on(backend._invalidate_stats_cache)
+
+        cert_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                 'certs', 'client', 'example.com__443.crt')
+        key_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                'certs', 'client', 'example.com__443.key')
+        self._write_file(cert_path, TEST_CLIENT_CERT_PEM)
+        self._write_file(key_path, TEST_CLIENT_KEY_PEM)
+
+        backend.delete_certificate(
+            hostname='example.com',
+            port=443,
+            local_site=local_site,
+            purpose=CertPurpose.CLIENT,
+        )
 
         self.assertFalse(os.path.exists(cert_path))
         self.assertFalse(os.path.exists(key_path))
@@ -1509,8 +1776,11 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.spy_on(backend._invalidate_stats_cache)
 
         with self.assertRaises(CertificateNotFoundError):
-            backend.delete_certificate(hostname='example.com',
-                                       port=443)
+            backend.delete_certificate(
+                hostname='example.com',
+                port=443,
+                purpose=CertPurpose.TRUST,
+            )
 
         # Make sure this does not clear cache.
         self.assertSpyNotCalled(backend._invalidate_stats_cache)
@@ -1534,7 +1804,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
 
         with self.assertRaisesRegex(CertificateStorageError, message):
             backend.delete_certificate(hostname='example.com',
-                                       port=443)
+                                       port=443,
+                                       purpose=CertPurpose.TRUST)
 
         # Make sure this does not clear cache.
         self.assertSpyNotCalled(backend._invalidate_stats_cache)
@@ -1549,7 +1820,7 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                                  'example.com__443.crt')
         key_path = os.path.join(backend.storage_path, 'certs', 'missing.key')
 
-        self._write_file(cert_path, TEST_CERT_PEM)
+        self._write_file(cert_path, TEST_CLIENT_CERT_PEM)
 
         self.spy_on(backend._invalidate_stats_cache)
         self.spy_on(
@@ -1564,24 +1835,27 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
 
         with self.assertRaisesRegex(CertificateStorageError, message):
             backend.delete_certificate(hostname='example.com',
-                                       port=443)
+                                       port=443,
+                                       purpose=CertPurpose.CLIENT)
 
         self.assertFalse(os.path.exists(cert_path))
 
         # Make sure this does not clear cache.
         self.assertSpyNotCalled(backend._invalidate_stats_cache)
 
-    def test_delete_certificate_by_id(self) -> None:
-        """Testing FileCertificateStorageBackend.delete_certificate_by_id"""
+    def test_delete_certificate_by_id_with_trust(self) -> None:
+        """Testing FileCertificateStorageBackend.delete_certificate_by_id
+        with trust certificate
+        """
         backend = self._create_backend()
 
         self.spy_on(backend._invalidate_stats_cache)
 
-        cert_path = os.path.join(backend.storage_path, 'certs',
+        cert_path = os.path.join(backend.storage_path, 'certs', 'trust',
                                  'example.com__443.crt')
-        self._write_file(cert_path, TEST_CERT_PEM)
+        self._write_file(cert_path, TEST_TRUST_CERT_PEM)
 
-        backend.delete_certificate_by_id('example.com:443')
+        backend.delete_certificate_by_id('example.com:443:trust')
 
         self.assertFalse(os.path.exists(cert_path))
 
@@ -1589,9 +1863,33 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertSpyCalledWith(backend._invalidate_stats_cache,
                                  local_site=None)
 
-    def test_delete_certificate_by_id_with_local_site(self) -> None:
+    def test_delete_certificate_by_id_with_client(self) -> None:
+        """Testing FileCertificateStorageBackend.delete_certificate_by_id
+        with client certificate
+        """
+        backend = self._create_backend()
+
+        self.spy_on(backend._invalidate_stats_cache)
+
+        cert_path = os.path.join(backend.storage_path, 'certs', 'client',
+                                 'example.com__443.crt')
+        key_path = os.path.join(backend.storage_path, 'certs', 'client',
+                                'example.com__443.key')
+        self._write_file(cert_path, TEST_CLIENT_CERT_PEM)
+        self._write_file(key_path, TEST_CLIENT_KEY_PEM)
+
+        backend.delete_certificate_by_id('example.com:443:client')
+
+        self.assertFalse(os.path.exists(cert_path))
+        self.assertFalse(os.path.exists(key_path))
+
+        # Make sure this clears cache.
+        self.assertSpyCalledWith(backend._invalidate_stats_cache,
+                                 local_site=None)
+
+    def test_delete_certificate_by_id_with_trust_local_site(self) -> None:
         """Testing FileCertificateStorageBackend.delete_certificate_by_id with
-        LocalSite
+        trust certificate and LocalSite
         """
         local_site = self.create_local_site(name='test-site')
         backend = self._create_backend()
@@ -1599,13 +1897,34 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.spy_on(backend._invalidate_stats_cache)
 
         cert_path = os.path.join(backend.storage_path, 'sites', 'test-site',
-                                 'certs', 'example.com__443.crt')
-        key_path = os.path.join(backend.storage_path, 'sites', 'test-site',
-                                'certs', 'example.com__443.key')
-        self._write_file(cert_path, TEST_CERT_PEM)
-        self._write_file(key_path, TEST_KEY_PEM)
+                                 'certs', 'trust', 'example.com__443.crt')
+        self._write_file(cert_path, TEST_TRUST_CERT_PEM)
 
-        backend.delete_certificate_by_id('test-site:example.com:443')
+        backend.delete_certificate_by_id('test-site:example.com:443:trust')
+
+        self.assertFalse(os.path.exists(cert_path))
+
+        # Make sure this clears cache.
+        self.assertSpyCalledWith(backend._invalidate_stats_cache,
+                                 local_site=local_site)
+
+    def test_delete_certificate_by_id_with_client_local_site(self) -> None:
+        """Testing FileCertificateStorageBackend.delete_certificate_by_id with
+        client certificate and LocalSite
+        """
+        local_site = self.create_local_site(name='test-site')
+        backend = self._create_backend()
+
+        self.spy_on(backend._invalidate_stats_cache)
+
+        cert_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                 'certs', 'client', 'example.com__443.crt')
+        key_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                'certs', 'client', 'example.com__443.key')
+        self._write_file(cert_path, TEST_CLIENT_CERT_PEM)
+        self._write_file(key_path, TEST_CLIENT_KEY_PEM)
+
+        backend.delete_certificate_by_id('test-site:example.com:443:client')
 
         self.assertFalse(os.path.exists(cert_path))
         self.assertFalse(os.path.exists(key_path))
@@ -1614,16 +1933,21 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertSpyCalledWith(backend._invalidate_stats_cache,
                                  local_site=local_site)
 
-    def test_get_stored_certificate(self) -> None:
-        """Testing FileCertificateStorageBackend.get_stored_certificate"""
+    def test_get_stored_certificate_with_trust(self) -> None:
+        """Testing FileCertificateStorageBackend.get_stored_certificate with
+        purpose=trust
+        """
         backend = self._create_backend()
 
-        cert_path = os.path.join(backend.storage_path, 'certs',
+        cert_path = os.path.join(backend.storage_path, 'certs', 'trust',
                                  'example.com__443.crt')
-        self._write_file(cert_path, TEST_CERT_PEM)
+        self._write_file(cert_path, TEST_TRUST_CERT_PEM)
 
-        stored_cert = backend.get_stored_certificate(hostname='example.com',
-                                                     port=443)
+        stored_cert = backend.get_stored_certificate(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.TRUST,
+        )
 
         assert stored_cert is not None
         self.assertAttrsEqual(
@@ -1632,35 +1956,40 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': 'example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': 'example.com:443',
+                'storage_id': 'example.com:443:trust',
             })
         self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
         self.assertIsNone(stored_cert.get_key_file_path())
         self.assertAttrsEqual(
             stored_cert.certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_TRUST_CERT_PEM,
                 'hostname': 'example.com',
                 'key_data': None,
                 'port': 443,
+                'purpose': CertPurpose.TRUST,
             })
 
-    def test_get_stored_certificate_with_key(self) -> None:
+    def test_get_stored_certificate_with_client(self) -> None:
         """Testing FileCertificateStorageBackend.get_stored_certificate with
-        key
+        purpose=client
         """
         backend = self._create_backend()
 
-        cert_path = os.path.join(backend.storage_path, 'certs',
+        cert_path = os.path.join(backend.storage_path, 'certs', 'client',
                                  'example.com__443.crt')
-        key_path = os.path.join(backend.storage_path, 'certs',
+        key_path = os.path.join(backend.storage_path, 'certs', 'client',
                                 'example.com__443.key')
-        self._write_file(cert_path, TEST_CERT_PEM)
-        self._write_file(key_path, TEST_KEY_PEM)
+        self._write_file(cert_path, TEST_CLIENT_CERT_PEM)
+        self._write_file(key_path, TEST_CLIENT_KEY_PEM)
 
-        stored_cert = backend.get_stored_certificate(hostname='example.com',
-                                                     port=443)
+        stored_cert = backend.get_stored_certificate(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+        )
 
         assert stored_cert is not None
         self.assertAttrsEqual(
@@ -1669,37 +1998,39 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': 'example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.CLIENT,
                 'storage': backend,
-                'storage_id': 'example.com:443',
+                'storage_id': 'example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
         self.assertEqual(stored_cert.get_key_file_path(), key_path)
         self.assertAttrsEqual(
             stored_cert.certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_CLIENT_CERT_PEM,
                 'hostname': 'example.com',
-                'key_data': TEST_KEY_PEM,
+                'key_data': TEST_CLIENT_KEY_PEM,
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
-    def test_get_stored_certificate_with_local_site(self) -> None:
+    def test_get_stored_certificate_with_trust_and_local_site(self) -> None:
         """Testing FileCertificateStorageBackend.get_stored_certificate with
-        LocalSite
+        purpose=trust and LocalSite
         """
         local_site = self.create_local_site(name='test-site')
         backend = self._create_backend()
 
         cert_path = os.path.join(backend.storage_path, 'sites', 'test-site',
-                                 'certs', 'example.com__443.crt')
-        key_path = os.path.join(backend.storage_path, 'sites', 'test-site',
-                                'certs', 'example.com__443.key')
-        self._write_file(cert_path, TEST_CERT_PEM)
-        self._write_file(key_path, TEST_KEY_PEM)
+                                 'certs', 'trust', 'example.com__443.crt')
+        self._write_file(cert_path, TEST_TRUST_CERT_PEM)
 
-        stored_cert = backend.get_stored_certificate(hostname='example.com',
-                                                     port=443,
-                                                     local_site=local_site)
+        stored_cert = backend.get_stored_certificate(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.TRUST,
+            local_site=local_site,
+        )
 
         assert stored_cert is not None
         self.assertAttrsEqual(
@@ -1708,30 +2039,78 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': 'example.com',
                 '_port': 443,
                 'local_site': local_site,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': 'test-site:example.com:443',
+                'storage_id': 'test-site:example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
+        self.assertIsNone(stored_cert.get_key_file_path())
+        self.assertAttrsEqual(
+            stored_cert.certificate,
+            {
+                'cert_data': TEST_TRUST_CERT_PEM,
+                'hostname': 'example.com',
+                'key_data': None,
+                'port': 443,
+                'purpose': CertPurpose.TRUST,
+            })
+
+    def test_get_stored_certificate_with_client_and_local_site(self) -> None:
+        """Testing FileCertificateStorageBackend.get_stored_certificate with
+        purpose=client and LocalSite
+        """
+        local_site = self.create_local_site(name='test-site')
+        backend = self._create_backend()
+
+        cert_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                 'certs', 'client', 'example.com__443.crt')
+        key_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                'certs', 'client', 'example.com__443.key')
+        self._write_file(cert_path, TEST_CLIENT_CERT_PEM)
+        self._write_file(key_path, TEST_CLIENT_KEY_PEM)
+
+        stored_cert = backend.get_stored_certificate(
+            hostname='example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+            local_site=local_site,
+        )
+
+        assert stored_cert is not None
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'example.com',
+                '_port': 443,
+                'local_site': local_site,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': 'test-site:example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
         self.assertEqual(stored_cert.get_key_file_path(), key_path)
         self.assertAttrsEqual(
             stored_cert.certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_CLIENT_CERT_PEM,
                 'hostname': 'example.com',
-                'key_data': TEST_KEY_PEM,
+                'key_data': TEST_CLIENT_KEY_PEM,
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
-    def test_get_stored_certificate_with_wildcard_cert(self) -> None:
+    def test_get_stored_certificate_with_wildcard_trust_cert(self) -> None:
         """Testing FileCertificateStorageBackend.get_stored_certificate with
-        wildcard cert
+        wildcard trust cert
         """
         backend = self._create_backend(storage_path=self.testdata_dir)
-        certs_dir = os.path.join(backend.storage_path, 'certs')
+        certs_dir = os.path.join(backend.storage_path, 'certs', 'trust')
 
         stored_cert = backend.get_stored_certificate(
             hostname='*.eng.example.com',
-            port=443)
+            port=443,
+            purpose=CertPurpose.TRUST,
+        )
 
         assert stored_cert is not None
         self.assertAttrsEqual(
@@ -1740,8 +2119,46 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': '*.eng.example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': '*.eng.example.com:443',
+                'storage_id': '*.eng.example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(certs_dir,
+                                      '__.eng.example.com__443.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+        self.assertAttrsEqual(
+            stored_cert.certificate,
+            {
+                'hostname': '*.eng.example.com',
+                'port': 443,
+                'purpose': CertPurpose.TRUST,
+            })
+
+    def test_get_stored_certificate_with_wildcard_client_cert(self) -> None:
+        """Testing FileCertificateStorageBackend.get_stored_certificate with
+        wildcard client cert
+        """
+        backend = self._create_backend(storage_path=self.testdata_dir)
+        certs_dir = os.path.join(backend.storage_path, 'certs', 'client')
+
+        stored_cert = backend.get_stored_certificate(
+            hostname='*.eng.example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+        )
+
+        assert stored_cert is not None
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': '*.eng.example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': '*.eng.example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(certs_dir,
@@ -1755,18 +2172,23 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 'hostname': '*.eng.example.com',
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
-    def test_get_stored_certificate_with_wildcard_cert_fallback(self) -> None:
+    def test_get_stored_certificate_with_wildcard_trust_cert_fallback(
+        self,
+    ) -> None:
         """Testing FileCertificateStorageBackend.get_stored_certificate with
-        wildcard cert as fallback
+        wildcard trust cert as fallback
         """
         backend = self._create_backend(storage_path=self.testdata_dir)
-        certs_dir = os.path.join(backend.storage_path, 'certs')
+        certs_dir = os.path.join(backend.storage_path, 'certs', 'trust')
 
         stored_cert = backend.get_stored_certificate(
             hostname='test.eng.example.com',
-            port=443)
+            port=443,
+            purpose=CertPurpose.TRUST,
+        )
 
         assert stored_cert is not None
         self.assertAttrsEqual(
@@ -1775,8 +2197,48 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': 'test.eng.example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': '*.eng.example.com:443',
+                'storage_id': '*.eng.example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(certs_dir,
+                                      '__.eng.example.com__443.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+        self.assertAttrsEqual(
+            stored_cert.certificate,
+            {
+                'hostname': 'test.eng.example.com',
+                'port': 443,
+                'purpose': CertPurpose.TRUST,
+            })
+
+    def test_get_stored_certificate_with_wildcard_client_cert_fallback(
+        self,
+    ) -> None:
+        """Testing FileCertificateStorageBackend.get_stored_certificate with
+        wildcard client cert as fallback
+        """
+        backend = self._create_backend(storage_path=self.testdata_dir)
+        certs_dir = os.path.join(backend.storage_path, 'certs', 'client')
+
+        stored_cert = backend.get_stored_certificate(
+            hostname='test.eng.example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+        )
+
+        assert stored_cert is not None
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'test.eng.example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': '*.eng.example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(certs_dir,
@@ -1790,20 +2252,23 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 'hostname': 'test.eng.example.com',
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
-    def test_get_stored_certificate_with_specific_and_wildcard_cert(
+    def test_get_stored_certificate_with_trust_and_specific_and_wildcard_cert(
         self,
     ) -> None:
         """Testing FileCertificateStorageBackend.get_stored_certificate with
-        specific cert taking precedence over wildcard cert
+        specific trust cert taking precedence over wildcard trust cert
         """
         backend = self._create_backend(storage_path=self.testdata_dir)
-        certs_dir = os.path.join(backend.storage_path, 'certs')
+        certs_dir = os.path.join(backend.storage_path, 'certs', 'trust')
 
         stored_cert = backend.get_stored_certificate(
             hostname='reviewboard.eng.example.com',
-            port=443)
+            port=443,
+            purpose=CertPurpose.TRUST,
+        )
 
         assert stored_cert is not None
         self.assertAttrsEqual(
@@ -1812,8 +2277,48 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': 'reviewboard.eng.example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': 'reviewboard.eng.example.com:443',
+                'storage_id': 'reviewboard.eng.example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(certs_dir,
+                                      'reviewboard.eng.example.com__443.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+        self.assertAttrsEqual(
+            stored_cert.certificate,
+            {
+                'hostname': 'reviewboard.eng.example.com',
+                'port': 443,
+                'purpose': CertPurpose.TRUST,
+            })
+
+    def test_get_stored_certificate_with_client_and_specific_and_wildcard_cert(
+        self,
+    ) -> None:
+        """Testing FileCertificateStorageBackend.get_stored_certificate with
+        specific client cert taking precedence over wildcard client cert
+        """
+        backend = self._create_backend(storage_path=self.testdata_dir)
+        certs_dir = os.path.join(backend.storage_path, 'certs', 'client')
+
+        stored_cert = backend.get_stored_certificate(
+            hostname='reviewboard.eng.example.com',
+            port=443,
+            purpose=CertPurpose.CLIENT,
+        )
+
+        assert stored_cert is not None
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'reviewboard.eng.example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': 'reviewboard.eng.example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(certs_dir,
@@ -1827,6 +2332,7 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 'hostname': 'reviewboard.eng.example.com',
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
     def test_get_stored_certificate_with_not_found(self) -> None:
@@ -1837,21 +2343,22 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
 
         self.assertIsNone(backend.get_stored_certificate(
             hostname='example.com',
-            port=443))
+            port=443,
+            purpose=CertPurpose.TRUST,
+        ))
 
-    def test_get_stored_certificate_by_id(self) -> None:
+    def test_get_stored_certificate_by_id_with_trust(self) -> None:
         """Testing FileCertificateStorageBackend.get_stored_certificate_by_id
+        with trust certificate ID
         """
         backend = self._create_backend()
 
-        cert_path = os.path.join(backend.storage_path, 'certs',
+        cert_path = os.path.join(backend.storage_path, 'certs', 'trust',
                                  'example.com__443.crt')
-        key_path = os.path.join(backend.storage_path, 'certs',
-                                'example.com__443.key')
-        self._write_file(cert_path, TEST_CERT_PEM)
-        self._write_file(key_path, TEST_KEY_PEM)
+        self._write_file(cert_path, TEST_TRUST_CERT_PEM)
 
-        stored_cert = backend.get_stored_certificate_by_id('example.com:443')
+        stored_cert = backend.get_stored_certificate_by_id(
+            'example.com:443:trust')
 
         assert stored_cert is not None
         self.assertAttrsEqual(
@@ -1860,29 +2367,72 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': 'example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': 'example.com:443',
+                'storage_id': 'example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
+        self.assertIsNone(stored_cert.get_key_file_path())
+        self.assertAttrsEqual(
+            stored_cert.certificate,
+            {
+                'cert_data': TEST_TRUST_CERT_PEM,
+                'hostname': 'example.com',
+                'key_data': None,
+                'port': 443,
+                'purpose': CertPurpose.TRUST,
+            })
+
+    def test_get_stored_certificate_by_id_with_client(self) -> None:
+        """Testing FileCertificateStorageBackend.get_stored_certificate_by_id
+        with client certificate ID
+        """
+        backend = self._create_backend()
+
+        cert_path = os.path.join(backend.storage_path, 'certs', 'client',
+                                 'example.com__443.crt')
+        key_path = os.path.join(backend.storage_path, 'certs', 'client',
+                                'example.com__443.key')
+        self._write_file(cert_path, TEST_CLIENT_CERT_PEM)
+        self._write_file(key_path, TEST_CLIENT_KEY_PEM)
+
+        stored_cert = backend.get_stored_certificate_by_id(
+            'example.com:443:client')
+
+        assert stored_cert is not None
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': 'example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
         self.assertEqual(stored_cert.get_key_file_path(), key_path)
         self.assertAttrsEqual(
             stored_cert.certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_CLIENT_CERT_PEM,
                 'hostname': 'example.com',
-                'key_data': TEST_KEY_PEM,
+                'key_data': TEST_CLIENT_KEY_PEM,
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
-    def test_get_stored_certificate_by_id_with_wildcard(self) -> None:
+    def test_get_stored_certificate_by_id_with_trust_and_wildcard(
+        self,
+    ) -> None:
         """Testing FileCertificateStorageBackend.get_stored_certificate_by_id
-        with wildcard certificate
+        with wildcard trust certificate ID
         """
         backend = self._create_backend(storage_path=self.testdata_dir)
-        certs_dir = os.path.join(backend.storage_path, 'certs')
+        certs_dir = os.path.join(backend.storage_path, 'certs', 'trust')
 
         stored_cert = backend.get_stored_certificate_by_id(
-            '*.eng.example.com:443')
+            '*.eng.example.com:443:trust')
 
         assert stored_cert is not None
         self.assertAttrsEqual(
@@ -1891,8 +2441,45 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': '*.eng.example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': '*.eng.example.com:443',
+                'storage_id': '*.eng.example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(certs_dir,
+                                      '__.eng.example.com__443.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+        self.assertAttrsEqual(
+            stored_cert.certificate,
+            {
+                'hostname': '*.eng.example.com',
+                'port': 443,
+                'purpose': CertPurpose.TRUST,
+            })
+
+    def test_get_stored_certificate_by_id_with_client_and_wildcard(
+        self,
+    ) -> None:
+        """Testing FileCertificateStorageBackend.get_stored_certificate_by_id
+        with wildcard client certificate ID
+        """
+        backend = self._create_backend(storage_path=self.testdata_dir)
+        certs_dir = os.path.join(backend.storage_path, 'certs', 'client')
+
+        stored_cert = backend.get_stored_certificate_by_id(
+            '*.eng.example.com:443:client')
+
+        assert stored_cert is not None
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': '*.eng.example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': '*.eng.example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(certs_dir,
@@ -1906,9 +2493,12 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 'hostname': '*.eng.example.com',
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
-    def test_get_stored_certificate_by_id_with_local_site(self) -> None:
+    def test_get_stored_certificate_by_id_with_trust_and_local_site(
+        self,
+    ) -> None:
         """Testing FileCertificateStorageBackend.get_stored_certificate_by_id
         with LocalSite
         """
@@ -1916,14 +2506,11 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         backend = self._create_backend()
 
         cert_path = os.path.join(backend.storage_path, 'sites', 'test-site',
-                                 'certs', 'example.com__443.crt')
-        key_path = os.path.join(backend.storage_path, 'sites', 'test-site',
-                                'certs', 'example.com__443.key')
-        self._write_file(cert_path, TEST_CERT_PEM)
-        self._write_file(key_path, TEST_KEY_PEM)
+                                 'certs', 'trust', 'example.com__443.crt')
+        self._write_file(cert_path, TEST_TRUST_CERT_PEM)
 
         stored_cert = backend.get_stored_certificate_by_id(
-            'test-site:example.com:443',
+            'test-site:example.com:443:trust',
             local_site=local_site)
 
         assert stored_cert is not None
@@ -1933,27 +2520,76 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': 'example.com',
                 '_port': 443,
                 'local_site': local_site,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': 'test-site:example.com:443',
+                'storage_id': 'test-site:example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
+        self.assertIsNone(stored_cert.get_key_file_path())
+        self.assertAttrsEqual(
+            stored_cert.certificate,
+            {
+                'cert_data': TEST_TRUST_CERT_PEM,
+                'hostname': 'example.com',
+                'key_data': None,
+                'port': 443,
+                'purpose': CertPurpose.TRUST,
+            })
+
+    def test_get_stored_certificate_by_id_with_client_and_local_site(
+        self,
+    ) -> None:
+        """Testing FileCertificateStorageBackend.get_stored_certificate_by_id
+        with LocalSite
+        """
+        local_site = self.create_local_site(name='test-site')
+        backend = self._create_backend()
+
+        cert_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                 'certs', 'client', 'example.com__443.crt')
+        key_path = os.path.join(backend.storage_path, 'sites', 'test-site',
+                                'certs', 'client', 'example.com__443.key')
+        self._write_file(cert_path, TEST_CLIENT_CERT_PEM)
+        self._write_file(key_path, TEST_CLIENT_KEY_PEM)
+
+        stored_cert = backend.get_stored_certificate_by_id(
+            'test-site:example.com:443:client',
+            local_site=local_site)
+
+        assert stored_cert is not None
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'example.com',
+                '_port': 443,
+                'local_site': local_site,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': 'test-site:example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(), cert_path)
         self.assertEqual(stored_cert.get_key_file_path(), key_path)
         self.assertAttrsEqual(
             stored_cert.certificate,
             {
-                'cert_data': TEST_CERT_PEM,
+                'cert_data': TEST_CLIENT_CERT_PEM,
                 'hostname': 'example.com',
-                'key_data': TEST_KEY_PEM,
+                'key_data': TEST_CLIENT_KEY_PEM,
                 'port': 443,
+                'purpose': CertPurpose.CLIENT,
             })
 
-    def test_iter_stored_certificates(self) -> None:
-        """Testing FileCertificateStorageBackend.iter_stored_certificates"""
+    def test_iter_stored_certificates_with_trust(self) -> None:
+        """Testing FileCertificateStorageBackend.iter_stored_certificates
+        with trust certificates
+        """
         backend = self._create_backend(storage_path=self.testdata_dir)
-        certs_dir = os.path.join(backend.storage_path, 'certs')
+        certs_dir = os.path.join(backend.storage_path, 'certs', 'trust')
 
-        stored_certs = list(backend.iter_stored_certificates())
-        self.assertEqual(len(stored_certs), 4)
+        stored_certs = list(backend.iter_stored_certificates(
+            purpose=CertPurpose.TRUST,
+        ))
+        self.assertEqual(len(stored_certs), 3)
 
         stored_cert = stored_certs[0]
         self.assertAttrsEqual(
@@ -1962,8 +2598,69 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': '*.eng.example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': '*.eng.example.com:443',
+                'storage_id': '*.eng.example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(certs_dir,
+                                      '__.eng.example.com__443.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+        stored_cert = stored_certs[1]
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'reviewboard.eng.example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.TRUST,
+                'storage': backend,
+                'storage_id': 'reviewboard.eng.example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(certs_dir,
+                                      'reviewboard.eng.example.com__443.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+        stored_cert = stored_certs[2]
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'www.example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.TRUST,
+                'storage': backend,
+                'storage_id': 'www.example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(certs_dir,
+                                      'www.example.com__443.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+    def test_iter_stored_certificates_with_client(self) -> None:
+        """Testing FileCertificateStorageBackend.iter_stored_certificates
+        with client certificates
+        """
+        backend = self._create_backend(storage_path=self.testdata_dir)
+        certs_dir = os.path.join(backend.storage_path, 'certs', 'client')
+
+        stored_certs = list(backend.iter_stored_certificates(
+            purpose=CertPurpose.CLIENT,
+        ))
+        self.assertEqual(len(stored_certs), 3)
+
+        stored_cert = stored_certs[0]
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': '*.eng.example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': '*.eng.example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(certs_dir,
@@ -1979,8 +2676,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': 'ldap.example.com',
                 '_port': 636,
                 'local_site': None,
+                'purpose': CertPurpose.CLIENT,
                 'storage': backend,
-                'storage_id': 'ldap.example.com:636',
+                'storage_id': 'ldap.example.com:636:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(certs_dir, 'ldap.example.com__636.crt'))
@@ -1994,8 +2692,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': 'reviewboard.eng.example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.CLIENT,
                 'storage': backend,
-                'storage_id': 'reviewboard.eng.example.com:443',
+                'storage_id': 'reviewboard.eng.example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(certs_dir,
@@ -2004,32 +2703,20 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                          os.path.join(certs_dir,
                                       'reviewboard.eng.example.com__443.key'))
 
-        stored_cert = stored_certs[3]
-        self.assertAttrsEqual(
-            stored_cert,
-            {
-                '_hostname': 'www.example.com',
-                '_port': 443,
-                'local_site': None,
-                'storage': backend,
-                'storage_id': 'www.example.com:443',
-            })
-        self.assertEqual(stored_cert.get_cert_file_path(),
-                         os.path.join(certs_dir, 'www.example.com__443.crt'))
-        self.assertIsNone(stored_cert.get_key_file_path())
-
-    def test_iter_stored_certificates_with_local_site(self) -> None:
+    def test_iter_stored_certificates_with_trust_and_local_site(self) -> None:
         """Testing FileCertificateStorageBackend.iter_stored_certificates
-        with LocalSite
+        with trust certificates and LocalSite
         """
         local_site = self.create_local_site(name='test-site-2')
         backend = self._create_backend(storage_path=self.testdata_dir)
         certs_dir = os.path.join(backend.storage_path, 'sites', 'test-site-2',
-                                 'certs')
+                                 'certs', 'trust')
 
         stored_certs = list(backend.iter_stored_certificates(
-            local_site=local_site))
-        self.assertEqual(len(stored_certs), 3)
+            purpose=CertPurpose.TRUST,
+            local_site=local_site,
+        ))
+        self.assertEqual(len(stored_certs), 2)
 
         stored_cert = stored_certs[0]
         self.assertAttrsEqual(
@@ -2038,57 +2725,69 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': '*.eng.example.com',
                 '_port': 443,
                 'local_site': local_site,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': 'test-site-2:*.eng.example.com:443',
+                'storage_id': 'test-site-2:*.eng.example.com:443:trust',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(backend.storage_path, 'sites',
-                                      'test-site-2', 'certs',
+                                      'test-site-2', 'certs', 'trust',
                                       '__.eng.example.com__443.crt'))
-        self.assertEqual(stored_cert.get_key_file_path(),
-                         os.path.join(backend.storage_path, 'sites',
-                                      'test-site-2', 'certs',
-                                      '__.eng.example.com__443.key'))
+        self.assertIsNone(stored_cert.get_key_file_path())
 
         stored_cert = stored_certs[1]
-        self.assertAttrsEqual(
-            stored_cert,
-            {
-                '_hostname': 'svn.example.com',
-                '_port': 8443,
-                'local_site': local_site,
-                'storage': backend,
-                'storage_id': 'test-site-2:svn.example.com:8443',
-            })
-        self.assertEqual(stored_cert.get_cert_file_path(),
-                         os.path.join(backend.storage_path, 'sites',
-                                      'test-site-2', 'certs',
-                                      'svn.example.com__8443.crt'))
-        self.assertEqual(stored_cert.get_key_file_path(),
-                         os.path.join(backend.storage_path, 'sites',
-                                      'test-site-2', 'certs',
-                                      'svn.example.com__8443.key'))
-
-        stored_cert = stored_certs[2]
         self.assertAttrsEqual(
             stored_cert,
             {
                 '_hostname': 'tools.corp.example.com',
                 '_port': 443,
                 'local_site': local_site,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': 'test-site-2:tools.corp.example.com:443',
+                'storage_id': 'test-site-2:tools.corp.example.com:443:trust',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
-                         os.path.join(certs_dir,
+                         os.path.join(backend.storage_path, 'sites',
+                                      'test-site-2', 'certs', 'trust',
                                       'tools.corp.example.com__443.crt'))
-        self.assertEqual(stored_cert.get_key_file_path(),
-                         os.path.join(certs_dir,
-                                      'tools.corp.example.com__443.key'))
+        self.assertIsNone(stored_cert.get_key_file_path())
 
-    def test_iter_stored_certificates_with_local_site_all(self) -> None:
+    def test_iter_stored_certificates_with_client_and_local_site(self) -> None:
         """Testing FileCertificateStorageBackend.iter_stored_certificates
-        with LocalSite.ALL
+        with client certificates and LocalSite
+        """
+        local_site = self.create_local_site(name='test-site-2')
+        backend = self._create_backend(storage_path=self.testdata_dir)
+
+        stored_certs = list(backend.iter_stored_certificates(
+            purpose=CertPurpose.CLIENT,
+            local_site=local_site,
+        ))
+        self.assertEqual(len(stored_certs), 1)
+
+        stored_cert = stored_certs[0]
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'svn.example.com',
+                '_port': 8443,
+                'local_site': local_site,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': 'test-site-2:svn.example.com:8443:client',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(backend.storage_path, 'sites',
+                                      'test-site-2', 'certs', 'client',
+                                      'svn.example.com__8443.crt'))
+        self.assertEqual(stored_cert.get_key_file_path(),
+                         os.path.join(backend.storage_path, 'sites',
+                                      'test-site-2', 'certs', 'client',
+                                      'svn.example.com__8443.key'))
+
+    def test_iter_stored_certificates_with_trust_local_site_all(self) -> None:
+        """Testing FileCertificateStorageBackend.iter_stored_certificates
+        with trust certificates and LocalSite.ALL
         """
         local_site1 = self.create_local_site(name='test-site-1')
         local_site2 = self.create_local_site(name='test-site-2')
@@ -2096,15 +2795,17 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.create_local_site(name='test-site-4')
 
         backend = self._create_backend(storage_path=self.testdata_dir)
-        global_certs_dir = os.path.join(backend.storage_path, 'certs')
+        global_certs_dir = os.path.join(backend.storage_path, 'certs', 'trust')
         site1_certs_dir = os.path.join(backend.storage_path, 'sites',
-                                       'test-site-1', 'certs')
+                                       'test-site-1', 'certs', 'trust')
         site2_certs_dir = os.path.join(backend.storage_path, 'sites',
-                                       'test-site-2', 'certs')
+                                       'test-site-2', 'certs', 'trust')
 
         stored_certs = list(backend.iter_stored_certificates(
-            local_site=LocalSite.ALL))
-        self.assertEqual(len(stored_certs), 8)
+            purpose=CertPurpose.TRUST,
+            local_site=LocalSite.ALL,
+        ))
+        self.assertEqual(len(stored_certs), 6)
 
         stored_cert = stored_certs[0]
         self.assertAttrsEqual(
@@ -2113,8 +2814,109 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': '*.eng.example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.TRUST,
                 'storage': backend,
-                'storage_id': '*.eng.example.com:443',
+                'storage_id': '*.eng.example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(global_certs_dir,
+                                      '__.eng.example.com__443.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+        stored_cert = stored_certs[1]
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'reviewboard.eng.example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.TRUST,
+                'storage': backend,
+                'storage_id': 'reviewboard.eng.example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(global_certs_dir,
+                                      'reviewboard.eng.example.com__443.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+        stored_cert = stored_certs[2]
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'www.example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.TRUST,
+                'storage': backend,
+                'storage_id': 'www.example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(global_certs_dir,
+                                      'www.example.com__443.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+        stored_cert = stored_certs[3]
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'p4.example.com',
+                '_port': 1667,
+                'local_site': local_site1,
+                'purpose': CertPurpose.TRUST,
+                'storage': backend,
+                'storage_id': 'test-site-1:p4.example.com:1667:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(site1_certs_dir,
+                                      'p4.example.com__1667.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+        stored_cert = stored_certs[5]
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': 'tools.corp.example.com',
+                '_port': 443,
+                'local_site': local_site2,
+                'purpose': CertPurpose.TRUST,
+                'storage': backend,
+                'storage_id': 'test-site-2:tools.corp.example.com:443:trust',
+            })
+        self.assertEqual(stored_cert.get_cert_file_path(),
+                         os.path.join(site2_certs_dir,
+                                      'tools.corp.example.com__443.crt'))
+        self.assertIsNone(stored_cert.get_key_file_path())
+
+    def test_iter_stored_certificates_with_client_local_site_all(self) -> None:
+        """Testing FileCertificateStorageBackend.iter_stored_certificates
+        with client certificates and LocalSite.ALL
+        """
+        local_site2 = self.create_local_site(name='test-site-2')
+        self.create_local_site(name='test-site-3')
+        self.create_local_site(name='test-site-4')
+
+        backend = self._create_backend(storage_path=self.testdata_dir)
+        global_certs_dir = os.path.join(backend.storage_path, 'certs',
+                                        'client')
+        site2_certs_dir = os.path.join(backend.storage_path, 'sites',
+                                       'test-site-2', 'certs', 'client')
+
+        stored_certs = list(backend.iter_stored_certificates(
+            purpose=CertPurpose.CLIENT,
+            local_site=LocalSite.ALL,
+        ))
+        self.assertEqual(len(stored_certs), 4)
+
+        stored_cert = stored_certs[0]
+        self.assertAttrsEqual(
+            stored_cert,
+            {
+                '_hostname': '*.eng.example.com',
+                '_port': 443,
+                'local_site': None,
+                'purpose': CertPurpose.CLIENT,
+                'storage': backend,
+                'storage_id': '*.eng.example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(global_certs_dir,
@@ -2130,8 +2932,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': 'ldap.example.com',
                 '_port': 636,
                 'local_site': None,
+                'purpose': CertPurpose.CLIENT,
                 'storage': backend,
-                'storage_id': 'ldap.example.com:636',
+                'storage_id': 'ldap.example.com:636:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(global_certs_dir,
@@ -2147,8 +2950,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_hostname': 'reviewboard.eng.example.com',
                 '_port': 443,
                 'local_site': None,
+                'purpose': CertPurpose.CLIENT,
                 'storage': backend,
-                'storage_id': 'reviewboard.eng.example.com:443',
+                'storage_id': 'reviewboard.eng.example.com:443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(global_certs_dir,
@@ -2161,58 +2965,12 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'www.example.com',
-                '_port': 443,
-                'local_site': None,
-                'storage': backend,
-                'storage_id': 'www.example.com:443',
-            })
-        self.assertEqual(stored_cert.get_cert_file_path(),
-                         os.path.join(global_certs_dir,
-                                      'www.example.com__443.crt'))
-        self.assertIsNone(stored_cert.get_key_file_path())
-
-        stored_cert = stored_certs[4]
-        self.assertAttrsEqual(
-            stored_cert,
-            {
-                '_hostname': 'p4.example.com',
-                '_port': 1667,
-                'local_site': local_site1,
-                'storage': backend,
-                'storage_id': 'test-site-1:p4.example.com:1667',
-            })
-        self.assertEqual(stored_cert.get_cert_file_path(),
-                         os.path.join(site1_certs_dir,
-                                      'p4.example.com__1667.crt'))
-        self.assertIsNone(stored_cert.get_key_file_path())
-
-        stored_cert = stored_certs[5]
-        self.assertAttrsEqual(
-            stored_cert,
-            {
-                '_hostname': '*.eng.example.com',
-                '_port': 443,
-                'local_site': local_site2,
-                'storage': backend,
-                'storage_id': 'test-site-2:*.eng.example.com:443',
-            })
-        self.assertEqual(stored_cert.get_cert_file_path(),
-                         os.path.join(site2_certs_dir,
-                                      '__.eng.example.com__443.crt'))
-        self.assertEqual(stored_cert.get_key_file_path(),
-                         os.path.join(site2_certs_dir,
-                                      '__.eng.example.com__443.key'))
-
-        stored_cert = stored_certs[6]
-        self.assertAttrsEqual(
-            stored_cert,
-            {
                 '_hostname': 'svn.example.com',
                 '_port': 8443,
                 'local_site': local_site2,
+                'purpose': CertPurpose.CLIENT,
                 'storage': backend,
-                'storage_id': 'test-site-2:svn.example.com:8443',
+                'storage_id': 'test-site-2:svn.example.com:8443:client',
             })
         self.assertEqual(stored_cert.get_cert_file_path(),
                          os.path.join(site2_certs_dir,
@@ -2220,23 +2978,6 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertEqual(stored_cert.get_key_file_path(),
                          os.path.join(site2_certs_dir,
                                       'svn.example.com__8443.key'))
-
-        stored_cert = stored_certs[7]
-        self.assertAttrsEqual(
-            stored_cert,
-            {
-                '_hostname': 'tools.corp.example.com',
-                '_port': 443,
-                'local_site': local_site2,
-                'storage': backend,
-                'storage_id': 'test-site-2:tools.corp.example.com:443',
-            })
-        self.assertEqual(stored_cert.get_cert_file_path(),
-                         os.path.join(site2_certs_dir,
-                                      'tools.corp.example.com__443.crt'))
-        self.assertEqual(stored_cert.get_key_file_path(),
-                         os.path.join(site2_certs_dir,
-                                      'tools.corp.example.com__443.key'))
 
     def test_iter_stored_certificates_with_none(self) -> None:
         """Testing FileCertificateStorageBackend.iter_stored_certificates
@@ -2246,7 +2987,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         backend = self._create_backend(storage_path=self.testdata_dir)
 
         stored_certs = list(backend.iter_stored_certificates(
-            local_site=local_site))
+            purpose=CertPurpose.TRUST,
+            local_site=local_site,
+        ))
         self.assertEqual(len(stored_certs), 0)
 
     def test_add_fingerprints(self):

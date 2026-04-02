@@ -26,7 +26,7 @@ from djblets.util.filesystem import safe_join
 from typing_extensions import TypedDict
 
 from reviewboard.admin.server import get_data_dir
-from reviewboard.certs.cert import CertificateFingerprints
+from reviewboard.certs.cert import CertPurpose, CertificateFingerprints
 from reviewboard.certs.errors import (CertificateNotFoundError,
                                       InvalidCertificateError)
 from reviewboard.certs.storage import cert_storage_backend_registry
@@ -37,10 +37,12 @@ if TYPE_CHECKING:
     from typing_extensions import NotRequired, TypeAlias
 
     from reviewboard.certs.cert import Certificate, CertificateBundle
-    from reviewboard.certs.storage.base import (BaseCertificateStorageBackend,
-                                                BaseStoredCertificate,
-                                                BaseStoredCertificateBundle,
-                                                BaseStoredCertificateFingerprints)
+    from reviewboard.certs.storage.base import (
+        BaseCertificateStorageBackend,
+        BaseStoredCertificate,
+        BaseStoredCertificateBundle,
+        BaseStoredCertificateFingerprints,
+    )
     from reviewboard.site.models import LocalSite
 
     _CertStorageBackend: TypeAlias = BaseCertificateStorageBackend[
@@ -339,12 +341,14 @@ class CertificateManager:
             certificate=certificate,
             local_site=local_site)
 
-        # Make sure this is marked as verified.
-        self.mark_certificate_verified(
-            hostname=certificate.hostname,
-            port=certificate.port,
-            local_site=local_site,
-            fingerprints=certificate.fingerprints)
+        if certificate.purpose == CertPurpose.TRUST:
+            # Make sure this is marked as verified.
+            self.mark_certificate_verified(
+                hostname=certificate.hostname,
+                port=certificate.port,
+                local_site=local_site,
+                fingerprints=certificate.fingerprints,
+            )
 
         return stored_cert
 
@@ -353,12 +357,18 @@ class CertificateManager:
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
+        purpose: CertPurpose = CertPurpose.TRUST,
     ) -> None:
         """Delete a certificate from storage.
 
-        Once deleted, the certificate's fingerprints will no longer be marked
-        as verified.
+        If deleting a certificate used to trust a server, then the
+        certificate's fingerprints in storage will be removed as well,
+        preventing them from being used for verification.
+
+        Version Added:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             hostname (str):
@@ -371,26 +381,50 @@ class CertificateManager:
                 An optional LocalSite that owns the certificate.
 
                 If ``None``, the global site will be used.
+
+            purpose (reviewboard.certs.cert.CertPurpose, optional):
+                The purpose of the certificate to delete.
+
+                This indicates whether the certificate to match is used
+                to trust a remote server or authenticate Review Board.
+
+                By default, this matches only certificates used to trust a
+                server.
+
+                Version Added:
+                    8.0
         """
         self.storage_backend.delete_certificate(
             hostname=hostname,
             port=port,
-            local_site=local_site)
+            local_site=local_site,
+            purpose=purpose,
+        )
 
-        # Remove any verification information for this certificate.
-        self.remove_certificate_verification(
-            hostname=hostname,
-            port=port,
-            local_site=local_site)
+        if purpose == CertPurpose.TRUST:
+            # Remove any verification information for this certificate.
+            self.remove_certificate_verification(
+                hostname=hostname,
+                port=port,
+                local_site=local_site)
 
     def get_certificate(
         self,
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
-    ) -> Optional[Certificate]:
-        """Return a certificate for the given host and port.
+        local_site: (LocalSite | None) = None,
+        purpose: CertPurpose = CertPurpose.TRUST,
+    ) -> Certificate | None:
+        """Return a certificate for the given host, port, and purpose.
+
+        By default, certificates used for trust will be returned. If a
+        caller needs a certificate used for client authentication, that
+        must be requested explicitly.
+
+        Version Added:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             hostname (str):
@@ -403,6 +437,18 @@ class CertificateManager:
                 An optional LocalSite that owns the certificate.
 
                 If ``None``, the global site will be used.
+
+            purpose (reviewboard.certs.cert.CertPurpose, optional):
+                The purpose of the certificate to fetch.
+
+                This indicates whether the returned certificate should be used
+                to trust a remote server or authenticate Review Board.
+
+                By default, this returns a certificate used to trust a
+                server.
+
+                Version Added:
+                    8.0
 
         Returns:
             reviewboard.certs.storage.base.BaseStoredCertificate:
@@ -415,7 +461,9 @@ class CertificateManager:
         stored_cert = self.storage_backend.get_stored_certificate(
             hostname=hostname,
             port=port,
-            local_site=local_site)
+            local_site=local_site,
+            purpose=purpose,
+        )
 
         if not stored_cert:
             return None
@@ -427,9 +475,14 @@ class CertificateManager:
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
-    ) -> Optional[CertificateFilePaths]:
+        local_site: (LocalSite | None) = None,
+        purpose: CertPurpose = CertPurpose.TRUST,
+    ) -> CertificateFilePaths | None:
         """Return file paths for a certificate.
+
+        Version Added:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             hostname (str):
@@ -442,6 +495,17 @@ class CertificateManager:
                 An optional LocalSite that owns the certificate.
 
                 If ``None``, the global site will be used.
+
+            purpose (reviewboard.certs.cert.CertPurpose, optional):
+                The purpose of the certificate.
+
+                This indicates whether the certificate should be used
+                to trust a remote server or authenticate Review Board.
+
+                By default, only certificates used for trust are returned.
+
+                Version Added:
+                    8.0
 
         Returns:
             CertificateFilePaths:
@@ -456,7 +520,9 @@ class CertificateManager:
         stored_cert = self.storage_backend.get_stored_certificate(
             hostname=hostname,
             port=port,
-            local_site=local_site)
+            local_site=local_site,
+            purpose=purpose,
+        )
 
         if not stored_cert:
             return None
@@ -674,13 +740,14 @@ class CertificateManager:
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> ssl.SSLContext:
         """Return a configured SSL context for the given host.
 
         The resulting :py:class:`ssl.SSLContext` will be configured to use
         the CA bundles and certificates applicable to this host, port, and
-        Local Site.
+        Local Site. This includes any certificates used for trust and any
+        used for authentication.
 
         Args:
             hostname (str):
@@ -696,17 +763,42 @@ class CertificateManager:
             ssl.SSLContext:
             The resulting SSL context.
         """
-        cabundles_dir = self.get_ca_bundles_dir(local_site=local_site)
-        cert_paths = self.get_certificate_file_paths(hostname=hostname,
-                                                     port=port,
-                                                     local_site=local_site)
-
+        # Set up an SSL context and load in any CA bundles.
         context = ssl.create_default_context()
-        context.load_verify_locations(capath=cabundles_dir)
+        context.load_verify_locations(
+            capath=self.get_ca_bundles_dir(local_site=local_site))
 
-        if cert_paths:
-            context.load_cert_chain(certfile=cert_paths['cert_file'],
-                                    keyfile=cert_paths.get('key_file'))
+        # Load any certificates used to trust this host.
+        trust_cert_paths = self.get_certificate_file_paths(
+            hostname=hostname,
+            port=port,
+            purpose=CertPurpose.TRUST,
+            local_site=local_site,
+        )
+
+        if trust_cert_paths:
+            context.load_verify_locations(cafile=trust_cert_paths['cert_file'])
+
+        # Load any certificates used to authenticate Review Board with the
+        # server.
+        client_cert_paths = self.get_certificate_file_paths(
+            hostname=hostname,
+            port=port,
+            purpose=CertPurpose.CLIENT,
+            local_site=local_site,
+        )
+
+        if (client_cert_paths and
+            (key_file := client_cert_paths.get('key_file'))):
+            context.load_cert_chain(
+                certfile=client_cert_paths['cert_file'],
+                keyfile=key_file,
+            )
+        else:
+            logger.warning('Unable to locate key for SSL/TLS client '
+                           'authentication certificate for %s:%s. The '
+                           'certificate will be ignored.',
+                           hostname, port)
 
         return context
 

@@ -74,6 +74,7 @@ class SSLTestsMixin(MixinParent):
                     'hostname': 'example.com',
                     'issuer': 'Test Issuer',
                     'port': 443,
+                    'purpose': 'trust',
                     'subject': 'Test Subject',
                     'valid_from': '2023-07-14T07:50:30Z',
                     'valid_through': '3023-07-14T07:50:30Z',
