@@ -1,7 +1,7 @@
 """License check processing types.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ class ProcessCheckLicenseResultStatus(str, Enum):
     updates to licenses.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: A new license has been applied.
@@ -45,7 +45,7 @@ class RequestCheckLicenseResult(TypedDict):
     with a license server.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The data to send to the license server.
@@ -76,7 +76,7 @@ class ProcessCheckLicenseResult(TypedDict):
     information.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The status of the license check.

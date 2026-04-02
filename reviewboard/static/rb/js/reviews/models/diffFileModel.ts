@@ -70,7 +70,7 @@ export interface DiffFileAttrs extends ModelAttributes {
      * A set of CSS bundle names used in rendering the file.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     cssMedia: Set<string> | null;
 
@@ -104,7 +104,7 @@ export interface DiffFileAttrs extends ModelAttributes {
      * A set of JavaScript bundle names and URLs used in rendering the file.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     jsMedia: Set<string> | null;
 

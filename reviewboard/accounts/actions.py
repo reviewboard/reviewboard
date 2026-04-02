@@ -61,7 +61,7 @@ class AccountMenuActionRenderer(MenuActionGroupRenderer):
     in the page header, using the username and avatar.
 
     Version Added:
-        7.1
+        8.0
     """
 
     template_name = 'accounts/account_menu_action.html'

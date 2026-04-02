@@ -160,7 +160,7 @@ class CertificateFingerprints:
         new instance if the value is supported.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             fingerprint (str):

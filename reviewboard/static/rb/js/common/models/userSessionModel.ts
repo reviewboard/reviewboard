@@ -131,7 +131,7 @@ interface StoredItemsAttrs extends BaseResourceAttrs {
  * of objects.
  *
  * Version Changed:
- *     7.1:
+ *     8.0:
  *     This is now exported internally, but is intended only for use in
  *     type checking and not to subclass or use directly. It's not included
  *     in the global ``RB`` namespace.
@@ -254,7 +254,7 @@ interface UserSessionAttrs extends ModelAttributes {
      * Whether to allow users to mark "Ship It" on their own review requests.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     allowSelfShipIt: boolean;
 
@@ -277,7 +277,7 @@ interface UserSessionAttrs extends ModelAttributes {
      * Whether to prompt to confirm publishing a Ship It! review.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     confirmShipIt: boolean;
 
@@ -298,7 +298,7 @@ interface UserSessionAttrs extends ModelAttributes {
      * If ``null``, then the default for the system or browser is used.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     enableSpellChecking: boolean | null;
 
@@ -315,7 +315,7 @@ interface UserSessionAttrs extends ModelAttributes {
      * A list of actions available in the Quick Access area.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     quickAccessActionIDs: string[];
 
@@ -357,7 +357,7 @@ interface UserSessionAttrs extends ModelAttributes {
  * A map of UserSession attributes to stored settings names.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 const _storeSettingsMap: Record<keyof UserSessionAttrs, string> = {
     'confirmShipIt': 'confirm_ship_it',
@@ -533,7 +533,7 @@ export class UserSession extends BaseModel<UserSessionAttrs> {
      * This should be considered internal to the Review Board codebase.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Args:
      *     setting (Array of string):

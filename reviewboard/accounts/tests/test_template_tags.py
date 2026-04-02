@@ -315,7 +315,7 @@ class UserBadgesTests(TestCase):
     """Unit tests for {% user_badges %}.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_with_no_badges(self) -> None:

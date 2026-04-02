@@ -1,7 +1,7 @@
 """Setuptools backend for building Review Board extension packages.
 
 Version Added:
-    7.1:
+    8.0:
     This moved from the top-level :py:mod:`reviewboard.packaging`.
 """
 
@@ -30,7 +30,7 @@ class BuildStaticFiles(DjbletsBuildStaticFiles):
     through LessCSS (if using :file:`.less` files), minified and versioned.
 
     Version Changed:
-        7.1:
+        8.0:
         This moved from :py:mod:`reviewboard.extensions.packaging`.
     """
 
@@ -44,7 +44,7 @@ def setup(**setup_kwargs):
     """Build an extension package.
 
     Version Changed:
-        7.1:
+        8.0:
         This moved from :py:mod:`reviewboard.extensions.packaging`.
 
     Args:

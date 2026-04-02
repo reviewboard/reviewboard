@@ -514,14 +514,14 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         """Return an ETag identifying this render.
 
         Version Added:
-            7.1.0
+            8.0
 
         Args:
             request (django.http.HttpRequest):
                 The request from the client.
 
                 Version Added:
-                    7.1.0
+                    8.0
 
             **kwargs (dict):
                 Additional keyword arguments passed to the function.
@@ -601,7 +601,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         file attachments, if review UIs are involved, disabling caching.
 
         Version Changed:
-            7.1:
+            8.0:
             * Deprecated non-keyword arguments.
             * Added the ``request`` parameter.
 
@@ -720,7 +720,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         attachments for storage and review.
 
         Version Added:
-            7.1.0
+            8.0
 
         Args:
             request (django.http.HttpRequest):
@@ -863,23 +863,38 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
                 modified_revision = diffset.revision
                 modified_filediff_id = filediff.pk
 
-            download_orig_url = local_site_reverse(
-                orig_url_name,
-                request=self.request,
-                kwargs={
-                    'review_request_id': self.review_request.display_id,
-                    'revision': diffset.revision,
-                    'filediff_id': filediff.pk,
-                })
+            filediff_is_empty = filediff.is_diff_empty
 
-            download_modified_url = local_site_reverse(
-                'download-modified-file',
-                request=self.request,
-                kwargs={
-                    'review_request_id': self.review_request.display_id,
-                    'revision': modified_revision,
-                    'filediff_id': modified_filediff_id,
-                })
+            if interfilediff:
+                interfilediff_is_empty = interfilediff.is_diff_empty
+            else:
+                interfilediff_is_empty = True
+
+            if (filediff_is_empty and
+                interfilediff_is_empty and
+                (diff_file['newfile'] or diff_file['deleted'])):
+                # If an empty file was added or removed, we don't want
+                # to show download links.
+                download_orig_url = None
+                download_modified_url = None
+            else:
+                download_orig_url = local_site_reverse(
+                    orig_url_name,
+                    request=self.request,
+                    kwargs={
+                        'review_request_id': self.review_request.display_id,
+                        'revision': diffset.revision,
+                        'filediff_id': filediff.pk,
+                    })
+
+                download_modified_url = local_site_reverse(
+                    'download-modified-file',
+                    request=self.request,
+                    kwargs={
+                        'review_request_id': self.review_request.display_id,
+                        'revision': modified_revision,
+                        'filediff_id': modified_filediff_id,
+                    })
 
         return {
             'download_orig_url': download_orig_url,

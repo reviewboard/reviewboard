@@ -1,7 +1,7 @@
 """Extra user detail introspection and representation.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -34,7 +34,7 @@ class UserBadge:
     by extensions.
 
     Version Added:
-        7.1
+        8.0
     """
 
     ######################
@@ -101,7 +101,7 @@ class BaseUserDetailsProvider:
     for specialized rendering and logic.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The unique ID of the user details provider.
@@ -143,7 +143,7 @@ class UserDetailsProviderRegistry(OrderedRegistry[BaseUserDetailsProvider]):
     information on users.
 
     Version Added:
-        7.1
+        8.0
     """
 
     lookup_attrs = ('user_details_provider_id',)
@@ -169,5 +169,5 @@ class UserDetailsProviderRegistry(OrderedRegistry[BaseUserDetailsProvider]):
 #: The registry managing user details providers.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 user_details_provider_registry = UserDetailsProviderRegistry()

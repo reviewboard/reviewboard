@@ -52,7 +52,7 @@ if TYPE_CHECKING:
 #: Type variable for the hosting service.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 _THostingService = TypeVar('_THostingService', bound=BaseHostingService)
 
 
@@ -254,7 +254,7 @@ class HttpTestPath(TypedDict):
     """Data for a test path provided to the hosting service test case.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The headers to return with the response.

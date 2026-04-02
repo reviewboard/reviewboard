@@ -1,7 +1,7 @@
 """Extension hook for registering a license provider.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ class LicenseProviderHook(BaseRegistryHook[BaseLicenseProvider],
     """Extension hook for registering a license provider.
 
     Version Added:
-        7.1
+        8.0
     """
 
     registry = license_provider_registry

@@ -1,7 +1,7 @@
 """Hooks for working with user-related information.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ class UserDetailsProviderHook(BaseRegistryHook[BaseUserDetailsProvider],
     See :ref:`user-details-provider-hook` for instructions.
 
     Version Added:
-        7.1
+        8.0
     """
 
     registry = user_details_provider_registry

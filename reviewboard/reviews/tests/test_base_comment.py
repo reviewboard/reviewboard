@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.reviews.models.BaseComment.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ class BaseCommentTests(kgb.SpyAgency, TestCase):
     """Unit tests for reviewboard.reviews.models.BaseComment.
 
     Version Added:
-        7.1
+        8.0
     """
 
     fixtures = ['test_users']

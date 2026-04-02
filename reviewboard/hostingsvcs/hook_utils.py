@@ -53,7 +53,7 @@ def get_repository_for_hook(
     """Return a Repository for the given hook parameters.
 
     Version Changed:
-        7.1:
+        8.0:
         Made arguments keyword-only.
 
     Args:
@@ -110,7 +110,7 @@ def get_review_request_id(
     If a matching review request cannot be found, we return None.
 
     Version Changed:
-        7.1:
+        8.0:
         Made arguments keyword-only.
 
     Args:
@@ -170,7 +170,7 @@ def close_review_request(
     """Close the specified review request as submitted.
 
     Version Changed:
-        7.1:
+        8.0:
         Made arguments keyword-only.
 
     Args:
@@ -214,7 +214,7 @@ def close_all_review_requests(
     not associated with any review requests have the key None.
 
     Version Changed:
-        7.1:
+        8.0:
         Made arguments keyword-only.
 
     Args:

@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.actions.base.BaseAction.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -28,7 +28,7 @@ class BaseActionTests(TestCase):
     """Unit tests for BaseAction.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_init(self) -> None:

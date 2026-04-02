@@ -1,7 +1,7 @@
 """License action definitions.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 #: This is a mapping of string keys to JSON values.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 LicenseActionData: TypeAlias = Mapping[str, JSONValue]
 
 
@@ -35,7 +35,7 @@ class LicenseAction(TypedDict):
     These will be displayed in the UI when displaying license information.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The provider-unique ID of the action.
@@ -67,7 +67,7 @@ class LicenseActionHandler(Protocol):
     methods on a license provider.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def __call__(

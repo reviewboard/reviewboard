@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.actions.base.ActionAttachmentPoint.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -107,7 +107,7 @@ class ActionAttachmentPointTests(TestCase):
     """Unit tests for ActionAttachmentPoint.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: The actions registry used to test against.

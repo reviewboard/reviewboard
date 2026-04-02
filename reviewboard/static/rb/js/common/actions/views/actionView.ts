@@ -7,14 +7,14 @@ import { type Action } from '../models/actionModel';
  * Options passed to an ActionView.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface ActionViewOptions {
     /**
      * The action attachment point for this view.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     attachmentPointID: string;
 }
@@ -44,7 +44,7 @@ export class ActionView<
      * The action attachment point for this view.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     attachmentPointID: string;
 
@@ -56,7 +56,7 @@ export class ActionView<
      * if locally visible and if the action has ``visible=true``.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     #locallyVisible = true;
 
@@ -77,7 +77,7 @@ export class ActionView<
      * The element used to manage the action's visibility.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     #visibilityEl: HTMLElement = null;
 
@@ -89,7 +89,7 @@ export class ActionView<
      * ``visible`` attribute is ``true``.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Returns:
      *     ActionView:
@@ -110,7 +110,7 @@ export class ActionView<
      * action's ``visible`` attribute.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Returns:
      *     ActionView:
@@ -130,7 +130,7 @@ export class ActionView<
      * This can be overridden to perform different logic.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Returns:
      *     Promise<void>:
@@ -144,7 +144,7 @@ export class ActionView<
      * Handle the initial render of the view.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     protected onInitialRender() {
         this._onVisibleChanged();
@@ -157,7 +157,7 @@ export class ActionView<
      * visibility state, handling both appearance and accessibility.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     private _onVisibleChanged() {
         const visibilityEl = this.#getVisibilityEl();
@@ -187,7 +187,7 @@ export class ActionView<
      * The result is cached for future use.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Returns:
      *     HTMLElement:

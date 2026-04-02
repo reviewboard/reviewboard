@@ -575,7 +575,7 @@ export class ReviewablePageView<
      * and reloads the page.
      *
      * Version Changed:
-     *     7.1:
+     *     8.0:
      *     This function is now asynchronous, returning a Promise.
      *
      * Args:
@@ -640,7 +640,7 @@ export class ReviewablePageView<
      * After posting, this will navigate to the review request page.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Returns:
      *     Promise<void>:

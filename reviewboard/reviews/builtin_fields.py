@@ -52,7 +52,7 @@ logger = logging.getLogger(__name__)
 #: A generic type for a model passed to a review request field.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 TModel = TypeVar('TModel', bound=models.Model)
 
 

@@ -1,7 +1,7 @@
 """Licensing-related errors.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ class LicenseActionError(Exception):
     """An error result from an action.
 
     Version Added:
-        7.1
+        8.0
     """
 
     ######################

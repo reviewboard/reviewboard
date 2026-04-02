@@ -5,7 +5,7 @@ swagger UI. The data definitions here do not comprehensively include all
 fields, only those that we need for our use.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ class APIError(BaseModel):
     """API error for Forgejo.
 
     Version Added:
-        7.1
+        8.0
     """
 
     message: str
@@ -30,7 +30,7 @@ class AccessToken(BaseModel):
     """API response for a Forgejo access token.
 
     Version Added:
-        7.1
+        8.0
     """
 
     id: int
@@ -44,7 +44,7 @@ class GitBlobResponse(BaseModel):
     """API response for a Git blob.
 
     Version Added:
-        7.1
+        8.0
     """
 
     content: str
@@ -58,7 +58,7 @@ class CommitMeta(BaseModel):
     """Commit metadata.
 
     Version Added:
-        7.1
+        8.0
     """
 
     created: str
@@ -70,7 +70,7 @@ class CommitUser(BaseModel):
     """A user for a commit.
 
     Version Added:
-        7.1
+        8.0
     """
 
     date: str
@@ -82,7 +82,7 @@ class Commit(BaseModel):
     """API response for a Git commit.
 
     Version Added:
-        7.1
+        8.0
     """
 
     commit: RepoCommit
@@ -95,7 +95,7 @@ class GitEntry(BaseModel):
     """An entry in a Git tree.
 
     Version Added:
-        7.1
+        8.0
     """
 
     path: str
@@ -108,7 +108,7 @@ class GitObject(BaseModel):
     """API response for a Git object.
 
     Version Added:
-        7.1
+        8.0
     """
 
     sha: str
@@ -120,7 +120,7 @@ class GitReference(BaseModel):
     """API data for a Git reference.
 
     Version Added:
-        7.1
+        8.0
     """
 
     object: GitObject
@@ -132,7 +132,7 @@ class GitTreeResponse(BaseModel):
     """API data for a Git tree.
 
     Version Added:
-        7.1
+        8.0
     """
 
     page: int
@@ -146,7 +146,7 @@ class Issue(BaseModel):
     """API data for an issue.
 
     Version Added:
-        7.1
+        8.0
     """
 
     body: str
@@ -159,7 +159,7 @@ class Repository(BaseModel):
     """API data for a repository.
 
     Version Added:
-        7.1
+        8.0
     """
 
     clone_url: str
@@ -174,7 +174,7 @@ class RepoCommit(BaseModel):
     """Data about a commit.
 
     Version Added:
-        7.1
+        8.0
     """
 
     author: CommitUser

@@ -181,7 +181,7 @@ class ExtraDataItemMixin(object):
     #: PUT requests.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     default_extra_data: ClassVar[Mapping[str, JSONValue] | None] = None
 
     @webapi_test_template
@@ -798,7 +798,7 @@ class ExtraDataItemMixin(object):
         """Check that the default extra data on the object is correct.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             obj (object):

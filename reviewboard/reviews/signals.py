@@ -212,7 +212,7 @@ reply_published = Signal()
 #: Emitted when a comment's issue status has been updated.
 #:
 #: Version Added:
-#:     7.1:
+#:     8.0:
 #:
 #: Args:
 #:     comment (reviewboard.reviews.models.BaseComment):

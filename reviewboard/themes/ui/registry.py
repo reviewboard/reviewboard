@@ -21,7 +21,7 @@ class UIThemeRegistry(OrderedRegistry[BaseUITheme]):
     determining a default theme, and registering new themes.
 
     Version Changed:
-        7.1:
+        8.0:
         The ``system`` theme is now the default when using the ``default``
         theme.
 

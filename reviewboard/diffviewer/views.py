@@ -693,7 +693,7 @@ class DiffFragmentView(View):
         """Return an ETag identifying this render.
 
         Version Changed:
-            7.1.0:
+            8.0:
             * Deprecated non-keyword arguments.
             * Added the ``request`` parameter.
 
@@ -720,7 +720,7 @@ class DiffFragmentView(View):
                 The request from the client.
 
                 Version Added:
-                    7.1.0
+                    8.0
 
             **kwargs (dict):
                 Additional keyword arguments passed to the function.
@@ -888,7 +888,7 @@ class DiffFragmentView(View):
         Exception.
 
         Version Changed:
-            7.1.0:
+            8.0:
             * Deprecated non-keyword arguments.
             * Added the ``request`` parameter.
 
@@ -906,7 +906,7 @@ class DiffFragmentView(View):
                 The request from the client.
 
                 Version Added:
-                    7.1.0
+                    8.0
 
             **kwargs (dict):
                 Keyword arguments, for future expansion.

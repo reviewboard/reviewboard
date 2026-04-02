@@ -126,7 +126,7 @@ class AccountSettingsForm(AccountPageForm):
     #: processing may not be included.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     _PROFILE_ATTRS_MAP: Mapping[str, str] = {
         'default_use_rich_text': 'default_use_rich_text',
         'open_an_issue': 'open_an_issue',

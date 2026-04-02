@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.actions.renderers.DefaultActionGroupRenderer.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ class DefaultActionGroupRendererTests(TestCase):
     """Unit tests for DefaultActionGroupRenderer.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_render(self) -> None:

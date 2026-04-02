@@ -2,7 +2,7 @@
  * Extension hook for review request actions.
  *
  * Version Changed:
- *     7.1:
+ *     8.0:
  *     This is now an ESM module supporting TypeScript.
  */
 
@@ -23,7 +23,7 @@ import {
  * Attributes for ReviewRequestActionHook.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface ReviewRequestActionHookAttrs extends ExtensionHookAttrs {
     /**
@@ -43,7 +43,7 @@ export interface ReviewRequestActionHookAttrs extends ExtensionHookAttrs {
  * A hook for providing callbacks for review request actions.
  *
  * Version Changed:
- *     7.1:
+ *     8.0:
  *     This is now a modern ES6-style class and supports typing using
  *     TypeScript.
  *

@@ -292,7 +292,7 @@ class ReviewRequestConditionsField(ConditionsField):
     those registered by extensions.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def __init__(

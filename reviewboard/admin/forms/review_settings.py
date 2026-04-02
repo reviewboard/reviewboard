@@ -1,7 +1,7 @@
 """Administration form for review workflow.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -15,7 +15,7 @@ class ReviewSettingsForm(SiteSettingsForm):
     """Review workflow settings for Review Board.
 
     Version Added:
-        7.1
+        8.0
     """
 
     css_bundle_names = ['djblets-forms']

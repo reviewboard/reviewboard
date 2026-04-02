@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.actions.renderers.BaseActionRenderer.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ class BaseActionRendererTests(TestCase):
     """Unit tests for BaseActionRenderer.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_get_js_view_data(self) -> None:

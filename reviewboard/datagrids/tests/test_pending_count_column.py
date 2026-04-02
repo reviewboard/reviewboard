@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.datagrids.columns.PendingCountColumn.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ class PendingCountColumnTests(BaseColumnTestCase):
     """Unit tests for reviewboard.datagrids.columns.PendingCountColumn.
 
     Version Added:
-        7.1
+        8.0
     """
 
     column = PendingCountColumn()

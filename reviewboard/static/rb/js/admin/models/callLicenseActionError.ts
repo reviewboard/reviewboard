@@ -2,7 +2,7 @@
  * Error for license action calls.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 
 
@@ -10,7 +10,7 @@
  * Options for CallLicenseActionError.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface CallLicenseActionErrorOptions {
     /** The action that was called. */
@@ -35,7 +35,7 @@ export interface CallLicenseActionErrorOptions {
  * API results.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export class CallLicenseActionError extends Error {
     /**********************

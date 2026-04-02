@@ -2,7 +2,7 @@
  * Action view for a button.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 
 import { spina } from '@beanbag/spina';
@@ -18,7 +18,7 @@ import { ActionView } from './actionView';
  * using the button's busy state to indicate the action is being performed.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 @spina
 export class ButtonActionView<

@@ -2,7 +2,7 @@
  * A collection of licenses.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 import {
     BaseCollection,
@@ -19,7 +19,7 @@ import {
  * Options for updating licenses.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 interface UpdateLicensesOptions {
     /**
@@ -37,7 +37,7 @@ interface UpdateLicensesOptions {
  * checks.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 @spina
 export class LicenseCollection extends BaseCollection<License> {

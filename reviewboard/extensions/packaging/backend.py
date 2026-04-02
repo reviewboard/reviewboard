@@ -1,7 +1,7 @@
 """Build backend for Review Board extension packages.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations

@@ -48,7 +48,7 @@ class _PreparedDiffInfo(TypedDict):
     only for internal typing.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: All parsed files in the diff.
@@ -87,7 +87,7 @@ def create_filediffs(
     """Create FileDiffs from the given data.
 
     Version Changed:
-        7.1:
+        8.0:
         All arguments are now keyword-only arguments. Passing as positional
         arguments is deprecated and will be removed in Review Board 9.
 
@@ -352,7 +352,7 @@ def _prepare_diff_info(
     """Extract information and files from a diff.
 
     Version Changed:
-        7.1:
+        8.0:
         All arguments are now keyword-only arguments.
 
     Args:
@@ -465,7 +465,7 @@ def _parse_diff(
     """Parse a diff using the SCMTool's diff parser.
 
     Version Changed:
-        7.1:
+        8.0:
         All arguments are now keyword-only arguments.
 
     Args:
@@ -506,7 +506,7 @@ def _process_files(
     """Collect metadata about files in the parser.
 
     Version Changed:
-        7.1:
+        8.0:
         All arguments are now keyword-only arguments.
 
     Args:
@@ -646,7 +646,7 @@ def _normalize_filename(
     """Normalize a filename to be relative to the repository root.
 
     Version Changed:
-        7.1:
+        8.0:
         All arguments are now keyword-only arguments.
 
     Args:

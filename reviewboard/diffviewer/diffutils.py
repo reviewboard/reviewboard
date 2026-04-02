@@ -1509,7 +1509,15 @@ def get_diff_files(
                     newfile and
                     base_filediff is None and
                     interfilediff is None and
-                    not filediff.parent_diff
+                    # "new file" diffs with parent diffs are allowed in the
+                    # case where we have the parent_source_revision. Prior to
+                    # 3.0.19, source_revision was overloaded between the diff
+                    # and the parent, making this unreliable. If we have a new
+                    # file with a parent diff, it means the parent diff deleted
+                    # the file and the diff added a new one, in which case we
+                    # do actually want to show it as added.
+                    (not filediff.parent_diff or
+                     'parent_source_revision' in orig_extra_data)
                 ),
                 'is_symlink': filediff.extra_data.get('is_symlink', False),
                 'modified_filename': modified_filename or orig_filename,
@@ -2766,7 +2774,7 @@ def get_sha256(
     """Return a SHA256 hash for the provided content.
 
     Version Added:
-        7.1
+        8.0
 
     Args:
         content (bytes or django.core.files.File):

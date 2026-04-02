@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.actions.renderers.SidebarItemActionRenderer.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -42,7 +42,7 @@ class SidebarItemActionRendererTests(TestCase):
     """Unit tests for SidebarItemActionRenderer.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_render(self) -> None:

@@ -58,7 +58,7 @@ class AttachmentPoint:
     #: Administration navigation.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     ADMIN_NAV = 'admin-nav'
 
     #: Attachment for actions in the page header.
@@ -76,7 +76,7 @@ class AttachmentPoint:
     #: Attachment for actions in the quick access area.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     QUICK_ACCESS = 'quick-access'
 
 
@@ -103,7 +103,7 @@ class ActionAttachmentPoint:
     <reviewboard.actions.templatetags.actions.actions_html>` template tag.
 
     Version Added:
-        7.1
+        8.0
     """
 
     ########################################
@@ -513,7 +513,7 @@ class ActionPlacement:
     parent action within the attachment point and a default renderer to use.
 
     Version Added:
-        7.1
+        8.0
     """
 
     ######################
@@ -617,7 +617,7 @@ class BaseAction:
     """Base class for actions.
 
     Version Changed:
-        7.1:
+        8.0:
         * A single action now can be placed in multiple attachment points
           via :py:attr:`placements`.
 
@@ -655,7 +655,7 @@ class BaseAction:
     #: The attachment point for the action.
     #:
     #: Deprecated:
-    #:     7.1:
+    #:     8.0:
     #:     This has been replaced by :py:attr:`placements`. This option
     #:     will be removed in Review Board 9.
     attachment: (str | None) = None
@@ -668,7 +668,7 @@ class BaseAction:
     #: Default renderers can always be overridden when rendering the action.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     default_renderer_cls: (type[BaseActionRenderer] | None) = None
 
     #: A class name to use for an icon.
@@ -692,7 +692,7 @@ class BaseAction:
     #: The class to instantiate for the JavaScript view.
     #:
     #: Deprecated:
-    #:     7.1:
+    #:     8.0:
     #:     This should be set on the action's renderer instead.
     js_view_class: (str | None) = None
 
@@ -705,7 +705,7 @@ class BaseAction:
     #: The IDs of any parent actions, if needed.
     #:
     #: Deprecated:
-    #:     7.1:
+    #:     8.0:
     #:     This should be set in :py:attr:`placements` instead. This option
     #:     will be removed in Review Board 9.
     parent_id: (str | None) = None
@@ -717,13 +717,13 @@ class BaseAction:
     #: with options controlling the rendering.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     placements: (Sequence[ActionPlacement] | None) = None
 
     #: The name of the template to use when rendering.
     #:
     #: Deprecated:
-    #:     7.1:
+    #:     8.0:
     #:     This should be set on the action's renderer instead. This option
     #:     will be removed in Review Board 9.
     template_name: (str | None) = None
@@ -751,7 +751,7 @@ class BaseAction:
     #: This is always optional.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     verbose_label: (StrOrPromise | None) = None
 
     #: Whether this action is visible.
@@ -768,7 +768,7 @@ class BaseAction:
     #: guarantees.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     _is_action_group: ClassVar[bool] = False
 
     ######################
@@ -778,13 +778,13 @@ class BaseAction:
     #: The parent registry managing this action.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     parent_registry: ActionsRegistry | None
 
     #: A cache of attachment point IDs to placement information.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     _placement_cache: dict[str, ActionPlacement] | None
 
     def __init__(self) -> None:
@@ -947,7 +947,7 @@ class BaseAction:
         """Return the Placement for the action matching the attachment point.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             attachment_point_id (str):
@@ -993,7 +993,7 @@ class BaseAction:
         is found.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             placement (ActionPlacement):
@@ -1029,7 +1029,7 @@ class BaseAction:
         should explicitly return ``True``.
 
         Deprecated:
-            7.1:
+            8.0:
             This is scheduled for removal in Review Board 9. This was only
             ever used for menu items. Custom menu items should instead set
             the ``data-custom-rendered="true"`` attribute on the custom
@@ -1064,7 +1064,7 @@ class BaseAction:
         that is not applicable to a page or is hidden by a hook.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             context (django.template.Context):
@@ -1128,7 +1128,7 @@ class BaseAction:
         """Return the ID used for the DOM element for this action.
 
         Deprecated:
-            7.1:
+            8.0:
             This is scheduled for removal in Review Board 9. This has been
             replaced by :py:attr:`ActionPlacement.dom_element_id`.
 
@@ -1195,7 +1195,7 @@ class BaseAction:
         """Return data to be passed to the JavaScript view.
 
         Deprecated:
-            7.1:
+            8.0:
             Actions implementing this should instead move to custom
             renderers.
 
@@ -1237,7 +1237,7 @@ class BaseAction:
          benefit from a more descriptive label. It's always optional.
 
          Version Added:
-             7.1
+             8.0
 
         Args:
             context (django.template.Context):
@@ -1332,7 +1332,7 @@ class BaseAction:
         """Render the action.
 
         Version Changed:
-            7.1:
+            8.0:
             Added the ``extra_js_view_data``, ``fallback_renderer``,
             ``placement``, and ``renderer`` arguments.
 
@@ -1351,7 +1351,7 @@ class BaseAction:
                 This argument will be required in Review Boad 9.
 
                 Version Added:
-                    7.1
+                    8.0
 
             renderer (type, optional):
                 The renderer used to render this action.
@@ -1360,13 +1360,13 @@ class BaseAction:
                 used.
 
                 Version Added:
-                    7.1
+                    8.0
 
             fallback_renderer (type, optional):
                 The renderer used to render this action if no other is found.
 
                 Version Added:
-                    7.1
+                    8.0
 
         Returns:
             django.utils.safestring.SafeString:
@@ -1432,7 +1432,7 @@ class BaseAction:
         views.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             request (django.http.HttpRequest):
@@ -1479,7 +1479,7 @@ class BaseAction:
         provided renderer or the action's default renderer.
 
         Version Changed:
-            7.1:
+            8.0:
             Added the ``extra_js_view_data``, ``fallback_renderer``,
             ``placement``, and ``renderer`` arguments.
 
@@ -1495,7 +1495,7 @@ class BaseAction:
                 constructor.
 
                 Version Added:
-                    7.1
+                    8.0
 
             placement (ActionPlacement, optional):
                 The placement the action is being rendered into.
@@ -1505,7 +1505,7 @@ class BaseAction:
                 This argument will be required in Review Boad 9.
 
                 Version Added:
-                    7.1
+                    8.0
 
             renderer (type, optional):
                 The renderer used to render this action.
@@ -1514,13 +1514,13 @@ class BaseAction:
                 used.
 
                 Version Added:
-                    7.1
+                    8.0
 
             fallback_renderer (type, optional):
                 The renderer used to render this action if no other is found.
 
                 Version Added:
-                    7.1
+                    8.0
 
         Returns:
             django.utils.safestring.SafeString:
@@ -1582,7 +1582,7 @@ class BaseGroupAction(BaseAction):
     presentational styles.
 
     Version Added:
-        7.1
+        8.0
     """
 
     _is_action_group = True
@@ -1680,8 +1680,8 @@ class BaseMenuAction(BaseGroupAction):
         should explicitly return ``True``.
 
         Deprecated:
-            7.1:
-            This is scheduled for removal in Review Board 9. This was only
+            8.0:
+            This is scheduled for removal in Review Board 10. This was only
             ever used for menu items. Custom menu items should instead set
             the ``data-custom-rendered="true"`` attribute on the custom
             element.

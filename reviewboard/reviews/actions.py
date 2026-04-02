@@ -294,7 +294,7 @@ class ReviewMenuActionRenderer(DetailedMenuActionGroupRenderer):
     managing the menu.
 
     Version Added:
-        7.1
+        8.0
     """
 
     js_view_class = 'RB.ReviewMenuActionView'
@@ -479,7 +479,7 @@ class AddGeneralCommentAction(BaseAction):
         """Return whether this action should render.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             context (django.template.Context):
@@ -531,7 +531,7 @@ class ShipItAction(BaseAction):
         """Return whether this action should render.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             context (django.template.Context):
@@ -560,7 +560,7 @@ class LegacyAddGeneralCommentAction(BaseAction):
     """The action for adding a general comment.
 
     Deprecated:
-        7.1:
+        8.0:
         This will be removed in Review Board 9.
 
     Version Added:
@@ -607,7 +607,7 @@ class LegacyEditReviewAction(BaseAction):
     by the new action in the Review menu in the unified banner.
 
     Deprecated:
-        7.1:
+        8.0:
         This will be removed in Review Board 9.
 
     Version Added:
@@ -653,7 +653,7 @@ class LegacyShipItAction(BaseAction):
     by the new action in the Review menu in the unified banner.
 
     Deprecated:
-        7.1:
+        8.0:
         This will be removed in Review Board 9.
 
     Version Added:
@@ -864,7 +864,7 @@ class StarActionRenderer(BaseActionRenderer):
     which can be pressed to star or unstar the review request.
 
     Version Added:
-        7.1
+        8.0
     """
 
     template_name = 'reviews/star_action.html'
@@ -923,7 +923,7 @@ class ArchiveMenuActionRenderer(MenuActionGroupRenderer):
     menu.
 
     Version Added:
-        7.1
+        8.0
     """
 
     js_view_class = 'RB.ArchiveMenuActionView'

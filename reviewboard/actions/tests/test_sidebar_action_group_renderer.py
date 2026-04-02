@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.actions.renderers.SidebarActionGroupRenderer.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -81,7 +81,7 @@ class SidebarActionGroupRendererTests(TestCase):
     """Unit tests for SidebarActionGroupRenderer.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_render(self) -> None:

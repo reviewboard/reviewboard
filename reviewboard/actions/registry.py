@@ -34,7 +34,7 @@ class ActionAttachmentPointsRegistry(Registry[ActionAttachmentPoint]):
     """A registry for action attachment points.
 
     Version Added:
-        7.1
+        8.0
     """
 
     lookup_attrs = ['attachment_point_id']
@@ -112,7 +112,7 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
     #: Action lookup by attachment point.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     _by_attachment_point: defaultdict[
         str,
         dict[
@@ -128,7 +128,7 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
     #: Values are dictionaries are in the form of ``{action_id: action}``.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     _deferred_placements: defaultdict[
         tuple[str, str],
         dict[str, BaseAction]
@@ -385,7 +385,7 @@ class ActionsRegistry(OrderedRegistry[BaseAction]):
         """Return the action with the given ID.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             action_id (str):

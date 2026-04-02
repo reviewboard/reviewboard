@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.licensing.views.LicensesView.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ class LicenseViewTests(kgb.SpyAgency, TestCase):
     """Unit tests for LicenseView.
 
     Version Added:
-        7.1
+        8.0
     """
 
     fixtures = ['test_users']

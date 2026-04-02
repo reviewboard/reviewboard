@@ -312,7 +312,7 @@ class Gerrit(BaseHostingService):
         installed and of a compatible version.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:
@@ -416,7 +416,7 @@ class Gerrit(BaseHostingService):
         """Authorize against the Gerrit server.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:

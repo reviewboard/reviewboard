@@ -98,7 +98,7 @@ export class PageView<
      * All actions available to the page.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     actions: Collection<Action> = null;
 
@@ -347,7 +347,7 @@ export class PageView<
      * All actions must be added to the page before they can be used.
      *
      * Version Added:
-     *     7.1:
+     *     8.0:
      *     Previously only action views were registered. Now, action models
      *     must be registered instead.
      *
@@ -393,7 +393,7 @@ export class PageView<
      * Return the action for the given action ID.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Args:
      *     actionID (string):
@@ -413,7 +413,7 @@ export class PageView<
      * Return the action view for the given action ID.
      *
      * Version Changed:
-     *     7.1:
+     *     8.0:
      *     Added ``attachmentPointID``, which is now required.
      *
      * Args:
@@ -424,7 +424,7 @@ export class PageView<
      *         The ID of the attachment point containing the action view.
      *
      *         Version Added:
-     *             7.1
+     *             8.0
      *
      * Returns:
      *     RB.ActionView:
@@ -451,7 +451,7 @@ export class PageView<
      * Return all action views that are registered.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      *
      * Args:
      *     attachmentPointID (string, optional):

@@ -210,7 +210,7 @@ class SerializedReviewsDiffFile(TypedDict):
     #: :py:class:`~reviewboard.reviews.ui.base.ReviewUI`.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     css_media: NotRequired[set[str]]
 
     #: Whether the file was deleted in the change.
@@ -240,7 +240,7 @@ class SerializedReviewsDiffFile(TypedDict):
     #: :py:class:`~reviewboard.reviews.ui.base.ReviewUI`.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     js_media: NotRequired[set[str]]
 
     #: Information about the FileDiff.

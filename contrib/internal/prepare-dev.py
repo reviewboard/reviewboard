@@ -241,7 +241,7 @@ def setup_local_packages() -> None:
     for the editable install for Review Board.
 
     Version Added:
-        7.1
+        8.0
     """
     packages: dict[str, str] = {}
 
@@ -283,7 +283,7 @@ def install_dependencies(
     """Install Review Board and all dependencies in editable mode.
 
     Version Changed:
-        7.1:
+        8.0:
         This now uses :command:`pip install -e`, and supports multiple
         Python versions using virtualenv-multiver's :command:`pydo`.
 

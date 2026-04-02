@@ -36,7 +36,7 @@ def actions_html(
     """Render the actions HTML for the given attachment point.
 
     Version Changed:
-        7.1:
+        8.0:
         This now accepts an
         :py:class:`reviewboard.actions.base.ActionAttachmentPoint` instance
         for the attachment point.
@@ -52,7 +52,7 @@ def actions_html(
             The instance or registered ID of an attachment point.
 
             Version Changed:
-                7.1:
+                8.0:
                 This now accepts an
                 :py:class:`reviewboard.actions.base.ActionAttachmentPoint`
                 instance.

@@ -956,7 +956,7 @@ class Bitbucket(BaseHostingService):
         repository type, and return cleanly if it was found.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:
@@ -1029,7 +1029,7 @@ class Bitbucket(BaseHostingService):
         If successful, the password is stored in an encrypted form.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:

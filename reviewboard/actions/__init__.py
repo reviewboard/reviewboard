@@ -33,7 +33,7 @@ actions_registry: ActionsRegistry = lazy_import_registry(
 #: The action attachment points registry.
 #:
 #: Version Added:
-#:     7.1
+#:     8.0
 action_attachment_points_registry: ActionAttachmentPointsRegistry = \
     lazy_import_registry('reviewboard.actions.registry',
                          'ActionAttachmentPointsRegistry')  # type: ignore

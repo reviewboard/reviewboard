@@ -1,7 +1,7 @@
 """Views for managing licenses.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -88,7 +88,7 @@ class LicensesView(ContextMixin, View):
             The new license data.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def get(

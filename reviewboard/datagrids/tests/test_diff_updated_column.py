@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.datagrids.columns.DiffUpdatedColumn.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -18,7 +18,7 @@ class DiffUpdatedColumnTests(BaseColumnTestCase):
     """Unit tests for reviewboard.datagrids.columns.DiffUpdatedColumn.
 
     Version Added:
-        7.1
+        8.0
     """
 
     column = DiffUpdatedColumn()

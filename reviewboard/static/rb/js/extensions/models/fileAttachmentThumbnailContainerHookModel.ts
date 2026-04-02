@@ -2,7 +2,7 @@
  * Extension hook for extending file attachment thumbnails.
  *
  * Version Changed:
- *     7.1:
+ *     8.0:
  *     This is now an ESM module supporting TypeScript.
  */
 
@@ -22,7 +22,7 @@ import {
  * Attributes for FileAttachmentThumbnailContainerHook.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface FileAttachmentThumbnailContainerHookAttrs
 extends ExtensionHookAttrs {
@@ -45,7 +45,7 @@ extends ExtensionHookAttrs {
  * the thumbnailView and fileAttachment options passed to the view).
  *
  * Version Changed:
- *     7.1:
+ *     8.0:
  *     This is now a modern ES6-style class and supports typing using
  *     TypeScript.
  *

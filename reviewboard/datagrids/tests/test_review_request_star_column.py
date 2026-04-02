@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.datagrids.columns.ReviewRequestStarColumn.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -17,7 +17,7 @@ class ReviewRequestStarColumnTests(BaseColumnTestCase):
     """Unit tests for reviewboard.datagrids.columns.ReviewRequestStarColumn.
 
     Version Added:
-        7.1
+        8.0
     """
 
     column = ReviewRequestStarColumn()

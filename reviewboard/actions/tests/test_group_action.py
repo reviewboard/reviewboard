@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.actions.base.BaseGroupAction.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ class BaseGroupActionTests(TestCase):
     """Unit tests for BaseGroupAction.
 
     Version Added:
-        7.1
+        8.0
     """
 
     ######################

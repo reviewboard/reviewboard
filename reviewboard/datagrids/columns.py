@@ -117,7 +117,7 @@ class BaseStarColumn(Column):
         for lookup during rendering.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -345,7 +345,7 @@ class FullNameColumn(Column):
         If the profile is private, the full name will not be provided.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -452,7 +452,7 @@ class BugsColumn(Column):
         review request.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -619,7 +619,7 @@ class DiffUpdatedColumn(DateTimeColumn):
         """Return the diff updated timestamp.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -677,7 +677,7 @@ class DiffUpdatedSinceColumn(DateTimeSinceColumn):
         """Return the diff updated timestamp.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -758,7 +758,7 @@ class GroupMemberCountColumn(Column):
         """Return the raw value for the group membership count.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -861,7 +861,7 @@ class GroupsColumn(Column):
         """Return the list of review groups.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -888,7 +888,7 @@ class MyCommentsColumn(Column):
     #: A mapping of computed statuses to icon CSS classes.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     _ICON_CLASSES: Final[Mapping[str, str]] = {
         'has-draft-review': 'rb-icon-datagrid-comment-draft',
         'has-review': 'rb-icon-datagrid-comment',
@@ -898,7 +898,7 @@ class MyCommentsColumn(Column):
     #: A mapping of computed statuses to image alt text.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     _IMAGE_ALTS: Final[Mapping[str, StrPromise]] = {
         'has-draft-review': _('Comments drafted'),
         'has-review': _('Comments published'),
@@ -996,7 +996,7 @@ class MyCommentsColumn(Column):
         """Return the raw value for review status.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -1081,7 +1081,7 @@ class NewUpdatesColumn(Column):
         """Return the raw value for the new review count.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -1168,7 +1168,7 @@ class PendingCountColumn(Column):
         """Return the raw value for the pending review request count.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -1245,7 +1245,7 @@ class PeopleColumn(Column):
         """Return the list of reviewers.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -1386,7 +1386,7 @@ class ReviewCountColumn(Column):
         """Return the count value for the review request.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -1625,7 +1625,7 @@ class ShipItColumn(Column):
         """Return the summary and labels for a review request.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -1840,7 +1840,7 @@ class SummaryColumn(Column):
         """Return the summary and labels for a review request.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -1951,7 +1951,7 @@ class ReviewSummaryColumn(Column):
         This will fetch the summary from the associated review request.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -2052,7 +2052,7 @@ class ToMeColumn(Column):
         """Return the "to me" state as a boolean.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):
@@ -2130,7 +2130,7 @@ class DiffSizeColumn(Column):
         This will return the line count information for the diffset.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             state (djblets.datagrids.grids.StatefulColumn):

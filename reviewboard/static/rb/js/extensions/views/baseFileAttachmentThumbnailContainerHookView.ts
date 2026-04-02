@@ -2,7 +2,7 @@
  * Base support for custom File Attachment Thumbnail Container hook views.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 
 import * as Backbone from 'backbone';
@@ -21,7 +21,7 @@ import { type Extension } from '../models/extensionModel';
  * Options for BaseFileAttachmentThumbnailContainerHookView.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface FileAttachmentThumbnailContainerHookViewOptions
 extends Backbone.ViewOptions {
@@ -44,7 +44,7 @@ extends Backbone.ViewOptions {
  * extension and can then render into the container or hook into behavior.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 @spina
 export class BaseFileAttachmentThumbnailContainerHookView extends BaseView<
@@ -94,7 +94,7 @@ export class BaseFileAttachmentThumbnailContainerHookView extends BaseView<
  * generics.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export type BaseFileAttachmentThumbnailContainerHookViewClass =
     new (options: FileAttachmentThumbnailContainerHookViewOptions) =>

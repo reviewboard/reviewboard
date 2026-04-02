@@ -212,7 +212,7 @@ class ReviewUI(Generic[
     #: any review UIs on the page instead of being overwritten.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     load_static_media_inline: ClassVar[bool] = True
 
     ######################
@@ -233,7 +233,7 @@ class ReviewUI(Generic[
     #: Whether the Review UI is being rendered inline in the current request.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     _inline: bool | None
 
     @property

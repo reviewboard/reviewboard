@@ -1390,7 +1390,7 @@ class BugsFieldTests(FieldsTestCase):
     """Unit tests for BugsField.
 
     Version Added:
-        7.1
+        8.0
     """
 
     field_cls = BugsField
@@ -1417,7 +1417,7 @@ class BugsFieldTests(FieldsTestCase):
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
-        self.assertIsInstance(result, SafeText)
+        self.assertIsInstance(result, SafeString)
         self.assertIn('123', result)
         self.assertIn('789', result)
 
@@ -1445,7 +1445,7 @@ class BugsFieldTests(FieldsTestCase):
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
-        self.assertIsInstance(result, SafeText)
+        self.assertIsInstance(result, SafeString)
         self.assertIn('456', result)
         self.assertNotIn('[', result)
         self.assertNotIn(']', result)
@@ -1471,7 +1471,7 @@ class BugsFieldTests(FieldsTestCase):
         result = field.render_change_entry_html(
             changedesc.fields_changed[field.field_id])
 
-        self.assertIsInstance(result, SafeText)
+        self.assertIsInstance(result, SafeString)
         self.assertIn('456', result)
         self.assertNotIn('[', result)
         self.assertNotIn(']', result)

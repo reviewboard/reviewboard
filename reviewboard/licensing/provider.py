@@ -1,7 +1,7 @@
 """Providers for managing licensing options.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 #: A type variable for license information classes.
 #:
 #: Version Added:
-#:    7.1
+#:    8.0
 _TLicenseInfo = TypeVar('_TLicenseInfo',
                         bound=LicenseInfo,
                         default=LicenseInfo)
@@ -63,7 +63,7 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
     action button.
 
     Version Added:
-        7.1
+        8.0
     """
 
     #: A set of built-in actions common to all license providers.

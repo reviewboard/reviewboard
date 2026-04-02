@@ -164,7 +164,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
         """Initialize the paginator.
 
         Version Changed:
-            7.1:
+            8.0:
             Made arguments keyword-only.
 
         Args:
@@ -414,7 +414,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         Once initialized, the first page will be fetched automatically.
 
         Version Changed:
-            7.1:
+            8.0:
             * Made arguments keyword-only.
             * Explicitly listed out arguments that are passed to the base
               class.

@@ -2,7 +2,7 @@
  * Built-in review request action implementations.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 
 import {
@@ -35,7 +35,7 @@ import { ReviewDialogView } from '../views/reviewDialogView';
  * Base class for archive actions.
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.BaseVisibilityActionView`.
  */
@@ -131,7 +131,7 @@ abstract class BaseVisibilityAction extends Actions.Action {
  * Archive action.
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.ArchiveActionView`.
  */
@@ -169,7 +169,7 @@ export class ArchiveAction extends BaseVisibilityAction {
  * Mute action.
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.MuteActionView`.
  */
@@ -210,7 +210,7 @@ export class MuteAction extends BaseVisibilityAction {
  * Action to create a blank review.
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.CreateReviewActionView`.
  */
@@ -270,7 +270,7 @@ export class CreateReviewAction extends Actions.Action {
  * Action to pop up the Edit Review dialog.
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.EditReviewActionView`.
  */
@@ -327,7 +327,7 @@ export class EditReviewAction extends Actions.Action {
  * Action to add a general comment.
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.AddGeneralCommentActionView`.
  */
@@ -350,7 +350,7 @@ export class AddGeneralCommentAction extends Actions.Action {
  * Action to mark a review request as "Ship It".
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.ShipItActionView`.
  */
@@ -373,7 +373,7 @@ export class ShipItAction extends Actions.Action {
  * Action for the "Add File" command.
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.AddFileActionView`.
  */
@@ -408,7 +408,7 @@ export class AddFileAction extends Actions.Action {
  * Action for the "Update Diff" command.
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.UpdateDiffActionView`.
  */
@@ -475,7 +475,7 @@ export class UpdateDiffAction extends Actions.Action {
  * Action for the "Close > Discarded" command.
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.CloseDiscardedActionView`.
  */
@@ -502,7 +502,7 @@ export class CloseDiscardedAction extends Actions.Action {
  * Action for the "Close > Completed" command.
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.CloseCompletedActionView`.
  */
@@ -529,7 +529,7 @@ export class CloseCompletedAction extends Actions.Action {
  * Action for the "Close > Delete Permanently" command.
  *
  * Version Added:
- *     7.1:
+ *     8.0:
  *     This implements the action logic formerly found in
  *     :js:class:`RB.DeleteActionView`.
  */

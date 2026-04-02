@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.licensing.license.LicenseInfo.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ class LicenseInfoTests(kgb.SpyAgency, TestCase):
     """Unit tests for LicenseInfo.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def setUp(self) -> None:

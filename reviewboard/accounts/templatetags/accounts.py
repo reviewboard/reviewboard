@@ -183,7 +183,7 @@ def user_badges(
     rendering them. No order is guaranteed.
 
     Version Added:
-        7.1
+        8.0
 
     Args:
         context (django.template.context.Context):

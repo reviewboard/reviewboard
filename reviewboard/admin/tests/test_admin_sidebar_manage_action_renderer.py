@@ -1,7 +1,7 @@
 """Unit tests for reviewboard.admin.actions.AdminSidebarManageActionRenderer.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ class BaseAdminSidebarManageItemActionTests(kgb.SpyAgency, TestCase):
     """Unit tests for AdminSidebarManageActionRenderer.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def test_get_extra_context_with_cache(self) -> None:

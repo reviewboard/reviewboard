@@ -403,7 +403,7 @@ export class UnifiedBannerView extends FloatingBannerView<
      * The menu label handle for the Edit Quick Access menu.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     #editQuickAccessMenuLabelView: MenuLabelView;
 
@@ -751,7 +751,7 @@ export class UnifiedBannerView extends FloatingBannerView<
      * Build and populate the Quick Access bar and configuration menu.
      *
      * Version Added:
-     *     7.1
+     *     8.0
      */
     #setupQuickAccess() {
         const parentEl = this.$('.rb-c-unified-banner__edit-quick-access')[0];

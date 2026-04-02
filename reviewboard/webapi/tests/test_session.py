@@ -126,7 +126,7 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Populate objects for a PUT test.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             setup_state (reviewboard.webapi.tests.mixins.
@@ -158,7 +158,7 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Check the results of an HTTP PUT.
 
         Version Added:
-            7.1
+            8.0
 
         Args:
             user (django.contrib.auth.models.User):

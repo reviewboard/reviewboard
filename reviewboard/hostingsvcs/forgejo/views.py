@@ -1,7 +1,7 @@
 """Views for the Forgejo hosting service.
 
 Version Added:
-    7.1
+    8.0
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ class PushWebHookPayload(BaseModel):
     """Data for the push event WebHook payload.
 
     Version Added:
-        7.1
+        8.0
     """
 
     class _Commit(BaseModel):
@@ -50,7 +50,7 @@ class WebHookView(View):
     """WebHook handler for Forgejo.
 
     Version Added:
-        7.1
+        8.0
     """
 
     def post(

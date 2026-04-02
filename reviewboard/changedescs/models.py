@@ -155,7 +155,7 @@ class ChangeDescription(models.Model):
         cause an :py:exc:`AttributeError`.
 
         Version Changed:
-            7.1:
+            8.0:
             Added the ``build_url_func`` argument.
 
         Args:
@@ -178,7 +178,7 @@ class ChangeDescription(models.Model):
                 will be used, if it exists.
 
                 Version Added:
-                    7.1
+                    8.0
         """
         def serialize_changed_obj(item, name_field):
             url: str | None

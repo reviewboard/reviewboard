@@ -65,7 +65,7 @@ class BaseReviewRequestFileAttachmentResource(BaseFileAttachmentResource):
         'sha256_checksum': {
             'type': StringFieldType,
             'description': 'The SHA256 hash of the file.',
-            'added_in': '7.1',
+            'added_in': '8.0',
         },
         'url': {
             'type': StringFieldType,

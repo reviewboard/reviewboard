@@ -2,7 +2,7 @@
  * Base support for custom comment dialog hook views.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 
 import * as Backbone from 'backbone';
@@ -26,7 +26,7 @@ import {
  * Options for BaseCommentDialogHookView.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export interface CommentDialogHookViewOptions extends Backbone.ViewOptions {
     /** The comment dialog being rendered into. */
@@ -49,7 +49,7 @@ export interface CommentDialogHookViewOptions extends Backbone.ViewOptions {
  * hook into behavior.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 @spina
 export class BaseCommentDialogHookView extends BaseView<
@@ -99,7 +99,7 @@ export class BaseCommentDialogHookView extends BaseView<
  * generics.
  *
  * Version Added:
- *     7.1
+ *     8.0
  */
 export type BaseCommentDialogHookViewClass =
     new (options: CommentDialogHookViewOptions) => BaseCommentDialogHookView;

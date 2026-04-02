@@ -41,7 +41,7 @@ class SessionResource(WebAPIResource):
     #: Settings paths that can be modified in a PUT.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     _MUTABLE_PROFILE_SETTING_PATHS: set[tuple[str, ...]] = {
         ('confirm_ship_it',),
         ('quick_access_action_ids',),
@@ -158,7 +158,7 @@ class SessionResource(WebAPIResource):
         This operation is not considered public API.
 
         Version Added:
-            7.1
+            8.0
         """
         settings_json = request.POST.get('settings:json')
 

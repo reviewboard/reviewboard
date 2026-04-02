@@ -1,7 +1,7 @@
 """Packaging support for Review Board extensions.
 
 Version Changed:
-    7.1:
+    8.0:
     This has been split into sub-modules: Consumers should update any older
     imports for this module to instead import from
     :py:mod:`reviewboard.extensions.packaging.setuptools_backend` or
@@ -30,10 +30,10 @@ class RBStaticMediaBuildContext(ClassMovedMixin,
     Review Board extensions.
 
     Deprecated:
-        7.1:
+        8.0:
         This has been moved to :py:class:`reviewboard.extensions.packaging.
         setuptools_backend.RBStaticMediaBuildContext`. The legacy import will
-        be removed in Review Board 9.
+        be removed in Review Board 10.
 
     Version Added:
         7.0
@@ -50,10 +50,10 @@ class RBStaticMediaBuilder(ClassMovedMixin,
     compile against Review Board JavaScript/TypeScript modules.
 
     Deprecated:
-        7.1:
+        8.0:
         This has been moved to :py:class:`reviewboard.extensions.packaging.
         setuptools_backend.RBStaticMediaBuilder`. The legacy import will be
-        removed in Review Board 9.
+        removed in Review Board 10.
 
     Version Added:
         7.0
@@ -70,10 +70,10 @@ class BuildStaticFiles(ClassMovedMixin,
     through LessCSS (if using :file:`.less` files), minified and versioned.
 
     Deprecated:
-        7.1:
+        8.0:
         This has been moved to :py:class:`reviewboard.extensions.packaging.
         setuptools_backend.RBStaticMediaBuilder`. The legacy import will be
-        removed in Review Board 9.
+        removed in Review Board 10.
 
     Version Added:
         7.0
@@ -86,10 +86,10 @@ def setup(**setup_kwargs):
     """Build an extension package.
 
     Deprecated:
-        7.1:
+        8.0:
         This has been moved to :py:class:`reviewboard.extensions.packaging.
         setuptools_backend.setup`. The legacy import will be removed in
-        Review Board 9.
+        Review Board 10.
 
     Args:
         **setup_kwargs (dict):
