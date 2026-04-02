@@ -1283,7 +1283,11 @@ class GitLabTests(GitLabTestCase):
             password=None,
             headers={})
 
-    def _test_check_authorize(self, *args, **kwargs) -> None:
+    def _test_check_authorize(
+        self,
+        *args,
+        **kwargs,
+    ) -> HttpTestContext[GitLab]:
         """Test authorizing a new account.
 
         Args:
