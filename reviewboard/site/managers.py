@@ -4,14 +4,83 @@ Version Added:
     5.0
 """
 
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, TypedDict
 from uuid import uuid4
 
 from django.core.cache import cache
 from django.db.models import Count, Manager, Q
 from djblets.cache.backend import cache_memoize, make_cache_key
+from housekeeping.functions import deprecate_non_keyword_only_args
+
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
+
+if TYPE_CHECKING:
+    from reviewboard.site.models import AnyOrAllLocalSites, LocalSite
 
 
-class LocalSiteManager(Manager):
+class LocalSiteStatsData(TypedDict):
+    """Statistics on Local Sites.
+
+    This includes information on how many Local Sites are in the database,
+    total and broken down by public/private access.
+
+    A state UUID is included that will be regenerated every time this data
+    is updated. This can be used as a component in other cache keys, ETags,
+    or for other unique identifiers in order to help ensure that information
+    built on these results are fresh.
+
+    Version Added:
+        8.0
+    """
+
+    #: The total number of private LocalSites in the database.
+    private_count: int
+
+    #: The total number of public LocalSites in the database.
+    public_count: int
+
+    #: A UUID specific to the current state generation.
+    #:
+    #: This can be used to help with other caching and invalidation.
+    state_uuid: str
+
+    #: The total number of LocalSites in the database.
+    total_count: int
+
+
+class LocalSiteACLStatsData(TypedDict):
+    """Statistics on Local Site access controls.
+
+    This includes information on how many users and administrators are on
+    the Local Site and whether the site is public or private.
+
+    A state UUID is included that will be regenerated every time this data
+    is updated. This can be used as a component in other cache keys, ETags,
+    or for other unique identifiers in order to help ensure that information
+    built on these results are fresh.
+
+    Version Added:
+        8.0
+    """
+
+    #: The number of administrators on the Local Site.
+    admin_count: int
+
+    #: Whether the Local Site is public.
+    public: bool
+
+    #: A UUID specific to the current state generation.
+    #:
+    #: This can be used to help with other caching and invalidation.
+    state_uuid: str
+
+    #: The number of users on the Local Site.
+    user_count: int
+
+
+class LocalSiteManager(Manager['LocalSite']):
     """Manager for LocalSite models.
 
     This provides querying and statistics calculations for Local Sites.
@@ -22,7 +91,7 @@ class LocalSiteManager(Manager):
 
     _STATS_CACHE_KEY = 'stats-localsites'
 
-    def get_stats(self):
+    def get_stats(self) -> LocalSiteStatsData:
         """Return statistics on the LocalSites in the database.
 
         This will include the total number of :py:class:`LocalSites
@@ -37,27 +106,14 @@ class LocalSiteManager(Manager):
             5.0
 
         Returns:
-            dict:
-            The statistics, containing:
-
-            Keys:
-                private_count (int):
-                    The total number of private LocalSites in the database.
-
-                public_count (int):
-                    The total number of public LocalSites in the database.
-
-                state_uuid (str):
-                    A UUID specific to the current state generation. This can
-                    be used to help with other caching and invalidation.
-
-                total_count (int):
-                    The total number of LocalSites in the database.
+            LocalSiteStatsData:
+            The Local Site statistics data.
         """
-        def _gen_stats():
+        def _gen_stats() -> LocalSiteStatsData:
             counts = self.aggregate(
                 total=Count('*'),
-                public_count=Count('public', filter=Q(public=True)))
+                public_count=Count('public', filter=Q(public=True)),
+            )
             count = counts['total']
             public_count = counts['public_count']
             private_count = count - public_count
@@ -71,7 +127,10 @@ class LocalSiteManager(Manager):
 
         return cache_memoize(self._STATS_CACHE_KEY, _gen_stats)
 
-    def get_local_site_acl_stats(self, local_site_or_id):
+    def get_local_site_acl_stats(
+        self,
+        local_site_or_id: LocalSite | int,
+    ) -> LocalSiteACLStatsData | None:
         """Return LocalSite-specific ACL statistics.
 
         This will include the number of users and administrators on the
@@ -94,24 +153,13 @@ class LocalSiteManager(Manager):
                 The Local Site instance or ID.
 
         Returns:
-            dict:
-            The statistics, containing:
-
-            Keys:
-                admin_count (int):
-                    The number of administrators on the site.
-
-                public (bool):
-                    Whether the Local Site is public.
-
-                user_count (int):
-                    The number of users on the site.
-
-                state_uuid (str):
-                    A UUID specific to the current user/admin membership and
-                    public state.
+            LocalSiteACLStatsData:
+            The Local Site ACL statistics data, or ``None`` if the site
+            could not be found.
         """
-        def _gen_stats():
+        def _gen_stats() -> LocalSiteACLStatsData | None:
+            model = self.model
+
             if isinstance(local_site_or_id, int):
                 try:
                     local_site = (
@@ -119,19 +167,19 @@ class LocalSiteManager(Manager):
                         .only('public')
                         .get()
                     )
-                except self.model.DoesNotExist:
+                except model.DoesNotExist:
                     return None
             else:
                 local_site = local_site_or_id
 
             user_count = (
-                self.model.users.through.objects
+                model.users.through.objects
                 .filter(localsite=local_site.pk)
                 .count()
             )
 
             admin_count = (
-                self.model.admins.through.objects
+                model.admins.through.objects
                 .filter(localsite=local_site.pk)
                 .count()
             )
@@ -147,7 +195,7 @@ class LocalSiteManager(Manager):
             self._make_local_site_stats_acl_cache_key(local_site_or_id),
             _gen_stats)
 
-    def has_local_sites(self):
+    def has_local_sites(self) -> bool:
         """Return whether there are LocalSites in the database.
 
         This will optimistically fetch this information from cached
@@ -162,7 +210,7 @@ class LocalSiteManager(Manager):
         """
         return self.get_stats().get('total_count', 0) > 0
 
-    def has_public_local_sites(self):
+    def has_public_local_sites(self) -> bool:
         """Return whether there are public LocalSites in the database.
 
         This will optimistically fetch this information from cached
@@ -178,7 +226,7 @@ class LocalSiteManager(Manager):
         """
         return self.get_stats().get('public_count', 0) > 0
 
-    def has_private_local_sites(self):
+    def has_private_local_sites(self) -> bool:
         """Return whether there are private LocalSites in the database.
 
         This will optimistically fetch this information from cached
@@ -194,7 +242,7 @@ class LocalSiteManager(Manager):
         """
         return self.get_stats().get('private_count', 0) > 0
 
-    def invalidate_stats_cache(self):
+    def invalidate_stats_cache(self) -> None:
         """Invalidate the cache for LocalSite statistics.
 
         Version Added:
@@ -202,8 +250,11 @@ class LocalSiteManager(Manager):
         """
         cache.delete(make_cache_key(self._STATS_CACHE_KEY))
 
-    def invalidate_local_site_acl_stats_cache(self, local_site_or_id):
-        """Invalidate the cache for LocalSit-specific ACL statistics.
+    def invalidate_local_site_acl_stats_cache(
+        self,
+        local_site_or_id: LocalSite | int,
+    ) -> None:
+        """Invalidate the cache for LocalSite-specific ACL statistics.
 
         Version Added:
             5.0
@@ -215,8 +266,14 @@ class LocalSiteManager(Manager):
         cache.delete(make_cache_key(
             self._make_local_site_stats_acl_cache_key(local_site_or_id)))
 
-    def build_q(self, local_site, allow_all=True,
-                local_site_field='local_site'):
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
+    def build_q(
+        self,
+        local_site: AnyOrAllLocalSites,
+        *,
+        allow_all: bool = True,
+        local_site_field: str = 'local_site',
+    ) -> Q:
         """Return a Q object for matching a Local Site.
 
         This is used to conditionally build a Q object for filtering by
@@ -231,6 +288,13 @@ class LocalSiteManager(Manager):
 
         This will take care of asserting that compatible arguments are
         provided, so there are no surprises.
+
+        Version Changed:
+            8.0:
+            ``allow_all`` and ``local_site_field`` must now be provided
+            as keyword-only arguments. Support for providing these as
+            positional arguments is deprecated and will be removed in
+            Review Board 10.
 
         Version Added:
             5.0
@@ -256,27 +320,41 @@ class LocalSiteManager(Manager):
             The resulting query object.
 
         Raises:
-            AssertionError:
+            ValueError:
                 Incompatible sets of arguments were provided.
         """
         ALL = self.model.ALL
 
-        assert allow_all or local_site is not ALL
+        if not allow_all and local_site is ALL:
+            raise ValueError(
+                'allow_all=False was provided, but local_site=LocalSite.ALL '
+                'was passed.'
+            )
 
         if local_site is ALL:
             return Q()
 
         if not self.has_local_sites():
-            assert local_site in (None, ALL), (
-                'The server has no LocalSites, but %r was passed'
-                % local_site)
+            if local_site not in (None, ALL):
+                raise ValueError(
+                    f'The server has no LocalSites, but {local_site!r} was '
+                    f'passed.'
+                )
 
             return Q()
 
         return Q(**{local_site_field: local_site})
 
-    def _make_local_site_stats_acl_cache_key(self, local_site_or_id):
+    def _make_local_site_stats_acl_cache_key(
+        self,
+        local_site_or_id: LocalSite | int,
+    ) -> str:
         """Return a cache key for per-Local Site ACL stats.
+
+        Version Changed:
+            8.0:
+            This now returns a :py:exc:`ValueError` for an invalid
+            ``local_site_or_id`` instead of asserting.
 
         Args:
             local_site_or_id (reviewboard.site.models.LocalSite or int):
@@ -285,12 +363,19 @@ class LocalSiteManager(Manager):
         Returns:
             str:
             The new cache key.
+
+        Raises:
+            ValueError:
+                An invalid value for ``local_site_or_id`` was provided.
         """
         if isinstance(local_site_or_id, self.model):
             local_site_id = local_site_or_id.pk
-        else:
-            assert isinstance(local_site_or_id, int)
-
+        elif isinstance(local_site_or_id, int):
             local_site_id = local_site_or_id
+        else:
+            raise ValueError(
+                f'Unsupported value provided for local_site_or_id: '
+                f'{local_site_or_id!r}'
+            )
 
-        return 'local-site-acl-stats-%s' % local_site_id
+        return f'local-site-acl-stats-{local_site_id}'
