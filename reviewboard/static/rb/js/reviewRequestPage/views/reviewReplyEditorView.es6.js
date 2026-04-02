@@ -15,19 +15,23 @@ RB.ReviewRequestPage.ReviewReplyEditorView = Backbone.View.extend({
               class="fa fa-link fa-flip-horizontal"></a>
           </div>
          <% } %>
-         <div class="comment-author">
-          <label for="<%= id %>">
+         <div class="rb-c-discussion-header -has-avatar -is-compact">
+          <div class="rb-c-discussion-header__avatar">
            <div class="avatar-container"><%= avatarHTML %></div>
-           <div class="user-reply-info">
-            <a href="<%= userPageURL %>" class="user"><%- fullName %></a>
-        <% if (timestamp) { %>
-            <span class="timestamp">
-             <time class="timesince" datetime="<%= timestampISO %>">
-        <%= timestamp %></time>
-            </span>
-        <% } %>
+          </div>
+          <div class="rb-c-discussion-header__title">
+           <div class="rb-c-user">
+            <a class="user" href="<%= userPageURL %>"><%- fullName %></a>
            </div>
-          </label>
+          </div>
+          <div class="rb-c-discussion-header__timestamp">
+           <% if (timestamp) { %>
+            <span class="timestamp">
+             <time class="timesince" datetime="<%= timestampISO %>"><%=
+              timestamp %></time>
+            </span>
+           <% } %>
+          </div>
          </div>
          <div>
           <pre id="<%= id %>" class="comment-text reviewtext"><%- text %></pre>

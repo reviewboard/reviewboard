@@ -15,17 +15,17 @@ suite('rb/reviewRequestPage/views/BaseStatusUpdatesEntryView', function() {
            <div class="collapse-button btn">
             <div class="rb-icon rb-icon-collapse-review"></div>
            </div>
-           <div class="header-details">
-            <div class="summary">
-             <span class="review-request-page-entry-title">
-              Checks run (1 waiting to run)
-             </span>
+           <div class="rb-c-discussion-header">
+            <div class="rb-c-discussion-header__title">
+             Checks run (1 waiting to run)
             </div>
-            <a href="#initial_status_updates" class="timestamp">
-             <time class="timesince"
-                   datetime="2018-11-27T00:18:43.664524+00:00"
-                   title="Nov. 27, 2018, 12:18 a.m.">0 minutes ago</time>
-            </a>
+            <div class="rb-c-discussion-header__timestamp">
+             <a href="#initial_status_updates" class="timestamp">
+              <time class="timesince"
+                    datetime="2018-11-27T00:18:43.664524+00:00"
+                    title="Nov. 27, 2018, 12:18 a.m.">0 minutes ago</time>
+             </a>
+            </div>
            </div>
           </div>
           <div class="banners"></div>
