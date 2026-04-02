@@ -1317,6 +1317,57 @@ class GetDiffFilesTests(BaseFileDiffAncestorTests):
         self.assertFalse(files[1]['filediff'].is_new)
         self.assertFalse(files[1]['is_new_file'])
 
+    @add_fixtures(['test_users', 'test_scmtools'])
+    def test_get_diff_files_with_new_file_and_parent_diff(self) -> None:
+        """Testing get_diff_files with a new file that has a parent diff"""
+        repository = self.create_repository(tool_name='Git')
+        review_request = self.create_review_request(repository=repository)
+
+        diffset = self.create_diffset(review_request=review_request)
+
+        # This simulates a post-commit review of a newly-added file. The
+        # parent diff deletes the file (undoing the commit), and the main
+        # diff creates it. The filediff should still be treated as a new
+        # file for display purposes.
+        parent_diff = (
+            b'diff --git a/newfile.py b/newfile.py\n'
+            b'deleted file mode 100644\n'
+            b'index abc1234..0000000\n'
+            b'--- a/newfile.py\n'
+            b'+++ /dev/null\n'
+            b'@@ -1,1 +0,0 @@\n'
+            b'-content\n'
+        )
+        diff = (
+            b'diff --git a/newfile.py b/newfile.py\n'
+            b'new file mode 100644\n'
+            b'index 0000000..abc1234\n'
+            b'--- /dev/null\n'
+            b'+++ b/newfile.py\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+content\n'
+        )
+
+        filediff = self.create_filediff(
+            diffset=diffset,
+            source_file='newfile.py',
+            dest_file='newfile.py',
+            source_revision=PRE_CREATION,
+            diff=diff,
+            extra_data={
+                'parent_source_filename': 'newfile.py',
+                'parent_source_revision': 'abc1234',
+            })
+        filediff.parent_diff = parent_diff
+        filediff.save()
+
+        files = get_diff_files(diffset=diffset,
+                               diff_settings=DiffSettings.create())
+
+        self.assertEqual(len(files), 1)
+        self.assertTrue(files[0]['filediff'].is_new)
+        self.assertTrue(files[0]['is_new_file'])
+
     def _get_filediff_base_mapping_from_details(self, by_details, details):
         """Return a mapping from FileDiffs to base FileDiffs from the details.
 
