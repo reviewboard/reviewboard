@@ -105,9 +105,9 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': storage,
                 'storage_id': 'example.com:443:trust',
@@ -134,9 +134,9 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': storage,
                 'storage_id': 'example.com:443:client',
@@ -158,9 +158,9 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': storage,
                 'storage_id': 'example.com:443:trust',
@@ -183,9 +183,9 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': storage,
                 'storage_id': 'example.com:443:client',
@@ -209,9 +209,9 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': storage,
                 'storage_id': 'test-site:example.com:443:trust',
@@ -236,13 +236,124 @@ class FileStoredCertificateTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': storage,
                 'storage_id': 'test-site:example.com:443:client',
             })
+
+    def test_init_with_certificate_hostname_mismatch(self) -> None:
+        """Testing FileStoredCertificate.__init__ with certificate= and
+        hostname= with mismatch
+        """
+        message = (
+            'The provided hostname= argument must match the hostname '
+            'of the provided certificate=.'
+        )
+
+        with self.assertRaisesMessage(ValueError, message):
+            FileStoredCertificate(
+                storage=self.storage,
+                certificate=Certificate(
+                    hostname='example.com',
+                    port=443,
+                    cert_data=TEST_TRUST_CERT_PEM,
+                ),
+                cert_file_path='/path',
+                key_file_path='/path',
+                hostname='svn.example.com',
+                port=443,
+                purpose=CertPurpose.TRUST,
+            )
+
+    def test_init_with_certificate_port_mismatch(self) -> None:
+        """Testing FileStoredCertificate.__init__ with certificate= and
+        port= with mismatch
+        """
+        message = (
+            'The provided port= argument must match the port of the '
+            'provided certificate=.'
+        )
+
+        with self.assertRaisesMessage(ValueError, message):
+            FileStoredCertificate(
+                storage=self.storage,
+                certificate=Certificate(
+                    hostname='example.com',
+                    port=443,
+                    cert_data=TEST_TRUST_CERT_PEM,
+                ),
+                cert_file_path='/path',
+                key_file_path='/path',
+                hostname='example.com',
+                port=123,
+                purpose=CertPurpose.TRUST,
+            )
+
+    def test_init_with_certificate_purpose_mismatch(self) -> None:
+        """Testing FileStoredCertificate.__init__ with certificate= and
+        purpose= with mismatch
+        """
+        message = (
+            'The provided purpose= argument must match the purpose of the '
+            'provided certificate=.'
+        )
+
+        with self.assertRaisesMessage(ValueError, message):
+            FileStoredCertificate(
+                storage=self.storage,
+                certificate=Certificate(
+                    hostname='example.com',
+                    port=443,
+                    cert_data=TEST_TRUST_CERT_PEM,
+                ),
+                cert_file_path='/path',
+                key_file_path='/path',
+                hostname='example.com',
+                port=443,
+                purpose=CertPurpose.CLIENT,
+            )
+
+    def test_init_with_missing_hostname(self) -> None:
+        """Testing FileStoredCertificate.__init__ with missing hostname"""
+        message = 'Either certificate= or hostname= must be provided.'
+
+        with self.assertRaisesMessage(ValueError, message):
+            FileStoredCertificate(
+                storage=self.storage,
+                cert_file_path='/path',
+                key_file_path='/path',
+                port=443,
+                purpose=CertPurpose.CLIENT,
+            )
+
+    def test_init_with_missing_port(self) -> None:
+        """Testing FileStoredCertificate.__init__ with missing port"""
+        message = 'Either certificate= or port= must be provided.'
+
+        with self.assertRaisesMessage(ValueError, message):
+            FileStoredCertificate(
+                storage=self.storage,
+                cert_file_path='/path',
+                key_file_path='/path',
+                hostname='example.com',
+                purpose=CertPurpose.CLIENT,
+            )
+
+    def test_init_with_missing_purpose(self) -> None:
+        """Testing FileStoredCertificate.__init__ with missing purpose"""
+        message = 'Either certificate= or purpose= must be provided.'
+
+        with self.assertRaisesMessage(ValueError, message):
+            FileStoredCertificate(
+                storage=self.storage,
+                cert_file_path='/path',
+                key_file_path='/path',
+                hostname='example.com',
+                port=443,
+            )
 
     def test_parse_storage_id_trust(self) -> None:
         """Testing FileStoredCertificate.parse_storage_id with trust cert ID"""
@@ -491,8 +602,8 @@ class FileStoredCertificateBundleTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             stored_bundle,
             {
-                '_name': 'my-cert-bundle',
                 'local_site': None,
+                'name': 'my-cert-bundle',
                 'storage': storage,
                 'storage_id': 'my-cert-bundle',
             })
@@ -508,8 +619,8 @@ class FileStoredCertificateBundleTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             stored_bundle,
             {
-                '_name': 'my-cert-bundle',
                 'local_site': None,
+                'name': 'my-cert-bundle',
                 'storage': storage,
                 'storage_id': 'my-cert-bundle',
             })
@@ -527,11 +638,53 @@ class FileStoredCertificateBundleTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             stored_bundle,
             {
-                '_name': 'my-cert-bundle',
                 'local_site': local_site,
+                'name': 'my-cert-bundle',
                 'storage': storage,
                 'storage_id': 'test-site:my-cert-bundle',
             })
+
+    def test_init_with_bundle_name_mismatch(self) -> None:
+        """Testing FileStoredCertificateBundle.__init__ with bundle= and
+        name= with mismatch
+        """
+        message = (
+            'The provided name= argument must match the name of the '
+            'provided bundle=.'
+        )
+
+        with self.assertRaisesMessage(ValueError, message):
+            FileStoredCertificateBundle(
+                storage=self.storage,
+                bundle_file_path='/path',
+                name='other-bundle-name',
+                bundle=CertificateBundle(
+                    name='my-cert-bundle',
+                    bundle_data=b'...',
+                ),
+            )
+
+    def test_init_with_missing_name(self) -> None:
+        """Testing FileStoredCertificateBundle.__init__ with missing name"""
+        message = 'Either bundle= or name= must be provided.'
+
+        with self.assertRaisesMessage(ValueError, message):
+            FileStoredCertificateBundle(
+                storage=self.storage,
+                bundle_file_path='/path',
+            )
+
+    def test_init_with_name_not_slug(self) -> None:
+        """Testing FileStoredCertificateBundle.__init__ with name not a slug
+        """
+        message = 'The name must be in slug format.'
+
+        with self.assertRaisesMessage(ValueError, message):
+            FileStoredCertificateBundle(
+                storage=self.storage,
+                bundle_file_path='/path',
+                name='X*X*X',
+            )
 
     def test_parse_storage_id(self) -> None:
         """Testing FileStoredCertificateBundle.parse_storage_id"""
@@ -654,9 +807,9 @@ class FileStoredCertificateFingerprintsTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             stored_fingerprints,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'storage': storage,
                 'storage_id': 'example.com:443',
             })
@@ -676,9 +829,9 @@ class FileStoredCertificateFingerprintsTests(FileStoredDataTestCase):
         self.assertAttrsEqual(
             stored_fingerprints,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'storage': storage,
                 'storage_id': 'test-site:example.com:443',
             })
@@ -974,8 +1127,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_bundle,
             {
                 '_bundle_file_path': path,
-                '_name': 'my-certs',
                 'local_site': None,
+                'name': 'my-certs',
                 'storage': backend,
                 'storage_id': 'my-certs',
             })
@@ -1008,8 +1161,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_bundle,
             {
                 '_bundle_file_path': path,
-                '_name': 'my-certs',
                 'local_site': local_site,
+                'name': 'my-certs',
                 'storage': backend,
                 'storage_id': 'test-site:my-certs',
             })
@@ -1152,8 +1305,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_bundle,
             {
                 '_bundle_file_path': path,
-                '_name': 'my-certs',
                 'local_site': None,
+                'name': 'my-certs',
                 'storage': backend,
                 'storage_id': 'my-certs',
             })
@@ -1177,8 +1330,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_bundle,
             {
                 '_bundle_file_path': path,
-                '_name': 'my-certs',
                 'local_site': local_site,
+                'name': 'my-certs',
                 'storage': backend,
                 'storage_id': 'test-site:my-certs',
             })
@@ -1227,8 +1380,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_bundle,
             {
                 '_bundle_file_path': path,
-                '_name': 'my-certs',
                 'local_site': None,
+                'name': 'my-certs',
                 'storage': backend,
                 'storage_id': 'my-certs',
             })
@@ -1252,8 +1405,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_bundle,
             {
                 '_bundle_file_path': path,
-                '_name': 'my-certs',
                 'local_site': local_site,
+                'name': 'my-certs',
                 'storage': backend,
                 'storage_id': 'test-site:my-certs',
             })
@@ -1270,8 +1423,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_bundles[0],
             {
                 '_bundle_file_path': os.path.join(cabundles_dir, 'comodo.pem'),
-                '_name': 'comodo',
                 'local_site': None,
+                'name': 'comodo',
                 'storage': backend,
                 'storage_id': 'comodo',
             })
@@ -1280,8 +1433,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_bundle_file_path': os.path.join(cabundles_dir,
                                                   'globalsign.pem'),
-                '_name': 'globalsign',
                 'local_site': None,
+                'name': 'globalsign',
                 'storage': backend,
                 'storage_id': 'globalsign',
             })
@@ -1304,8 +1457,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_bundle_file_path': os.path.join(cabundles_dir,
                                                   'amazon.pem'),
-                '_name': 'amazon',
                 'local_site': local_site,
+                'name': 'amazon',
                 'storage': backend,
                 'storage_id': 'test-site-2:amazon',
             })
@@ -1334,8 +1487,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_bundle_file_path': os.path.join(global_cabundles_dir,
                                                   'comodo.pem'),
-                '_name': 'comodo',
                 'local_site': None,
+                'name': 'comodo',
                 'storage': backend,
                 'storage_id': 'comodo',
             })
@@ -1344,8 +1497,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_bundle_file_path': os.path.join(global_cabundles_dir,
                                                   'globalsign.pem'),
-                '_name': 'globalsign',
                 'local_site': None,
+                'name': 'globalsign',
                 'storage': backend,
                 'storage_id': 'globalsign',
             })
@@ -1354,8 +1507,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_bundle_file_path': os.path.join(site1_cabundles_dir,
                                                   'amazon.pem'),
-                '_name': 'amazon',
                 'local_site': local_site1,
+                'name': 'amazon',
                 'storage': backend,
                 'storage_id': 'test-site-1:amazon',
             })
@@ -1364,8 +1517,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_bundle_file_path': os.path.join(site1_cabundles_dir,
                                                   'globalsign.pem'),
-                '_name': 'globalsign',
                 'local_site': local_site1,
+                'name': 'globalsign',
                 'storage': backend,
                 'storage_id': 'test-site-1:globalsign',
             })
@@ -1374,8 +1527,8 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_bundle_file_path': os.path.join(site2_cabundles_dir,
                                                   'amazon.pem'),
-                '_name': 'amazon',
                 'local_site': local_site2,
+                'name': 'amazon',
                 'storage': backend,
                 'storage_id': 'test-site-2:amazon',
             })
@@ -1410,9 +1563,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'example.com:443:trust',
@@ -1461,9 +1614,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'example.com:443:client',
@@ -1515,9 +1668,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'test-site:example.com:443:trust',
@@ -1570,9 +1723,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'test-site:example.com:443:client',
@@ -1953,9 +2106,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'example.com:443:trust',
@@ -1995,9 +2148,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'example.com:443:client',
@@ -2036,9 +2189,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'test-site:example.com:443:trust',
@@ -2080,9 +2233,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'test-site:example.com:443:client',
@@ -2116,9 +2269,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': '*.eng.example.com',
-                '_port': 443,
+                'hostname': '*.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': '*.eng.example.com:443:trust',
@@ -2153,9 +2306,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': '*.eng.example.com',
-                '_port': 443,
+                'hostname': '*.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': '*.eng.example.com:443:client',
@@ -2194,9 +2347,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'test.eng.example.com',
-                '_port': 443,
+                'hostname': 'test.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': '*.eng.example.com:443:trust',
@@ -2233,9 +2386,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'test.eng.example.com',
-                '_port': 443,
+                'hostname': 'test.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': '*.eng.example.com:443:client',
@@ -2274,9 +2427,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'reviewboard.eng.example.com',
-                '_port': 443,
+                'hostname': 'reviewboard.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'reviewboard.eng.example.com:443:trust',
@@ -2313,9 +2466,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'reviewboard.eng.example.com',
-                '_port': 443,
+                'hostname': 'reviewboard.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'reviewboard.eng.example.com:443:client',
@@ -2364,9 +2517,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'example.com:443:trust',
@@ -2403,9 +2556,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'example.com:443:client',
@@ -2438,9 +2591,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': '*.eng.example.com',
-                '_port': 443,
+                'hostname': '*.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': '*.eng.example.com:443:trust',
@@ -2474,9 +2627,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': '*.eng.example.com',
-                '_port': 443,
+                'hostname': '*.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': '*.eng.example.com:443:client',
@@ -2517,9 +2670,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'test-site:example.com:443:trust',
@@ -2560,9 +2713,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'test-site:example.com:443:client',
@@ -2595,9 +2748,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': '*.eng.example.com',
-                '_port': 443,
+                'hostname': '*.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': '*.eng.example.com:443:trust',
@@ -2611,9 +2764,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'reviewboard.eng.example.com',
-                '_port': 443,
+                'hostname': 'reviewboard.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'reviewboard.eng.example.com:443:trust',
@@ -2627,9 +2780,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'www.example.com',
-                '_port': 443,
+                'hostname': 'www.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'www.example.com:443:trust',
@@ -2655,9 +2808,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': '*.eng.example.com',
-                '_port': 443,
+                'hostname': '*.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': '*.eng.example.com:443:client',
@@ -2673,9 +2826,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'ldap.example.com',
-                '_port': 636,
+                'hostname': 'ldap.example.com',
                 'local_site': None,
+                'port': 636,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'ldap.example.com:636:client',
@@ -2689,9 +2842,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'reviewboard.eng.example.com',
-                '_port': 443,
+                'hostname': 'reviewboard.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'reviewboard.eng.example.com:443:client',
@@ -2722,9 +2875,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': '*.eng.example.com',
-                '_port': 443,
+                'hostname': '*.eng.example.com',
                 'local_site': local_site,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'test-site-2:*.eng.example.com:443:trust',
@@ -2739,9 +2892,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'tools.corp.example.com',
-                '_port': 443,
+                'hostname': 'tools.corp.example.com',
                 'local_site': local_site,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'test-site-2:tools.corp.example.com:443:trust',
@@ -2769,9 +2922,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'svn.example.com',
-                '_port': 8443,
+                'hostname': 'svn.example.com',
                 'local_site': local_site,
+                'port': 8443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'test-site-2:svn.example.com:8443:client',
@@ -2811,9 +2964,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': '*.eng.example.com',
-                '_port': 443,
+                'hostname': '*.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': '*.eng.example.com:443:trust',
@@ -2827,9 +2980,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'reviewboard.eng.example.com',
-                '_port': 443,
+                'hostname': 'reviewboard.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'reviewboard.eng.example.com:443:trust',
@@ -2843,9 +2996,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'www.example.com',
-                '_port': 443,
+                'hostname': 'www.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'www.example.com:443:trust',
@@ -2859,9 +3012,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'p4.example.com',
-                '_port': 1667,
+                'hostname': 'p4.example.com',
                 'local_site': local_site1,
+                'port': 1667,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'test-site-1:p4.example.com:1667:trust',
@@ -2875,9 +3028,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'tools.corp.example.com',
-                '_port': 443,
+                'hostname': 'tools.corp.example.com',
                 'local_site': local_site2,
+                'port': 443,
                 'purpose': CertPurpose.TRUST,
                 'storage': backend,
                 'storage_id': 'test-site-2:tools.corp.example.com:443:trust',
@@ -2911,9 +3064,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': '*.eng.example.com',
-                '_port': 443,
+                'hostname': '*.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': '*.eng.example.com:443:client',
@@ -2929,9 +3082,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'ldap.example.com',
-                '_port': 636,
+                'hostname': 'ldap.example.com',
                 'local_site': None,
+                'port': 636,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'ldap.example.com:636:client',
@@ -2947,9 +3100,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'reviewboard.eng.example.com',
-                '_port': 443,
+                'hostname': 'reviewboard.eng.example.com',
                 'local_site': None,
+                'port': 443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'reviewboard.eng.example.com:443:client',
@@ -2965,9 +3118,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
         self.assertAttrsEqual(
             stored_cert,
             {
-                '_hostname': 'svn.example.com',
-                '_port': 8443,
+                'hostname': 'svn.example.com',
                 'local_site': local_site2,
+                'port': 8443,
                 'purpose': CertPurpose.CLIENT,
                 'storage': backend,
                 'storage_id': 'test-site-2:svn.example.com:8443:client',
@@ -3012,9 +3165,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_fingerprints,
             {
                 '_fingerprints_file_path': path,
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'example.com:443',
             })
@@ -3053,9 +3206,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_fingerprints,
             {
                 '_fingerprints_file_path': path,
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'test-site:example.com:443',
             })
@@ -3238,9 +3391,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_fingerprints,
             {
                 '_fingerprints_file_path': path,
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'example.com:443',
             })
@@ -3273,9 +3426,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_fingerprints,
             {
                 '_fingerprints_file_path': path,
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'test-site:example.com:443',
             })
@@ -3314,9 +3467,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_fingerprints,
             {
                 '_fingerprints_file_path': path,
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': None,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'example.com:443',
             })
@@ -3347,9 +3500,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             stored_fingerprints,
             {
                 '_fingerprints_file_path': path,
-                '_hostname': 'example.com',
-                '_port': 443,
+                'hostname': 'example.com',
                 'local_site': local_site,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'test-site:example.com:443',
             })
@@ -3374,9 +3527,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_fingerprints_file_path': os.path.join(
                     fingerprints_dir, 'ldap.example.com__636.json'),
-                '_hostname': 'ldap.example.com',
-                '_port': 636,
+                'hostname': 'ldap.example.com',
                 'local_site': None,
+                'port': 636,
                 'storage': backend,
                 'storage_id': 'ldap.example.com:636',
             })
@@ -3398,9 +3551,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_fingerprints_file_path': os.path.join(
                     fingerprints_dir, 'www.example.com__443.json'),
-                '_hostname': 'www.example.com',
-                '_port': 443,
+                'hostname': 'www.example.com',
                 'local_site': None,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'www.example.com:443',
             })
@@ -3422,9 +3575,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_fingerprints_file_path': os.path.join(
                     fingerprints_dir, 'www2.example.com__443.json'),
-                '_hostname': 'www2.example.com',
-                '_port': 443,
+                'hostname': 'www2.example.com',
                 'local_site': None,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'www2.example.com:443',
             })
@@ -3459,9 +3612,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_fingerprints_file_path': os.path.join(
                     fingerprints_dir, 'svn.example.com__8443.json'),
-                '_hostname': 'svn.example.com',
-                '_port': 8443,
+                'hostname': 'svn.example.com',
                 'local_site': local_site,
+                'port': 8443,
                 'storage': backend,
                 'storage_id': 'test-site-2:svn.example.com:8443',
             })
@@ -3483,9 +3636,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_fingerprints_file_path': os.path.join(
                     fingerprints_dir, 'tools.corp.example.com__443.json'),
-                '_hostname': 'tools.corp.example.com',
-                '_port': 443,
+                'hostname': 'tools.corp.example.com',
                 'local_site': local_site,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'test-site-2:tools.corp.example.com:443',
             })
@@ -3527,9 +3680,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_fingerprints_file_path': os.path.join(
                     global_fingerprints_dir, 'ldap.example.com__636.json'),
-                '_hostname': 'ldap.example.com',
-                '_port': 636,
+                'hostname': 'ldap.example.com',
                 'local_site': None,
+                'port': 636,
                 'storage': backend,
                 'storage_id': 'ldap.example.com:636',
             })
@@ -3551,9 +3704,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_fingerprints_file_path': os.path.join(
                     global_fingerprints_dir, 'www.example.com__443.json'),
-                '_hostname': 'www.example.com',
-                '_port': 443,
+                'hostname': 'www.example.com',
                 'local_site': None,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'www.example.com:443',
             })
@@ -3575,9 +3728,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_fingerprints_file_path': os.path.join(
                     global_fingerprints_dir, 'www2.example.com__443.json'),
-                '_hostname': 'www2.example.com',
-                '_port': 443,
+                'hostname': 'www2.example.com',
                 'local_site': None,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'www2.example.com:443',
             })
@@ -3599,9 +3752,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_fingerprints_file_path': os.path.join(
                     site1_fingerprints_dir, 'p4.example.com__1667.json'),
-                '_hostname': 'p4.example.com',
-                '_port': 1667,
+                'hostname': 'p4.example.com',
                 'local_site': local_site1,
+                'port': 1667,
                 'storage': backend,
                 'storage_id': 'test-site-1:p4.example.com:1667',
             })
@@ -3623,9 +3776,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
             {
                 '_fingerprints_file_path': os.path.join(
                     site2_fingerprints_dir, 'svn.example.com__8443.json'),
-                '_hostname': 'svn.example.com',
-                '_port': 8443,
+                'hostname': 'svn.example.com',
                 'local_site': local_site2,
+                'port': 8443,
                 'storage': backend,
                 'storage_id': 'test-site-2:svn.example.com:8443',
             })
@@ -3648,9 +3801,9 @@ class FileCertificateStorageBackendTests(kgb.SpyAgency, CertificateTestCase):
                 '_fingerprints_file_path': os.path.join(
                     site2_fingerprints_dir,
                     'tools.corp.example.com__443.json'),
-                '_hostname': 'tools.corp.example.com',
-                '_port': 443,
+                'hostname': 'tools.corp.example.com',
                 'local_site': local_site2,
+                'port': 443,
                 'storage': backend,
                 'storage_id': 'test-site-2:tools.corp.example.com:443',
             })

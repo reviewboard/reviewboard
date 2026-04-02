@@ -154,18 +154,6 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
     # Instance variables #
     ######################
 
-    #: The hostname associated with the certificate.
-    #:
-    #: Type:
-    #:     str
-    _hostname: str
-
-    #: The port associated with the certificate.
-    #:
-    #: Type:
-    #:     int
-    _port: int
-
     #: The path to the certificate file.
     _cert_file_path: str
 
@@ -180,7 +168,7 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
     #:
     #: Version Added:
     #:     8.0
-    _storage_hostname: str
+    _storage_hostname: str | None
 
     @classmethod
     def parse_storage_id(
@@ -212,13 +200,9 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
         self,
         *,
         cert_file_path: str,
-        key_file_path: Optional[str] = None,
-        hostname: Optional[str] = None,
-        storage_hostname: Optional[str] = None,
-        port: Optional[int] = None,
-        certificate: Optional[Certificate] = None,
-        local_site: Optional[LocalSite] = None,
-        storage_id: Optional[str] = None,
+        key_file_path: (str | None) = None,
+        hostname: (str | None) = None,
+        storage_hostname: (str | None) = None,
         **kwargs,
     ) -> None:
         """Initialize the stored certificate information.
@@ -242,24 +226,6 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
                 where the certificate hostname will be the requested hostname
                 while the storage hostname will contain the wildcard.
 
-            port (int, optional):
-                The port on the host serving the certificate.
-
-                Either this or ``certificate`` must be provided.
-
-            certificate (reviewboard.certs.cert.Certificate, optional):
-                The certificate in storage.
-
-                Either this or both ``hostname`` and ``port`` must be provided.
-
-            local_site (reviewboard.site.models.LocalSite, optional):
-                The Local Site associated with the certificate.
-
-            storage_id (str, optional):
-                The ID of the certificate in storage.
-
-                If not provided, one will be computed.
-
             **kwargs (dict, optional):
                 Additional keyword arguments to pass to the parent
                 constructor.
@@ -269,31 +235,11 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
                 One or more arguments were not provided or contained invalid
                 values.
         """
-        # If a certificate is provided, use that as the source for the
-        # hostname and port.
-        if certificate:
-            assert hostname is None
-            assert port is None
-
-            hostname = certificate.hostname
-            port = certificate.port
-        else:
-            assert hostname is not None
-            assert port is not None
-
-        if not storage_hostname:
-            storage_hostname = hostname
-
         self._cert_file_path = cert_file_path
         self._key_file_path = key_file_path
-
-        self._hostname = hostname
-        self._port = port
         self._storage_hostname = storage_hostname
 
-        super().__init__(certificate=certificate,
-                         local_site=local_site,
-                         storage_id=storage_id,
+        super().__init__(hostname=hostname,
                          **kwargs)
 
     def build_storage_id(self) -> str:
@@ -309,10 +255,8 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
             str:
             The new storage ID.
         """
-        # If a storage ID is not provided, generate one from the provided
-        # arguments. With file-based storage, the ID is always based on
-        # the hostname, port, and any Local Site name.
-        storage_id = f'{self._storage_hostname}:{self._port}'
+        storage_hostname = self._storage_hostname or self.hostname
+        storage_id = f'{storage_hostname}:{self.port}'
 
         if local_site := self.local_site:
             storage_id = f'{local_site.name}:{storage_id}'
@@ -374,8 +318,8 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
         """
         # Allow exceptions to bubble up.
         return Certificate.create_from_files(
-            hostname=self._hostname,
-            port=self._port,
+            hostname=self.hostname,
+            port=self.port,
             purpose=self.purpose,
             cert_path=self.get_cert_file_path(),
             key_path=self.get_key_file_path(),
@@ -390,8 +334,8 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
         """
         return (
             f'<FileStoredCertificate(storage_id={self.storage_id!r},'
-            f' hostname={self._hostname!r},'
-            f' port={self._port!r},'
+            f' hostname={self.hostname!r},'
+            f' port={self.port!r},'
             f' purpose={self.purpose},'
             f' cert_file_path={self._cert_file_path!r},'
             f' key_file_path={self._key_file_path!r})>'
@@ -422,14 +366,6 @@ class FileStoredCertificateBundle(FileStoredDataMixin,
 
     #: The path to the CA bundle file.
     _bundle_file_path: str
-
-    #: The associated name of the CA bundle.
-    #:
-    #: This is in :term:`slug` format.
-    #:
-    #: Type:
-    #:     str
-    _name: str
 
     def __init__(
         self,
@@ -469,19 +405,11 @@ class FileStoredCertificateBundle(FileStoredDataMixin,
                 Additional keyword arguments to pass to the parent
                 constructor.
         """
-        if bundle:
-            assert name is None
-            name = bundle.name
-        else:
-            assert name is not None
-
-        assert name == slugify(name)
-
-        self._name = name
         self._bundle_file_path = bundle_file_path
 
         super().__init__(bundle=bundle,
                          local_site=local_site,
+                         name=name,
                          storage_id=storage_id,
                          **kwargs)
 
@@ -498,7 +426,7 @@ class FileStoredCertificateBundle(FileStoredDataMixin,
             str:
             The new storage ID.
         """
-        storage_id = self._name
+        storage_id = self.name
 
         if local_site := self.local_site:
             storage_id = f'{local_site.name}:{storage_id}'
@@ -537,7 +465,7 @@ class FileStoredCertificateBundle(FileStoredDataMixin,
         """
         # Allow exceptions to bubble up.
         return CertificateBundle.create_from_file(
-            name=self._name,
+            name=self.name,
             path=self._bundle_file_path)
 
     def __repr__(self) -> str:
@@ -548,9 +476,10 @@ class FileStoredCertificateBundle(FileStoredDataMixin,
             The string representation.
         """
         return (
-            '<FileStoredCertificateBundle(storage_id=%r, name=%r, '
-            'bundle_file_path=%r)>'
-            % (self.storage_id, self._name, self._bundle_file_path)
+            f'<FileStoredCertificateBundle'
+            f'(storage_id={self.storage_id!r},'
+            f' name={self.name!r},'
+            f' bundle_file_path={self._bundle_file_path!r})>'
         )
 
 
@@ -581,59 +510,25 @@ class FileStoredCertificateFingerprints(FileStoredDataMixin,
     #: The path to the fingerprints file.
     _fingerprints_file_path: str
 
-    #: The hostname associated with the certificate fingerprints.
-    #:
-    #: Type:
-    #:     str
-    _hostname: str
-
-    #: The port associated with the certificate fingerprints.
-    #:
-    #: Type:
-    #:     int
-    _port: int
-
     def __init__(
         self,
         *,
-        hostname: str,
-        port: int,
         fingerprints_file_path: str,
-        local_site: Optional[LocalSite] = None,
-        storage_id: Optional[str] = None,
         **kwargs,
     ) -> None:
         """Initialize the stored certificate fingerprints information.
 
         Args:
-            hostname (str):
-                The hostname serving the certificate.
-
-            port (int):
-                The port on the host serving the certificate.
-
             fingerprints_file_path (str):
                 The local path to the fingerprints data file.
-
-            local_site (reviewboard.site.models.LocalSite, optional):
-                The Local Site associated with the certificate.
-
-            storage_id (str, optional):
-                The ID of the certificate fingerprints in storage.
-
-                If not provided, one will be computed.
 
             **kwargs (dict, optional):
                 Additional keyword arguments to pass to the parent
                 constructor.
         """
-        self._hostname = hostname
-        self._port = port
         self._fingerprints_file_path = fingerprints_file_path
 
-        super().__init__(local_site=local_site,
-                         storage_id=storage_id,
-                         **kwargs)
+        super().__init__(**kwargs)
 
     def build_storage_id(self) -> str:
         """Return a new storage ID for the stored fingerprints.
@@ -648,7 +543,7 @@ class FileStoredCertificateFingerprints(FileStoredDataMixin,
             str:
             The new storage ID.
         """
-        storage_id = f'{self._hostname}:{self._port}'
+        storage_id = f'{self.hostname}:{self.port}'
 
         if local_site := self.local_site:
             storage_id = f'{local_site.name}:{storage_id}'
@@ -693,10 +588,11 @@ class FileStoredCertificateFingerprints(FileStoredDataMixin,
             The string representation.
         """
         return (
-            '<FileStoredCertificateFingerprints(storage_id=%r, hostname=%r, '
-            'port=%r, fingerprints_file_path=%r)>'
-            % (self.storage_id, self._hostname, self._port,
-               self._fingerprints_file_path)
+            f'<FileStoredCertificateFingerprints'
+            f'(storage_id={self.storage_id!r},'
+            f' hostname={self.hostname!r},'
+            f' port={self.port!r},'
+            f' fingerprints_file_path={self._fingerprints_file_path!r})>'
         )
 
 

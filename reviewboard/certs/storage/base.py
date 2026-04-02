@@ -10,6 +10,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import Generic, TYPE_CHECKING, TypeVar
 
+from django.utils.text import slugify
 from typing_extensions import TypedDict
 
 from reviewboard.certs.cert import CertDataFormat, CertPurpose
@@ -114,6 +115,18 @@ class BaseStoredCertificate(BaseStoredData):
     # Instance variables #
     ######################
 
+    #: The hostname associated with the certificate.
+    #:
+    #: Version Added:
+    #:     8.0
+    hostname: str
+
+    #: The port associated with the certificate.
+    #:
+    #: Version Added:
+    #:     8.0
+    port: int
+
     #: The purpose set for a certificate.
     #:
     #: This defines whether the certificate is used for trusting a remote
@@ -131,6 +144,8 @@ class BaseStoredCertificate(BaseStoredData):
         *,
         storage: BaseCertificateStorageBackend,
         certificate: (Certificate | None) = None,
+        hostname: (str | None) = None,
+        port: (int | None) = None,
         purpose: (CertPurpose | None) = None,
         storage_id: (str | None) = None,
         local_site: (LocalSite | None) = None,
@@ -139,7 +154,7 @@ class BaseStoredCertificate(BaseStoredData):
 
         Version Changed:
             8.0:
-            Added the ``purpose`` argument.
+            Added the ``purpose``, ``hostname``, and ``port`` arguments.
 
         Args:
             storage (BaseCertificateStorageBackend):
@@ -147,6 +162,24 @@ class BaseStoredCertificate(BaseStoredData):
 
             certificate (reviewboard.certs.cert.Certificate, optional):
                 The certificate data being stored.
+
+            hostname (str, optional):
+                The hostname associated with the certificate.
+
+                If ``certificate`` is set, this must either match or not be
+                provided. If it's not set, then this must be provided.
+
+                Version Added:
+                    8.0
+
+            port (int, optional):
+                The port associated with the certificate.
+
+                If ``certificate`` is set, this must either match or not be
+                provided. If it's not set, then this must be provided.
+
+                Version Added:
+                    8.0
 
             purpose (reviewboard.certs.cert.CertPurpose):
                 The purpose of the certificate.
@@ -172,6 +205,22 @@ class BaseStoredCertificate(BaseStoredData):
                 values.
         """
         if certificate:
+            if not hostname:
+                hostname = certificate.hostname
+            elif certificate.hostname != hostname:
+                raise ValueError(
+                    'The provided hostname= argument must match the hostname '
+                    'of the provided certificate=.'
+                )
+
+            if not port:
+                port = certificate.port
+            elif certificate.port != port:
+                raise ValueError(
+                    'The provided port= argument must match the port '
+                    'of the provided certificate=.'
+                )
+
             if not purpose:
                 purpose = certificate.purpose
             elif certificate.purpose != purpose:
@@ -179,11 +228,24 @@ class BaseStoredCertificate(BaseStoredData):
                     'The provided purpose= argument must match the purpose '
                     'of the provided certificate=.'
                 )
-        elif not purpose:
-            raise ValueError(
-                'Either certificate= or purpose= must be provided.'
-            )
+        else:
+            if not hostname:
+                raise ValueError(
+                    'Either certificate= or hostname= must be provided.'
+                )
 
+            if not port:
+                raise ValueError(
+                    'Either certificate= or port= must be provided.'
+                )
+
+            if not purpose:
+                raise ValueError(
+                    'Either certificate= or purpose= must be provided.'
+                )
+
+        self.hostname = hostname
+        self.port = port
         self.purpose = purpose
         self._certificate = certificate
 
@@ -291,6 +353,14 @@ class BaseStoredCertificateBundle(BaseStoredData):
     # Instance variables #
     ######################
 
+    #: The associated name of the CA bundle.
+    #:
+    #: This is in :term:`slug` format.
+    #:
+    #: Version Added:
+    #:     8.0
+    name: str
+
     #: The certificate bundle data being stored.
     _bundle: CertificateBundle | None
 
@@ -298,30 +368,66 @@ class BaseStoredCertificateBundle(BaseStoredData):
         self,
         *,
         storage: BaseCertificateStorageBackend,
+        name: (str | None) = None,
         bundle: (CertificateBundle | None) = None,
         storage_id: (str | None) = None,
         local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the stored certificate.
 
+        Version Changed:
+            8.0:
+            * Added the ``name`` argument.
+
         Args:
             storage (BaseCertificateStorageBackend):
                 The storage backend managing this stored certificate.
 
+            name (str, optional):
+                The associated name of the CA bundle.
+
+                If ``bundle`` is set, this must either match or not be
+                provided. If it's not set, then this must be provided.
+
+                Version Added:
+                    8.0
+
             bundle (reviewboard.certs.cert.CertificateBundle, optional):
                 The certificate bundle data being stored.
+
+                Either this or ``name`` must be provided.
 
             storage_id (str, optional):
                 The opaque ID of the stored data in the backend.
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site owning this stored certificate.
+
+        Raises:
+            ValueError:
+                One or more arguments were invalid or missing.
         """
+        if bundle:
+            if not name:
+                name = bundle.name
+            elif bundle.name != name:
+                raise ValueError(
+                    'The provided name= argument must match the name '
+                    'of the provided bundle=.'
+                )
+        else:
+            if not name:
+                raise ValueError('Either bundle= or name= must be provided.')
+
+        if name != slugify(name):
+            raise ValueError('The name must be in slug format.')
+
+        self.name = name
+        self._bundle = bundle
+
         super().__init__(storage=storage,
                          storage_id=storage_id,
                          local_site=local_site)
-
-        self._bundle = bundle
 
     @property
     def bundle(self) -> CertificateBundle:
@@ -397,6 +503,18 @@ class BaseStoredCertificateFingerprints(BaseStoredData):
     # Instance variables #
     ######################
 
+    #: The hostname associated with the certificate.
+    #:
+    #: Version Added:
+    #:     8.0
+    hostname: str
+
+    #: The port associated with the certificate.
+    #:
+    #: Version Added:
+    #:     8.0
+    port: int
+
     #: The fingerprints data being stored.
     _fingerprints: CertificateFingerprints | None
 
@@ -404,15 +522,33 @@ class BaseStoredCertificateFingerprints(BaseStoredData):
         self,
         *,
         storage: BaseCertificateStorageBackend,
+        hostname: str,
+        port: int,
         fingerprints: (CertificateFingerprints | None) = None,
         storage_id: (str | None) = None,
         local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the stored certificate.
 
+        Version Changed:
+            8.0:
+            * Added the required ``hostname`` and ``port`` arguments.
+
         Args:
             storage (BaseCertificateStorageBackend):
                 The storage backend managing this stored certificate.
+
+            hostname (str):
+                The hostname associated with the fingerprints.
+
+                Version Added:
+                    8.0
+
+            port (int):
+                The port associated with the fingerprints.
+
+                Version Added:
+                    8.0
 
             fingerprints (reviewboard.certs.cert.CertificateFingerprints):
                 The certificate fingerprints data being stored.
@@ -423,11 +559,13 @@ class BaseStoredCertificateFingerprints(BaseStoredData):
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site owning this stored certificate.
         """
+        self.hostname = hostname
+        self.port = port
+        self._fingerprints = fingerprints
+
         super().__init__(storage=storage,
                          storage_id=storage_id,
                          local_site=local_site)
-
-        self._fingerprints = fingerprints
 
     @property
     def fingerprints(self) -> CertificateFingerprints:
