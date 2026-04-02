@@ -266,7 +266,7 @@ suite('rb/pages/models/DiffViewerPage', function() {
                     tipCommitID: 'efd582c',
                     tipCommitPK: 39,
                 },
-            ]),
+            ]);
             expect(commentsHint.get('diffsetsWithComments')).toEqual([
                 {
                     isCurrent: false,

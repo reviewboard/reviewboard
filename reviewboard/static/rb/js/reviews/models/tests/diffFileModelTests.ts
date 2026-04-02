@@ -79,7 +79,7 @@ suite('rb/diffviewer/models/DiffFile', function() {
             expect(data.interfilediff.revision).toBe(4);
             expect(data.jsMedia).toEqual(new Set());
             expect(data.modifiedFilename).toBe('bar');
-            expect(data.modifiedRevision).toBe('4'),
+            expect(data.modifiedRevision).toBe('4');
             expect(data.newfile).toBe(true);
             expect(data.origFilename).toBe('foo');
             expect(data.origRevision).toBe('3');
@@ -157,7 +157,7 @@ suite('rb/diffviewer/models/DiffFile', function() {
             expect(data.jsMedia).toEqual(
                 new Set(['js_bundle1', 'js_bundle2']));
             expect(data.modifiedFilename).toBe('bar');
-            expect(data.modifiedRevision).toBe('4'),
+            expect(data.modifiedRevision).toBe('4');
             expect(data.newfile).toBe(true);
             expect(data.origFilename).toBe('foo');
             expect(data.origRevision).toBe('3');
