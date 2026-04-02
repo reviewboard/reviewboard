@@ -281,6 +281,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         self.assertIsNone(cert.fingerprints)
         self.assertIsNone(cert.issuer)
         self.assertIsNone(cert.subject)
+        self.assertEqual(cert.subject_alternative_names, [])
         self.assertIsNone(cert.valid_from)
         self.assertIsNone(cert.valid_through)
 
@@ -301,6 +302,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
 
         self.assertEqual(cert.subject, 'Subject')
         self.assertEqual(cert.issuer, 'Issuer')
+        self.assertEqual(cert.subject_alternative_names, [])
         self.assertEqual(cert.valid_from,
                          datetime(2023, 7, 14, 7, 50, 30, tzinfo=timezone.utc))
         self.assertEqual(cert.valid_through,
@@ -320,6 +322,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
 
         self.assertEqual(cert.subject, 'example.com')
         self.assertEqual(cert.issuer, 'example.com')
+        self.assertEqual(cert.subject_alternative_names, [])
         self.assertEqual(cert.valid_from,
                          datetime(2023, 7, 14, 7, 50, 30, tzinfo=timezone.utc))
         self.assertEqual(cert.valid_through,
@@ -333,6 +336,44 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
 
         # This should be cached.
         self.assertIs(cert.fingerprints, fingerprints)
+
+    def test_attr_x509_subject_alt_names(self) -> None:
+        """Testing Certificate.subject_alternative_names"""
+        cert = Certificate(
+            hostname='example.com',
+            port=443,
+            cert_data=b"""-----BEGIN CERTIFICATE-----
+MIIEWzCCAkOgAwIBAgIUH/aJUMZgutxwbM0xXq8DRrfVR+gwDQYJKoZIhvcNAQEL
+BQAwFzEVMBMGA1UEAwwMVGVzdCBMREFQIENBMB4XDTI2MDMxNjIzNDM0NVoXDTM2
+MDMxMzIzNDM0NVowFDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0B
+AQEFAAOCAQ8AMIIBCgKCAQEAvR432MX+pKoZcpXG7hP2DL6C3YlBggoDJ6YoKz1V
+k8dNyX4jWkcYYXbDAMMWd72LQl/LBJeKguaeQpVqv3ViWCgK6aompJDkqyTNqs3l
+sbL7ZXzBT+6E/iwP6ChxXEVY8EsBC8kAzBoq1gG1QvtT0qj1P0FpgPKl2T7SxwUG
+B+k9gHNwHRRoMiFDVozbB3l6KHUaTro3RmVbAngzgK+2fYv5rXRKhdaKlIU555To
+sExOXW9OCyiT7gUX8F/UGp05MhdGoJeB6rj6/Y6ekIubQbzW3JiPWXHuCelO/Iel
+VNHUVRacUjXMndXVFx6J+AEmhIdhLK193WZoXV5eAMmd0QIDAQABo4GhMIGeMAkG
+A1UdEwQCMAAwDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMBMCwG
+A1UdEQQlMCOCCWxvY2FsaG9zdIcEfwAAAYcQAAAAAAAAAAAAAAAAAAAAATAdBgNV
+HQ4EFgQURPbKJRFrb6AbUB4GuvEWMIKwCFcwHwYDVR0jBBgwFoAUFZ8R0MgmCmxb
+G0buLdWs5L+1kT0wDQYJKoZIhvcNAQELBQADggIBACRE4MjIm1hlC5+xiBlyrQ1i
+B1TWcRkX9+0UQfI4BMdaIPrEZLz1B8mdRcRAn5NKyfjQKhUsbW7aBXUD/3wsxuy+
+Lfgek8xvDoeY4y/L4wkdFl+QfYKgwLsXrzMexHwcCZ3SEvaqFrm55hW0hVcX5FeW
+4FARqlGIWp+MSPfGtDHbncGUnk+fRO4EGiZcsakQNdzL7Gn+aS/1swk0A0w6V5bx
++/LkMhkTEZt+fClRAMNW2X169ki+/vDe7pQQinrQ6j+8fDwMvrAD+qpSM91CJLNA
+ddMXmrDbvYgDQdQ+YbineuSahoIjgPzE8hJ8rSVl5R+uGSjTgbS5JsrqlA+bP0se
+/VzkkIglRm5XmGUHYT4CQIAbbg1u5wQsOrgaymBbFWN08eNhNAak0j0KhmF1PDy6
+LML/n+xSjIDwI4llZkog1hv1jmSCW0PJ9ty6UHb6yfZ063spR/SIpMtekGkLllAR
+RwPgp5YWsu1t/GiEk0qWlXT6qRxtjYh2zL5SorEAmJtwOYZj5ywuKG4NUzZQ9vqD
+0PsulCD8L5we9EAuxYY9D9wQL7qlQLoPnL01FRscsVFHEw6Dv3noqCa0BzjMcU3H
+RS9daj4M6YOwBbgGt+YgjLCGsQ7fRGXYo1UebeZDFE6RwLJ0FQvzUQQfuEk7qSq3
+pa6+8p+V5VkIunYFLWOw
+-----END CERTIFICATE-----""")
+
+        self.assertEqual(cert.subject_alternative_names, [
+            'localhost',
+            '127.0.0.1',
+            '::1',
+        ])
 
     def test_is_valid_with_not_expired(self) -> None:
         """Testing Certificate.is_valid with not expired"""

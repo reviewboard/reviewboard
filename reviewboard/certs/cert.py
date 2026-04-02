@@ -32,6 +32,7 @@ from reviewboard.certs.errors import (CertificateNotFoundError,
                                       InvalidCertificateFormatError)
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from typing import TypeVar
 
     from typelets.django.json import (SerializableDjangoJSONDict,
@@ -800,6 +801,46 @@ class Certificate:
             self._subject = subject
 
         return subject
+
+    @cached_property
+    def subject_alternative_names(self) -> Sequence[str]:
+        """The Subject Alternative Names of the certificate.
+
+        This will include the string values for any DNS and IP addresses
+        found in the Subject Alternative Names extension of the certificate,
+        if present.
+
+        Version Added:
+            8.0
+
+        Type:
+            list of str
+        """
+        x509_cert = self.x509_cert
+
+        if not x509_cert:
+            return []
+
+        try:
+            san_ext = (
+                x509_cert.extensions
+                .get_extension_for_class(x509.SubjectAlternativeName)
+            )
+
+            return [
+                str(item.value)
+                for item in san_ext.value
+                if isinstance(item, (x509.DNSName, x509.IPAddress))
+            ]
+        except x509.ExtensionNotFound:
+            # The extension wasn't found in the cert, so return an empty list.
+            return []
+        except Exception as e:
+            logger.exception('Unexpected error retrieving SAN values for '
+                             'x509 cert %r: %s',
+                             x509_cert, e)
+
+            return []
 
     @property
     def issuer(self) -> str | None:
