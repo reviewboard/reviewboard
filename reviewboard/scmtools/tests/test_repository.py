@@ -818,7 +818,7 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
     def test_password_decryption_failed(self) -> None:
         """Testing the repository password with failed decryption"""
         repository = self.repository
-        repository.password = 'abc123'
+        repository.password = 'this is a super secret password'
         repository.save()
 
         repository.refresh_from_db()
