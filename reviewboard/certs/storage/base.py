@@ -8,14 +8,17 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Generic, Iterator, Optional, TYPE_CHECKING, TypeVar
+from typing import Generic, TYPE_CHECKING, TypeVar
 
+from django.utils.text import slugify
 from typing_extensions import TypedDict
 
-from reviewboard.certs.cert import CertDataFormat
+from reviewboard.certs.cert import CertDataFormat, CertPurpose
 from reviewboard.certs.errors import CertificateNotFoundError
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator, Mapping
+
     from typelets.django.strings import StrOrPromise
 
     from reviewboard.certs.cert import (Certificate,
@@ -39,32 +42,23 @@ class BaseStoredData(ABC):
     ######################
 
     #: The Local Site owning this stored certificate.
-    #:
-    #: Type:
-    #:     reviewboard.site.models.LocalSite
-    local_site: Optional[LocalSite]
+    local_site: LocalSite | None
 
     #: The storage backend managing this certificate.
-    #:
-    #: Type:
-    #:     BaseCertificateStorageBackend
     storage: BaseCertificateStorageBackend
 
     #: A unique ID for this data in the storage backend.
     #:
     #: This should be considered an opaque value outside of the storage
     #: backend.
-    #:
-    #: Type:
-    #:     str
-    storage_id: Optional[str]
+    storage_id: str
 
     def __init__(
         self,
         *,
         storage: BaseCertificateStorageBackend,
-        storage_id: Optional[str] = None,
-        local_site: Optional[LocalSite] = None,
+        storage_id: (str | None) = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the stored data.
 
@@ -75,12 +69,30 @@ class BaseStoredData(ABC):
             storage_id (str, optional):
                 The opaque ID of the stored data in the backend.
 
+                If not provided, :py:meth:`build_storage_id` will be called
+                to generate a new ID.
+
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site owning this stored certificate.
         """
         self.storage = storage
-        self.storage_id = storage_id
         self.local_site = local_site
+
+        # Use the storage ID if provided, or build a new one off of computed
+        # state if not.
+        self.storage_id = storage_id or self.build_storage_id()
+
+    def build_storage_id(self) -> str:
+        """Return a new storage ID for the stored data.
+
+        Version Added:
+            8.0
+
+        Returns:
+            str:
+            The new storage ID.
+        """
+        raise NotImplementedError
 
 
 class BaseStoredCertificate(BaseStoredData):
@@ -103,21 +115,46 @@ class BaseStoredCertificate(BaseStoredData):
     # Instance variables #
     ######################
 
-    #: The certificate data being stored.
+    #: The hostname associated with the certificate.
     #:
-    #: Type:
-    #:     reviewboard.certs.cert.Certificate
-    _certificate: Optional[Certificate]
+    #: Version Added:
+    #:     8.0
+    hostname: str
+
+    #: The port associated with the certificate.
+    #:
+    #: Version Added:
+    #:     8.0
+    port: int
+
+    #: The purpose set for a certificate.
+    #:
+    #: This defines whether the certificate is used for trusting a remote
+    #: server or authenticating Review Board with a service.
+    #:
+    #: Version Added:
+    #:     8.0
+    purpose: CertPurpose
+
+    #: The certificate data being stored.
+    _certificate: Certificate | None
 
     def __init__(
         self,
         *,
         storage: BaseCertificateStorageBackend,
-        certificate: Optional[Certificate] = None,
-        storage_id: Optional[str] = None,
-        local_site: Optional[LocalSite] = None,
+        certificate: (Certificate | None) = None,
+        hostname: (str | None) = None,
+        port: (int | None) = None,
+        purpose: (CertPurpose | None) = None,
+        storage_id: (str | None) = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the stored certificate.
+
+        Version Changed:
+            8.0:
+            Added the ``purpose``, ``hostname``, and ``port`` arguments.
 
         Args:
             storage (BaseCertificateStorageBackend):
@@ -126,16 +163,95 @@ class BaseStoredCertificate(BaseStoredData):
             certificate (reviewboard.certs.cert.Certificate, optional):
                 The certificate data being stored.
 
+            hostname (str, optional):
+                The hostname associated with the certificate.
+
+                If ``certificate`` is set, this must either match or not be
+                provided. If it's not set, then this must be provided.
+
+                Version Added:
+                    8.0
+
+            port (int, optional):
+                The port associated with the certificate.
+
+                If ``certificate`` is set, this must either match or not be
+                provided. If it's not set, then this must be provided.
+
+                Version Added:
+                    8.0
+
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The purpose of the certificate.
+
+                This sets whether the certificate should be used to trust
+                a remote server or authenticate Review Board.
+
+                If ``certificate`` is set, this must either match or not be
+                provided. If it's not set, then this must be provided.
+
+                Version Added:
+                    8.0
+
             storage_id (str, optional):
                 The opaque ID of the stored data in the backend.
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site owning this stored certificate.
+
+        Raises:
+            ValueError:
+                One or more arguments were not provided or contained invalid
+                values.
         """
+        if certificate:
+            if not hostname:
+                hostname = certificate.hostname
+            elif certificate.hostname != hostname:
+                raise ValueError(
+                    'The provided hostname= argument must match the hostname '
+                    'of the provided certificate=.'
+                )
+
+            if not port:
+                port = certificate.port
+            elif certificate.port != port:
+                raise ValueError(
+                    'The provided port= argument must match the port '
+                    'of the provided certificate=.'
+                )
+
+            if not purpose:
+                purpose = certificate.purpose
+            elif certificate.purpose != purpose:
+                raise ValueError(
+                    'The provided purpose= argument must match the purpose '
+                    'of the provided certificate=.'
+                )
+        else:
+            if not hostname:
+                raise ValueError(
+                    'Either certificate= or hostname= must be provided.'
+                )
+
+            if not port:
+                raise ValueError(
+                    'Either certificate= or port= must be provided.'
+                )
+
+            if not purpose:
+                raise ValueError(
+                    'Either certificate= or purpose= must be provided.'
+                )
+
+        self.hostname = hostname
+        self.port = port
+        self.purpose = purpose
+        self._certificate = certificate
+
         super().__init__(storage=storage,
                          storage_id=storage_id,
                          local_site=local_site)
-        self._certificate = certificate
 
     @property
     def certificate(self) -> Certificate:
@@ -180,7 +296,7 @@ class BaseStoredCertificate(BaseStoredData):
         self,
         *,
         data_format: CertDataFormat = CertDataFormat.PEM,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return the filesystem path to a certificate private key.
 
         Not all certificates will have an associated private key. If one is
@@ -237,40 +353,81 @@ class BaseStoredCertificateBundle(BaseStoredData):
     # Instance variables #
     ######################
 
-    #: The certificate bundle data being stored.
+    #: The associated name of the CA bundle.
     #:
-    #: Type:
-    #:     reviewboard.certs.cert.CertificateBundle
-    _bundle: Optional[CertificateBundle]
+    #: This is in :term:`slug` format.
+    #:
+    #: Version Added:
+    #:     8.0
+    name: str
+
+    #: The certificate bundle data being stored.
+    _bundle: CertificateBundle | None
 
     def __init__(
         self,
         *,
         storage: BaseCertificateStorageBackend,
-        bundle: Optional[CertificateBundle] = None,
-        storage_id: Optional[str] = None,
-        local_site: Optional[LocalSite] = None,
+        name: (str | None) = None,
+        bundle: (CertificateBundle | None) = None,
+        storage_id: (str | None) = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the stored certificate.
+
+        Version Changed:
+            8.0:
+            * Added the ``name`` argument.
 
         Args:
             storage (BaseCertificateStorageBackend):
                 The storage backend managing this stored certificate.
 
+            name (str, optional):
+                The associated name of the CA bundle.
+
+                If ``bundle`` is set, this must either match or not be
+                provided. If it's not set, then this must be provided.
+
+                Version Added:
+                    8.0
+
             bundle (reviewboard.certs.cert.CertificateBundle, optional):
                 The certificate bundle data being stored.
+
+                Either this or ``name`` must be provided.
 
             storage_id (str, optional):
                 The opaque ID of the stored data in the backend.
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site owning this stored certificate.
+
+        Raises:
+            ValueError:
+                One or more arguments were invalid or missing.
         """
+        if bundle:
+            if not name:
+                name = bundle.name
+            elif bundle.name != name:
+                raise ValueError(
+                    'The provided name= argument must match the name '
+                    'of the provided bundle=.'
+                )
+        else:
+            if not name:
+                raise ValueError('Either bundle= or name= must be provided.')
+
+        if name != slugify(name):
+            raise ValueError('The name must be in slug format.')
+
+        self.name = name
+        self._bundle = bundle
+
         super().__init__(storage=storage,
                          storage_id=storage_id,
                          local_site=local_site)
-
-        self._bundle = bundle
 
     @property
     def bundle(self) -> CertificateBundle:
@@ -346,25 +503,52 @@ class BaseStoredCertificateFingerprints(BaseStoredData):
     # Instance variables #
     ######################
 
-    #: The fingerprints data being stored.
+    #: The hostname associated with the certificate.
     #:
-    #: Type:
-    #:     reviewboard.certs.cert.CertificateFingerprints
-    _fingerprints: Optional[CertificateFingerprints]
+    #: Version Added:
+    #:     8.0
+    hostname: str
+
+    #: The port associated with the certificate.
+    #:
+    #: Version Added:
+    #:     8.0
+    port: int
+
+    #: The fingerprints data being stored.
+    _fingerprints: CertificateFingerprints | None
 
     def __init__(
         self,
         *,
         storage: BaseCertificateStorageBackend,
-        fingerprints: Optional[CertificateFingerprints] = None,
-        storage_id: Optional[str] = None,
-        local_site: Optional[LocalSite] = None,
+        hostname: str,
+        port: int,
+        fingerprints: (CertificateFingerprints | None) = None,
+        storage_id: (str | None) = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the stored certificate.
+
+        Version Changed:
+            8.0:
+            * Added the required ``hostname`` and ``port`` arguments.
 
         Args:
             storage (BaseCertificateStorageBackend):
                 The storage backend managing this stored certificate.
+
+            hostname (str):
+                The hostname associated with the fingerprints.
+
+                Version Added:
+                    8.0
+
+            port (int):
+                The port associated with the fingerprints.
+
+                Version Added:
+                    8.0
 
             fingerprints (reviewboard.certs.cert.CertificateFingerprints):
                 The certificate fingerprints data being stored.
@@ -375,11 +559,13 @@ class BaseStoredCertificateFingerprints(BaseStoredData):
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site owning this stored certificate.
         """
+        self.hostname = hostname
+        self.port = port
+        self._fingerprints = fingerprints
+
         super().__init__(storage=storage,
                          storage_id=storage_id,
                          local_site=local_site)
-
-        self._fingerprints = fingerprints
 
     @property
     def fingerprints(self) -> CertificateFingerprints:
@@ -430,8 +616,17 @@ class StorageStats(TypedDict):
     #: The number of stored CA bundles.
     ca_bundle_count: int
 
-    #: The number of stored certificates.
+    #: The total number of stored certificates.
+    #:
+    #: This must be a sum of all the values in
+    #: :py:attr:`cert_counts_by_purpose`.
     cert_count: int
+
+    #: The number of stored certificates by purpose.
+    #:
+    #: Version Added:
+    #:     8.0
+    cert_counts_by_purpose: Mapping[CertPurpose, int]
 
     #: The number of stored verified fingerprints.
     fingerprint_count: int
@@ -444,13 +639,16 @@ class StorageStats(TypedDict):
 
 _StoredCertT = TypeVar(
     '_StoredCertT',
-    bound=BaseStoredCertificate)
+    bound=BaseStoredCertificate,
+)
 _StoredCertBundleT = TypeVar(
     '_StoredCertBundleT',
-    bound=BaseStoredCertificateBundle)
+    bound=BaseStoredCertificateBundle,
+)
 _StoredCertFingerprintsT = TypeVar(
     '_StoredCertFingerprintsT',
-    bound=BaseStoredCertificateFingerprints)
+    bound=BaseStoredCertificateFingerprints,
+)
 
 
 class BaseCertificateStorageBackend(
@@ -491,6 +689,11 @@ class BaseCertificateStorageBackend(
     * :py:meth:`iter_stored_certificates`
     * :py:meth:`iter_stored_fingerprints`
 
+    Version Changed:
+        8.0:
+        All certificate storage methods have been updated to take a
+        ``purpose`` parameter, which is now considered mandatory.
+
     Version Added:
         6.0
     """
@@ -498,18 +701,12 @@ class BaseCertificateStorageBackend(
     #: The ID of this storage backend.
     #:
     #: This must be provided by subclasses, and must be unique.
-    #:
-    #: Type:
-    #:     str
-    backend_id: Optional[str] = None
+    backend_id: (str | None) = None
 
     #: The display name of the storage backend.
     #:
     #: This must be provided by subclasses.
-    #:
-    #: Type:
-    #:     str
-    name: Optional[StrOrPromise] = ''
+    name: (StrOrPromise | None) = ''
 
     ######################
     # Instance variables #
@@ -520,9 +717,6 @@ class BaseCertificateStorageBackend(
     #: This is set when constructing the backend, and should not be changed.
     #: All filesystem operations must be limited to directories under this
     #: path.
-    #:
-    #: Type:
-    #:     str
     storage_path: str
 
     def __init__(
@@ -576,7 +770,7 @@ class BaseCertificateStorageBackend(
         self,
         bundle: CertificateBundle,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> _StoredCertBundleT:
         """Add a root CA bundle to storage.
 
@@ -607,7 +801,7 @@ class BaseCertificateStorageBackend(
         self,
         *,
         name: str,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Delete a root CA bundle from storage.
 
@@ -663,8 +857,8 @@ class BaseCertificateStorageBackend(
         self,
         *,
         name: str,
-        local_site: Optional[LocalSite] = None,
-    ) -> Optional[_StoredCertBundleT]:
+        local_site: (LocalSite | None) = None,
+    ) -> _StoredCertBundleT | None:
         """Return a root CA bundle in storage.
 
         Args:
@@ -690,7 +884,7 @@ class BaseCertificateStorageBackend(
     def get_stored_ca_bundle_by_id(
         self,
         storage_id: str,
-    ) -> Optional[_StoredCertBundleT]:
+    ) -> _StoredCertBundleT | None:
         """Return a root CA bundle in storage identified by ID.
 
         Args:
@@ -739,7 +933,7 @@ class BaseCertificateStorageBackend(
     def get_ca_bundles_dir(
         self,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> str:
         """Return a path containing all CA bundle files.
 
@@ -760,7 +954,7 @@ class BaseCertificateStorageBackend(
         self,
         certificate: Certificate,
         *,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> _StoredCertT:
         """Add a certificate to storage.
 
@@ -792,9 +986,14 @@ class BaseCertificateStorageBackend(
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        purpose: CertPurpose,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Delete a certificate from storage.
+
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             hostname (str):
@@ -802,6 +1001,15 @@ class BaseCertificateStorageBackend(
 
             port (int):
                 The port on the host serving the certificate.
+
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The purpose of the certificate to delete.
+
+                This indicates whether the certificate to match is used
+                to trust a remote server or authenticate Review Board.
+
+                Version Added:
+                    8.0
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 An optional LocalSite that owns the certificate.
@@ -818,7 +1026,9 @@ class BaseCertificateStorageBackend(
         stored_certificate = self.get_stored_certificate(
             hostname=hostname,
             port=port,
-            local_site=local_site)
+            local_site=local_site,
+            purpose=purpose,
+        )
 
         if stored_certificate is None:
             raise CertificateNotFoundError()
@@ -853,9 +1063,14 @@ class BaseCertificateStorageBackend(
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
-    ) -> Optional[_StoredCertT]:
+        purpose: CertPurpose,
+        local_site: (LocalSite | None) = None,
+    ) -> _StoredCertT | None:
         """Return a certificate from storage.
+
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             hostname (str):
@@ -863,6 +1078,15 @@ class BaseCertificateStorageBackend(
 
             port (int):
                 The port on the host serving the certificate.
+
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The purpose of the certificate to fetch.
+
+                This indicates whether the certificate is used to trust a
+                remote server or authenticate Review Board.
+
+                Version Added:
+                    8.0
 
             local_site (reviewboard.site.models.LocalSite, optional):
                 An optional LocalSite that owns the certificate.
@@ -883,7 +1107,7 @@ class BaseCertificateStorageBackend(
     def get_stored_certificate_by_id(
         self,
         storage_id: str,
-    ) -> Optional[_StoredCertT]:
+    ) -> _StoredCertT | None:
         """Return a certificate from storage identified by ID.
 
         Args:
@@ -904,12 +1128,26 @@ class BaseCertificateStorageBackend(
     def iter_stored_certificates(
         self,
         *,
+        purpose: CertPurpose,
         local_site: AnyOrAllLocalSites = None,
         start: int = 0,
     ) -> Iterator[_StoredCertT]:
         """Iterate through all certificates in storage.
 
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
+
         Args:
+            purpose (reviewboard.certs.cert.CertPurpose):
+                The purpose of the certificates to filter for.
+
+                This will limit results to certificates that match the given
+                purpose.
+
+                Version Added:
+                    8.0
+
             local_site (reviewboard.site.models.LocalSite or
                         reviewboard.site.models.LocalSite.ALL, optional):
                 An optional LocalSite that owns the certificates.
@@ -937,7 +1175,7 @@ class BaseCertificateStorageBackend(
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> _StoredCertFingerprintsT:
         """Add verified certificate fingerprints to storage.
 
@@ -976,7 +1214,7 @@ class BaseCertificateStorageBackend(
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Delete certificate fingerprints from storage.
 
@@ -1068,8 +1306,8 @@ class BaseCertificateStorageBackend(
         *,
         hostname: str,
         port: int,
-        local_site: Optional[LocalSite] = None,
-    ) -> Optional[_StoredCertFingerprintsT]:
+        local_site: (LocalSite | None) = None,
+    ) -> _StoredCertFingerprintsT | None:
         """Return certificate fingerprints from storage.
 
         Args:
@@ -1098,7 +1336,7 @@ class BaseCertificateStorageBackend(
     def get_stored_fingerprints_by_id(
         self,
         storage_id: str,
-    ) -> Optional[_StoredCertFingerprintsT]:
+    ) -> _StoredCertFingerprintsT | None:
         """Return certificate fingerpritns from storage identified by ID.
 
         Args:

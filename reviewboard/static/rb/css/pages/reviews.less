@@ -30,44 +30,10 @@
  ****************************************************************************/
 
 .review-comments-inline() {
-  .comment-author {
+  --rb-c-discussion-header-title-color: var(--ink-p-link-fg);
+
+  .rb-c-discussion-header {
     margin-bottom: 1em;
-
-    label {
-      .inline-editor-label();
-      display: flex;
-      gap: var(--ink-u-spacing-sm);
-
-      .avatar-container {
-        background: white;
-        border-radius: 50%;
-        width: 32px;
-        height: 32px;
-      }
-
-      .user {
-        color: var(--ink-p-link-fg);
-        font-size: 1.1em;
-        font-weight: bold;
-        text-decoration: none;
-      }
-
-      .user-reply-info {
-        display: flex;
-        flex-direction: column;
-        gap: var(--ink-u-spacing-s);
-
-        .timestamp {
-          color: var(--ink-p-fg-weak);
-          display: block;
-          text-decoration: none;
-
-          &:hover {
-            text-decoration: underline;
-          }
-        }
-      }
-    }
   }
 
   /*
@@ -76,13 +42,14 @@
    * opens without any jumps.
    */
   &.draft {
+    --rb-c-discussion-header-title-color: var(--rb-p-draft-label-fg);
     --textarea-offset-horiz: calc(var(--rb-c-textarea-spacing) +
                                   var(--ink-u-border-thin));
     --textarea-offset-vert: calc(2 * var(--rb-c-textarea-spacing) +
                                  var(--ink-u-border-thin));
 
-    .comment-author {
-      margin-bottom: calc(var(--textarea-offset-vert) + 1em);
+    .rb-c-discussion-header {
+      margin-bottom: var(--textarea-offset-vert);
 
       label a {
         color: var(--rb-p-draft-label-fg);
@@ -502,38 +469,6 @@
     a {
       color: inherit;
       text-decoration: none;
-    }
-
-    .header-details {
-      display: flex;
-      flex-grow: 1;
-      align-items: baseline;
-    }
-
-    .summary {
-      flex-grow: 1;
-      font-size: 110%;
-      font-weight: bold;
-
-      .review-request-page-entry-title {
-        display: flex;
-        align-items: center;
-        gap: var(--ink-u-spacing-s);
-
-        #rb-ns-pages.base.on-shell-mobile-mode({
-          align-items: start;
-          flex-direction: column;
-        });
-      }
-    }
-
-    .timestamp {
-      color: var(--ink-p-fg-weak);
-      display: block;
-
-      &:hover {
-        text-decoration: underline;
-      }
     }
   }
 

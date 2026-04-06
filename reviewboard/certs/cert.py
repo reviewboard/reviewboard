@@ -12,7 +12,7 @@ import re
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Optional, TYPE_CHECKING, Type, TypeVar
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from cryptography import x509
@@ -21,9 +21,10 @@ from cryptography.x509.oid import NameOID
 from django.utils import timezone as django_timezone
 from django.utils.encoding import force_str
 from django.utils.functional import cached_property
-from djblets.util.symbols import UNSET, Unsettable
 from django.utils.text import slugify
 from django.utils.translation import gettext as _
+from djblets.util.symbols import UNSET, Unsettable
+from typelets.runtime import raise_invalid_type
 from typing_extensions import Self
 
 from reviewboard.certs.errors import (CertificateNotFoundError,
@@ -31,8 +32,13 @@ from reviewboard.certs.errors import (CertificateNotFoundError,
                                       InvalidCertificateFormatError)
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from typing import TypeVar
+
     from typelets.django.json import (SerializableDjangoJSONDict,
                                       SerializableDjangoJSONDictImmutable)
+
+    _T = TypeVar('_T')
 
 
 logger = logging.getLogger(__name__)
@@ -41,15 +47,14 @@ logger = logging.getLogger(__name__)
 _CERT_PEM_RE = re.compile(
     br'-----BEGIN CERTIFICATE-----[\r\n]+'
     br'[A-Za-z0-9+/\r\n]+=*[\r\n]+'
-    br'-----END CERTIFICATE-----')
+    br'-----END CERTIFICATE-----'
+)
 
 _PRIVATE_KEY_PEM_RE = re.compile(
     br'-----BEGIN PRIVATE KEY-----[\r\n]+'
     br'[A-Za-z0-9+/\r\n]+=*[\r\n]+'
-    br'-----END PRIVATE KEY-----')
-
-
-_T = TypeVar('_T')
+    br'-----END PRIVATE KEY-----'
+)
 
 
 def _format_fingerprint(
@@ -87,6 +92,20 @@ class CertDataFormat(Enum):
     PEM = 'PEM'
 
 
+class CertPurpose(Enum):
+    """The purpose of a certificate.
+
+    Version Added:
+        8.0
+    """
+
+    #: A certificate used to verify and trust a server.
+    TRUST = 'trust'
+
+    #: A certificate used to identify the client for authentication.
+    CLIENT = 'client'
+
+
 class CertificateFingerprints:
     """Representation of certificate fingerprints.
 
@@ -95,16 +114,10 @@ class CertificateFingerprints:
     """
 
     #: The human-readable SHA1 fingerprint.
-    #:
-    #: Type:
-    #:     str
-    sha1: Optional[str] = None
+    sha1: (str | None) = None
 
     #: The human-readable SHA256 fingerprint.
-    #:
-    #: Type:
-    #:     str
-    sha256: Optional[str] = None
+    sha256: (str | None) = None
 
     @classmethod
     def from_json(
@@ -203,8 +216,8 @@ class CertificateFingerprints:
     def __init__(
         self,
         *,
-        sha1: Optional[str] = None,
-        sha256: Optional[str] = None,
+        sha1: (str | None) = None,
+        sha256: (str | None) = None,
     ) -> None:
         """Initialize the certificate fingerprints instance.
 
@@ -340,10 +353,30 @@ class Certificate:
     about certificates from a server or tool, or used to provide data for
     storage.
 
+    There are two types of certificates:
+
+    * Trust certificates.
+
+      These are used to verify a remote server's certificate during TLS.
+      These may be root CA certificates, intermediate CA certificates,
+      self-signed server certificates, or other certificates used as trust
+      anchors.
+
+      They do not include a private key.
+
+    * Client certificates.
+
+      These are used to authenticate Review Board with a remote service during
+      mutual TLS. This requires an associated private key.
+
     Consumers should take care not to modify any certificate data after
     loading. While it's possible to change the data, doing so can lead to
     incorrect results, as some data is computed and then cached on the
     instance and cannot be updated later.
+
+    Version Changed:
+        8.0:
+        Added explicit support for specifying a certificate purpose.
 
     Version Added:
         6.0
@@ -360,88 +393,67 @@ class Certificate:
     #:
     #: If available, it will match the format specified in
     #: :py:attr:`data_format`.
-    #:
-    #: Type:
-    #:     bytes
-    cert_data: Optional[bytes]
+    cert_data: bytes | None
 
     #: The format for the loaded certificate and private key data.
-    #:
-    #: Type:
-    #:     CertDataFormat
     data_format: CertDataFormat
 
     #: The hostname that would serve this certificate.
     #:
     #: Note that this may be a wildcard domain (e.g., ``*.example.com``).
-    #:
-    #: Type:
-    #:     str
     hostname: str
 
     #: The loaded private key data, if available.
     #:
     #: This will match the format specified in :py:attr:`data_format`.
-    #:
-    #: Type:
-    #:     bytes
-    key_data: Optional[bytes]
+    key_data: bytes | None
 
     #: The port on the host that would serve this certificate.
-    #:
-    #: Type:
-    #:     int
     port: int
+
+    #: The purpose set for a certificate.
+    #:
+    #: This defines whether the certificate is used for trusting a remote
+    #: server or authenticating Review Board with a service.
+    #:
+    #: Version Added:
+    #:     8.0
+    purpose: CertPurpose
 
     #: Fingerprints for the certificate.
     #:
     #: If not provided during construction, this will be loaded from
     #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
     #: provided).
-    #:
-    #: Type:
-    #:     CertificateFingerprints
-    _fingerprints: Unsettable[Optional[CertificateFingerprints]]
+    _fingerprints: Unsettable[CertificateFingerprints | None]
 
     #: The issuer (usually the hostname) of the certificate.
     #:
     #: If not provided during construction, this will be loaded from
     #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
     #: provided).
-    #:
-    #: Type:
-    #:     str
-    _issuer: Unsettable[Optional[str]]
+    _issuer: Unsettable[str | None]
 
     #: The subject (usually the hostname) of the certificate.
     #:
     #: If not provided during construction, this will be loaded from
     #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
     #: provided).
-    #:
-    #: Type:
-    #:     str
-    _subject: Unsettable[Optional[str]]
+    _subject: Unsettable[str | None]
 
     #: The first date/time in which the certificate is valid.
     #:
     #: If not provided during construction, this will be loaded from
     #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
     #: provided).
-    #:
-    #: Type:
-    #:     datetime
-    _valid_from: Unsettable[Optional[datetime]]
+    _valid_from: Unsettable[datetime | None]
 
     #: The last date/time in which the certificate is valid.
     #:
     #: If not provided during construction, this will be loaded from
     #: :py:attr`cert_data` when needed (and if :py:attr:`cert_data` is
     #: provided).
-    #:
-    #: Type:
-    #:     datetime
-    _valid_through: Unsettable[Optional[datetime]]
+    _valid_through: Unsettable[datetime | None]
 
     @classmethod
     def create_from_files(
@@ -450,27 +462,88 @@ class Certificate:
         hostname: str,
         port: int,
         cert_path: str,
-        key_path: Optional[str] = None,
+        key_path: (str | None) = None,
         data_format: CertDataFormat = CertDataFormat.PEM,
+        purpose: CertPurpose = CertPurpose.TRUST,
     ) -> Self:
         """Return an instance parsed from a PEM bundle file.
 
-        Args:
-            name (str):
-                The descriptive name of this bundle file.
+        Version Changed:
+            8.0:
+            * Added the ``purpose`` argument.
+            * This may now raise :py:exc:`ValueError` if providing an invalid
+              combination of arguments.
 
-            path (str):
-                The path to the file.
+        Args:
+            hostname (str):
+                The primary hostname the certificate represents, used for
+                lookup.
+
+            port (int):
+                The port that served the certificate.
+
+            cert_path (str):
+                The path to the local certificate file.
+
+            key_path (str):
+                The path to the local private key.
+
+            data_format (CertDataFormat, optional):
+                The format of the data stored in ``cert_path``.
+
+            purpose (CertPurpose, optional):
+                The purpose of the certificate.
+
+                This sets whether the certificate should be used to trust
+                a remote server or authenticate Review Board.
+
+                By default, the purpose is to trust the server.
+
+                Version Added:
+                    8.0
 
         Raises:
+            ValueError:
+                One or more arguments were invalid.
+
+                Version Added:
+                    8.0
+
             reviewboard.certs.errors.CertificateNotFoundError:
-                One or more of the certificate files was not founD.
+                One or more of the certificate files was not found.
 
             reviewboard.certs.errors.CertificateStorageError:
                 There was an error loading the CA bundle.
 
                 Details are in the error message.
         """
+        # Validate the arguments based on the purpose of the certificate.
+        if purpose == CertPurpose.TRUST:
+            if key_path:
+                raise ValueError(_(
+                    'key_path cannot be provided when passing '
+                    'purpose=CertPurpose.TRUST.'
+                ))
+        elif purpose == CertPurpose.CLIENT:
+            if not key_path:
+                raise ValueError(_(
+                    'key_path must be provided when passing '
+                    'purpose=CertPurpose.CLIENT.'
+                ))
+        else:
+            raise_invalid_type(
+                purpose,
+                _(
+                    'Received an invalid value for purpose= ({purpose})'
+                ).format(purpose=purpose),
+            )
+
+        # Validate the file paths.
+        if not cert_path:
+            raise ValueError(_(
+                'A certificate path must be provided.'
+            ))
+
         if not os.path.exists(cert_path):
             raise CertificateNotFoundError(
                 _('The SSL/TLS certificate was not found.'))
@@ -528,16 +601,18 @@ class Certificate:
                    port=port,
                    cert_data=cert_data,
                    key_data=key_data,
-                   data_format=CertDataFormat.PEM)
+                   purpose=purpose,
+                   data_format=data_format)
 
     def __init__(
         self,
         *,
         hostname: str,
         port: int,
-        cert_data: Optional[bytes] = None,
-        key_data: Optional[bytes] = None,
+        cert_data: (bytes | None) = None,
+        key_data: (bytes | None) = None,
         data_format: CertDataFormat = CertDataFormat.PEM,
+        purpose: CertPurpose = CertPurpose.TRUST,
         fingerprints: Unsettable[CertificateFingerprints] = UNSET,
         issuer: Unsettable[str] = UNSET,
         subject: Unsettable[str] = UNSET,
@@ -545,6 +620,10 @@ class Certificate:
         valid_through: Unsettable[datetime] = UNSET,
     ) -> None:
         """Initialize the certificate.
+
+        Version Changed:
+            8.0:
+            Added the ``purpose`` argument.
 
         Args:
             hostname (str):
@@ -567,6 +646,17 @@ class Certificate:
                 The format used for ``cert_data`` and ``key_data``.
 
                 This currently only accepts PEM-encoded data.
+
+            purpose (CertPurpose, optional):
+                The purpose of the certificate.
+
+                This sets whether the certificate should be used to trust
+                a remote server or authenticate Review Board.
+
+                By default, the purpose is to trust the server.
+
+                Version Added:
+                    8.0
 
             subject (str, optional):
                 The subject (usually the hostname) of the certificate.
@@ -601,7 +691,36 @@ class Certificate:
 
                 If not provided, this will be loaded from ``cert_data`` when
                 needed (and if ``cert_data`` is provided).
+
+        Raises:
+            ValueError:
+                One or more arguments were invalid.
         """
+        # Validate the arguments based on the purpose of the certificate.
+        #
+        # Note that this Certificate may represent an incomplete state, so
+        # it may not have the cert/key data. However, if it does have cert
+        # data, we can at least verify the key data against it.
+        if purpose == CertPurpose.TRUST:
+            if key_data:
+                raise ValueError(_(
+                    'key_data cannot be provided when passing '
+                    'purpose=CertPurpose.TRUST.'
+                ))
+        elif purpose == CertPurpose.CLIENT:
+            if cert_data and not key_data:
+                raise ValueError(_(
+                    'key_data must be provided when passing '
+                    'purpose=CertPurpose.CLIENT.'
+                ))
+        else:
+            raise_invalid_type(
+                purpose,
+                _(
+                    'Received an invalid value for purpose= ({purpose})'
+                ).format(purpose=purpose),
+            )
+
         if valid_from is not UNSET and django_timezone.is_naive(valid_from):
             raise ValueError('valid_from must contain a timezone.')
 
@@ -614,6 +733,7 @@ class Certificate:
         self.hostname = hostname
         self.key_data = key_data
         self.port = port
+        self.purpose = purpose
         self._fingerprints = fingerprints
         self._issuer = issuer
         self._subject = subject
@@ -621,7 +741,7 @@ class Certificate:
         self._valid_through = valid_through
 
     @property
-    def fingerprints(self) -> Optional[CertificateFingerprints]:
+    def fingerprints(self) -> CertificateFingerprints | None:
         """Fingerprints for the certificate.
 
         Type:
@@ -643,7 +763,7 @@ class Certificate:
         return fingerprints
 
     @cached_property
-    def x509_cert(self) -> Optional[x509.Certificate]:
+    def x509_cert(self) -> x509.Certificate | None:
         """A Cryptography X509 Certificate representing this certificate.
 
         This will be created from the loaded from the certificate data stored
@@ -668,7 +788,7 @@ class Certificate:
         return x509.load_pem_x509_certificate(self.cert_data)
 
     @property
-    def subject(self) -> Optional[str]:
+    def subject(self) -> str | None:
         """The subject of the certificate.
 
         Type:
@@ -682,8 +802,48 @@ class Certificate:
 
         return subject
 
+    @cached_property
+    def subject_alternative_names(self) -> Sequence[str]:
+        """The Subject Alternative Names of the certificate.
+
+        This will include the string values for any DNS and IP addresses
+        found in the Subject Alternative Names extension of the certificate,
+        if present.
+
+        Version Added:
+            8.0
+
+        Type:
+            list of str
+        """
+        x509_cert = self.x509_cert
+
+        if not x509_cert:
+            return []
+
+        try:
+            san_ext = (
+                x509_cert.extensions
+                .get_extension_for_class(x509.SubjectAlternativeName)
+            )
+
+            return [
+                str(item.value)
+                for item in san_ext.value
+                if isinstance(item, (x509.DNSName, x509.IPAddress))
+            ]
+        except x509.ExtensionNotFound:
+            # The extension wasn't found in the cert, so return an empty list.
+            return []
+        except Exception as e:
+            logger.exception('Unexpected error retrieving SAN values for '
+                             'x509 cert %r: %s',
+                             x509_cert, e)
+
+            return []
+
     @property
-    def issuer(self) -> Optional[str]:
+    def issuer(self) -> str | None:
         """The issuer of the certificate.
 
         Type:
@@ -698,7 +858,7 @@ class Certificate:
         return issuer
 
     @property
-    def valid_from(self) -> Optional[datetime]:
+    def valid_from(self) -> datetime | None:
         """The date/time in which the certificate is first valid.
 
         Type:
@@ -713,7 +873,7 @@ class Certificate:
         return valid_from
 
     @property
-    def valid_through(self) -> Optional[datetime]:
+    def valid_through(self) -> datetime | None:
         """The last date/time in which the certificate is valid.
 
         Type:
@@ -778,6 +938,12 @@ class Certificate:
                 port (int):
                     The port on the host serving the certificate.
 
+                purpose (str):
+                    The purpose of the certificate.
+
+                    Version Added:
+                        8.0
+
                 subject (str):
                     The subject of the certificate, or ``None`` if not
                     available.
@@ -799,6 +965,7 @@ class Certificate:
             'hostname': self.hostname,
             'issuer': self.issuer,
             'port': self.port,
+            'purpose': self.purpose.value,
             'subject': self.subject,
             'valid_from': self.valid_from,
             'valid_through': self.valid_through,
@@ -876,9 +1043,9 @@ class Certificate:
 
     def _get_x509_attr(
         self,
-        attr_type: Type[_T],
+        attr_type: type[_T],
         field_name: str,
-    ) -> Optional[_T]:
+    ) -> _T | None:
         """Return a normalized value for an X509.Certificate attribute.
 
         Any "Name" fields will be converted to a string.
@@ -896,7 +1063,7 @@ class Certificate:
             object:
             The resulting value, or ``None``.
         """
-        value: Optional[_T] = None
+        value: (_T | None) = None
         x509_cert = self.x509_cert
 
         if x509_cert is not None:
@@ -927,13 +1094,10 @@ class Certificate:
             The string representation.
         """
         return (
-            '<Certificate(hostname=%(hostname)r, port=%(port)r,'
-            ' fingerprints=%(fingerprints)r)>'
-            % {
-                'fingerprints': self.fingerprints,
-                'hostname': self.hostname,
-                'port': self.port,
-            }
+            f'<Certificate(hostname={self.hostname!r},'
+            f' port={self.port!r},'
+            f' purpose={self.purpose},'
+            f' fingerprints={self.fingerprints!r})>'
         )
 
 
@@ -958,23 +1122,14 @@ class CertificateBundle:
     ######################
 
     #: The loaded data of the certificate bundle.
-    #:
-    #: Type:
-    #:     bytes
     bundle_data: bytes
 
     #: The format for the loaded certificate and private key data.
-    #:
-    #: Type:
-    #:     CertDataFormat
     data_format: CertDataFormat
 
     #: The name of this bundle.
     #:
     #: This is in :term:`slug` format.
-    #:
-    #: Type:
-    #:     str
     name: str
 
     @classmethod

@@ -1,0 +1,228 @@
+@import (reference) "rb/css/pages/base.less";
+
+
+:root {
+  --rb-c-discussion-header-title-color: var(--ink-p-fg);
+}
+
+
+/**
+ * The header for part of a discussion.
+ *
+ * This is used at the top of reviews (or other review request entry boxes)
+ * and for replies, and can be used in custom UIs as well to represent the
+ * author and timestamp for part of a discussion.
+ *
+ * Normally, the header's layout is a single line, showing avatars (if
+ * enabled), the status indicator (if set), the user's name and roles, and
+ * then the timestamp along the right-hand side.
+ *
+ * Alternatively, this can be put into compact mode, which takes less
+ * horizontal width and instead positions the timestamp directly below
+ * the author's name.
+ *
+ * Version Added:
+ *     8.0
+ *
+ * Modifiers:
+ *     -has-avatar:
+ *         If set, an avatar will be shown along the left of the bar.
+ *
+ *     -is-compact:
+ *         If set, this will go into compact mode.
+ *
+ * CSS Variables:
+ *     --rb-c-discussion-header-title-color:
+ *         The color used for the title text.
+ *
+ * Structure:
+ *     <div class="rb-c-discussion-header
+ *                 [-has-avatar]
+ *                 [-is-compact]">
+ *      [<div class="rb-c-discussion-header__avatar">...</div>]
+ *      [<div class="rb-c-discussion-header__status">...</div>]
+ *      <div class="rb-c-discussion-header__title">...</div>
+ *      <div class="rb-c-discussion-header__timestamp">...</div>
+ *     </div>
+ */
+.rb-c-discussion-header {
+  display: grid;
+  gap: var(--ink-u-spacing-s);
+
+  /*
+   * We'll align centered, and then align the text cells as baseline.
+   * This will prevent baseline from being generated based on either the
+   * avatar or the status icon, which will throw off alignment.
+   */
+  align-items: center;
+
+  /* Compact styling is suitable for both mobile and non-mobile use. */
+  ._compact-styling() {
+    align-items: start;
+    grid-row-gap: var(--ink-u-spacing-xs);
+
+    /*
+     * Styling when a status indicator is shown.
+     *
+     * This is used as the default, since browsers may not support :has(),
+     * and we don't want to risk the status indicator being hidden.
+     */
+    grid-template:
+      "status       title       title       title"
+      ".            timestamp   edit-icon   ."
+      / min-content max-content min-content max-content;
+
+    &.-has-avatar {
+      grid-template:
+        "avatar       status      title       title       title"
+        "avatar       .           timestamp   edit-icon   ."
+        / min-content min-content max-content min-content max-content;
+    }
+
+    &:not(:has(.rb-c-discussion-header__status)) {
+      grid-template:
+        "title        title       title"
+        "timestamp    edit-icon   ."
+        / max-content min-content max-content;
+
+      &.-has-avatar {
+        grid-template:
+          "avatar       title       title       title"
+          "avatar       timestamp   edit-icon   ."
+          / min-content max-content min-content max-content;
+      }
+    }
+  }
+
+  &.-is-compact {
+    ._compact-styling();
+  }
+
+  #rb-ns-pages.base.on-shell-mobile-mode({
+   ._compact-styling();
+  }, @else: {
+    /*
+     * Styling when a status indicator is shown.
+     *
+     * This is used as the default, since browsers may not support :has(),
+     * and we don't want to risk the status indicator being hidden.
+     */
+    grid-template:
+      "status       title timestamp"
+      / min-content 1fr   auto;
+
+    &.-has-avatar {
+      grid-template:
+        "avatar       status      title timestamp"
+        / min-content min-content 1fr   auto;
+    }
+
+    &:not(:has(.rb-c-discussion-header__status)) {
+      grid-template:
+        "title timestamp"
+        / 1fr  auto;
+
+      &.-has-avatar {
+        grid-template:
+          "avatar       title timestamp"
+          / min-content 1fr   auto;
+      }
+    }
+  });
+
+  .rb-c-inline-editor-edit-icon {
+    grid-area: edit-icon;
+  }
+
+  /**
+   * The avatar to display.
+   *
+   * If present, the ``-has-avatar`` modifier should be set on the
+   * component.
+   *
+   * The caller can place any avatar in here.
+   *
+   * Structure:
+   *     <div class="rb-c-discussion-header__avatar">
+   *      ...
+   *     </div>
+   */
+  &__avatar {
+    grid-area: avatar;
+
+    .avatar-container {
+      background: white;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+    }
+  }
+
+  /**
+   * The title area for the header.
+   *
+   * This may show arbitrary text or it may show a user's information.
+   * The content is up to the caller.
+   *
+   * Structure:
+   *     <div class="rb-c-discussion-header__title">
+   *      ...
+   *     </div>
+   */
+  &__title {
+    grid-area: title;
+
+    align-self: baseline;
+    color: var(--rb-c-discussion-header-title-color);
+    font-size: 110%;
+    font-weight: bold;
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+  }
+
+  /**
+   * The status area for the header.
+   *
+   * If present, this will generally include the "new updates" icon.
+   *
+   * Structure:
+   *     <div class="rb-c-discussion-header__status">
+   *      <span class="rb-icon rb-icon-new-updates"
+   *            title="..."></span>
+   *     </div>
+   */
+  &__status {
+    grid-area: status;
+
+    display: flex;
+    align-items: center;
+    height: 100%;
+  }
+
+  /**
+   * The timestamp area for the header.
+   *
+   * Structure:
+   *     <div class="rb-c-discussion-header__timestamp">
+   *      <a class="timestamp"
+   *         href="...">
+   *       <time class="timesince"
+   *             datetime="...">
+   *        ...
+   *       </time>
+   *      </a>
+   *     </div>
+   */
+  &__timestamp {
+    grid-area: timestamp;
+
+    align-self: baseline;
+
+    &, a {
+      color: var(--ink-p-fg-weak);
+    }
+  }
+}

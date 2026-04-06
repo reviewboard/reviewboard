@@ -15,15 +15,18 @@ import kgb
 from cryptography.x509.oid import NameOID
 from djblets.util.serializers import DjbletsJSONEncoder
 
-from reviewboard.certs.cert import Certificate, CertificateFingerprints
+from reviewboard.certs.cert import (CertPurpose,
+                                    Certificate,
+                                    CertificateFingerprints)
 from reviewboard.certs.errors import (CertificateNotFoundError,
                                       CertificateStorageError,
                                       InvalidCertificateFormatError)
 from reviewboard.certs.tests.testcases import (CertificateTestCase,
-                                               TEST_CERT_PEM,
-                                               TEST_KEY_PEM,
+                                               TEST_CLIENT_CERT_PEM,
+                                               TEST_CLIENT_KEY_PEM,
                                                TEST_SHA1,
-                                               TEST_SHA256)
+                                               TEST_SHA256,
+                                               TEST_TRUST_CERT_PEM)
 
 
 class CertificateTests(kgb.SpyAgency, CertificateTestCase):
@@ -33,10 +36,10 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         6.0
     """
 
-    def test_create_from_files(self) -> None:
-        """Testing Certificate.create_form_files"""
+    def test_create_from_files_with_trust(self) -> None:
+        """Testing Certificate.create_from_files with purpose=trust"""
         cert_fd, cert_path = tempfile.mkstemp()
-        os.write(cert_fd, TEST_CERT_PEM)
+        os.write(cert_fd, TEST_TRUST_CERT_PEM)
         os.close(cert_fd)
 
         try:
@@ -47,34 +50,67 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         finally:
             os.unlink(cert_path)
 
-        self.assertEqual(cert.cert_data, TEST_CERT_PEM)
+        self.assertEqual(cert.cert_data, TEST_TRUST_CERT_PEM)
         self.assertIsNone(cert.key_data)
 
-    def test_create_from_files_with_key(self) -> None:
-        """Testing Certificate.create_form_files with key_path="""
+    def test_create_from_files_with_trust_and_key(self) -> None:
+        """Testing Certificate.create_from_files with purpose=trust and
+        key_path=
+        """
         cert_fd, cert_path = tempfile.mkstemp()
-        os.write(cert_fd, TEST_CERT_PEM)
+        os.write(cert_fd, TEST_TRUST_CERT_PEM)
         os.close(cert_fd)
 
         key_fd, key_path = tempfile.mkstemp()
-        os.write(key_fd, TEST_KEY_PEM)
+        os.write(key_fd, TEST_CLIENT_KEY_PEM)
+        os.close(key_fd)
+
+        message = (
+            'key_path cannot be provided when passing '
+            'purpose=CertPurpose.TRUST.'
+        )
+
+        try:
+            with self.assertRaisesMessage(ValueError, message):
+                Certificate.create_from_files(
+                    hostname='example.com',
+                    port=443,
+                    purpose=CertPurpose.TRUST,
+                    cert_path=cert_path,
+                    key_path=key_path,
+                )
+        finally:
+            os.unlink(cert_path)
+            os.unlink(key_path)
+
+    def test_create_from_files_with_client_and_key(self) -> None:
+        """Testing Certificate.create_from_files with purpose=client and
+        key_path=
+        """
+        cert_fd, cert_path = tempfile.mkstemp()
+        os.write(cert_fd, TEST_CLIENT_CERT_PEM)
+        os.close(cert_fd)
+
+        key_fd, key_path = tempfile.mkstemp()
+        os.write(key_fd, TEST_CLIENT_KEY_PEM)
         os.close(key_fd)
 
         try:
             cert = Certificate.create_from_files(
                 hostname='example.com',
                 port=443,
+                purpose=CertPurpose.CLIENT,
                 cert_path=cert_path,
                 key_path=key_path)
         finally:
             os.unlink(cert_path)
             os.unlink(key_path)
 
-        self.assertEqual(cert.cert_data, TEST_CERT_PEM)
-        self.assertEqual(cert.key_data, TEST_KEY_PEM)
+        self.assertEqual(cert.cert_data, TEST_CLIENT_CERT_PEM)
+        self.assertEqual(cert.key_data, TEST_CLIENT_KEY_PEM)
 
     def test_create_from_files_with_cert_not_found(self) -> None:
-        """Testing Certificate.create_form_files with cert not found"""
+        """Testing Certificate.create_from_files with cert not found"""
         message = 'The SSL/TLS certificate was not found.'
 
         with self.assertRaisesMessage(CertificateNotFoundError, message):
@@ -83,26 +119,8 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
                 port=443,
                 cert_path='/rb-tests-xxx/bad/')
 
-    def test_create_from_files_with_key_not_found(self) -> None:
-        """Testing Certificate.create_form_files with key not found"""
-        cert_fd, cert_path = tempfile.mkstemp()
-        os.write(cert_fd, TEST_CERT_PEM)
-        os.close(cert_fd)
-
-        message = 'The SSL/TLS private key was not found.'
-
-        try:
-            with self.assertRaisesMessage(CertificateNotFoundError, message):
-                Certificate.create_from_files(
-                    hostname='example.com',
-                    port=443,
-                    cert_path=cert_path,
-                    key_path='/rb-tests-xxx/bad/')
-        finally:
-            os.unlink(cert_path)
-
     def test_create_from_files_with_ioerror_cert(self) -> None:
-        """Testing Certificate.create_form_files with IOError reading cert"""
+        """Testing Certificate.create_from_files with IOError reading cert"""
         self.spy_on(os.path.exists, op=kgb.SpyOpReturn(True))
 
         message = (
@@ -117,32 +135,8 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
                 port=443,
                 cert_path='/rb-tests/bad-path/')
 
-    def test_create_from_files_with_ioerror_key(self) -> None:
-        """Testing Certificate.create_form_files with IOError reading key"""
-        cert_fd, cert_path = tempfile.mkstemp()
-        os.write(cert_fd, TEST_CERT_PEM)
-        os.close(cert_fd)
-
-        self.spy_on(os.path.exists, op=kgb.SpyOpReturn(True))
-
-        message = (
-            r'Error reading SSL/TLS private key file\. Administrators can '
-            r'find details in the Review Board server logs \(error ID '
-            r'[a-z0-9-]+\)\.'
-        )
-
-        try:
-            with self.assertRaisesRegex(CertificateStorageError, message):
-                Certificate.create_from_files(
-                    hostname='example.com',
-                    port=443,
-                    cert_path=cert_path,
-                    key_path='/rb-tests/bad-path/')
-        finally:
-            os.unlink(cert_path)
-
     def test_create_from_files_with_invalid_cert(self) -> None:
-        """Testing Certificate.create_form_files with invalid cert format"""
+        """Testing Certificate.create_from_files with invalid cert format"""
         cert_fd, cert_path = tempfile.mkstemp()
         os.write(cert_fd, b'XXX')
         os.close(cert_fd)
@@ -159,10 +153,60 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         self.assertEqual(ctx.exception.data, b'XXX')
         self.assertEqual(ctx.exception.path, cert_path)
 
-    def test_create_from_files_with_invalid_key(self) -> None:
-        """Testing Certificate.create_form_files with invalid key format"""
+    def test_create_from_files_with_client_and_key_not_found(self) -> None:
+        """Testing Certificate.create_from_files with purpose=client and
+        key not found
+        """
         cert_fd, cert_path = tempfile.mkstemp()
-        os.write(cert_fd, TEST_CERT_PEM)
+        os.write(cert_fd, TEST_CLIENT_CERT_PEM)
+        os.close(cert_fd)
+
+        message = 'The SSL/TLS private key was not found.'
+
+        try:
+            with self.assertRaisesMessage(CertificateNotFoundError, message):
+                Certificate.create_from_files(
+                    hostname='example.com',
+                    port=443,
+                    purpose=CertPurpose.CLIENT,
+                    cert_path=cert_path,
+                    key_path='/rb-tests-xxx/bad/')
+        finally:
+            os.unlink(cert_path)
+
+    def test_create_from_files_with_client_and_ioerror_key(self) -> None:
+        """Testing Certificate.create_from_files with purpose=client and
+        IOError reading key
+        """
+        cert_fd, cert_path = tempfile.mkstemp()
+        os.write(cert_fd, TEST_CLIENT_CERT_PEM)
+        os.close(cert_fd)
+
+        self.spy_on(os.path.exists, op=kgb.SpyOpReturn(True))
+
+        message = (
+            r'Error reading SSL/TLS private key file\. Administrators can '
+            r'find details in the Review Board server logs \(error ID '
+            r'[a-z0-9-]+\)\.'
+        )
+
+        try:
+            with self.assertRaisesRegex(CertificateStorageError, message):
+                Certificate.create_from_files(
+                    hostname='example.com',
+                    port=443,
+                    purpose=CertPurpose.CLIENT,
+                    cert_path=cert_path,
+                    key_path='/rb-tests/bad-path/')
+        finally:
+            os.unlink(cert_path)
+
+    def test_create_from_files_with_client_and_invalid_key(self) -> None:
+        """Testing Certificate.create_from_files with purpose=client and
+        invalid key format
+        """
+        cert_fd, cert_path = tempfile.mkstemp()
+        os.write(cert_fd, TEST_CLIENT_CERT_PEM)
         os.close(cert_fd)
 
         key_fd, key_path = tempfile.mkstemp()
@@ -174,6 +218,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
                 Certificate.create_from_files(
                     hostname='example.com',
                     port=443,
+                    purpose=CertPurpose.CLIENT,
                     cert_path=cert_path,
                     key_path=key_path)
         finally:
@@ -205,7 +250,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         """Testing Certificate.x509_cert"""
         cert = Certificate(hostname='example.com',
                            port=443,
-                           cert_data=TEST_CERT_PEM)
+                           cert_data=TEST_TRUST_CERT_PEM)
 
         x509_cert = cert.x509_cert
         assert x509_cert is not None
@@ -236,6 +281,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         self.assertIsNone(cert.fingerprints)
         self.assertIsNone(cert.issuer)
         self.assertIsNone(cert.subject)
+        self.assertEqual(cert.subject_alternative_names, [])
         self.assertIsNone(cert.valid_from)
         self.assertIsNone(cert.valid_through)
 
@@ -256,6 +302,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
 
         self.assertEqual(cert.subject, 'Subject')
         self.assertEqual(cert.issuer, 'Issuer')
+        self.assertEqual(cert.subject_alternative_names, [])
         self.assertEqual(cert.valid_from,
                          datetime(2023, 7, 14, 7, 50, 30, tzinfo=timezone.utc))
         self.assertEqual(cert.valid_through,
@@ -271,10 +318,11 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         """Testing Certificate certificate attributes with cert data"""
         cert = Certificate(hostname='example.com',
                            port=443,
-                           cert_data=TEST_CERT_PEM)
+                           cert_data=TEST_TRUST_CERT_PEM)
 
         self.assertEqual(cert.subject, 'example.com')
         self.assertEqual(cert.issuer, 'example.com')
+        self.assertEqual(cert.subject_alternative_names, [])
         self.assertEqual(cert.valid_from,
                          datetime(2023, 7, 14, 7, 50, 30, tzinfo=timezone.utc))
         self.assertEqual(cert.valid_through,
@@ -288,6 +336,44 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
 
         # This should be cached.
         self.assertIs(cert.fingerprints, fingerprints)
+
+    def test_attr_x509_subject_alt_names(self) -> None:
+        """Testing Certificate.subject_alternative_names"""
+        cert = Certificate(
+            hostname='example.com',
+            port=443,
+            cert_data=b"""-----BEGIN CERTIFICATE-----
+MIIEWzCCAkOgAwIBAgIUH/aJUMZgutxwbM0xXq8DRrfVR+gwDQYJKoZIhvcNAQEL
+BQAwFzEVMBMGA1UEAwwMVGVzdCBMREFQIENBMB4XDTI2MDMxNjIzNDM0NVoXDTM2
+MDMxMzIzNDM0NVowFDESMBAGA1UEAwwJbG9jYWxob3N0MIIBIjANBgkqhkiG9w0B
+AQEFAAOCAQ8AMIIBCgKCAQEAvR432MX+pKoZcpXG7hP2DL6C3YlBggoDJ6YoKz1V
+k8dNyX4jWkcYYXbDAMMWd72LQl/LBJeKguaeQpVqv3ViWCgK6aompJDkqyTNqs3l
+sbL7ZXzBT+6E/iwP6ChxXEVY8EsBC8kAzBoq1gG1QvtT0qj1P0FpgPKl2T7SxwUG
+B+k9gHNwHRRoMiFDVozbB3l6KHUaTro3RmVbAngzgK+2fYv5rXRKhdaKlIU555To
+sExOXW9OCyiT7gUX8F/UGp05MhdGoJeB6rj6/Y6ekIubQbzW3JiPWXHuCelO/Iel
+VNHUVRacUjXMndXVFx6J+AEmhIdhLK193WZoXV5eAMmd0QIDAQABo4GhMIGeMAkG
+A1UdEwQCMAAwDgYDVR0PAQH/BAQDAgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMBMCwG
+A1UdEQQlMCOCCWxvY2FsaG9zdIcEfwAAAYcQAAAAAAAAAAAAAAAAAAAAATAdBgNV
+HQ4EFgQURPbKJRFrb6AbUB4GuvEWMIKwCFcwHwYDVR0jBBgwFoAUFZ8R0MgmCmxb
+G0buLdWs5L+1kT0wDQYJKoZIhvcNAQELBQADggIBACRE4MjIm1hlC5+xiBlyrQ1i
+B1TWcRkX9+0UQfI4BMdaIPrEZLz1B8mdRcRAn5NKyfjQKhUsbW7aBXUD/3wsxuy+
+Lfgek8xvDoeY4y/L4wkdFl+QfYKgwLsXrzMexHwcCZ3SEvaqFrm55hW0hVcX5FeW
+4FARqlGIWp+MSPfGtDHbncGUnk+fRO4EGiZcsakQNdzL7Gn+aS/1swk0A0w6V5bx
++/LkMhkTEZt+fClRAMNW2X169ki+/vDe7pQQinrQ6j+8fDwMvrAD+qpSM91CJLNA
+ddMXmrDbvYgDQdQ+YbineuSahoIjgPzE8hJ8rSVl5R+uGSjTgbS5JsrqlA+bP0se
+/VzkkIglRm5XmGUHYT4CQIAbbg1u5wQsOrgaymBbFWN08eNhNAak0j0KhmF1PDy6
+LML/n+xSjIDwI4llZkog1hv1jmSCW0PJ9ty6UHb6yfZ063spR/SIpMtekGkLllAR
+RwPgp5YWsu1t/GiEk0qWlXT6qRxtjYh2zL5SorEAmJtwOYZj5ywuKG4NUzZQ9vqD
+0PsulCD8L5we9EAuxYY9D9wQL7qlQLoPnL01FRscsVFHEw6Dv3noqCa0BzjMcU3H
+RS9daj4M6YOwBbgGt+YgjLCGsQ7fRGXYo1UebeZDFE6RwLJ0FQvzUQQfuEk7qSq3
+pa6+8p+V5VkIunYFLWOw
+-----END CERTIFICATE-----""")
+
+        self.assertEqual(cert.subject_alternative_names, [
+            'localhost',
+            '127.0.0.1',
+            '::1',
+        ])
 
     def test_is_valid_with_not_expired(self) -> None:
         """Testing Certificate.is_valid with not expired"""
@@ -341,7 +427,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         """Testing Certificate.write_cert_file"""
         cert = Certificate(hostname='example.com',
                            port=443,
-                           cert_data=TEST_CERT_PEM)
+                           cert_data=TEST_TRUST_CERT_PEM)
 
         fd, path = tempfile.mkstemp()
         os.close(fd)
@@ -350,7 +436,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
             cert.write_cert_file(path)
 
             with open(path, 'rb') as fp:
-                self.assertEqual(fp.read(), TEST_CERT_PEM)
+                self.assertEqual(fp.read(), TEST_TRUST_CERT_PEM)
         finally:
             os.unlink(path)
 
@@ -358,7 +444,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         """Testing Certificate.write_cert_file with IOError"""
         cert = Certificate(hostname='example.com',
                            port=443,
-                           cert_data=TEST_CERT_PEM)
+                           cert_data=TEST_TRUST_CERT_PEM)
 
         message = (
             r'Error writing SSL/TLS certificate file\. Administrators can '
@@ -373,8 +459,9 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         """Testing Certificate.write_key_file"""
         cert = Certificate(hostname='example.com',
                            port=443,
-                           cert_data=TEST_CERT_PEM,
-                           key_data=TEST_KEY_PEM)
+                           purpose=CertPurpose.CLIENT,
+                           cert_data=TEST_CLIENT_CERT_PEM,
+                           key_data=TEST_CLIENT_KEY_PEM)
 
         fd, path = tempfile.mkstemp()
         os.close(fd)
@@ -383,7 +470,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
             cert.write_key_file(path)
 
             with open(path, 'rb') as fp:
-                self.assertEqual(fp.read(), TEST_KEY_PEM)
+                self.assertEqual(fp.read(), TEST_CLIENT_KEY_PEM)
         finally:
             os.unlink(path)
 
@@ -391,8 +478,9 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         """Testing Certificate.write_key_file with IOError"""
         cert = Certificate(hostname='example.com',
                            port=443,
-                           cert_data=TEST_CERT_PEM,
-                           key_data=TEST_KEY_PEM)
+                           purpose=CertPurpose.CLIENT,
+                           cert_data=TEST_CLIENT_CERT_PEM,
+                           key_data=TEST_CLIENT_KEY_PEM)
 
         message = (
             r'Error writing SSL/TLS private key file\. Administrators can '
@@ -411,7 +499,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         self.assertEqual(
             repr(cert),
             "<Certificate(hostname='example.com', port=443, "
-            "fingerprints=None)>")
+            "purpose=CertPurpose.TRUST, fingerprints=None)>")
 
     def test_repr_with_fingerprints(self) -> None:
         """Testing Certificate.__repr__ with fingerprints"""
@@ -423,6 +511,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
         self.assertEqual(
             repr(cert),
             "<Certificate(hostname='example.com', port=443, "
+            "purpose=CertPurpose.TRUST, "
             "fingerprints=<CertificateFingerprints("
             "sha1='F2:35:0F:BB:34:40:84:78:8B:20:1D:40:B1:4A:17:0C:DE:36:2F:"
             "D5', sha256=None)>)>")
@@ -452,6 +541,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
                 'hostname': 'example.com',
                 'issuer': 'Issuer',
                 'port': 443,
+                'purpose': 'trust',
                 'subject': 'Subject',
                 'valid_from': datetime(2023, 7, 14, 7, 50, 30,
                                        tzinfo=timezone.utc),
@@ -476,6 +566,7 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
                 'hostname': 'example.com',
                 'issuer': 'Issuer',
                 'port': 443,
+                'purpose': 'trust',
                 'subject': 'Subject',
                 'valid_from': '2023-07-14T07:50:30Z',
                 'valid_through': '2024-07-13T07:50:30Z',

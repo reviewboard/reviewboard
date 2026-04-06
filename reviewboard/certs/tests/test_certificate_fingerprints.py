@@ -10,7 +10,7 @@ from cryptography import x509
 
 from reviewboard.certs.cert import CertificateFingerprints
 from reviewboard.certs.tests.testcases import (CertificateTestCase,
-                                               TEST_CERT_PEM,
+                                               TEST_TRUST_CERT_PEM,
                                                TEST_SHA1,
                                                TEST_SHA1_2,
                                                TEST_SHA256,
@@ -76,7 +76,7 @@ class CertificateFingerprintTests(CertificateTestCase):
     def test_from_x509_cert(self) -> None:
         """Testing CertificateFingerprints.from_x509_cert"""
         fingerprints = CertificateFingerprints.from_x509_cert(
-            x509.load_pem_x509_certificate(TEST_CERT_PEM))
+            x509.load_pem_x509_certificate(TEST_TRUST_CERT_PEM))
 
         self.assertEqual(fingerprints.sha1, TEST_SHA1)
         self.assertEqual(fingerprints.sha256, TEST_SHA256)
