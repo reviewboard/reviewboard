@@ -4,68 +4,16 @@ These variables and functions can be used to identify the version of
 Review Board. They're largely used for packaging purposes.
 """
 
-#: The version of Review Board.
-#:
-#: This is in the format of:
-#:
-#: (Major, Minor, Micro, Patch, alpha/beta/rc/final, Release Number, Released)
-#:
-VERSION = (7, 1, 0, 0, 'alpha', 0, False)
+from __future__ import annotations
 
-
-def get_version_string():
-    """Return the Review Board version as a human-readable string."""
-    version = '%s.%s' % (VERSION[0], VERSION[1])
-
-    if VERSION[2] or VERSION[3]:
-        version += ".%s" % VERSION[2]
-
-    if VERSION[3]:
-        version += ".%s" % VERSION[3]
-
-    if VERSION[4] != 'final':
-        if VERSION[4] == 'rc':
-            version += ' RC%s' % VERSION[5]
-        else:
-            version += ' %s %s' % (VERSION[4], VERSION[5])
-
-    if not is_release():
-        version += " (dev)"
-
-    return version
-
-
-def get_package_version():
-    """Return the Review Board version as a Python package version string.
-
-    Returns:
-        unicode:
-        The Review Board package version.
-    """
-    version = '%s.%s' % (VERSION[0], VERSION[1])
-
-    if VERSION[2] or VERSION[3]:
-        version = '%s.%s' % (version, VERSION[2])
-
-    if VERSION[3]:
-        version = '%s.%s' % (version, VERSION[3])
-
-    tag = VERSION[4]
-
-    if tag != 'final':
-        if tag == 'alpha':
-            tag = 'a'
-        elif tag == 'beta':
-            tag = 'b'
-
-        version = '%s%s%s' % (version, tag, VERSION[5])
-
-    return version
-
-
-def is_release():
-    """Return whether this is a released version of Review Board."""
-    return VERSION[6]
+from reviewboard._version import (
+    VERSION,
+    __version__,
+    __version_info__,
+    get_package_version,
+    get_version_string,
+    is_release,
+)
 
 
 def get_manual_url():
@@ -216,10 +164,14 @@ def finalize_setup(is_upgrade=False):
                                  is_upgrade=is_upgrade)
 
 
-#: An alias for the the version information from :py:data:`VERSION`.
-#:
-#: This does not include the last entry in the tuple (the released state).
-__version_info__ = VERSION[:-1]
-
-#: An alias for the version used for the Python package.
-__version__ = get_package_version()
+__all__ = [
+    'VERSION',
+    '__version__',
+    '__version_info__',
+    'finalize_setup',
+    'get_manual_url',
+    'get_package_version',
+    'get_version_string',
+    'initialize',
+    'is_release',
+]
