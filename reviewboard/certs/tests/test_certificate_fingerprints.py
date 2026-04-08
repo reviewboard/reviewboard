@@ -51,21 +51,84 @@ class CertificateFingerprintTests(CertificateTestCase):
         self.assertIsNone(fingerprints.sha1)
         self.assertIsNone(fingerprints.sha256)
 
-    def test_from_string_with_sha1(self) -> None:
-        """Testing CertificateFingerprints.from_string with SHA-1"""
+    def test_from_string_with_sha1_fingerprint(self) -> None:
+        """Testing CertificateFingerprints.from_string with SHA-1 fingerprint
+        """
         fingerprints = CertificateFingerprints.from_string(TEST_SHA1)
 
         assert fingerprints is not None
         self.assertEqual(fingerprints.sha1, TEST_SHA1)
         self.assertIsNone(fingerprints.sha256)
 
-    def test_from_string_with_sha256(self) -> None:
-        """Testing CertificateFingerprints.from_string with SHA-256"""
+    def test_from_string_with_sha1_fingerprint_invalid(self) -> None:
+        """Testing CertificateFingerprints.from_string with invalid SHA-1
+        fingerprint
+        """
+        self.assertIsNone(CertificateFingerprints.from_string(
+            f'{TEST_SHA1[:-1]}Z'
+        ))
+
+    def test_from_string_with_sha1_string(self) -> None:
+        """Testing CertificateFingerprints.from_string with SHA-1 string"""
+        fingerprints = CertificateFingerprints.from_string(
+            TEST_SHA1
+            .replace(':', '')
+            .lower()
+        )
+
+        assert fingerprints is not None
+        self.assertEqual(fingerprints.sha1, TEST_SHA1)
+        self.assertIsNone(fingerprints.sha256)
+
+    def test_from_string_with_sha1_string_invalid(self) -> None:
+        """Testing CertificateFingerprints.from_string with invalid SHA-1
+        string
+        """
+        sha = TEST_SHA1.replace(':', '').lower()
+
+        self.assertIsNone(CertificateFingerprints.from_string(
+            f'{sha[:-1]}z'
+        ))
+
+    def test_from_string_with_sha256_fingerprint(self) -> None:
+        """Testing CertificateFingerprints.from_string with SHA-256
+        fingerprint
+        """
         fingerprints = CertificateFingerprints.from_string(TEST_SHA256)
 
         assert fingerprints is not None
         self.assertIsNone(fingerprints.sha1)
         self.assertEqual(fingerprints.sha256, TEST_SHA256)
+
+    def test_from_string_with_sha256_fingerprint_invalid(self) -> None:
+        """Testing CertificateFingerprints.from_string with invalid SHA-256
+        fingerprint
+        """
+        self.assertIsNone(CertificateFingerprints.from_string(
+            f'{TEST_SHA256[:-1]}Z'
+        ))
+
+    def test_from_string_with_sha256_string(self) -> None:
+        """Testing CertificateFingerprints.from_string with SHA-256 string"""
+        fingerprints = CertificateFingerprints.from_string(
+            TEST_SHA256
+            .replace(':', '')
+            .lower()
+        )
+
+        assert fingerprints is not None
+        self.assertIsNone(fingerprints.sha1)
+        self.assertEqual(fingerprints.sha256, TEST_SHA256)
+
+    def test_from_string_with_sha256_string_invalid(self) -> None:
+        """Testing CertificateFingerprints.from_string with invalid SHA-256
+        string
+        """
+        sha = TEST_SHA256.replace(':', '').lower()
+
+        self.assertIsNone(CertificateFingerprints.from_string(
+            f'{sha[:-1]}z'
+        ))
 
     def test_from_string_with_bad_string(self) -> None:
         """Testing CertificateFingerprints.from_string with bad string"""

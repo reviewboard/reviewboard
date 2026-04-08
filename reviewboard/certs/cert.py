@@ -32,8 +32,8 @@ from reviewboard.certs.errors import (CertificateNotFoundError,
                                       InvalidCertificateFormatError)
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
-    from typing import TypeVar
+    from collections.abc import Mapping, Sequence
+    from typing import Final, TypeVar
 
     from typelets.django.json import (SerializableDjangoJSONDict,
                                       SerializableDjangoJSONDictImmutable)
@@ -113,6 +113,56 @@ class CertificateFingerprints:
         6.0
     """
 
+    #: Regex for matching a SHA1 fingerprint.
+    #:
+    #: Version Added:
+    #:     8.0
+    SHA1_FINGERPRINT_RE = re.compile(r'(?:[0-9A-F]{2}:){19}[0-9A-F]{2}',
+                                     re.IGNORECASE)
+
+    #: Regex for matching a SHA1 string.
+    #:
+    #: Version Added:
+    #:     8.0
+    SHA1_RE = re.compile(r'[0-9A-F]{40}',
+                         re.IGNORECASE)
+
+    #: Regex for matching a SHA256 fingerprint.
+    #:
+    #: Version Added:
+    #:     8.0
+    SHA256_FINGERPRINT_RE = re.compile(r'(?:[0-9A-F]{2}:){31}[0-9A-F]{2}',
+                                       re.IGNORECASE)
+
+    #: Regex for matching a SHA256 string.
+    #:
+    #: Version Added:
+    #:     8.0
+    SHA256_RE = re.compile(r'[0-9A-F]{64}',
+                           re.IGNORECASE)
+
+    #: Mapping of string lengths to pattern/attr/normalization flags.
+    #:
+    #: This works as a simple table to quickly locate a proper pattern,
+    #: corresponding attribute for the constructor, and a flag indicating
+    #: whether to perform normalization of the value.
+    #:
+    #: Version Added:
+    #:     8.0
+    _FINGERPRINT_INFO_BY_LENGTH: Final[Mapping[
+        int,
+        tuple[re.Pattern, str, bool],
+    ]] = {
+        40: (SHA1_RE, 'sha1', True),
+        59: (SHA1_FINGERPRINT_RE, 'sha1', False),
+        64: (SHA256_RE, 'sha256', True),
+        95: (SHA256_FINGERPRINT_RE, 'sha256', False),
+    }
+
+    ######################
+    # Instance variables #
+    ######################
+
     #: The human-readable SHA1 fingerprint.
     sha1: (str | None) = None
 
@@ -187,10 +237,26 @@ class CertificateFingerprints:
         fingerprint = fingerprint.strip()
         length = len(fingerprint)
 
-        if length == 59:
-            return cls(sha1=fingerprint)
-        elif length == 95:
-            return cls(sha256=fingerprint)
+        # This will look for the normalized fingerprint format and the
+        # raw SHA format for both SHA256 and SHA1 variations. To keep
+        # this performant, we'll key off the fingerprint pattern, field,
+        # and normalization flag by length. If the length is a match but
+        # nothing else is, we don't want to proceed with other checks.
+        try:
+            sha_re, field, normalize = cls._FINGERPRINT_INFO_BY_LENGTH[length]
+
+            if sha_re.fullmatch(fingerprint):
+                if normalize:
+                    fingerprint = ':'.join(
+                        fingerprint[i:i + 2]
+                        for i in range(0, length, 2)
+                    )
+
+                return cls(**{
+                    field: fingerprint.upper()
+                })
+        except KeyError:
+            pass
 
         return None
 
