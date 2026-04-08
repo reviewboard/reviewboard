@@ -1716,6 +1716,12 @@ class SCMClient:
     # Instance variables #
     ######################
 
+    #: The Local Site that owns the repository.
+    #:
+    #: Version Added:
+    #:     7.1
+    local_site: LocalSite | None
+
     #: The password used for communicating with the repository.
     password: Optional[str]
 
@@ -1728,10 +1734,17 @@ class SCMClient:
     def __init__(
         self,
         path: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        *,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the client.
+
+        Version Changed:
+            7.1:
+            Added the ``local_site`` argument. All SCMTools should pass this
+            in.
 
         Args:
             path (str):
@@ -1742,10 +1755,17 @@ class SCMClient:
 
             password (str, optional):
                 The password used for the repository.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The Local Site that owns the repository.
+
+                Version Added:
+                    7.1
         """
         self.path = path
         self.username = username
         self.password = password
+        self.local_site = local_site
 
     def get_file_http(
         self,
