@@ -4,7 +4,7 @@
 ReviewRequestConditionChoicesHook
 =================================
 
-.. versionadded:: 7.1
+.. versionadded:: 8.0
 
 When configuring :ref:`integrations`, administrators can choose the conditions in
 which an integration will apply. For example, a Slack integration can be

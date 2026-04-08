@@ -243,7 +243,7 @@ def build_editable_exclude_deps() -> Sequence[str]:
     """Return a list of dependencies to exclude from editable builds.
 
     Version Added:
-        7.1
+        8.0
 
     Returns:
         list of str:

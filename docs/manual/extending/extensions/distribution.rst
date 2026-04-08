@@ -51,7 +51,7 @@ point:
    [build-system]
    requires = [
        # Update this for the target version of Review Board.
-       'reviewboard~=7.1',
+       'reviewboard~=8.0',
 
        'reviewboard[extension-packaging]',
    ]

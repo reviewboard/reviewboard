@@ -4,7 +4,7 @@
 UserDetailsProviderHook
 =======================
 
-.. versionadded:: 7.1
+.. versionadded:: 8.0
 
 User Detail Providers can provide information about users for specialized
 purposes. As of now, these can provide:

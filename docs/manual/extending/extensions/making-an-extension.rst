@@ -60,7 +60,7 @@ See :ref:`extensions-package-layout` for more details on these.
 
 .. note::
 
-   If you're using :command:`rbext` from Review Board 7.1 or newer, the resulting
+   If you're using :command:`rbext` from Review Board 8.0 or newer, the resulting
    Python package will use a `PEP517`_-compatible :file:`pyproject.toml`. On older
    versions, it will create a :file:`setup.py` for the package.
 

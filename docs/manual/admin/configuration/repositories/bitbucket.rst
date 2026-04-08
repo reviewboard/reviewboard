@@ -18,7 +18,7 @@ Review Board supports posting and reviewing code on :rbintegration:`Bitbucket
    address**, and the :guilabel:`Account password` field now requires an
    **Atlassian API token**.
 
-   This requires Review Board 7.1 or newer.
+   This requires Review Board 8.0 or newer.
 
    See :ref:`Step 1 <bitbucket-link-account>` below for instructions on
    creating an API token.
