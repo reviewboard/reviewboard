@@ -47,7 +47,7 @@ def online_only(test_func):
     if not is_online():
         return unittest.skip('Host is not online')
     else:
-        return lambda func: func
+        return lambda *args, **kwargs: test_func(*args, **kwargs)
 
 
 def __getattr__(
