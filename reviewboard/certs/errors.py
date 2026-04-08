@@ -12,6 +12,10 @@ from typing import TYPE_CHECKING
 from django.utils.translation import gettext as _, ngettext as N_
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from typing_extensions import Final
+
     from reviewboard.certs.cert import (Certificate,
                                         CertificateFingerprints)
 
@@ -48,6 +52,65 @@ class CertificateVerificationFailureCode(IntEnum):
 
     #: The hostname does not match the certificate.
     HOSTNAME_MISMATCH = 3
+
+    @classmethod
+    def for_ssl_verify_code(
+        cls,
+        code: int,
+    ) -> CertificateVerificationFailureCode:
+        """Return a failure code for an OpenSSL verification code.
+
+        If there's no suitable match, :py:attr:`OTHER` will be returned.
+
+        Version Added:
+            8.0
+
+        Args:
+            code (int):
+                The OpenSSL code to convert.
+
+        Returns:
+            CertificateVerificationFailureCode:
+            The resulting failure code.
+        """
+        return _OPENSSL_VERIFY_CODE_MAP.get(code, cls.OTHER)
+
+
+#: Mapping of OpenSSL error codes to CertificateVerificationFailureCode.
+#:
+#: The constants aren't exposed to Python, so we have to map and document
+#: these.
+#:
+#: Version Added:
+#:     8.0
+_OPENSSL_VERIFY_CODE_MAP: Final[Mapping[
+    int,
+    CertificateVerificationFailureCode,
+]] = {
+    # X509_V_ERR_CERT_NOT_YET_VALID
+    9:  CertificateVerificationFailureCode.NOT_YET_VALID,
+
+    # X509_V_ERR_CERT_HAS_EXPIRED
+    10: CertificateVerificationFailureCode.EXPIRED,
+
+    # X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
+    18: CertificateVerificationFailureCode.NOT_TRUSTED,
+
+    # X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
+    19: CertificateVerificationFailureCode.NOT_TRUSTED,
+
+    # X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+    20: CertificateVerificationFailureCode.NOT_TRUSTED,
+
+    # X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE
+    21: CertificateVerificationFailureCode.NOT_TRUSTED,
+
+    # X509_V_ERR_CERT_UNTRUSTED
+    27: CertificateVerificationFailureCode.NOT_TRUSTED,
+
+    # X509_V_ERR_HOSTNAME_MISMATCH
+    62: CertificateVerificationFailureCode.HOSTNAME_MISMATCH,
+}
 
 
 class BaseCertificateError(Exception):
