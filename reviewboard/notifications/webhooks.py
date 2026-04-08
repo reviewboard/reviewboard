@@ -8,6 +8,7 @@ import logging
 from base64 import b64encode
 from collections import OrderedDict
 from datetime import datetime
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError
 from urllib.parse import urlencode, urlsplit, urlunsplit
 from urllib.request import Request, urlopen
@@ -29,6 +30,7 @@ from djblets.webapi.encoders import (BasicAPIEncoder, JSONEncoderAdapter,
                                      ResourceAPIEncoder, XMLEncoderAdapter)
 
 from reviewboard import get_package_version
+from reviewboard.certs.manager import cert_manager
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.reviews.models import Review, ReviewRequest
 from reviewboard.reviews.signals import (review_request_closed,
@@ -36,6 +38,11 @@ from reviewboard.reviews.signals import (review_request_closed,
                                          review_request_reopened,
                                          review_published,
                                          reply_published)
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from typelets.json import JSONDict
 
 
 logger = logging.getLogger(__name__)
@@ -277,7 +284,12 @@ def normalize_webhook_payload(payload, request, use_string_keys=False):
     return _normalize_value(payload)
 
 
-def dispatch_webhook_event(request, webhook_targets, event, payload):
+def dispatch_webhook_event(
+    request: HttpRequest,
+    webhook_targets: Sequence[WebHookTarget],
+    event: str,
+    payload: JSONDict,
+) -> None:
     """Dispatch the given event and payload to the given WebHook targets.
 
     Args:
@@ -289,7 +301,7 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
             The list of WebHook targets containing endpoint URLs to dispatch
             to.
 
-        event (unicode):
+        event (str):
             The name of the event being dispatched.
 
         payload (dict):
@@ -417,7 +429,13 @@ def dispatch_webhook_event(request, webhook_targets, event, payload):
                     headers['Authorization'] = \
                         'Basic %s' % b64encode(credentials.encode('utf-8'))
 
-                urlopen(Request(url, body, headers))
+                urlopen(
+                    Request(url, body, headers),
+                    **cert_manager.build_urlopen_kwargs(
+                        url=url,
+                        local_site=webhook_target.local_site,
+                    ),
+                )
             except Exception as e:
                 logger.exception('[%s] Could not dispatch WebHook to %s: %s',
                                  log_timer.trace_id, webhook_target.url, e,

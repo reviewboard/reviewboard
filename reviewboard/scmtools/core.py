@@ -20,6 +20,7 @@ from djblets.log import log_timed
 from djblets.util.properties import TypedProperty
 from typing_extensions import TypeAlias
 
+from reviewboard.certs.manager import cert_manager
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
                                          SCMError)
@@ -1820,7 +1821,13 @@ class SCMClient:
                     request.add_header('Authorization',
                                        f'Basic {auth_string}')
 
-                response = urlopen(request)
+                response = urlopen(
+                    request,
+                    **cert_manager.build_urlopen_kwargs(
+                        url=url,
+                        local_site=self.local_site,
+                    ),
+                )
 
                 if (mime_type is None or
                     response.info()['Content-Type'] == mime_type):
