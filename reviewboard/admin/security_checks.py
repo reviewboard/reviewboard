@@ -15,6 +15,7 @@ from django.utils.translation import gettext_lazy as _
 from djblets.log import log_timed
 
 from reviewboard.admin.server import build_server_url
+from reviewboard.certs.manager import cert_manager
 
 
 _security_checks = OrderedDict()
@@ -254,7 +255,10 @@ class ServerExecutableFileCheck(BaseExecutableFileCheck):
                            f'executable file at {url}',
                            default_level=logging.INFO,
                            logger=logger):
-                data = urlopen(url).read()
+                data = urlopen(
+                    url,
+                    **cert_manager.build_urlopen_kwargs(url=url),
+                ).read()
         except HTTPError as e:
             # An HTTP 403 is also an acceptable response
             if e.code == 403:
@@ -343,7 +347,10 @@ class BrowserExecutableFileCheck(BaseExecutableFileCheck):
                        f'attachment at {url}',
                        default_level=logging.INFO,
                        logger=logger):
-            headers = urlopen(url).info()
+            headers = urlopen(
+                url,
+                **cert_manager.build_urlopen_kwargs(url=url),
+            ).info()
 
         return headers.get('Content-Disposition', '').startswith('attachment')
 

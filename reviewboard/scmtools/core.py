@@ -20,6 +20,7 @@ from djblets.log import log_timed
 from djblets.util.properties import TypedProperty
 from typing_extensions import TypeAlias
 
+from reviewboard.certs.manager import cert_manager
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
                                          SCMError)
@@ -1716,6 +1717,12 @@ class SCMClient:
     # Instance variables #
     ######################
 
+    #: The Local Site that owns the repository.
+    #:
+    #: Version Added:
+    #:     8.0
+    local_site: LocalSite | None
+
     #: The password used for communicating with the repository.
     password: Optional[str]
 
@@ -1728,10 +1735,17 @@ class SCMClient:
     def __init__(
         self,
         path: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        *,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the client.
+
+        Version Changed:
+            8.0:
+            Added the ``local_site`` argument. All SCMTools should pass this
+            in.
 
         Args:
             path (str):
@@ -1742,10 +1756,17 @@ class SCMClient:
 
             password (str, optional):
                 The password used for the repository.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The Local Site that owns the repository.
+
+                Version Added:
+                    8.0
         """
         self.path = path
         self.username = username
         self.password = password
+        self.local_site = local_site
 
     def get_file_http(
         self,
@@ -1800,7 +1821,13 @@ class SCMClient:
                     request.add_header('Authorization',
                                        f'Basic {auth_string}')
 
-                response = urlopen(request)
+                response = urlopen(
+                    request,
+                    **cert_manager.build_urlopen_kwargs(
+                        url=url,
+                        local_site=self.local_site,
+                    ),
+                )
 
                 if (mime_type is None or
                     response.info()['Content-Type'] == mime_type):

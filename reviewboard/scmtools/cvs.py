@@ -1,3 +1,5 @@
+"""SCMTool implementation for CVS."""
+
 from __future__ import annotations
 
 import logging
@@ -5,6 +7,7 @@ import os
 import re
 import shutil
 import tempfile
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.core.exceptions import ValidationError
@@ -12,7 +15,7 @@ from django.utils.encoding import force_str
 from django.utils.translation import gettext as _
 from djblets.util.filesystem import is_exe_in_path
 
-from reviewboard.scmtools.core import SCMTool, HEAD, PRE_CREATION
+from reviewboard.scmtools.core import SCMClient, SCMTool, HEAD, PRE_CREATION
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          SCMError,
                                          FileNotFoundError,
@@ -20,6 +23,9 @@ from reviewboard.scmtools.errors import (AuthenticationError,
 from reviewboard.diffviewer.parser import DiffParser, DiffParserError
 from reviewboard.ssh import utils as sshutils
 from reviewboard.ssh.errors import SSHAuthenticationError, SSHError
+
+if TYPE_CHECKING:
+    from reviewboard.scmtools.models import Repository
 
 
 logger = logging.getLogger(__name__)
@@ -47,8 +53,17 @@ class CVSTool(SCMTool):
         r'(?P<hostname>[^:]+):(?P<port>\d+)?(?P<path>.*)')
     local_cvsroot_re = re.compile(r'^:(?P<protocol>local|fork):(?P<path>.+)')
 
-    def __init__(self, repository):
-        super(CVSTool, self).__init__(repository)
+    def __init__(
+        self,
+        repository: Repository,
+    ) -> None:
+        """Initialize the CVS tool.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository owning the instance of this tool.
+        """
+        super().__init__(repository)
 
         credentials = repository.get_credentials()
 
@@ -67,7 +82,12 @@ class CVSTool(SCMTool):
         if repository.local_site:
             local_site_name = repository.local_site.name
 
-        self.client = CVSClient(self.cvsroot, self.repopath, local_site_name)
+        self.client = CVSClient(
+            cvsroot=self.cvsroot,
+            path=self.repopath,
+            local_site_name=local_site_name,
+            local_site=repository.local_site,
+        )
 
     def get_file(self, path, revision=HEAD, **kwargs):
         if not path:
@@ -582,7 +602,9 @@ class CVSDiffParser(DiffParser):
         return filename
 
 
-class CVSClient(object):
+class CVSClient(SCMClient):
+    """Client class for CVS repositories."""
+
     keywords = [
         b'Author',
         b'Date',
@@ -596,17 +618,44 @@ class CVSClient(object):
         b'State',
     ]
 
-    def __init__(self, cvsroot, path, local_site_name):
-        self.tempdir = None
-        self.currentdir = os.getcwd()
-        self.cvsroot = cvsroot
-        self.path = path
-        self.local_site_name = local_site_name
+    def __init__(
+        self,
+        cvsroot: str,
+        path: str,
+        local_site_name: str | None,
+        **kwargs,
+    ) -> None:
+        """Initialize the client.
 
+        Args:
+            cvsroot (str):
+                The CVSROOT for the repository.
+
+            path (str):
+                The configured repository path.
+
+            local_site_name (str):
+                The name of the Local Site, if any.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the parent method.
+
+        Raises:
+            ImportError:
+                The :command:`cvs` command was not found.
+        """
         if not is_exe_in_path('cvs'):
             # This is technically not the right kind of error, but it's the
             # pattern we use with all the other tools.
             raise ImportError
+
+        super().__init__(path=path,
+                         **kwargs)
+
+        self.tempdir = None
+        self.currentdir = os.getcwd()
+        self.cvsroot = cvsroot
+        self.local_site_name = local_site_name
 
     def cleanup(self):
         if self.currentdir != os.getcwd():

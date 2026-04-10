@@ -34,6 +34,7 @@ if TYPE_CHECKING:
         RevisionID,
     )
     from reviewboard.scmtools.models import Repository
+    from reviewboard.site.models import LocalSite
 
 
 logger = logging.getLogger(__name__)
@@ -58,15 +59,23 @@ class HgTool(SCMTool):
         self,
         repository: Repository,
     ) -> None:
-        """Initialize the SCMTool."""
+        """Initialize the SCMTool.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository owning the instance of this tool.
+        """
         super().__init__(repository)
 
         if repository.path.startswith('http'):
             credentials = repository.get_credentials()
 
-            self.client = HgWebClient(repository.path,
-                                      credentials['username'],
-                                      credentials['password'])
+            self.client = HgWebClient(
+                path=repository.path,
+                username=credentials['username'],
+                password=credentials['password'],
+                local_site=repository.local_site,
+            )
         else:
             if not is_exe_in_path('hg'):
                 # This is technically not the right kind of error, but it's the
@@ -78,7 +87,11 @@ class HgTool(SCMTool):
             else:
                 local_site_name = None
 
-            self.client = HgClient(repository.path, local_site_name)
+            self.client = HgClient(
+                path=repository.path,
+                local_site_name=local_site_name,
+                local_site=repository.local_site,
+            )
 
     def get_file(
         self,
@@ -258,9 +271,10 @@ class HgTool(SCMTool):
     def check_repository(
         cls,
         path: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
-        local_site_name: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        local_site_name: (str | None) = None,
+        local_site: (LocalSite | None) = None,
         **kwargs,
     ) -> None:
         """Check a repository configuration for validity.
@@ -285,6 +299,10 @@ class HgTool(SCMTool):
 
             local_site_name (str, optional):
                 The name of the :term:`Local Site` that owns this repository.
+                This is optional.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The :term:`Local Site` instance that owns this repository.
                 This is optional.
 
             **kwargs (dict, unused):
@@ -328,13 +346,20 @@ class HgTool(SCMTool):
             username=username,
             password=password,
             local_site_name=local_site_name,
-            **kwargs)
+            local_site=local_site,
+            **kwargs,
+        )
 
         # Create a client. This will fail if the repository doesn't exist.
         if result.scheme in ('http', 'https'):
-            HgWebClient(path, username, password)
+            HgWebClient(path=path,
+                        username=username,
+                        password=password,
+                        local_site=local_site)
         else:
-            HgClient(path, local_site_name)
+            HgClient(path=path,
+                     local_site_name=local_site_name,
+                     local_site=local_site)
 
     def normalize_patch(
         self,
@@ -644,27 +669,25 @@ class HgWebClient(SCMClient):
 
     def __init__(
         self,
-        path: str,
-        username: Optional[str],
-        password: Optional[str],
+        *args,
+        **kwargs,
     ) -> None:
         """Initialize the client.
 
         Args:
-            path (str):
-                The repository path.
+            *args (tuple):
+                Positional arguments to pass to the parent method.
 
-            username (str, optional):
-                The username used for the repository.
-
-            password (str, optional):
-                The password used for the repository.
+            **kwargs (dict):
+                Keyword arguments to pass to the parent method.
         """
-        super().__init__(path, username=username, password=password)
+        super().__init__(*args, **kwargs)
 
-        self.path_stripped = self.path.rstrip('/')
+        path = self.path
+        self.path_stripped = path.rstrip('/')
+
         logger.debug('Initialized HgWebClient with url=%r, username=%r',
-                     self.path, self.username)
+                     path, self.username)
 
     def cat_file(
         self,
@@ -920,9 +943,14 @@ class HgClient(SCMClient):
     def __init__(
         self,
         path: str,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
+        **kwargs,
     ) -> None:
         """Initialize the client.
+
+        Version Changed:
+            8.0:
+            Added the ``**kwargs`` argument.
 
         Args:
             path (str):
@@ -930,8 +958,15 @@ class HgClient(SCMClient):
 
             local_site_name (str, optional):
                 The name of the Local Site that the repository is part of.
+
+            **kwargs (dict):
+                Additional keyword arguments for the parent method.
+
+                Version Added:
+                    8.0
         """
-        super().__init__(path)
+        super().__init__(path, **kwargs)
+
         self.default_args = None
         self.local_site_name = local_site_name
 

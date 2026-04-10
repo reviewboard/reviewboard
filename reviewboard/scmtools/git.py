@@ -8,7 +8,7 @@ import os
 import platform
 import re
 import stat
-from typing import Any, Dict
+from typing import Any, Dict, TYPE_CHECKING
 from urllib.parse import (quote as urlquote,
                           urlparse,
                           urlsplit as urlsplit,
@@ -30,6 +30,10 @@ from reviewboard.scmtools.errors import (FileNotFoundError,
                                          SCMError)
 from reviewboard.scmtools.forms import StandardSCMToolRepositoryForm
 from reviewboard.ssh import utils as sshutils
+
+if TYPE_CHECKING:
+    from reviewboard.scmtools.models import Repository
+    from reviewboard.site.models import LocalSite
 
 
 logger = logging.getLogger(__name__)
@@ -116,8 +120,17 @@ class GitTool(SCMTool):
         'executables': ['git']
     }
 
-    def __init__(self, repository):
-        super(GitTool, self).__init__(repository)
+    def __init__(
+        self,
+        repository: Repository,
+    ) -> None:
+        """Initialize the Git tool.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository owning the instance of this tool.
+        """
+        super().__init__(repository)
 
         local_site_name = None
 
@@ -126,10 +139,15 @@ class GitTool(SCMTool):
 
         credentials = repository.get_credentials()
 
-        self.client = GitClient(repository.path, repository.raw_file_url,
-                                credentials['username'],
-                                credentials['password'],
-                                repository.encoding, local_site_name)
+        self.client = GitClient(
+            path=repository.path,
+            raw_file_url=repository.raw_file_url,
+            username=credentials['username'],
+            password=credentials['password'],
+            encoding=repository.encoding,
+            local_site_name=local_site_name,
+            local_site=repository.local_site,
+        )
 
     def get_file(self, path, revision=HEAD, **kwargs):
         if revision == PRE_CREATION:
@@ -224,8 +242,15 @@ class GitTool(SCMTool):
         return GitDiffParser(data)
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None,
-                         local_site_name=None, **kwargs):
+    def check_repository(
+        cls,
+        path: str,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        local_site_name: (str | None) = None,
+        local_site: (LocalSite | None) = None,
+        **kwargs,
+    ) -> None:
         """Check a repository configuration for validity.
 
         This should check if a repository exists and can be connected to.
@@ -237,18 +262,21 @@ class GitTool(SCMTool):
         be thrown.
 
         Args:
-            path (unicode):
+            path (str):
                 The repository path.
 
-            username (unicode, optional):
+            username (str, optional):
                 The optional username for the repository.
 
-            password (unicode, optional):
+            password (str, optional):
                 The optional password for the repository.
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The name of the :term:`Local Site` that owns this repository.
                 This is optional.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The :term:`Local Site` that owns this repository.
 
             **kwargs (dict, unused):
                 Additional settings for the repository.
@@ -281,17 +309,22 @@ class GitTool(SCMTool):
                 An unexpected exception has occurred. Callers should check
                 for this and handle it.
         """
-        client = GitClient(path,
-                           local_site_name=local_site_name,
-                           username=username,
-                           password=password)
+        client = GitClient(
+            path=path,
+            username=username,
+            password=password,
+            local_site_name=local_site_name,
+            local_site=local_site,
+        )
 
-        super(GitTool, cls).check_repository(
+        super().check_repository(
             path=client.path,
             username=username,
             password=password,
             local_site_name=local_site_name,
-            **kwargs)
+            local_site=local_site,
+            **kwargs,
+        )
 
         if not client.is_valid_repository():
             raise RepositoryNotFoundError()
@@ -753,11 +786,56 @@ class GitClient(SCMClient):
         r'^(?P<username>[A-Za-z0-9_\.-]+@)?(?P<hostname>[A-Za-z0-9_\.-]+):'
         r'(?P<path>.*)')
 
-    def __init__(self, path, raw_file_url=None, username=None, password=None,
-                 encoding='', local_site_name=None):
-        super(GitClient, self).__init__(self._normalize_git_url(path),
-                                        username=username,
-                                        password=password)
+    def __init__(
+        self,
+        path: str,
+        raw_file_url: (str | None) = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        encoding: str = '',
+        local_site_name: (str | None) = None,
+        **kwargs,
+    ) -> None:
+        """Initialize the Git client.
+
+        Args:
+            path (str):
+                The configured repository path.
+
+            raw_file_url (str, optional):
+                The optional URL template for accessing raw files via HTTP(S).
+
+            username (str, optional):
+                The optional username for communicating with the repository.
+
+            password (str, optional):
+                The optional password for communicating with the repository.
+
+            encoding (str, optional):
+                An optional encoding.
+
+                This is unused and scheduled for deprecation.
+
+            local_site_name (str, optional):
+                The name of the associated Local Site, if any.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the parent method.
+
+        Raises:
+            ImportError:
+                There was an error locating the :command:`git` command line
+                tool.
+
+            reviewboard.scmtools.errors.SCMError:
+                There was an error accessing the repository.
+        """
+        super().__init__(
+            self._normalize_git_url(path),
+            username=username,
+            password=password,
+            **kwargs,
+        )
 
         if not is_exe_in_path('git'):
             # This is technically not the right kind of error, but it's the

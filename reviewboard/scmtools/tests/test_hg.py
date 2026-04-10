@@ -482,14 +482,18 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         """Testing HgTool.file_exists with an HTTPS-based repository"""
         repo = self.create_repository(
             name='Test HG2',
-            path='https://www.mercurial-scm.org/repo/hg',
+            path='https://hg-edge.mozilla.org/mozilla-central',
             tool_name='Mercurial')
         tool = repo.get_scmtool()
 
-        self.assertTrue(tool.file_exists('mercurial/hgweb/common.py',
-                                         Revision('f0735f2ce542')))
-        self.assertFalse(tool.file_exists('mercurial/hgweb/common.py',
-                                          Revision('abcdef123456')))
+        self.assertTrue(tool.file_exists(
+            'modules/libpref/init/StaticPrefList.yaml',
+            Revision('e52ef55079f7'),
+        ))
+        self.assertFalse(tool.file_exists(
+            'modules/libpref/init/StaticPrefList.yaml',
+            Revision('abcdef123456'),
+        ))
 
     def test_normalize_patch_with_git_diff_new_symlink(self) -> None:
         """Testing HgTool.normalize_patch with Git-style diff and new symlink

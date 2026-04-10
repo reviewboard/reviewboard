@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import urllib.parse
 from datetime import timezone
+from typing import TYPE_CHECKING
 
 import dateutil.parser
 from django.utils.encoding import force_str
@@ -15,6 +16,10 @@ from reviewboard.scmtools.errors import (FileNotFoundError,
                                          InvalidRevisionFormatError,
                                          RepositoryNotFoundError, SCMError)
 from reviewboard.ssh import utils as sshutils
+
+if TYPE_CHECKING:
+    from reviewboard.scmtools.models import Repository
+    from reviewboard.site.models import LocalSite
 
 
 # Register these URI schemes so we can handle them properly.
@@ -114,22 +119,28 @@ class BZRTool(SCMTool):
         'tag:',
     )
 
-    def __init__(self, repository):
+    def __init__(
+        self,
+        repository: Repository,
+    ) -> None:
         """Initialize the Bazaar tool.
 
         Args:
             repository (reviewboard.scmtools.models.Repository):
                 The repository to communicate with.
         """
-        super(BZRTool, self).__init__(repository)
+        super().__init__(repository)
 
         if repository.local_site:
             local_site_name = repository.local_site.name
         else:
             local_site_name = None
 
-        self.client = BZRClient(path=repository.path,
-                                local_site_name=local_site_name)
+        self.client = BZRClient(
+            path=repository.path,
+            local_site_name=local_site_name,
+            local_site=repository.local_site,
+        )
 
     def get_file(self, path, revision, **kwargs):
         """Return the contents from a file with the given path and revision.
@@ -270,25 +281,35 @@ class BZRTool(SCMTool):
         return revspec
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None,
-                         local_site_name=None, **kwargs):
+    def check_repository(
+        cls,
+        path: str,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        local_site_name: (str | None) = None,
+        local_site: (LocalSite | None) = None,
+        **kwargs,
+    ) -> None:
         """Check a repository to test its validity.
 
         This checks if a Bazaar repository exists and can be connected to. If
         the repository could not be found, an exception will be raised.
 
         Args:
-            path (unicode):
+            path (str):
                 The repository path.
 
-            username (unicode):
+            username (str):
                 The optional username used to connect to the repository.
 
-            password (unicode):
+            password (str):
                 The optional password used to connect to the repository.
 
-            local_site_name (unicode):
+            local_site_name (str):
                 The name of the Local Site that will own the repository.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The Local Site that will own the repository.
 
             **kwargs (dict, unused):
                 Additional settings for the repository.
@@ -298,11 +319,19 @@ class BZRTool(SCMTool):
                 The repository could not be found, or there was an error
                 communicating with it.
         """
-        super(BZRTool, cls).check_repository(path, username, password,
-                                             local_site_name)
+        super().check_repository(
+            path=path,
+            username=username,
+            password=password,
+            local_site_name=local_site_name,
+            local_site=local_site,
+        )
 
-        client = BZRClient(path=path,
-                           local_site_name=local_site_name)
+        client = BZRClient(
+            path=path,
+            local_site_name=local_site_name,
+            local_site=local_site,
+        )
 
         if not client.is_valid_repository():
             raise RepositoryNotFoundError()
@@ -317,20 +346,29 @@ class BZRClient(SCMClient):
 
     _plugin_path = None
 
-    def __init__(self, path, local_site_name):
+    def __init__(
+        self,
+        path: str,
+        local_site_name: str | None,
+        **kwargs,
+    ) -> None:
         """Initialize the client.
 
         Args:
-            path (unicode):
+            path (str):
                 The repository path provided by the user.
 
-            local_site_name (unicode):
+            local_site_name (str):
                 The name of the Local Site owning the repository.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the parent method.
         """
         if path.startswith('/'):
-            self.path = 'file://%s' % path
-        else:
-            self.path = path
+            path = f'file://{path}'
+
+        super().__init__(path=path,
+                         **kwargs)
 
         self.local_site_name = local_site_name
 

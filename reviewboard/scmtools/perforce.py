@@ -24,8 +24,11 @@ from djblets.util.filesystem import is_exe_in_path
 
 from reviewboard.diffviewer.parser import DiffParser
 from reviewboard.scmtools.certs import Certificate
-from reviewboard.scmtools.core import (SCMTool, ChangeSet,
-                                       HEAD, PRE_CREATION)
+from reviewboard.scmtools.core import (ChangeSet,
+                                       HEAD,
+                                       PRE_CREATION,
+                                       SCMClient,
+                                       SCMTool)
 from reviewboard.scmtools.errors import (SCMError, EmptyChangeSetError,
                                          AuthenticationError,
                                          InvalidRevisionFormatError,
@@ -34,6 +37,8 @@ from reviewboard.scmtools.errors import (SCMError, EmptyChangeSetError,
 
 if TYPE_CHECKING:
     from reviewboard.scmtools.core import Revision
+    from reviewboard.scmtools.models import Repository
+    from reviewboard.site.models import LocalSite
 
 
 logger = logging.getLogger(__name__)
@@ -222,7 +227,7 @@ class STunnelProxy(object):
                     pass
 
 
-class PerforceClient(object):
+class PerforceClient(SCMClient):
     """Client for talking to a Perforce server.
 
     This manages Perforce connections to the server, and provides a set of
@@ -237,38 +242,55 @@ class PerforceClient(object):
     #: We default this to 1 hour.
     TICKET_RENEWAL_SECS = 1 * 60 * 60
 
-    def __init__(self, path, username, password, encoding='', host=None,
-                 client_name=None, local_site_name=None,
-                 use_ticket_auth=False):
+    def __init__(
+        self,
+        path: str,
+        username: str | None,
+        password: str | None,
+        encoding: str = '',
+        host: (str | None) = None,
+        client_name: (str | None) = None,
+        local_site_name: (str | None) = None,
+        use_ticket_auth: bool = False,
+        **kwargs,
+    ) -> None:
         """Initialize the client.
 
         Args:
-            path (unicode):
+            path (str):
                 The path to the repository (equivalent to :envvar:`P4PORT`).
 
-            username (unicode):
+            username (str):
                 The username for the connection.
 
-            password (unicode):
+            password (str):
                 The password for the connection.
 
-            encoding (unicode, optional):
+            encoding (str, optional):
                 The encoding to use for the connection.
 
-            host (unicode, optional):
+            host (str, optional):
                 The client's host name to use for the connection (equivalent
                 to :envvar:`P4HOST`).
 
-            client_name (unicode, optional):
+            client_name (str, optional):
                 The name of the Perforce client (equivalent to
                 :envvar:`P4CLIENT`).
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The name of the local site used for the repository.
 
             use_ticket_auth (bool, optional):
                 Whether to use ticket-based authentication. By default, this
                 is not used.
+
+            **kwargs (dict):
+                Keyword arguments to pass to the parent method.
+
+        Raises:
+            AttributeError:
+                Stunnel was specified, but :command:`stunnel` was not in
+                the path.
         """
         if path.startswith('stunnel:'):
             path = path[8:]
@@ -276,21 +298,26 @@ class PerforceClient(object):
         else:
             self.use_stunnel = False
 
+        if self.use_stunnel and not is_exe_in_path('stunnel'):
+            raise AttributeError('stunnel proxy was requested, but stunnel '
+                                 'binary is not in the exec path.')
+
+        import P4
+        self.p4 = P4.P4()
+
+        super().__init__(
+            path=path,
+            username=username,
+            password=password or '',
+            **kwargs,
+        )
+
         self.p4port = path
-        self.username = username
-        self.password = password or ''
         self.encoding = encoding
         self.p4host = host
         self.client_name = client_name
         self.local_site_name = local_site_name
         self.use_ticket_auth = use_ticket_auth
-
-        import P4
-        self.p4 = P4.P4()
-
-        if self.use_stunnel and not is_exe_in_path('stunnel'):
-            raise AttributeError('stunnel proxy was requested, but stunnel '
-                                 'binary is not in the exec path.')
 
     def get_ticket_status(self):
         """Return the status of the current login ticket.
@@ -674,14 +701,17 @@ class PerforceTool(SCMTool):
         'modules': ['P4'],
     }
 
-    def __init__(self, repository):
+    def __init__(
+        self,
+        repository: Repository,
+    ) -> None:
         """Initialize the Perforce tool.
 
         Args:
             repository (reviewboard.scmtools.models.Repository):
                 The repository owning the instance of this tool.
         """
-        super(PerforceTool, self).__init__(repository)
+        super().__init__(repository)
 
         credentials = repository.get_credentials()
 
@@ -699,12 +729,23 @@ class PerforceTool(SCMTool):
             client_name=repository.extra_data.get('p4_client'),
             local_site_name=local_site_name,
             use_ticket_auth=repository.extra_data.get('use_ticket_auth',
-                                                      False))
+                                                      False),
+            local_site=repository.local_site,
+        )
 
     @classmethod
-    def check_repository(cls, path, username=None, password=None,
-                         p4_host=None, p4_client=None, local_site_name=None,
-                         **kwargs):
+    def check_repository(
+        cls,
+        path: str,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        local_site_name: (str | None) = None,
+        local_site: (LocalSite | None) = None,
+        *,
+        p4_host: (str | None) = None,
+        p4_client: (str | None) = None,
+        **kwargs,
+    ) -> None:
         """Perform checks on a repository to test its validity.
 
         This checks if a repository exists and can be connected to.
@@ -715,26 +756,29 @@ class PerforceTool(SCMTool):
         be thrown.
 
         Args:
-            path (unicode):
+            path (str):
                 The Perforce repository path (equivalent to :envvar:`P4PORT`).
 
-            username (unicode, optional):
+            username (str, optional):
                 The username used to authenticate.
 
-            password (unicode, optional):
+            password (str, optional):
                 The password used to authenticate.
 
-            p4_host (unicode, optional):
+            p4_host (str, optional):
                 The optional Perforce host name (equivalent to
                 :envvar:`P4HOST`).
 
-            p4_client (unicode, optional):
+            p4_client (str, optional):
                 The optional Perforce client name (equivalent to
                 :envvar:`P4CLIENT`).
 
-            local_site_name (unicode, optional):
+            local_site_name (str, optional):
                 The name of the :term:`Local Site` that owns this repository.
                 This is optional.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The :term:`Local Site` instance that owns this repository.
 
             **kwargs (dict, unused):
                 Additional settings for the repository.
@@ -749,25 +793,30 @@ class PerforceTool(SCMTool):
             reviewboard.scmtools.errors.SCMError:
                 There was a general error communicating with Perforce.
 
-            reviewboard.scmtools.errors.UnverifiedCertificateError:
+            reviewboard.certs.errors.CertificateVerificationError:
                 The Perforce SSL certificate could not be verified.
         """
-        super(PerforceTool, cls).check_repository(
+        super().check_repository(
             path=path,
             username=username,
             password=password,
             local_site_name=local_site_name,
-            **kwargs)
+            local_site=local_site,
+            **kwargs,
+        )
 
         # 'p4 info' will succeed even if the server requires ticket auth and we
         # don't run 'p4 login' first. We therefore don't go through all the
         # trouble of handling tickets here.
-        client = PerforceClient(path=path,
-                                username=username,
-                                password=password,
-                                host=p4_host,
-                                client_name=p4_client,
-                                local_site_name=local_site_name)
+        client = PerforceClient(
+            path=path,
+            username=username,
+            password=password,
+            host=p4_host,
+            client_name=p4_client,
+            local_site_name=local_site_name,
+            local_site=local_site,
+        )
         client.get_info()
 
     def get_changeset(self, changeset_id, allow_empty=False):

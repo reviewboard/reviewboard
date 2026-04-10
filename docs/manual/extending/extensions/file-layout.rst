@@ -57,7 +57,7 @@ Let's go into each of these files and show some examples.
       [build-system]
       requires = [
           # Update this for the target version of Review Board.
-          'reviewboard~=7.1',
+          'reviewboard~=8.0',
 
           'reviewboard[extension-packaging]',
       ]
@@ -99,7 +99,7 @@ Let's go into each of these files and show some examples.
 
    .. important::
 
-      Prior to Review Board 7.1, new extensions would provide a
+      Prior to Review Board 8.0, new extensions would provide a
       :file:`setup.py` file instead, and may have only included some basic
       information in :file:`pyproject.toml`.
 
