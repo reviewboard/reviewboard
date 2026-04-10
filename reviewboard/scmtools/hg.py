@@ -949,7 +949,7 @@ class HgClient(SCMClient):
         """Initialize the client.
 
         Version Changed:
-            7.1:
+            8.0:
             Added the ``**kwargs`` argument.
 
         Args:
@@ -963,7 +963,7 @@ class HgClient(SCMClient):
                 Additional keyword arguments for the parent method.
 
                 Version Added:
-                    7.1
+                    8.0
         """
         super().__init__(path, **kwargs)
 

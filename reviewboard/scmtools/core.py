@@ -1720,7 +1720,7 @@ class SCMClient:
     #: The Local Site that owns the repository.
     #:
     #: Version Added:
-    #:     7.1
+    #:     8.0
     local_site: LocalSite | None
 
     #: The password used for communicating with the repository.
@@ -1743,7 +1743,7 @@ class SCMClient:
         """Initialize the client.
 
         Version Changed:
-            7.1:
+            8.0:
             Added the ``local_site`` argument. All SCMTools should pass this
             in.
 
@@ -1761,7 +1761,7 @@ class SCMClient:
                 The Local Site that owns the repository.
 
                 Version Added:
-                    7.1
+                    8.0
         """
         self.path = path
         self.username = username
