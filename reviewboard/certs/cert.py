@@ -9,6 +9,8 @@ from __future__ import annotations
 import logging
 import os
 import re
+import socket
+import ssl
 
 from datetime import datetime, timezone
 from enum import Enum
@@ -669,6 +671,59 @@ class Certificate:
                    key_data=key_data,
                    purpose=purpose,
                    data_format=data_format)
+
+    @classmethod
+    def create_from_server(
+        cls,
+        *,
+        hostname: str,
+        port: int,
+    ) -> Self | None:
+        """Return a Certificate from a remote server.
+
+        This is useful when inspecting a server or preparing an error
+        response when certificate validation fails.
+
+        Version Added:
+            7.1
+
+        Args:
+            hostname (str):
+                The hostname of the server.
+
+            port (int):
+                The port of the server.
+
+        Returns:
+            Certificate:
+            The fetched certificate, or ``None`` if it could not be fetched.
+        """
+        try:
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+
+            with socket.create_connection((hostname, port),
+                                          timeout=10) as sock:
+                with context.wrap_socket(sock,
+                                         server_hostname=hostname) as ssock:
+                    der_cert = ssock.getpeercert(binary_form=True)
+
+            if not der_cert:
+                raise ValueError('Returned certificate was empty.')
+
+            pem_cert = ssl.DER_cert_to_PEM_cert(der_cert).encode('ascii')
+
+            return cls(
+                hostname=hostname,
+                port=port,
+                cert_data=pem_cert,
+            )
+        except Exception as e:
+            logger.warning('Failed to fetch server certificate from %s:%s: %s',
+                           hostname, port, e)
+
+            return None
 
     def __init__(
         self,
