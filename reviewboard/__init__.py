@@ -6,89 +6,18 @@ Review Board. They're largely used for packaging purposes.
 
 from __future__ import annotations
 
-
-#: The version of Review Board.
-#:
-#: This is in the format of:
-#:
-#: (Major, Minor, Micro, Patch, alpha/beta/rc/final, Release Number, Released)
-#:
-VERSION: tuple[int, int, int, int, str, int, bool] = \
-    (8, 0, 0, 0, 'alpha', 0, False)
-
-
-def get_version_string() -> str:
-    """Return the Review Board version as a human-readable string.
-
-    Returns:
-        str:
-        The Review Board version string.
-    """
-    major, minor, micro, patch, tag, release_num, released = VERSION
-    version = f'{major}.{minor}'
-
-    if micro or patch:
-        version += f'.{micro}'
-
-    if patch:
-        version += f'.{patch}'
-
-    if tag != 'final':
-        if tag == 'rc':
-            version += f' RC{release_num}'
-        else:
-            version += f' {tag} {release_num}'
-
-    if not released:
-        version += ' (dev)'
-
-    return version
+from reviewboard._version import (
+    VERSION,
+    __version__,
+    __version_info__,
+    get_package_version,
+    get_version_string,
+    is_release,
+)
 
 
-def get_package_version() -> str:
-    """Return the Review Board version as a Python package version string.
-
-    Returns:
-        str:
-        The Review Board package version.
-    """
-    major, minor, micro, patch, tag, release_num = VERSION[:-1]
-    version = f'{major}.{minor}'
-
-    if micro or patch:
-        version += f'.{micro}'
-
-    if patch:
-        version += f'.{patch}'
-
-    if tag != 'final':
-        if tag == 'alpha':
-            tag = 'a'
-        elif tag == 'beta':
-            tag = 'b'
-
-        version += f'{tag}{release_num}'
-
-    return version
-
-
-def is_release() -> bool:
-    """Return whether this is a released version of Review Board.
-
-    Returns:
-        bool:
-        True if the current version of Review Board is a release.
-    """
-    return VERSION[-1]
-
-
-def get_manual_url() -> str:
-    """Return the URL to the Review Board manual for this version.
-
-    Returns:
-        str:
-        The URL to the user manual.
-    """
+def get_manual_url():
+    """Return the URL to the Review Board manual for this version."""
     if VERSION[2] == 0 and VERSION[4] != 'final':
         manual_ver = 'dev'
     else:
@@ -238,10 +167,14 @@ def finalize_setup(
                                  is_upgrade=is_upgrade)
 
 
-#: An alias for the the version information from :py:data:`VERSION`.
-#:
-#: This does not include the last entry in the tuple (the released state).
-__version_info__ = VERSION[:-1]
-
-#: An alias for the version used for the Python package.
-__version__ = get_package_version()
+__all__ = [
+    'VERSION',
+    '__version__',
+    '__version_info__',
+    'finalize_setup',
+    'get_manual_url',
+    'get_package_version',
+    'get_version_string',
+    'initialize',
+    'is_release',
+]
