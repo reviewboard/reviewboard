@@ -27,6 +27,7 @@ from reviewboard.certs.tests.testcases import (CertificateTestCase,
                                                TEST_SHA1,
                                                TEST_SHA256,
                                                TEST_TRUST_CERT_PEM)
+from reviewboard.testing import online_only
 
 
 class CertificateTests(kgb.SpyAgency, CertificateTestCase):
@@ -227,6 +228,56 @@ class CertificateTests(kgb.SpyAgency, CertificateTestCase):
 
         self.assertEqual(ctx.exception.data, b'XXX')
         self.assertEqual(ctx.exception.path, key_path)
+
+    @online_only
+    def test_create_from_server(self) -> None:
+        """Testing Certificate.create_from_server"""
+        cert = Certificate.create_from_server(hostname='reviewboard.org',
+                                              port=443)
+
+        assert cert is not None
+        self.assertAttrsEqual(
+            cert,
+            {
+                'hostname': 'reviewboard.org',
+                'port': 443,
+            })
+        self.assertIsNotNone(cert.cert_data)
+
+    @online_only
+    def test_create_from_server_with_bad_cert(self) -> None:
+        """Testing Certificate.create_from_server with bad certificate state
+        """
+        cert = Certificate.create_from_server(hostname='expired.badssl.com',
+                                              port=443)
+
+        assert cert is not None
+        self.assertAttrsEqual(
+            cert,
+            {
+                'hostname': 'expired.badssl.com',
+                'port': 443,
+            })
+        self.assertIsNotNone(cert.cert_data)
+
+    @online_only
+    def test_create_from_server_with_failure(self) -> None:
+        """Testing Certificate.create_from_server with failure looking up
+        cert
+        """
+        with self.assertLogs() as cm:
+            cert = Certificate.create_from_server(
+                hostname='xxx.badhosttld',
+                port=443,
+            )
+
+        self.assertEqual(len(cm.output), 1)
+        self.assertTrue(cm.output[0].startswith(
+            'WARNING:reviewboard.certs.cert:Failed to fetch server '
+            'certificate from xxx.badhosttld:443:'
+        ))
+
+        self.assertIsNone(cert)
 
     def test_init_with_valid_from_naive(self) -> None:
         """Testing Certificate.__init__ with valid_from as naive datetime"""
