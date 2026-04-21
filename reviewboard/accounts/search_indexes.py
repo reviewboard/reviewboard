@@ -1,11 +1,25 @@
+"""Search indexing for accounts."""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.contrib.auth.models import User
+from django.db.models import Prefetch
 from haystack import indexes
 
+from reviewboard.reviews.models.group import Group
 from reviewboard.search.fields import BooleanField
 from reviewboard.search.indexes import BaseSearchIndex
+from reviewboard.site.models import LocalSite
+
+if TYPE_CHECKING:
+    from django.db.models import QuerySet
+
+    from reviewboard.accounts.models import User as RBUser
 
 
-class UserIndex(BaseSearchIndex, indexes.Indexable):
+class UserIndex(BaseSearchIndex[User], indexes.Indexable):
     """A Haystack search index for users."""
 
     model = User
@@ -18,7 +32,7 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
     groups = indexes.CharField(indexed=False)
     is_profile_private = BooleanField()
 
-    def get_updated_field(self):
+    def get_updated_field(self) -> str:
         """Return the field indicating when the user was last updated.
 
         Users don't really have a field for this exactly, but Review Board
@@ -32,24 +46,81 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
         re-index.
 
         Returns:
-            unicode:
+            str:
             ``last_login``.
         """
         return 'last_login'
 
-    def index_queryset(self, using=None):
-        """Query the list of users for the index.
+    def index_queryset(
+        self,
+        using: (str | None) = None,
+    ) -> QuerySet[User]:
+        """Return a queryset for indexing users.
 
-        All active users will be returned.
+        Args:
+            using (str, unused):
+                The name of the search index.
+
+        Returns:
+            django.db.models.QuerySet:
+            The queryset to index.
         """
-        return (
+        queryset: QuerySet[User] = (
             self.get_model().objects
             .filter(is_active=True)
-            .select_related('profile')
-            .prefetch_related('review_groups', 'local_site')
+            .only(
+                # User fields.
+                'email',
+                'first_name',
+                'last_name',
+                'username',
+
+                # Profile fields.
+                'profile__extra_data',
+                'profile__is_private',
+            )
+            .select_related(
+                'profile',
+            )
+            .prefetch_related(
+                Prefetch(
+                    'review_groups',
+                    queryset=(
+                        Group.objects
+                        .only(
+                            'invite_only',
+                            'name',
+                        )
+                    ),
+                ),
+            )
         )
 
-    def prepare_groups(self, user):
+        if LocalSite.objects.has_local_sites():
+            # If the server has Local Sites, prefetch them for all users.
+            #
+            # If a Local Site is added for the first time while indexing,
+            # this will result in an N+1 query issue for every user, which
+            # will be expensive. This would only ever happen once, and
+            # should be an unlikely event.
+            queryset = queryset.prefetch_related(
+                Prefetch(
+                    'local_site',
+                    queryset=(
+                        LocalSite.objects
+                        .only(
+                            'name',
+                        )
+                    ),
+                ),
+            )
+
+        return queryset
+
+    def prepare_groups(
+        self,
+        user: RBUser,
+    ) -> str:
         """Prepare a user's list of groups for the index.
 
         Only publicly-accessible groups will be stored in the index.
@@ -59,7 +130,7 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
                 The user being indexed.
 
         Returns:
-            unicode:
+            str:
             The names of publicly-accessible groups.
         """
         return ','.join(
@@ -68,7 +139,10 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
             if not review_group.invite_only
         )
 
-    def prepare_email(self, user):
+    def prepare_email(
+        self,
+        user: RBUser,
+    ) -> str:
         """Prepare the email field for a user.
 
         Args:
@@ -76,7 +150,7 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
                 The user being indexed.
 
         Returns:
-            unicode:
+            str:
             The e-mail address.
         """
         if user.has_private_profile():
@@ -84,7 +158,10 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
         else:
             return user.email
 
-    def prepare_full_name(self, user):
+    def prepare_full_name(
+        self,
+        user: RBUser,
+    ) -> str:
         """Prepare the full_name field for a user.
 
         This field is not included in the index when their profile is set to
@@ -95,7 +172,7 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
                 The user being indexed.
 
         Returns:
-            unicode:
+            str:
             The full name of the user or an empty string if their profile is
             private.
         """
@@ -104,7 +181,10 @@ class UserIndex(BaseSearchIndex, indexes.Indexable):
         else:
             return user.get_full_name()
 
-    def prepare_is_profile_private(self, user):
+    def prepare_is_profile_private(
+        self,
+        user: RBUser,
+    ) -> bool:
         """Prepare the is_profile_private field for a user.
 
         Args:

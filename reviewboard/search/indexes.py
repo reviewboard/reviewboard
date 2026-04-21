@@ -1,34 +1,75 @@
+from __future__ import annotations
+
+from typing import Generic, TYPE_CHECKING
+
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models import Model
 from haystack import indexes
+from typing_extensions import TypeVar
+
+from reviewboard.site.models import LocalSite
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from typing import Final
 
 
-class BaseSearchIndex(indexes.SearchIndex):
+_TModel = TypeVar('_TModel',
+                  bound=Model,
+                  default=Model)
+
+
+class BaseSearchIndex(Generic[_TModel], indexes.SearchIndex):
     """Base class for a search index.
 
     This sets up a few common fields we want all indexes to include.
+
+    Version Changed:
+        8.0:
+        This now supports a generic type for the indexed model.
     """
 
     #: The model to index.
-    model = None
+    model: type[_TModel]
 
     #: The local site attribute on the model.
     #:
     #: For ForeignKeys, this should be the name of the ID field, as in
     #: 'local_site_id'. For ManyToManyFields, it should be the standard field
     #: name.
-    local_site_attr = None
+    local_site_attr: (str | None) = None
 
     # Common fields for all search indexes.
     text = indexes.CharField(document=True, use_template=True)
     local_sites = indexes.MultiValueField(null=True)
 
-    NO_LOCAL_SITE_ID = 0
+    #: A constant indicating no Local Site ID on an object.
+    NO_LOCAL_SITE_ID: Final[int] = 0
 
-    def get_model(self):
-        """Return the model for this index."""
-        return self.model
+    def get_model(self) -> type[_TModel]:
+        """Return the model for this index.
 
-    def prepare_local_sites(self, obj):
+        Returns:
+            type:
+            The type of model.
+
+        Raises:
+            AttributeError:
+                :py:attr:`model` was not set on the subclass.
+        """
+        model = getattr(self, 'model', None)
+
+        if model is None:
+            raise AttributeError(
+                f'{self.__class__.__name__}.model must be set.'
+            )
+
+        return model
+
+    def prepare_local_sites(
+        self,
+        obj: _TModel,
+    ) -> Sequence[str]:
         """Prepare the list of local sites for the search index.
 
         This will take any associated local sites on the object and store
@@ -37,6 +78,19 @@ class BaseSearchIndex(indexes.SearchIndex):
 
         If the object is not a part of a local site, the list will be
         ``[0]``, indicating no local site.
+
+        Args:
+            obj (django.db.models.Model):
+                The model instance to prepare.
+
+        Returns:
+            list of str:
+            The list of of model Local Site IDs as strings, or ``[0]`` if
+            there are no Local Sites.
+
+        Raises:
+            django.core.exceptions.ImproperlyConfigured:
+                One or more attributes were not set on the subclass.
         """
         if not self.local_site_attr:
             raise ImproperlyConfigured('local_site_attr must be set on %r'
@@ -46,6 +100,11 @@ class BaseSearchIndex(indexes.SearchIndex):
             raise ImproperlyConfigured(
                 '"%s" is not a valid local site attribute on %r'
                 % (self.local_site_attr, obj.__class__))
+
+        if not LocalSite.objects.has_local_sites():
+            # There aren't any Local Sites on the server, so there's nothing
+            # to process.
+            return [str(self.NO_LOCAL_SITE_ID)]
 
         local_sites = getattr(obj, self.local_site_attr, None)
 
