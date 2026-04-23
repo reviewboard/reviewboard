@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import User
     from django.db.models import QuerySet
     from django.utils.safestring import SafeString
-    from djblets.datagrid.grids import StatefulColumn
+    from djblets.datagrid.grids import StatefulColumn, _RenderContext
     from typelets.django.strings import StrPromise
 
     from reviewboard.accounts.models import (StarrableObject,
@@ -1914,6 +1914,7 @@ class ReviewSummaryColumn(Column):
     """
 
     label = _('Review Request Summary')
+    cell_template = 'datagrids/review_summary_cell.html'
     css_class = 'summary'
     expand = True
     link = True
@@ -1965,6 +1966,40 @@ class ReviewSummaryColumn(Column):
             The summary of the associated review request.
         """
         return obj.review_request.summary
+
+    def render_cell(
+        self,
+        state: StatefulColumn,
+        obj: Review,
+        render_context: _RenderContext,
+    ) -> SafeString:
+        """Render the table cell containing column data.
+
+        Version Added:
+            8.0
+
+        Args:
+            state (djblets.datagrid.grids.StatefulColumn):
+                The state for the DataGrid instance.
+
+            obj (reviewboard.reviews.models.Review):
+                The review being rendered.
+
+            render_context (dict or django.template.context.Context):
+                The shared context used for cell renders.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered cell as HTML.
+        """
+        # We pass this to the cell's review request info box.
+        render_context['review_request_url'] = \
+            obj.review_request.get_absolute_url()
+
+        try:
+            return super().render_cell(state, obj, render_context)
+        finally:
+            del render_context['review_request_url']
 
 
 class ToMeColumn(Column):
