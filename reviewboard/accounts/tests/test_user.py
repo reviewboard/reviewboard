@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 import kgb
@@ -13,6 +14,9 @@ from djblets.testing.decorators import add_fixtures
 from reviewboard.accounts.models import Profile
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from django_assert_queries import ExpectedQueries
 
 
 class UserTests(kgb.SpyAgency, TestCase):
@@ -142,6 +146,73 @@ class UserTests(kgb.SpyAgency, TestCase):
 
         self.assertIs(profile.user, user)
         self.assertIsNotNone(profile.pk)
+
+    def test_get_profile_with_select_related_none_create_if_missing_true(
+        self,
+    ) -> None:
+        """Testing User.get_profile with select_related with no profile
+        in database and create_if_missing=True
+        """
+        user = self.create_user(username='test1')
+
+        equeries: ExpectedQueries = [
+            {
+                'model': User,
+                'select_related': {'profile'},
+                'where': Q(username='test1'),
+            },
+        ]
+
+        with assert_queries(equeries):
+            user = list(
+                User.objects
+                .filter(username='test1')
+                .select_related('profile')
+            )[0]
+
+        equeries = [
+            {
+                'model': Profile,
+                'where': Q(user=user),
+            },
+            {
+                'model': Profile,
+                'type': 'INSERT',
+            },
+        ]
+
+        with assert_queries(equeries):
+            profile = user.get_profile(create_if_missing=True)
+
+        self.assertIsNotNone(profile)
+        self.assertIsNotNone(profile.pk)
+
+    def test_get_profile_with_select_related_none_create_if_missing_false(
+        self,
+    ) -> None:
+        """Testing User.get_profile with select_related with no profile
+        in database and create_if_missing=False
+        """
+        user = self.create_user(username='test1')
+
+        equeries: ExpectedQueries = [
+            {
+                'model': User,
+                'select_related': {'profile'},
+                'where': Q(username='test1'),
+            },
+        ]
+
+        with assert_queries(equeries):
+            user = list(
+                User.objects
+                .filter(username='test1')
+                .select_related('profile')
+            )[0]
+
+        with (self.assertNumQueries(0),
+              self.assertRaises(Profile.DoesNotExist)):
+            user.get_profile(create_if_missing=False)
 
     def test_get_profile_with_no_profile_and_create_if_missing_false(self):
         """Testing User.get_profile with no existing profile and

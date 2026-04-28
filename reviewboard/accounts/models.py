@@ -1527,26 +1527,40 @@ class _ReviewBoardUser(BaseUser):
         if profile is None:
             cached_profile = get_object_cached_field(self, 'profile')
 
-            if cached_profile is not UNSET:
+            if cached_profile is UNSET:
+                has_cached_profile_value = False
+            else:
                 if isinstance(cached_profile, list):
                     assert len(cached_profile) == 1
 
                     cached_profile = cached_profile[0]
 
                 profile = cached_profile
+                has_cached_profile_value = True
 
-            # At this stage, we may still have a None profile. We may have
-            # select_related() but without a profile existing, which would
-            # cache a None value. So, check for that and see if we need to
-            # create one.
+            # At this stage, we may still have a None profile, and it may
+            # have come from a select_related('profile') without a profile
+            # in the database.
+            #
+            # If this is the case, and we're not limiting to values found in
+            # cache, then we'll need to do one of the following:
+            #
+            # 1. Conditionally create a profile (if create_if_missing=True)
+            # 2. Fetch it (if we didn't have a value from select_related())
+            # 3. Simply raise Profile.DoesNotExist (mirroring what the fetch
+            #    would raise)
             if profile is None and not cached_only:
                 # We may need to create or fetch this.
                 if create_if_missing:
                     profile, is_new = Profile.objects.get_or_create(
                         user=self)
-                else:
+                elif not has_cached_profile_value:
                     # This may raise Profile.DoesNotExist.
                     profile = Profile.objects.get(user=self)
+                else:
+                    # Mirror the behavior we'd have if we tried to fetch it
+                    # from above.
+                    raise Profile.DoesNotExist
 
         if profile_was_none and profile is not None:
             # We didn't have this cached before, but we have a profile now.
