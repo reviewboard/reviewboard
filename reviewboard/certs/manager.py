@@ -775,17 +775,17 @@ class CertificateManager:
             local_site=local_site,
         )
 
-        if (client_cert_paths and
-            (key_file := client_cert_paths.get('key_file'))):
-            context.load_cert_chain(
-                certfile=client_cert_paths['cert_file'],
-                keyfile=key_file,
-            )
-        else:
-            logger.warning('Unable to locate key for SSL/TLS client '
-                           'authentication certificate for %s:%s. The '
-                           'certificate will be ignored.',
-                           hostname, port)
+        if client_cert_paths:
+            if key_file := client_cert_paths.get('key_file'):
+                context.load_cert_chain(
+                    certfile=client_cert_paths['cert_file'],
+                    keyfile=key_file,
+                )
+            else:
+                logger.warning('Unable to locate key for SSL/TLS client '
+                               'authentication certificate for %s:%s. The '
+                               'certificate will be ignored.',
+                               hostname, port)
 
         return context
 
