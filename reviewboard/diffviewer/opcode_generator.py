@@ -73,6 +73,12 @@ class DiffOpcodeGenerator:
     #: The HTTP request from the client.
     request: Optional[HttpRequest]
 
+    #: Whether to perform interdiff filtering.
+    #:
+    #: Version Added:
+    #:     8.0
+    _filter_interdiffs: bool
+
     def __init__(
         self,
         differ: Differ,
@@ -126,7 +132,15 @@ class DiffOpcodeGenerator:
             diff_settings = DiffSettings.create(request=request)
 
         assert diff_settings.tab_size
+
+        filter_interdiffs = bool(
+            diff_settings.interdiff_filtering and
+            diff and
+            interdiff
+        )
+
         self.diff_settings = diff_settings
+        self._filter_interdiffs = filter_interdiffs
 
     def __iter__(self):
         """Returns opcodes from the differ with extra metadata.
@@ -168,7 +182,7 @@ class DiffOpcodeGenerator:
             tuple:
             A processed opcode.
         """
-        if self.diff and self.interdiff:
+        if self._filter_interdiffs:
             # Filter out any lines unrelated to these changes from the
             # interdiff. This will get rid of any merge information.
             opcodes = filter_interdiff_opcodes(
@@ -226,7 +240,7 @@ class DiffOpcodeGenerator:
             yield tag, i1, i2, j1, j2, meta
 
     def _apply_meta_processors(self, opcodes):
-        if self.interdiff:
+        if self._filter_interdiffs:
             # When filtering out opcodes, we may have converted chunks into
             # "filtered-equal" chunks. This allowed us to skip any additional
             # processing, particularly the indentation highlighting. It's

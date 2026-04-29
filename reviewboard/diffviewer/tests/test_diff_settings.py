@@ -53,6 +53,7 @@ class DiffSettingsTests(TestCase):
                          ['*.a', '*.b'])
         self.assertEqual(diff_settings.paginate_by, 20)
         self.assertEqual(diff_settings.paginate_orphans, 5)
+        self.assertTrue(diff_settings.interdiff_filtering)
         self.assertTrue(diff_settings.syntax_highlighting)
         self.assertEqual(diff_settings.syntax_highlighting_threshold,
                          10_000)
@@ -202,4 +203,4 @@ class DiffSettingsTests(TestCase):
 
         self.assertEqual(
             diff_settings.state_hash,
-            '2941f28d668cbe4ab38659f9b7369f649058a3d70393897dc5f8108b764e271b')
+            '7723b408c3a75c3be994f20b946ed34945831490ea1f1d6d703e197140923a28')

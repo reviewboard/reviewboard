@@ -1,7 +1,17 @@
+"""Unit tests for reviewboard.diffviewer.opcode_generator.DiffOpcodeGenerator.
+"""
+
+from __future__ import annotations
+
 import os
+
+import kgb
 
 from reviewboard.diffviewer.myersdiff import MyersDiffer
 from reviewboard.diffviewer.opcode_generator import get_diff_opcode_generator
+from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
+                                               post_process_filtered_equals)
+from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.testing import TestCase
 
 
@@ -738,3 +748,141 @@ class MoveDetectionTests(TestCase):
 
         self.assertEqual(i_moves, expected_i_moves)
         self.assertEqual(r_moves, expected_r_moves)
+
+
+class FilterInterdiffTests(kgb.SpyAgency, TestCase):
+    """Unit tests for DiffOpcodeGenerator interdiff filtering.
+
+    Version Added:
+        8.0
+    """
+
+    def test_with_filter_interdiffs_enabled(self) -> None:
+        """Testing DiffOpcodeGenerator with
+        diff_settings.filter_interdiffs=True
+        """
+        diff_settings = DiffSettings.create()
+        self.assertTrue(diff_settings.interdiff_filtering)
+
+        request = self.create_http_request()
+        diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+line\n'
+        )
+        interdiff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -0,0 +1,2 @@\n'
+            b'+line\n'
+            b'+line2\n'
+        )
+
+        differ = MyersDiffer(
+            a=[
+                'line',
+            ],
+            b=[
+                'line',
+                'line2',
+            ],
+        )
+
+        opcode_generator = get_diff_opcode_generator(
+            differ=differ,
+            diff_settings=diff_settings,
+            diff=diff,
+            interdiff=interdiff,
+            request=request,
+        )
+
+        self.spy_on(differ.get_opcodes)
+        self.spy_on(opcode_generator._generate_opcode_meta)
+        self.spy_on(filter_interdiff_opcodes)
+        self.spy_on(post_process_filtered_equals)
+
+        self.assertEqual(
+            list(opcode_generator),
+            [
+                ('equal', 0, 1, 0, 1, {
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                }),
+                ('insert', 1, 1, 1, 2, {
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                }),
+            ])
+
+        self.assertSpyCalledWith(
+            filter_interdiff_opcodes,
+            differ.get_opcodes.last_call.return_value,
+            diff,
+            interdiff,
+            request=request,
+        )
+        self.assertSpyCalledWith(
+            post_process_filtered_equals,
+            opcode_generator._generate_opcode_meta.last_call.return_value,
+        )
+
+    def test_with_filter_interdiffs_disabled(self) -> None:
+        """Testing DiffOpcodeGenerator with
+        diff_settings.filter_interdiffs=False
+        """
+        diff_settings = DiffSettings.create(interdiff_filtering=False)
+
+        request = self.create_http_request()
+        diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+line\n'
+        )
+        interdiff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -0,0 +1,2 @@\n'
+            b'+line\n'
+            b'+line2\n'
+        )
+
+        differ = MyersDiffer(
+            a=[
+                'line',
+            ],
+            b=[
+                'line',
+                'line2',
+            ],
+        )
+
+        opcode_generator = get_diff_opcode_generator(
+            differ=differ,
+            diff_settings=diff_settings,
+            diff=diff,
+            interdiff=interdiff,
+            request=request,
+        )
+
+        self.spy_on(differ.get_opcodes)
+        self.spy_on(opcode_generator._generate_opcode_meta)
+        self.spy_on(filter_interdiff_opcodes)
+        self.spy_on(post_process_filtered_equals)
+
+        self.assertEqual(
+            list(opcode_generator),
+            [
+                ('equal', 0, 1, 0, 1, {
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                }),
+                ('insert', 1, 1, 1, 2, {
+                    'whitespace_chunk': False,
+                    'whitespace_lines': [],
+                }),
+            ])
+
+        self.assertSpyNotCalled(filter_interdiff_opcodes)
+        self.assertSpyNotCalledWith(post_process_filtered_equals)
