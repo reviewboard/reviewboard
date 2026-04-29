@@ -27,6 +27,8 @@ from django.utils.encoding import force_str
 from djblets.log import log_timed
 from djblets.util.decorators import cached_property
 
+from reviewboard.certs.cert import Certificate
+from reviewboard.certs.manager import cert_manager
 from reviewboard.deprecation import RemovedInReviewBoard90Warning
 
 if TYPE_CHECKING:
@@ -36,6 +38,7 @@ if TYPE_CHECKING:
     from typing_extensions import Never, TypeAlias
 
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+    from reviewboard.hostingsvcs.models import HostingServiceAccount
 
 
 logger = logging.getLogger(__name__)
@@ -88,6 +91,120 @@ QueryArgs: TypeAlias = Dict[str, Any]
 #: Version Added:
 #:     6.0
 UploadedFiles: TypeAlias = Dict[Union[bytes, str], UploadedFileInfo]
+
+
+def _build_ssl_context_from_ssl_cert(
+    *,
+    hosting_account: HostingServiceAccount,
+) -> ssl.SSLContext:
+    """Return an SSL context for a hosting service with legacy cert data.
+
+    This will attempt to migrate the stored ``ssl_cert`` data a hosting
+    service account to a modern stored certificate that can then be
+    properly managed.
+
+    If there are any issues with migration, or if the resulting SSL
+    certificate does not match the target hostname, then the stored certificate
+    data will be used directly with hostname verification disabled.
+
+    This should never be needed for hosting service accounts configured
+    after Review Board 8.0.
+
+    Version Added:
+        8.0
+
+    Args:
+        hosting_account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+            The hosting service account to migrate.
+
+    Returns:
+        ssl.SSLContext:
+        A configured SSL context with the certificate trusted.
+    """
+    context: (ssl.SSLContext | None) = None
+    cert_data = hosting_account.data['ssl_cert']
+
+    if hosting_url := hosting_account.hosting_url:
+        local_site = hosting_account.local_site
+
+        try:
+            parsed = urlparse(hosting_url)
+
+            if hostname := parsed.hostname:
+                port = parsed.port or 443
+
+                # Check if there's an existing certificate being managed.
+                certificate = cert_manager.get_certificate(
+                    hostname=hostname,
+                    port=port,
+                    local_site=local_site,
+                )
+
+                if certificate is None:
+                    # There's no existing certificate. Generate one from
+                    # the stored data and check to see if it matches the
+                    # hostname. If not, we can't add it, and instead need
+                    # to go the legacy `check_hostname=False` route.
+                    certificate = Certificate(
+                        hostname=hostname,
+                        port=port,
+                        cert_data=cert_data.encode('ascii'),
+                    )
+
+                    if certificate.matches_host(hostname):
+                        # This is a direct match, so add this to the cert
+                        # manager.
+                        cert_manager.add_certificate(
+                            certificate=certificate,
+                            local_site=local_site,
+                        )
+
+                        del hosting_account.data['ssl_cert']
+                        hosting_account.save(update_fields=('data',))
+                    else:
+                        # This is NOT a direct match, but the admin had
+                        # previously approved this cert for this server.
+                        # We'll have to keep the legacy fallback that
+                        # disables hostname checks.
+                        logger.warning(
+                            'The approved SSL/TLS certificate stored in '
+                            'hosting service account ID=%r does not match the '
+                            'hostname %r for the server. Falling back to a '
+                            'less-secure form of verification. Please ensure '
+                            'the server has a valid certificate matching its '
+                            'hostname and then upload a new certificate.',
+                            hosting_account.pk, hostname,
+                        )
+
+                        certificate = None
+
+                if certificate is not None:
+                    # Use cert_manager to build the SSL context (loads the
+                    # stored cert via load_verify_locations in
+                    # build_ssl_context).
+                    context = cert_manager.build_ssl_context(
+                        hostname=hostname,
+                        port=port,
+                        local_site=local_site,
+                    )
+        except Exception:
+            # This will be issued every time this cert is used, making it
+            # loud and noisy in order to better catch an admin's attention.
+            logger.exception(
+                'Unexpected error migrating legacy ssl_cert data for hosting '
+                'service account %s. Falling back to a legacy insecure '
+                'SSL context.',
+                hosting_account.pk,
+            )
+
+    if context is None:
+        # Fall back to using the certificate data directly without hostname
+        # validation.
+        context = ssl.create_default_context()
+        context.load_verify_locations(cadata=cert_data)
+        context.check_hostname = False
+
+    return context
 
 
 def _log_and_raise(
@@ -445,18 +562,37 @@ class HostingServiceHTTPRequest:
 
         hosting_service = self.hosting_service
 
-        if hosting_service and 'ssl_cert' in hosting_service.account.data:
-            # create_default_context only exists in Python 2.7.9+. Using it
-            # here should be fine, however, because accepting invalid or
-            # self-signed certificates is only possible when running
-            # against versions that have this (see the check for
-            # create_default_context below).
-            context = ssl.create_default_context()
-            context.load_verify_locations(
-                cadata=hosting_service.account.data['ssl_cert'])
-            context.check_hostname = False
+        if hosting_service:
+            context: (ssl.SSLContext | None)
 
-            self._urlopen_handlers.append(HTTPSHandler(context=context))
+            hosting_account = hosting_service.account
+
+            if 'ssl_cert' in hosting_account.data:
+                # There's existing legacy SSL certificate data stored in
+                # the account. Convert it to a modern Certificate if
+                # possible, and build a context with it. If successful,
+                # 'ssl_cert' will be removed from the data.
+                context = _build_ssl_context_from_ssl_cert(
+                    hosting_account=hosting_account,
+                )
+            else:
+                # This is the modern code path. Build an SSL context.
+                #
+                # We use build_urlopen_kwargs() as a convenience. It will
+                # sanity-check the URL for HTTPS and build a context with the
+                # right parameters.
+                context = (
+                    cert_manager.build_urlopen_kwargs(
+                        url=self.url,
+                        local_site=hosting_service.account.local_site,
+                    )
+                    .get('context')
+                )
+
+            if context is not None:
+                # An SSL context was successfully built, so we can now set up
+                # an HTTPS handler using it.
+                self._urlopen_handlers.append(HTTPSHandler(context=context))
 
             timer_msg = (
                 f'Performing HTTP {method} request for '

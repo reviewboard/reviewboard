@@ -51,6 +51,39 @@ e8K8nyAoCVl6E0HJL7cKdQ9/SkCivQjCO5jK+s8ANOeBNDUSATgQvep9VAk8UWo+
 More junk...
 """
 
+TEST_TRUST_SAN_CERT_PEM = b"""
+Junk area. This is a trust cert with SAN data.
+
+-----BEGIN CERTIFICATE-----
+MIIEXjCCAkagAwIBAgIUH/aJUMZgutxwbM0xXq8DRrfVR+owDQYJKoZIhvcNAQEL
+BQAwFzEVMBMGA1UEAwwMVGVzdCBMREFQIENBMB4XDTI2MDMxODAzMjc0OVoXDTM2
+MDMxNTAzMjc0OVowGzEZMBcGA1UEAwwQbWFpbi5leGFtcGxlLmNvbTCCASIwDQYJ
+KoZIhvcNAQEBBQADggEPADCCAQoCggEBAL0eN9jF/qSqGXKVxu4T9gy+gt2JQYIK
+AyemKCs9VZPHTcl+I1pHGGF2wwDDFne9i0JfywSXioLmnkKVar91YlgoCumqJqSQ
+5KskzarN5bGy+2V8wU/uhP4sD+gocVxFWPBLAQvJAMwaKtYBtUL7U9Ko9T9BaYDy
+pdk+0scFBgfpPYBzcB0UaDIhQ1aM2wd5eih1Gk66N0ZlWwJ4M4Cvtn2L+a10SoXW
+ipSFOeeU6LBMTl1vTgsok+4FF/Bf1BqdOTIXRqCXgeq4+v2OnpCLm0G81tyYj1lx
+7gnpTvyHpVTR1FUWnFI1zJ3V1RceifgBJoSHYSytfd1maF1eXgDJndECAwEAAaOB
+nTCBmjAJBgNVHRMEAjAAMA4GA1UdDwEB/wQEAwIFoDATBgNVHSUEDDAKBggrBgEF
+BQcDATAoBgNVHREEITAfghB0ZXN0LmV4YW1wbGUuY29tggtleGFtcGxlLmNvbTAd
+BgNVHQ4EFgQURPbKJRFrb6AbUB4GuvEWMIKwCFcwHwYDVR0jBBgwFoAUFZ8R0Mgm
+CmxbG0buLdWs5L+1kT0wDQYJKoZIhvcNAQELBQADggIBAA+7n5ZP1fZRtP5mMYl/
+U67brXmg9xToesA2vNxyBv9Mb951bqVZKJgGS6i8BkkhhEo90rvv8eIQjfb/owcu
+U1hWh+aMXCebrD9T8neTBk+I6lHjbxKFzc3L0uUNmu6fYTqY0hKnsnPgm93V0edd
+ObpImOna9vVWtXTsfP0mY9OaaitC4jpaWXSZglTshv0mI23BP3PTCCDn4stY2njt
+Oq3j1k+XKjb4p5BTdymDiYh7BdPxIerRbNfHNXwm6YdW30FEdOG5OWj6cHqWNo6n
+3+kOAnZ13rasGHgkwZwc5Wzu+U/1uTsjSX35TMbVBIztfZEcTWStqGGbmIp7dXfg
+S0esl8aeptVRgcr2t0htw3LkkBmIo6/UBvVbqfJKlqJp5M/sJVgGWZ7rHUk7odhm
+8Fw28Hi6R/LD1k5M+SWzQVLZxGMpLObtwRki5lj9FBpSNCctOXh6CwnPmgnkcW9c
+ZVqWsFbYzMKGdcDm+azKLR43xHpnbq9ZC+GBfS1dkMRY6Ax13AAHvANBI79hXMJq
+pMwwml7ru5CfRaBL/w0VKvaCVza7zRr+DEB9wVTA2JjfLdfMY8raq9jETEcx8n+H
+LgIABEl9Djw4VXkTqTSHNbRSKg6IzOK3Ve0rJruJcqPUiCea9c8rwwW3+dBkP3Kr
+gynA+/8MseuiQ2HUkoEZOkIy
+-----END CERTIFICATE-----
+
+More junk...
+"""
+
 TEST_CLIENT_CERT_PEM = b"""
 Junk area. This is a client auth cert.
 
@@ -234,6 +267,98 @@ TEST_SHA256_2 = (
     '00:11:22:33:44:55:66:77:88:99:AA:BB:CC:DD:EE:FF:00:11:22:33:44:55:66:'
     '77:88:99:AA:BB:CC:DD:EE:FF'
 )
+
+
+class CaptureSSLContext:
+    """SSL context that captures loaded state.
+
+    Version Added:
+        8.0
+    """
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Loaded CA bundle strings.
+    cadatas: list[bytes | str | None]
+
+    #: Loaded CA bundle files.
+    cafiles: list[str | None]
+
+    #: Loaded CA bundle paths.
+    capaths: list[str | None]
+
+    #: Loaded trust or mTLS certificate files.
+    certfiles: list[str | None]
+
+    #: Whether hostnames are checked.
+    check_hostname: bool
+
+    #: Loaded mTLS key files.
+    keyfiles: list[str | None]
+
+    #: Loaded mTLS key passwords.
+    passwords: list[str | None]
+
+    def __init__(self) -> None:
+        """Initialize the context."""
+        self.cadatas = []
+        self.cafiles = []
+        self.capaths = []
+        self.certfiles = []
+        self.keyfiles = []
+        self.passwords = []
+        self.check_hostname = True
+
+    def load_verify_locations(
+        self,
+        cafile: (str | None) = None,
+        capath: (str | None) = None,
+        cadata: (bytes | str | None) = None
+    ) -> None:
+        """Load CA data for verification.
+
+        Args:
+            cafile (str, optional):
+                The CA file path to load.
+
+            capath (str, optional):
+                The CA directory path to load.
+
+            cadata (bytes or str, optional):
+                The CA file data to load.
+        """
+        if cafile:
+            self.cafiles.append(cafile)
+
+        if capath:
+            self.capaths.append(capath)
+
+        if cadata:
+            self.cadatas.append(cadata)
+
+    def load_cert_chain(
+        self,
+        certfile: str,
+        keyfile: (str | None) = None,
+        password: (str | None) = None,
+    ) -> None:
+        """Load a certificate chain.
+
+        Args:
+            certfile (str):
+                The certificate file path.
+
+            keyfile (str, optional):
+                The key file path.
+
+            password (str, optional):
+                The key password.
+        """
+        self.certfiles.append(certfile)
+        self.keyfiles.append(keyfile)
+        self.passwords.append(password)
 
 
 class CertificateTestCase(TestCase):

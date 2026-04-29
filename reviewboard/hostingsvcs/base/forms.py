@@ -14,10 +14,14 @@ from django import forms
 from django.utils.translation import gettext, gettext_lazy as _
 from typelets.runtime import raise_invalid_type
 
+from reviewboard.certs.errors import CertificateVerificationError
+from reviewboard.certs.manager import cert_manager
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.scmtools.errors import UnverifiedCertificateError
+from reviewboard.scmtools.errors import (
+    UnverifiedCertificateError as LegacyUnverifiedCertificateError,
+)
 from reviewboard.scmtools.forms import (BaseRepositoryAuthSubForm,
                                         BaseRepositoryInfoSubForm)
 
@@ -442,16 +446,56 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
                 'credentials': credentials,
             }, **extra_authorize_kwargs)
 
+            reauth = False
+
             try:
                 self.authorize(hosting_account, hosting_service_id,
                                **authorize_kwargs)
-            except UnverifiedCertificateError as e:
+            except CertificateVerificationError as e:
+                if trust_host:
+                    cert = e.certificate
+
+                    # In the common case, we'll have a certificate with
+                    # data, but in the event that there's an implementation
+                    # error with some of the data, we'll want to log it
+                    # and raise.
+                    if cert is not None and cert.cert_data:
+                        # Add the certificate and attempt re-authorization.
+                        cert_manager.add_certificate(cert)
+                        reauth = True
+                    else:
+                        # There's an implementation error. Log the details
+                        # and let the exception raise.
+                        if cert is None:
+                            logger.error(
+                                'Hosting service %r provided a '
+                                'CertificateVerificationError without a '
+                                'certificate. This is an implementation error '
+                                'and must be fixed.',
+                                hosting_service_id,
+                            )
+                        elif not cert.cert_data:
+                            logger.error(
+                                'Hosting service %r provided a '
+                                'CertificateVerificationError with a '
+                                'certificate but without certificate data. '
+                                'This is an implementation error and must '
+                                'be fixed.',
+                                hosting_service_id,
+                            )
+
+                if not reauth:
+                    raise
+            except LegacyUnverifiedCertificateError as e:
                 if trust_host:
                     hosting_account.accept_certificate(e.certificate)
-                    self.authorize(hosting_account, hosting_service_id,
-                                   **authorize_kwargs)
+                    reauth = True
                 else:
                     raise
+
+            if reauth:
+                self.authorize(hosting_account, hosting_service_id,
+                               **authorize_kwargs)
 
         if save:
             hosting_account.save()
@@ -506,7 +550,8 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
 
             # Re-raise the error.
             raise
-        except UnverifiedCertificateError:
+        except (CertificateVerificationError,
+                LegacyUnverifiedCertificateError):
             # Re-raise the error so the user will see the "I trust this
             # host" prompt.
             raise

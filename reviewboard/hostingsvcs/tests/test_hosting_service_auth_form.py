@@ -1,30 +1,65 @@
+"""Unit tests for BaseHostingServiceAuthForm."""
+
+from __future__ import annotations
+
+import os
+import shutil
+from typing import TYPE_CHECKING
+
+import kgb
+
+from reviewboard.admin.server import get_data_dir
+from reviewboard.certs.cert import Certificate, CertificateFingerprints
+from reviewboard.certs.errors import (CertificateVerificationError,
+                                      CertificateVerificationFailureCode)
+from reviewboard.certs.manager import cert_manager
+from reviewboard.certs.tests.testcases import TEST_SHA256, TEST_TRUST_CERT_PEM
+from reviewboard.deprecation import (RemovedInReviewBoard10_0Warning,
+                                     RemovedInReviewBoard90Warning)
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.scmtools.certs import Certificate as LegacyCertificate
+from reviewboard.scmtools.errors import UnverifiedCertificateError
 from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 from reviewboard.testing.hosting_services import (SelfHostedTestService,
                                                   TestService)
 
+if TYPE_CHECKING:
+    from djblets.testing.testcases import ExpectedWarning
 
-class HostingServiceAuthFormTests(TestCase):
+
+class HostingServiceAuthFormTests(kgb.SpyAgency, TestCase):
     """Unit tests for BaseHostingServiceAuthForm."""
 
     fixtures = ['test_scmtools']
 
-    def setUp(self):
-        super(HostingServiceAuthFormTests, self).setUp()
+    def setUp(self) -> None:
+        """Set up state for the test.
+
+        This will clear out the certs directory before running a test.
+        """
+        super().setUp()
 
         hosting_service_registry.register(TestService)
         hosting_service_registry.register(SelfHostedTestService)
+        shutil.rmtree(os.path.join(get_data_dir(), 'rb-certs'),
+                      ignore_errors=True)
 
-    def tearDown(self):
-        super(HostingServiceAuthFormTests, self).tearDown()
+    def tearDown(self) -> None:
+        """Tear down state for the test.
 
+        This will clear out the certs directory after running a test.
+        """
         hosting_service_registry.unregister(SelfHostedTestService)
         hosting_service_registry.unregister(TestService)
+        shutil.rmtree(os.path.join(get_data_dir(), 'rb-certs'),
+                      ignore_errors=True)
+
+        super().tearDown()
 
     def test_override_help_texts(self):
         """Testing BaseHostingServiceAuthForm subclasses overriding help texts
@@ -431,3 +466,275 @@ class HostingServiceAuthFormTests(TestCase):
         hosting_account = form.save()
         self.assertEqual(hosting_account.service_name, 'test')
         self.assertEqual(hosting_account.username, '2fa-user')
+
+    def test_save_with_cert_error(self) -> None:
+        """Testing BaseHostingServiceAuthForm.save with
+        UnverifiedCertificateError
+        """
+        fingerprints = CertificateFingerprints(sha256=TEST_SHA256)
+
+        class _MyAuthForm(BaseHostingServiceAuthForm):
+            def authorize(self, *args, **kwargs) -> None:
+                verified = cert_manager.is_certificate_verified(
+                    hostname='example.com',
+                    port=443,
+                    latest_fingerprints=fingerprints,
+                )
+
+                if not verified:
+                    raise CertificateVerificationError(
+                        code=CertificateVerificationFailureCode.NOT_TRUSTED,
+                        certificate=Certificate(
+                            hostname='example.com',
+                            port=443,
+                            fingerprints=fingerprints,
+                            cert_data=TEST_TRUST_CERT_PEM,
+                        ),
+                    )
+
+        form = _MyAuthForm(
+            {
+                'hosting_account_username': 'myuser',
+                'hosting_account_password': 'mypass',
+            },
+            hosting_service_cls=TestService,
+        )
+        self.spy_on(form.authorize)
+
+        self.assertTrue(form.is_valid())
+
+        message = (
+            'The SSL certificate provided by example.com has not been '
+            'signed by a trusted Certificate Authority and may not be safe. '
+            'The certificate needs to be verified in Review Board before '
+            'the server can be accessed. Certificate details: '
+            'hostname="example.com", port=443, issuer="example.com", '
+            'fingerprint=SHA256=79:19:70:AE:A6:1B:EB:BC:35:7C:B8:54:B1:6A:'
+            'AD:79:FF:F7:28:69:02:5E:C3:6F:B3:C2:B4:FD:84:66:DF:8F'
+        )
+
+        with self.assertRaisesMessage(CertificateVerificationError, message):
+            form.save(allow_authorize=True)
+
+        self.assertFalse(cert_manager.is_certificate_verified(
+            hostname='example.com',
+            port=443,
+            latest_fingerprints=fingerprints,
+        ))
+        self.assertIsNone(cert_manager.get_certificate(
+            hostname='example.com',
+            port=443,
+        ))
+        self.assertSpyCallCount(form.authorize, 1)
+
+    def test_save_with_cert_error_and_trust_host(self) -> None:
+        """Testing BaseHostingServiceAuthForm.save with
+        CertificateVerificationError and trust_host=True
+        """
+        fingerprints = CertificateFingerprints(sha256=TEST_SHA256)
+
+        class _MyAuthForm(BaseHostingServiceAuthForm):
+            def authorize(self, *args, **kwargs) -> None:
+                verified = cert_manager.is_certificate_verified(
+                    hostname='example.com',
+                    port=443,
+                    latest_fingerprints=fingerprints,
+                )
+
+                if not verified:
+                    raise CertificateVerificationError(
+                        code=CertificateVerificationFailureCode.NOT_TRUSTED,
+                        certificate=Certificate(
+                            hostname='example.com',
+                            port=443,
+                            fingerprints=fingerprints,
+                            cert_data=TEST_TRUST_CERT_PEM,
+                        ),
+                    )
+
+        self.assertFalse(cert_manager.is_certificate_verified(
+            hostname='example.com',
+            port=443,
+            latest_fingerprints=fingerprints,
+        ))
+
+        form = _MyAuthForm(
+            {
+                'hosting_account_username': 'myuser',
+                'hosting_account_password': 'mypass',
+            },
+            hosting_service_cls=TestService,
+        )
+        self.spy_on(form.authorize)
+
+        self.assertTrue(form.is_valid())
+
+        form.save(allow_authorize=True,
+                  trust_host=True)
+
+        self.assertTrue(cert_manager.is_certificate_verified(
+            hostname='example.com',
+            port=443,
+            latest_fingerprints=fingerprints,
+        ))
+        self.assertAttrsEqual(
+            cert_manager.get_certificate(
+                hostname='example.com',
+                port=443,
+            ),
+            {
+                'cert_data': TEST_TRUST_CERT_PEM,
+                'hostname': 'example.com',
+                'port': 443,
+            })
+        self.assertSpyCallCount(form.authorize, 2)
+
+    def test_save_with_legacy_cert_error(self) -> None:
+        """Testing BaseHostingServiceAuthForm.save with
+        legacy UnverifiedCertificateError
+        """
+        fingerprints = CertificateFingerprints(sha256=TEST_SHA256)
+
+        class _MyAuthForm(BaseHostingServiceAuthForm):
+            def authorize(self, *args, **kwargs) -> None:
+                verified = cert_manager.is_certificate_verified(
+                    hostname='example.com',
+                    port=443,
+                    latest_fingerprints=fingerprints,
+                )
+
+                if not verified:
+                    raise UnverifiedCertificateError(
+                        certificate=LegacyCertificate(
+                            pem_data=TEST_TRUST_CERT_PEM.decode('utf-8'),
+                            issuer='issuer',
+                            hostname='example.com',
+                            fingerprint=TEST_SHA256.replace(':', '').lower(),
+                        )
+                    )
+
+        form = _MyAuthForm(
+            {
+                'hosting_account_username': 'myuser',
+                'hosting_account_password': 'mypass',
+            },
+            hosting_service_cls=TestService,
+        )
+        self.spy_on(form.authorize)
+
+        self.assertTrue(form.is_valid())
+
+        warnings: list[ExpectedWarning] = [
+            {
+                'cls': RemovedInReviewBoard90Warning,
+                'message': (
+                    'UnverifiedCertificateError is deprecated in favor of '
+                    'reviewboard.certs.errors.CertificateVerificationError, '
+                    'and will be removed in Review Board 9.'
+                ),
+            },
+        ]
+
+        message = (
+            'The SSL certificate for this repository (hostname '
+            '"example.com", fingerprint "791970aea61bebbc357cb854b16aad79f'
+            'ff72869025ec36fb3c2b4fd8466df8f") was not verified and might '
+            'not be safe. This certificate needs to be verified before the '
+            'repository can be accessed.'
+        )
+
+        with (self.assertWarnings(warnings),
+              self.assertRaisesMessage(UnverifiedCertificateError, message)):
+            form.save(allow_authorize=True)
+
+        self.assertFalse(cert_manager.is_certificate_verified(
+            hostname='example.com',
+            port=443,
+            latest_fingerprints=fingerprints,
+        ))
+        self.assertIsNone(cert_manager.get_certificate(
+            hostname='example.com',
+            port=443,
+        ))
+        self.assertSpyCallCount(form.authorize, 1)
+
+    def test_save_with_legacy_cert_error_and_trust_host(self) -> None:
+        """Testing BaseHostingServiceAuthForm.save with
+        legacy UnverifiedCertificateError and trust_host=True
+        """
+        fingerprints = CertificateFingerprints(sha256=TEST_SHA256)
+
+        class _MyAuthForm(BaseHostingServiceAuthForm):
+            def authorize(self, *args, **kwargs) -> None:
+                verified = cert_manager.is_certificate_verified(
+                    hostname='example.com',
+                    port=443,
+                    latest_fingerprints=fingerprints,
+                )
+
+                if not verified:
+                    raise UnverifiedCertificateError(
+                        certificate=LegacyCertificate(
+                            pem_data=TEST_TRUST_CERT_PEM.decode('utf-8'),
+                            issuer='issuer',
+                            hostname='example.com',
+                            fingerprint=TEST_SHA256.replace(':', '').lower(),
+                        )
+                    )
+
+        self.assertFalse(cert_manager.is_certificate_verified(
+            hostname='example.com',
+            port=443,
+            latest_fingerprints=fingerprints,
+        ))
+
+        form = _MyAuthForm(
+            {
+                'hosting_account_username': 'myuser',
+                'hosting_account_password': 'mypass',
+            },
+            hosting_service_cls=TestService,
+        )
+        self.spy_on(form.authorize)
+
+        self.assertTrue(form.is_valid())
+
+        warnings: list[ExpectedWarning] = [
+            {
+                'cls': RemovedInReviewBoard90Warning,
+                'message': (
+                    'UnverifiedCertificateError is deprecated in favor of '
+                    'reviewboard.certs.errors.CertificateVerificationError, '
+                    'and will be removed in Review Board 9.'
+                ),
+            },
+            {
+                'cls': RemovedInReviewBoard10_0Warning,
+                'message': (
+                    'HostingServiceAccount.accept_certificate() is '
+                    'deprecated and will be removed in Review Board 10. '
+                    'Use cert_manager.add_certificate() instead.'
+                ),
+            },
+        ]
+
+        with self.assertWarnings(warnings):
+            form.save(allow_authorize=True,
+                      trust_host=True)
+
+        self.assertTrue(cert_manager.is_certificate_verified(
+            hostname='example.com',
+            port=443,
+            latest_fingerprints=fingerprints,
+        ))
+        self.assertAttrsEqual(
+            cert_manager.get_certificate(
+                hostname='example.com',
+                port=443,
+            ),
+            {
+                'cert_data': TEST_TRUST_CERT_PEM,
+                'hostname': 'example.com',
+                'port': 443,
+            })
+        self.assertSpyCallCount(form.authorize, 2)
