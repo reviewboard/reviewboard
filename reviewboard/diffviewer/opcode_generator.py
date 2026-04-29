@@ -2,18 +2,25 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 from typing import Optional, TYPE_CHECKING
 
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                post_process_filtered_equals)
 from reviewboard.diffviewer.settings import DiffSettings
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.http import HttpRequest
 
     from reviewboard.diffviewer.differ import Differ
+
+
+logger = logging.getLogger(__name__)
 
 
 class MoveRange(object):
@@ -67,8 +74,24 @@ class DiffOpcodeGenerator:
     #:     7.0.4
     diff_settings: DiffSettings
 
+    #: The normalized lines of the original content of the filediff.
+    #:
+    #: This is used for interdiff filtering.
+    #:
+    #: Version Added:
+    #:     8.0
+    filediff_orig_lines: Sequence[str] | None
+
     #: The raw contents of the interdiff range diff.
     interdiff: Optional[bytes]
+
+    #: The normalized lines of the original content of the interfilediff.
+    #:
+    #: This is used for interdiff filtering.
+    #:
+    #: Version Added:
+    #:     8.0
+    interfilediff_orig_lines: Sequence[str] | None
 
     #: The HTTP request from the client.
     request: Optional[HttpRequest]
@@ -86,10 +109,18 @@ class DiffOpcodeGenerator:
         interdiff: Optional[bytes] = None,
         request: Optional[HttpRequest] = None,
         *,
+        filediff_orig_lines: (Sequence[str] | None) = None,
+        interfilediff_orig_lines: (Sequence[str] | None) = None,
         diff_settings: Optional[DiffSettings] = None,
         **kwargs,
     ) -> None:
         """Initialize the opcode generator.
+
+        Version Changed:
+            8.0:
+            Added the ``filediff_orig_lines`` and
+            ``interfilediff_orig_lines`` parameters, which are now needed for
+            interdiff filtering.
 
         Version Changed:
             7.0.4:
@@ -113,6 +144,23 @@ class DiffOpcodeGenerator:
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
+            filediff_orig_lines (list of str, optional):
+                The normalized lines of the original content of the filediff.
+
+                This is required for interdiff filtering.
+
+                Version Added:
+                    8.0
+
+            interfilediff_orig_lines (list of str, optional):
+                The normalized lines of the original content of the
+                interfilediff.
+
+                This is required for interdiff filtering.
+
+                Version Added:
+                    8.0
+
             diff_settings (reviewboard.diffviewer.settings.DiffSettings,
                            optional):
                 The diff settings object.
@@ -123,11 +171,6 @@ class DiffOpcodeGenerator:
             **kwargs (dict):
                 Additional keyword arguments, for future expansion.
         """
-        self.differ = differ
-        self.diff = diff
-        self.interdiff = interdiff
-        self.request = request
-
         if diff_settings is None:
             diff_settings = DiffSettings.create(request=request)
 
@@ -139,7 +182,28 @@ class DiffOpcodeGenerator:
             interdiff
         )
 
+        if (filter_interdiffs and
+            (filediff_orig_lines is None or interfilediff_orig_lines is None)):
+            # Interdiff filtering is requested, but new arguments aren't
+            # provided. Warn about this and disable interdiff filtering.
+            #
+            # When we remove this in Review Board 10, raise an exception if
+            # these aren't provided.
+            class_name = type(self).__name__
+            RemovedInReviewBoard10_0Warning.warn(
+                f'filediff_orig_lines and interfilediff_orig_lines must be '
+                f'passed to {class_name} in order to enable interdiff '
+                f'filtering. This will be required in Review Board 10.'
+            )
+            filter_interdiffs = False
+
+        self.differ = differ
+        self.diff = diff
         self.diff_settings = diff_settings
+        self.interdiff = interdiff
+        self.request = request
+        self.filediff_orig_lines = filediff_orig_lines
+        self.interfilediff_orig_lines = interfilediff_orig_lines
         self._filter_interdiffs = filter_interdiffs
 
     def __iter__(self):
@@ -183,16 +247,25 @@ class DiffOpcodeGenerator:
             A processed opcode.
         """
         if self._filter_interdiffs:
+            filediff_orig_lines = self.filediff_orig_lines
+            interfilediff_orig_lines = self.interfilediff_orig_lines
+
+            assert filediff_orig_lines is not None
+            assert interfilediff_orig_lines is not None
+
             # Filter out any lines unrelated to these changes from the
             # interdiff. This will get rid of any merge information.
+            #
+            # Use the newer differ-based approach, which generates ranges
+            # consistent with Review Board's own diff algorithm.
             opcodes = filter_interdiff_opcodes(
                 opcodes=opcodes,
-                filediff_data=self.diff,
-                interfilediff_data=self.interdiff,
-                request=self.request)
+                differ=self.differ,
+                filediff_orig_lines=filediff_orig_lines,
+                interfilediff_orig_lines=interfilediff_orig_lines,
+            )
 
-        for opcode in opcodes:
-            yield opcode
+        yield from opcodes
 
     def _generate_opcode_meta(self, opcodes):
         for tag, i1, i2, j1, j2 in opcodes:
@@ -247,8 +320,7 @@ class DiffOpcodeGenerator:
             # now time to turn those back into "equal" chunks.
             opcodes = post_process_filtered_equals(opcodes)
 
-        for opcode in opcodes:
-            yield opcode
+        yield from opcodes
 
     def _group_opcodes(self, opcodes):
         for group_index, group in enumerate(opcodes):

@@ -1138,6 +1138,22 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
        grab a patched file for the interdiff version.
     """
 
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The original lines for the start revision of the interdiff.
+    #:
+    #: Version Added:
+    #:     8.0
+    _interdiff_filediff_orig_lines: Sequence[str] | None
+
+    #: The original lines for the end revision of the interdiff.
+    #:
+    #: Version Added:
+    #:     8.0
+    _interdiff_interfilediff_orig_lines: Sequence[str] | None
+
     @deprecate_non_keyword_only_args(RemovedInReviewBoard90Warning)
     def __init__(
         self,
@@ -1192,6 +1208,9 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         self.tool = self.repository.get_scmtool()
         self.base_filediff = base_filediff
 
+        self._interdiff_filediff_orig_lines = None
+        self._interdiff_interfilediff_orig_lines = None
+
         if base_filediff:
             orig_filename = base_filediff.source_file
         else:
@@ -1244,9 +1263,15 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
         else:
             interdiff = None
 
-        return get_diff_opcode_generator(self.differ, diff, interdiff,
-                                         request=self.request,
-                                         diff_settings=self.diff_settings)
+        return get_diff_opcode_generator(
+            self.differ,
+            diff=diff,
+            interdiff=interdiff,
+            filediff_orig_lines=self._interdiff_filediff_orig_lines,
+            interfilediff_orig_lines=self._interdiff_interfilediff_orig_lines,
+            request=self.request,
+            diff_settings=self.diff_settings,
+        )
 
     def get_chunks(self):
         """Return the chunks for the given diff information.
@@ -1348,6 +1373,11 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
             filediff.save(update_fields=['extra_data'])
 
         if interfilediff:
+            # Keep a copy of the original content for use in interdiff
+            # filtering.
+            filediff_orig = old
+            filediff_orig_encoding_list = old_encoding_list
+
             old = new
             old_encoding_list = new_encoding_list
 
@@ -1374,6 +1404,26 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
                     'patched_sha256': get_sha256(new),
                 })
                 interfilediff.save(update_fields=['extra_data'])
+
+            # Prepare the original versions of the files for both ends of the
+            # interdiff so that we can pass them to get_opcode_generator()
+            # later. This is used by the interdiff filtering algorithm.
+            #
+            # The patched sides of these will be available in the differ
+            # as differ.a and differ.b.
+            if filediff_orig is not None:
+                self._interdiff_filediff_orig_lines = \
+                    self.normalize_source_string(
+                        filediff_orig, filediff_orig_encoding_list)[1]
+            else:
+                self._interdiff_filediff_orig_lines = []
+
+            if interdiff_orig is not None:
+                self._interdiff_interfilediff_orig_lines = \
+                    self.normalize_source_string(
+                        interdiff_orig, new_encoding_list)[1]
+            else:
+                self._interdiff_interfilediff_orig_lines = []
         elif self.force_interdiff:
             # Basically, revert the change.
             old, new = new, old

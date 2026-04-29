@@ -309,6 +309,75 @@ class GetDiffDataChunksInfoTests(TestCase):
                 },
             ])
 
+    def test_with_complex_chunk_longer(self) -> None:
+        """Testing get_diff_data_chunks_info with longer complex chunk
+        containing inserts, deletes, and equals
+        """
+        self.assertEqual(
+            get_diff_data_chunks_info(
+                b'@@ -1096,22 +1269,36 @@\n'
+                b' #\n'
+                b' #\n'
+                b' #\n'
+                b'-# new line\n'
+                b'+# new line\n'
+                b' #\n'
+                b' #\n'
+                b'-# old line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b' #\n'
+                b' #\n'
+                b' #\n'
+                b'-# old line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b' #\n'
+                b' #\n'
+                b' #\n'
+                b'-# old line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b' #\n'
+                b' #\n'
+                b' #\n'
+                b'-# old line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b'+# new line\n'
+                b' #\n'
+                b' #\n'
+                b' #\n'),
+            [
+                {
+                    'orig': {
+                        'pre_lines_of_context': 3,
+                        'post_lines_of_context': 3,
+                        'chunk_start': 1095,
+                        'chunk_len': 22,
+                        'changes_start': 1098,
+                        'changes_len': 16,
+                    },
+                    'modified': {
+                        'pre_lines_of_context': 3,
+                        'post_lines_of_context': 3,
+                        'chunk_start': 1268,
+                        'chunk_len': 36,
+                        'changes_start': 1271,
+                        'changes_len': 30,
+                    },
+                },
+            ])
+
     def test_with_change_on_first_line(self):
         """Testing get_diff_data_chunks_info with change on first line"""
         self.assertEqual(
