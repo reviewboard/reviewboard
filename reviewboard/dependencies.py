@@ -78,6 +78,7 @@ package_dependencies: _DependencyMap = {
     'django-storages': '~=1.14.2',
     'Djblets': djblets_version,
     'docutils': '',
+    'idna': '~=3.13',
     'markdown': [
         {
             'version': '~=3.7.0',

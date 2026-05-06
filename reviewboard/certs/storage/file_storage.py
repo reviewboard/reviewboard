@@ -13,6 +13,7 @@ import re
 from typing import TYPE_CHECKING, cast
 from uuid import uuid4
 
+import idna
 from django.core.cache import cache
 from django.core.files.utils import validate_file_name
 from django.utils.text import slugify
@@ -33,6 +34,7 @@ from reviewboard.certs.storage.base import (BaseCertificateStorageBackend,
                                             BaseStoredCertificateBundle,
                                             BaseStoredCertificateFingerprints,
                                             StorageStats)
+from reviewboard.certs.utils import normalize_cert_hostname
 from reviewboard.site.models import AnyOrAllLocalSites, LocalSite
 
 if TYPE_CHECKING:
@@ -237,6 +239,10 @@ class FileStoredCertificate(FileStoredDataMixin, BaseStoredCertificate):
         """
         self._cert_file_path = cert_file_path
         self._key_file_path = key_file_path
+
+        if storage_hostname:
+            storage_hostname = normalize_cert_hostname(storage_hostname)
+
         self._storage_hostname = storage_hostname
 
         super().__init__(hostname=hostname,
@@ -1341,19 +1347,21 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             else:
                 key_file_path = None
 
-            hostname = m.group('hostname')
+            hostname = self._decode_hostname_for_storage(
+                m.group('hostname'),
+                filename=cert_file_path,
+            )
 
-            if hostname.startswith('__'):
-                hostname = '*.%s' % hostname[3:]
-
-            yield FileStoredCertificate(
-                hostname=hostname,
-                port=int(m.group('port')),
-                purpose=purpose,
-                cert_file_path=cert_file_path,
-                key_file_path=key_file_path,
-                local_site=cert_local_site,
-                storage=self)
+            if hostname:
+                yield FileStoredCertificate(
+                    hostname=hostname,
+                    port=int(m.group('port')),
+                    purpose=purpose,
+                    cert_file_path=cert_file_path,
+                    key_file_path=key_file_path,
+                    local_site=cert_local_site,
+                    storage=self,
+                )
 
     def add_fingerprints(
         self,
@@ -1625,12 +1633,19 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             start=start)
 
         for entry_path, entry_local_site, m in entries:
-            yield FileStoredCertificateFingerprints(
-                hostname=m.group('hostname'),
-                port=int(m.group('port')),
-                fingerprints_file_path=entry_path,
-                local_site=entry_local_site,
-                storage=self)
+            hostname = self._decode_hostname_for_storage(
+                m.group('hostname'),
+                filename=entry_path,
+            )
+
+            if hostname:
+                yield FileStoredCertificateFingerprints(
+                    hostname=hostname,
+                    port=int(m.group('port')),
+                    fingerprints_file_path=entry_path,
+                    local_site=entry_local_site,
+                    storage=self,
+                )
 
     def _invalidate_stats_cache(
         self,
@@ -1979,7 +1994,8 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
                 directory.
 
             reviewboard.cert.errors.CertificateStorageError:
-                There was an error creating parent directories.
+                There was an error creating parent directories or encoding
+                the hostname for storage.
         """
         return self._build_data_file_path(
             stored_data_cls=FileStoredCertificate,
@@ -2058,7 +2074,8 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
                 directory.
 
             reviewboard.cert.errors.CertificateStorageError:
-                There was an error creating parent directories.
+                There was an error creating parent directories or encoding
+                the hostname for storage.
         """
         return self._build_data_file_path(
             stored_data_cls=FileStoredCertificateFingerprints,
@@ -2093,11 +2110,14 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
         Returns:
             str:
             The resulting filename.
+
+        Raises:
+            reviewboard.certs.errors.CertificateStorageError:
+                A filename for this hostname could not be built.
         """
-        if hostname.startswith('*'):
-            return f'__{hostname[1:]}__{port}.{ext}'
-        else:
-            return f'{hostname}__{port}.{ext}'
+        hostname = self._encode_hostname_for_storage(hostname)
+
+        return f'{hostname}__{port}.{ext}'
 
     def _build_wildcard_hostname(
         self,
@@ -2153,3 +2173,108 @@ class FileCertificateStorageBackend(BaseCertificateStorageBackend[
             key = f'{key}:local-site-{local_site.pk}'
 
         return key
+
+    def _encode_hostname_for_storage(
+        self,
+        hostname: str,
+    ) -> str:
+        """Return an encoded hostname for storage interaction.
+
+        This encodes a hostname for usage in a filename for storage purposes.
+
+        If there are issues encoding the hostname, an exception is raised
+        for the caller to handle or propagate to the UI.
+
+        Version Added:
+            8.0
+
+        Args:
+            hostname (str):
+                The hostname to encode.
+
+        Returns:
+            str:
+            The encoded hostname.
+
+        Raises:
+            reviewboard.certs.errors.CertificateStorageError:
+                The hostname could not be encoded for storage.
+        """
+        if hostname.startswith('*.'):
+            prefix = '__.'
+            hostname = hostname[2:]
+        else:
+            prefix = ''
+
+        try:
+            encoded_hostname = (
+                idna.encode(hostname.rstrip('.'),
+                            uts46=True)
+                .decode('ascii')
+            )
+        except (UnicodeDecodeError, idna.IDNAError) as e:
+            # Either encoding or decoding failed. Log and raise an exception.
+            logger.error('Hostname %r cannot be encoded to a valid hostname '
+                         'file for cert storage: %s',
+                         hostname, e)
+
+            raise CertificateStorageError(
+                _(
+                    'The hostname {hostname} contains invalid characters '
+                    'and cannot be stored.'
+                ).format(hostname=repr(hostname))
+            ) from e
+
+        return f'{prefix}{encoded_hostname}'
+
+    def _decode_hostname_for_storage(
+        self,
+        encoded_hostname: str,
+        *,
+        filename: str,
+    ) -> str | None:
+        """Return a decoded hostname for storage interaction.
+
+        This decodes an encoded hostname used in a filename back to a
+        standard hostname.
+
+        If there are any issues decoding the hostname, ``None`` will be
+        returned. Unlike :py:meth:`_encode_hostname_for_storage`, this does
+        not raise an exception, as unexpected state in the directory is just
+        intended to be skipped and does not necessarily represent a fatal
+        error.
+
+        Version Added:
+            8.0
+
+        Args:
+            encoded_hostname (str):
+                The hostname to decode.
+
+            filename (str):
+                The name of the corresponding file, for error reporting
+                purposes.
+
+        Returns:
+            str:
+            The decoded hostname, or ``None`` if it could not be decoded.
+        """
+        if encoded_hostname.startswith('__.'):
+            prefix = '*.'
+            encoded_hostname = encoded_hostname[3:]
+        else:
+            prefix = ''
+
+        try:
+            hostname = idna.decode(encoded_hostname.encode('ascii'),
+                                   uts46=True)
+        except (UnicodeEncodeError, idna.IDNAError) as e:
+            # Either encoding or decoding failed. Return a None result to
+            # skip this.
+            logger.warning('File %r cannot be decoded as a valid hostname '
+                           'file for cert storage: %s',
+                           filename, e)
+
+            return None
+
+        return f'{prefix}{hostname}'
