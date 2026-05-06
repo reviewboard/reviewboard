@@ -263,6 +263,7 @@ class DiffOpcodeGenerator:
                 differ=self.differ,
                 filediff_orig_lines=filediff_orig_lines,
                 interfilediff_orig_lines=interfilediff_orig_lines,
+                request=self.request,
             )
 
         yield from opcodes

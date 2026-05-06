@@ -794,6 +794,8 @@ class FilterInterdiffTests(kgb.SpyAgency, TestCase):
             diff_settings=diff_settings,
             diff=diff,
             interdiff=interdiff,
+            filediff_orig_lines=[],
+            interfilediff_orig_lines=[],
             request=request,
         )
 
@@ -817,9 +819,10 @@ class FilterInterdiffTests(kgb.SpyAgency, TestCase):
 
         self.assertSpyCalledWith(
             filter_interdiff_opcodes,
-            differ.get_opcodes.last_call.return_value,
-            diff,
-            interdiff,
+            differ=differ,
+            filediff_orig_lines=[],
+            interfilediff_orig_lines=[],
+            opcodes=differ.get_opcodes.last_call.return_value,
             request=request,
         )
         self.assertSpyCalledWith(
@@ -863,6 +866,8 @@ class FilterInterdiffTests(kgb.SpyAgency, TestCase):
             diff_settings=diff_settings,
             diff=diff,
             interdiff=interdiff,
+            filediff_orig_lines=[],
+            interfilediff_orig_lines=[],
             request=request,
         )
 
