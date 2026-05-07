@@ -16,7 +16,7 @@ django-stubs~=5.0.2
 p4python; python_version <= '3.9' or platform_system == 'Linux' or (platform_system == 'Darwin' and platform_machine == "arm64" and python_version <= '3.11')
 
 # Install pytest and all the plugin dependencies we use.
-pytest~=8.3.2
+pytest
 pytest-django~=4.8.0
 pytest-env~=1.1.3
 
