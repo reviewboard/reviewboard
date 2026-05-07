@@ -85,9 +85,9 @@ class UserIndexTests(TestCase):
             },
         ]
 
-        with (search_enabled(),
-              assert_queries(equeries)):
-            UserIndex().update()
+        with search_enabled():
+            with assert_queries(equeries):
+                UserIndex().update()
 
     def test_update_with_local_sites(self) -> None:
         """Testing UserIndex.update with Local Sites in the database
@@ -167,9 +167,9 @@ class UserIndexTests(TestCase):
             },
         ]
 
-        with (search_enabled(),
-              assert_queries(equeries, with_tracebacks=True)):
-            UserIndex().update()
+        with search_enabled():
+            with assert_queries(equeries, with_tracebacks=True):
+                UserIndex().update()
 
     def _create_users(self) -> Sequence[User]:
         """Create and return users to use for the tests.

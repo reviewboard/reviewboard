@@ -210,9 +210,9 @@ class ReviewRequestIndexTests(TestCase):
             },
         ]
 
-        with (search_enabled(),
-              assert_queries(equeries)):
-            ReviewRequestIndex().update()
+        with search_enabled():
+            with assert_queries(equeries):
+                ReviewRequestIndex().update()
 
     def test_update_with_local_sites(self) -> None:
         """Testing ReviewRequestIndex.update with LocalSites"""
@@ -447,6 +447,6 @@ class ReviewRequestIndexTests(TestCase):
             },
         ]
 
-        with (search_enabled(),
-              assert_queries(equeries, with_tracebacks=True)):
-            ReviewRequestIndex().update()
+        with search_enabled():
+            with assert_queries(equeries, with_tracebacks=True):
+                ReviewRequestIndex().update()
