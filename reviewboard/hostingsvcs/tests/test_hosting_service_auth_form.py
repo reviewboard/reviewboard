@@ -643,9 +643,9 @@ class HostingServiceAuthFormTests(kgb.SpyAgency, TestCase):
             'repository can be accessed.'
         )
 
-        with (self.assertWarnings(warnings),
-              self.assertRaisesMessage(UnverifiedCertificateError, message)):
-            form.save(allow_authorize=True)
+        with self.assertWarnings(warnings):
+            with self.assertRaisesMessage(UnverifiedCertificateError, message):
+                form.save(allow_authorize=True)
 
         self.assertFalse(cert_manager.is_certificate_verified(
             hostname='example.com',

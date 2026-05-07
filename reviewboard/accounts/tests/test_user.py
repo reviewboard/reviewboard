@@ -210,9 +210,9 @@ class UserTests(kgb.SpyAgency, TestCase):
                 .select_related('profile')
             )[0]
 
-        with (self.assertNumQueries(0),
-              self.assertRaises(Profile.DoesNotExist)):
-            user.get_profile(create_if_missing=False)
+        with self.assertNumQueries(0):
+            with self.assertRaises(Profile.DoesNotExist):
+                user.get_profile(create_if_missing=False)
 
     def test_get_profile_with_no_profile_and_create_if_missing_false(self):
         """Testing User.get_profile with no existing profile and
