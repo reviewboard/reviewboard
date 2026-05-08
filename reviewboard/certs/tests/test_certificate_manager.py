@@ -67,6 +67,13 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         self.certs_path = os.path.join(settings.SITE_DATA_DIR, 'rb-certs')
 
     def tearDown(self) -> None:
+        """Tear down the test case."""
+        # Tests in this class mutate the cached SiteConfiguration singleton
+        # without saving. Clear the key so it doesn't leak into other tests
+        # sharing the same xdist worker.
+        siteconfig = SiteConfiguration.objects.get_current()
+        siteconfig.settings.pop('certs_storage_backend', None)
+
         if os.path.exists(self.certs_path):
             shutil.rmtree(self.certs_path)
 
