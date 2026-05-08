@@ -53,17 +53,6 @@ RB.Admin.DashboardPageView = RB.Admin.PageView.extend({
             initLayout: false,
         });
 
-        /* Show a banner detailing the support coverage for the server. */
-        const supportData = this.model.get('supportData');
-
-        if (supportData) {
-            const supportBanner = new RB.SupportBannerView({
-                el: $('#support-banner'),
-                supportData: this.model.get('supportData'),
-            });
-            supportBanner.render();
-        }
-
         this._loadWidgets();
 
         this._masonry.on('layoutComplete', this._onLayoutComplete.bind(this));
