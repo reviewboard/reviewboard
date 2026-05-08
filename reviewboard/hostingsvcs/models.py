@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import logging
 from typing import ClassVar, TYPE_CHECKING
+from urllib.parse import urlparse
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 
+from reviewboard.certs.cert import Certificate
+from reviewboard.certs.manager import cert_manager
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.managers import HostingServiceAccountManager
@@ -18,7 +22,7 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import User
 
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-    from reviewboard.scmtools.certs import Certificate
+    from reviewboard.scmtools.certs import Certificate as LegacyCertificate
 
 
 logger = logging.getLogger(__name__)
@@ -157,9 +161,16 @@ class HostingServiceAccount(models.Model):
 
     def accept_certificate(
         self,
-        certificate: Certificate,
+        certificate: LegacyCertificate,
     ) -> None:
         """Accept the SSL certificate for the linked hosting URL.
+
+        Deprecated:
+            8.0:
+            This has been replaced with
+            :py:meth:`CertificateManager.add_certificate()
+            <reviewboard.certs.manager.CertificateManager.add_certificate>`
+            and will be removed in Review Board 10.
 
         Args:
             certificate (reviewboard.scmtools.certs.Certificate):
@@ -169,11 +180,78 @@ class HostingServiceAccount(models.Model):
             ValueError:
                 The certificate data did not include required fields.
         """
-        if not certificate.pem_data:
+        RemovedInReviewBoard10_0Warning.warn(
+            'HostingServiceAccount.accept_certificate() is deprecated and '
+            'will be removed in Review Board 10. Use '
+            'cert_manager.add_certificate() instead.'
+        )
+
+        cert_data = certificate.pem_data
+
+        if not cert_data:
             raise ValueError('The certificate does not include a PEM-encoded '
                              'representation.')
 
-        self.data['ssl_cert'] = certificate.pem_data
+        # Also register with the certificate manager so that it can be
+        # checked against the main fingerprint storage.
+        hosting_url = self.hosting_url
+        hostname = certificate.hostname
+        fingerprint = certificate.fingerprint
+        port = 443
+
+        if hosting_url:
+            try:
+                parsed = urlparse(hosting_url)
+
+                if parsed.hostname:
+                    hostname = parsed.hostname
+
+                if parsed.port:
+                    port = parsed.port
+                elif parsed.scheme == 'http':
+                    logger.error(
+                        'Attempted to accept TLS/SSL certificate for HTTP '
+                        'URL %s. This may be a programming error or a '
+                        'misconfiguration with a server. A certificate '
+                        'will not be added.',
+                        hosting_url,
+                    )
+
+                    return
+            except Exception as e:
+                logger.exception(
+                    'Unexpected error parsing the URL %s when accepting a '
+                    'TLS/SSL certificate: %s',
+                    hosting_url, e,
+                )
+
+                return
+
+        if not hostname:
+            logger.error(
+                'Could not determine a hostname to use for the TLS/SSL '
+                'certificate accepted for %s. A certificate will not be '
+                'added.',
+                hosting_url or '<unknown>',
+            )
+
+            return
+
+        try:
+            cert_manager.add_certificate(
+                Certificate(
+                    hostname=hostname,
+                    port=port,
+                    cert_data=cert_data.encode('ascii'),
+                ),
+                local_site=self.local_site,
+            )
+        except Exception as e:
+            logger.error(
+                'Failed to add SSL certificate for %s:%s '
+                '(fingerprint %r): %s',
+                hostname, port, fingerprint, e,
+            )
 
     class Meta:
         """Metadata for the HostingServiceAccount model."""

@@ -194,6 +194,7 @@ export class LicenseView<
     protected onRender() {
         const model = this.model;
         const actions = model.get('actions') || [];
+        const autoRenew = model.get('autoRenew');
         const expiresDate = model.get('expiresDate');
         const licenseStatus = model.get('status');
         const lineItems = model.get('lineItems') || [];
@@ -223,7 +224,20 @@ export class LicenseView<
 
             if (licenseStatus === LicenseStatus.LICENSED) {
                 expiresIcon = 'ink-i-info';
-                expiresHTML = _`Expires ${datetimeHTML} on ${expirationDate}`;
+
+                if (autoRenew) {
+                    /*
+                     * The license server has reported that this license
+                     * will renew automatically. Frame the date as a
+                     * renewal rather than an expiration so admins don't
+                     * see this as something they need to act on.
+                     */
+                    expiresHTML =
+                        _`Renews ${datetimeHTML} on ${expirationDate}`;
+                } else {
+                    expiresHTML =
+                        _`Expires ${datetimeHTML} on ${expirationDate}`;
+                }
             } else if (licenseStatus === LicenseStatus.HARD_EXPIRED) {
                 expiresIcon = 'ink-i-warning';
                 expiresHTML = _`Expired ${datetimeHTML} on ${expirationDate}`;

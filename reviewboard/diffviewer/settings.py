@@ -76,6 +76,20 @@ class DiffSettings:
     #:     list of str
     include_space_patterns: list[str]
 
+    #: Whether to filter upstream changes out of an interdiff.
+    #:
+    #: When enabled, this will filter out upstream changes that may be
+    #: introduced between two revisions of any given file in an interdiff.
+    #:
+    #: This defaults to ``True``.
+    #:
+    #: Version Added:
+    #:     8.0
+    #:
+    #: Type:
+    #:     bool
+    interdiff_filtering: bool
+
     #: The number of files to include in each page of a diff.
     #:
     #: Type:
@@ -120,6 +134,7 @@ class DiffSettings:
         user: (User | None) = None,
         local_site: (LocalSite | None) = None,
         request: (HttpRequest | None) = None,
+        interdiff_filtering: bool = True,
         syntax_highlighting: (bool | None) = None,
     ) -> DiffSettings:
         """Create diff settings based on the provided arguments.
@@ -133,6 +148,10 @@ class DiffSettings:
         If ``request`` is provided, its associated user and Local Site will
         be used as defaults if ``user`` or ``local_site`` are not provided.
 
+        Version Added:
+            8.0:
+            Added the ``interdiff_filtering`` argument.
+
         Args:
             user (django.contrib.auth.models.User, optional):
                 The user the settings should pertain to.
@@ -142,6 +161,18 @@ class DiffSettings:
 
             request (django.http.HttpRequest, optional):
                 The HTTP request from the client.
+
+            interdiff_filtering (bool, optional):
+                Whether to filter upstream changes out of an interdiff.
+
+                When enabled, this will filter out upstream changes that may
+                be introduced between two revisions of any given file in an
+                interdiff.
+
+                This defaults to ``True``.
+
+                Version Added:
+                    8.0
 
             syntax_highlighting (bool, optional):
                 An explicit value for :py:attr:`syntax_highlighting`. If
@@ -219,6 +250,7 @@ class DiffSettings:
                 List[str],
                 siteconfig.get('diffviewer_include_space_patterns',
                                layers=config_layers)),
+            interdiff_filtering=interdiff_filtering,
             paginate_by=cast(
                 int,
                 siteconfig.get('diffviewer_paginate_by',

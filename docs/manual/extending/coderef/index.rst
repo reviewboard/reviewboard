@@ -183,6 +183,7 @@ SSL/TLS Certificates
    reviewboard.certs
    reviewboard.certs.cert
    reviewboard.certs.errors
+   reviewboard.certs.utils
 
 
 Extensions

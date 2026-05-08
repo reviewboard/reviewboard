@@ -6,6 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
 import tempfile
@@ -422,8 +423,8 @@ pa6+8p+V5VkIunYFLWOw
 
         self.assertEqual(cert.subject_alternative_names, [
             'localhost',
-            '127.0.0.1',
-            '::1',
+            ipaddress.IPv4Address('127.0.0.1'),
+            ipaddress.IPv6Address('::1'),
         ])
 
     def test_is_valid_with_not_expired(self) -> None:
@@ -473,6 +474,125 @@ pa6+8p+V5VkIunYFLWOw
                            port=443)
 
         self.assertFalse(cert.is_wildcard)
+
+    def test_matches_host_with_equal(self) -> None:
+        """Testing Certificate.matches_host with normalized hostnames
+        equal
+        """
+        cert = Certificate(hostname='XXX',
+                           port=443)
+        cert._subject = 'www.example.COM'
+        cert.__dict__['subject_alternative_names'] = [
+            'sub.example.net',
+        ]
+
+        self.assertTrue(cert.matches_host('WWW.EXAMPLE.COM'))
+        self.assertTrue(cert.matches_host('sub.EXAMPLE.net'))
+
+    def test_matches_host_with_bare_hostname_equal(self) -> None:
+        """Testing Certificate.matches_host with bare hostname equal"""
+        cert = Certificate(hostname='XXX',
+                           port=443)
+        cert.__dict__['subject_alternative_names'] = [
+            'localhost',
+        ]
+
+        self.assertTrue(cert.matches_host('localhost'))
+
+    def test_matches_host_with_ipv4_equal(self) -> None:
+        """Testing Certificate.matches_host with IPv4 address equal"""
+        cert = Certificate(hostname='XXX',
+                           port=443)
+        cert.__dict__['subject_alternative_names'] = [
+            ipaddress.IPv4Address('1.2.3.4'),
+        ]
+
+        self.assertTrue(cert.matches_host('1.2.3.4'))
+
+    def test_matches_host_with_ipv6_equal(self) -> None:
+        """Testing Certificate.matches_host with IPv6 address equal"""
+        cert = Certificate(hostname='XXX',
+                           port=443)
+        cert.__dict__['subject_alternative_names'] = [
+            ipaddress.IPv6Address('2001:db8::1'),
+        ]
+
+        self.assertTrue(cert.matches_host('2001:db8::1'))
+
+    def test_matches_host_with_cert_data(self) -> None:
+        """Testing Certificate.matches_host with parsed cert data"""
+        cert = Certificate(
+            hostname='XXX',
+            port=443,
+            cert_data=b"""-----BEGIN CERTIFICATE-----
+MIIDqjCCApKgAwIBAgIUFXRspvQcuDirYjGMSozXtDhIShcwDQYJKoZIhvcNAQEL
+BQAwPzELMAkGA1UEBhMCVVMxGjAYBgNVBAoMEUV4YW1wbGUgVGVzdCBDZXJ0MRQw
+EgYDVQQDDAtleGFtcGxlLmNvbTAeFw0yNjA0MjAwOTU4MTBaFw0yNzA0MjAxMDAz
+MTBaMD8xCzAJBgNVBAYTAlVTMRowGAYDVQQKDBFFeGFtcGxlIFRlc3QgQ2VydDEU
+MBIGA1UEAwwLZXhhbXBsZS5jb20wggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+AoIBAQC/YxvbVPEoAJe9TBja4onX4DH4d8ig7DC2yElO5LDV9qUDGIzZOz1UYJs3
+WQtIt0H9Yil4xU18fea2nP3tJFCZv384zuwTzOy6jP38EWVVUhELy88RzmKi/HEm
+bcbxO4B1QSTlRrntqpYny0OqZN04zzrpUHz9VyILN0H5X+CoBQ9xLW5t7n0pW9Q+
+E59og2eL/BNIQ8syIaLMmCUfhCi8eQqzgOwM8HaEK8TCohyFZ076XzCzrZltVbKH
+egCy7M3VXkt2SH8Op72XL8CI6sjlI5qwzw3VfGBpEjvl5boJuXXTLnjLsSU7xRPw
+mpzYf3xvZv40L4X1Mqkd3p8PREB3AgMBAAGjgZ0wgZowRgYDVR0RBD8wPYIHZXhh
+bXBsZYILZXhhbXBsZS5jb22CDSouZXhhbXBsZS5uZXSHBAECAwSHECABDbgAAAAA
+AAAAAAAAAAEwDAYDVR0TAQH/BAIwADAOBgNVHQ8BAf8EBAMCBaAwEwYDVR0lBAww
+CgYIKwYBBQUHAwEwHQYDVR0OBBYEFKHmk15f72xt/gnkUqZQ8y8ZiqJXMA0GCSqG
+SIb3DQEBCwUAA4IBAQCmtH5xWJq1avwdWDuLC6KN5b8G/JSOmKvPYaMpLijEvJ2p
+jlbUYjV5HscC8NMh+21YNIYG7nCE3EZY1+YKGZyo3sjVmZ5pQSRWyaNpA5rTu4v0
+WmtGZOsMZFPSGgdBb9pi3ke8oKV1k0gPBnplOc1TDsGRuA+DW2AFHhbbt1oXqJHT
+0teI2u9Qu4A+uI6/RxdxZBW5TGw0EKOCTfV7we5FKoM47TCSKB85tTFnRYUVrKQI
+2jClbc0ud+V0dS2VDVRSiD3n7E8uHQAHYl1DijMuhkA1Rzs95QoKkTzmjHhvKJ/i
++1czCwcQcFogLXoJel+4GXRcf+Nba9zCn8uX0jJR
+-----END CERTIFICATE-----""",
+        )
+
+        # These should match.
+        self.assertTrue(cert.matches_host('example'))
+        self.assertTrue(cert.matches_host('example.com'))
+        self.assertTrue(cert.matches_host('Sub.Example.net'))
+        self.assertTrue(cert.matches_host('1.2.3.4'))
+        self.assertTrue(cert.matches_host('2001:db8::1'))
+        self.assertTrue(cert.matches_host('2001:0db8::0001'))
+
+        # These should not.
+        self.assertFalse(cert.matches_host('example.net'))
+        self.assertFalse(cert.matches_host('1.2.4.5'))
+        self.assertFalse(cert.matches_host('2001:db9::1'))
+
+    def test_matches_host_with_not_equal(self) -> None:
+        """Testing Certificate.matches_host with hostnames not equal and
+        non-wildcard
+        """
+        cert = Certificate(hostname='XXX',
+                           port=443)
+        cert._subject = 'example.com'
+
+        self.assertFalse(cert.matches_host('www.example.com'))
+
+    def test_matches_host_with_wildcard(self) -> None:
+        """Testing Certificate.matches_host with wildcard for full
+        first label
+        """
+        cert = Certificate(hostname='*.example.com',
+                           port=443)
+        cert._subject = '*.example.com'
+        cert.__dict__['subject_alternative_names'] = [
+            '*.example.net',
+            '*.sub.example.corp',
+        ]
+
+        # These should match.
+        self.assertTrue(cert.matches_host('www.example.com'))
+        self.assertTrue(cert.matches_host('foobar.example.com'))
+        self.assertTrue(cert.matches_host('foobar.example.NET'))
+        self.assertTrue(cert.matches_host('xxxyyyzzz.sub.example.corp'))
+
+        # These should not.
+        self.assertFalse(cert.matches_host('example.com'))
+        self.assertFalse(cert.matches_host('sub.www.example.com'))
+        self.assertFalse(cert.matches_host('sub.www.example.net'))
 
     def test_write_cert_file(self) -> None:
         """Testing Certificate.write_cert_file"""

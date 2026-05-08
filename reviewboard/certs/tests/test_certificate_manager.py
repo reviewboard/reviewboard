@@ -24,7 +24,8 @@ from reviewboard.certs.manager import CertificateManager, logger
 from reviewboard.certs.storage import cert_storage_backend_registry
 from reviewboard.certs.storage.file_storage import \
     FileCertificateStorageBackend
-from reviewboard.certs.tests.testcases import (CertificateTestCase,
+from reviewboard.certs.tests.testcases import (CaptureSSLContext,
+                                               CertificateTestCase,
                                                TEST_CERT_BUNDLE_PEM,
                                                TEST_CLIENT_CERT_PEM,
                                                TEST_CLIENT_KEY_PEM,
@@ -36,48 +37,6 @@ from reviewboard.certs.tests.testcases import (CertificateTestCase,
 
 class MyCertificateStorageBackend(FileCertificateStorageBackend):
     backend_id = 'test'
-
-
-class MySSLContext:
-    cadatas: list[bytes | str | None]
-    cafiles: list[str | None]
-    capaths: list[str | None]
-    certfiles: list[str | None]
-    keyfiles: list[str | None]
-    passwords: list[str | None]
-
-    def __init__(self) -> None:
-        self.cadatas = []
-        self.cafiles = []
-        self.capaths = []
-        self.certfiles = []
-        self.keyfiles = []
-        self.passwords = []
-
-    def load_verify_locations(
-        self,
-        cafile: (str | None) = None,
-        capath: (str | None) = None,
-        cadata: (bytes | str | None) = None
-    ) -> None:
-        if cafile:
-            self.cafiles.append(cafile)
-
-        if capath:
-            self.capaths.append(capath)
-
-        if cadata:
-            self.cadatas.append(cadata)
-
-    def load_cert_chain(
-        self,
-        certfile: str,
-        keyfile: (str | None) = None,
-        password: (str | None) = None,
-    ) -> None:
-        self.certfiles.append(certfile)
-        self.keyfiles.append(keyfile)
-        self.passwords.append(password)
 
 
 class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
@@ -1490,11 +1449,11 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         storage_backend = cert_manager.storage_backend
 
         self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(MySSLContext()))
+                    op=kgb.SpyOpReturn(CaptureSSLContext()))
 
         context = cert_manager.build_ssl_context(hostname='example.com',
                                                  port=443)
-        assert isinstance(context, MySSLContext)
+        assert isinstance(context, CaptureSSLContext)
 
         self.assertAttrsEqual(
             context,
@@ -1515,7 +1474,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         storage_backend = cert_manager.storage_backend
 
         self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(MySSLContext()))
+                    op=kgb.SpyOpReturn(CaptureSSLContext()))
 
         cert_manager.add_ca_bundle(
             CertificateBundle(bundle_data=TEST_CERT_BUNDLE_PEM,
@@ -1523,7 +1482,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
 
         context = cert_manager.build_ssl_context(hostname='example.com',
                                                  port=443)
-        assert isinstance(context, MySSLContext)
+        assert isinstance(context, CaptureSSLContext)
 
         self.assertAttrsEqual(
             context,
@@ -1546,14 +1505,14 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         storage_backend = cert_manager.storage_backend
 
         self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(MySSLContext()))
+                    op=kgb.SpyOpReturn(CaptureSSLContext()))
 
         cert_manager.add_certificate(
             self.create_certificate(cert_data=TEST_TRUST_CERT_PEM))
 
         context = cert_manager.build_ssl_context(hostname='example.com',
                                                  port=443)
-        assert isinstance(context, MySSLContext)
+        assert isinstance(context, CaptureSSLContext)
 
         self.assertAttrsEqual(
             context,
@@ -1579,7 +1538,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         storage_backend = cert_manager.storage_backend
 
         self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(MySSLContext()))
+                    op=kgb.SpyOpReturn(CaptureSSLContext()))
 
         cert_manager.add_certificate(
             self.create_certificate(purpose=CertPurpose.CLIENT,
@@ -1588,7 +1547,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
 
         context = cert_manager.build_ssl_context(hostname='example.com',
                                                  port=443)
-        assert isinstance(context, MySSLContext)
+        assert isinstance(context, CaptureSSLContext)
 
         self.assertAttrsEqual(
             context,
@@ -1619,7 +1578,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         storage_backend = cert_manager.storage_backend
 
         self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(MySSLContext()))
+                    op=kgb.SpyOpReturn(CaptureSSLContext()))
 
         cert_manager.add_ca_bundle(
             CertificateBundle(bundle_data=TEST_CERT_BUNDLE_PEM,
@@ -1633,7 +1592,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
 
         context = cert_manager.build_ssl_context(hostname='example.com',
                                                  port=443)
-        assert isinstance(context, MySSLContext)
+        assert isinstance(context, CaptureSSLContext)
 
         self.assertAttrsEqual(
             context,
@@ -1669,7 +1628,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
                                          'test-site-1')
 
         self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(MySSLContext()))
+                    op=kgb.SpyOpReturn(CaptureSSLContext()))
 
         cert_manager.add_certificate(
             self.create_certificate(cert_data=TEST_TRUST_CERT_PEM),
@@ -1699,7 +1658,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         context = cert_manager.build_ssl_context(hostname='example.com',
                                                  port=443,
                                                  local_site=local_site)
-        assert isinstance(context, MySSLContext)
+        assert isinstance(context, CaptureSSLContext)
 
         self.assertAttrsEqual(
             context,
@@ -1733,7 +1692,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         storage_backend = cert_manager.storage_backend
 
         self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(MySSLContext()))
+                    op=kgb.SpyOpReturn(CaptureSSLContext()))
 
         cert_manager.add_certificate(
             self.create_certificate(cert_data=TEST_TRUST_CERT_PEM))
@@ -1764,7 +1723,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         storage_backend = cert_manager.storage_backend
 
         self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(MySSLContext()))
+                    op=kgb.SpyOpReturn(CaptureSSLContext()))
 
         cert_manager.add_certificate(
             self.create_certificate(purpose=CertPurpose.CLIENT,
@@ -1800,7 +1759,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         storage_backend = cert_manager.storage_backend
 
         self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(MySSLContext()))
+                    op=kgb.SpyOpReturn(CaptureSSLContext()))
 
         cert_manager.add_certificate(
             self.create_certificate(cert_data=TEST_TRUST_CERT_PEM,
@@ -1830,7 +1789,7 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         cert_manager = CertificateManager()
 
         self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(MySSLContext()))
+                    op=kgb.SpyOpReturn(CaptureSSLContext()))
 
         kwargs = cert_manager.build_urlopen_kwargs(url='http://example.com')
         self.assertEqual(kwargs, {})

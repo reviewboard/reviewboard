@@ -15,6 +15,7 @@ from typing_extensions import TypedDict
 
 from reviewboard.certs.cert import CertDataFormat, CertPurpose
 from reviewboard.certs.errors import CertificateNotFoundError
+from reviewboard.certs.utils import normalize_cert_hostname
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Mapping
@@ -206,12 +207,15 @@ class BaseStoredCertificate(BaseStoredData):
         """
         if certificate:
             if not hostname:
-                hostname = certificate.hostname
-            elif certificate.hostname != hostname:
-                raise ValueError(
-                    'The provided hostname= argument must match the hostname '
-                    'of the provided certificate=.'
-                )
+                hostname = normalize_cert_hostname(certificate.hostname)
+            else:
+                hostname = normalize_cert_hostname(hostname)
+
+                if normalize_cert_hostname(certificate.hostname) != hostname:
+                    raise ValueError(
+                        'The provided hostname= argument must match the '
+                        'hostname of the provided certificate=.'
+                    )
 
             if not port:
                 port = certificate.port
@@ -243,6 +247,8 @@ class BaseStoredCertificate(BaseStoredData):
                 raise ValueError(
                     'Either certificate= or purpose= must be provided.'
                 )
+
+            hostname = normalize_cert_hostname(hostname)
 
         self.hostname = hostname
         self.port = port
@@ -559,7 +565,7 @@ class BaseStoredCertificateFingerprints(BaseStoredData):
             local_site (reviewboard.site.models.LocalSite, optional):
                 The Local Site owning this stored certificate.
         """
-        self.hostname = hostname
+        self.hostname = normalize_cert_hostname(hostname)
         self.port = port
         self._fingerprints = fingerprints
 

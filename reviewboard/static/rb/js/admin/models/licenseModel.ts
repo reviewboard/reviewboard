@@ -178,6 +178,14 @@ export interface LicenseAttrs {
     /** Available actions for this license. */
     actions?: LicenseAction[] | null;
 
+    /**
+     * Whether the license is set to auto-renew on the license server.
+     *
+     * When true, the UI presents the license as renewing rather than
+     * expiring.
+     */
+    autoRenew?: boolean;
+
     /** Whether this license supports manual upload of new license data. */
     canUploadLicense?: boolean;
 
@@ -265,6 +273,7 @@ export class License<
     static defaults: LicenseAttrs = {
         actionTarget: null,
         actions: null,
+        autoRenew: false,
         canUploadLicense: false,
         checkStatus: LicenseCheckStatus.HAS_LATEST,
         expiresDate: null,

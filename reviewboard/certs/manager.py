@@ -108,19 +108,12 @@ class CertificateManager:
     # Instance variables #
     ######################
 
-    #: The root path for certificate storage.
-    #:
-    #: All storage backends will have a subdirectory within here that they
-    #: can use for reading/writing certificate storage data.
-    _root_storage_path: str
-
     #: A loaded instance of the current storage backend.
     _storage_backend: _CertStorageBackend | None
 
     def __init__(self) -> None:
         """Initialize the certificate manager."""
         self._storage_backend = None
-        self._root_storage_path = os.path.join(get_data_dir(), 'rb-certs')
 
     @property
     def storage_backend(self) -> _CertStorageBackend:
@@ -171,7 +164,7 @@ class CertificateManager:
                 assert backend_cls is not None
 
             assert backend_cls.backend_id
-            storage_path = safe_join(self._root_storage_path,
+            storage_path = safe_join(get_data_dir(), 'rb-certs',
                                      slugify(backend_cls.backend_id))
 
             backend = backend_cls(storage_path=storage_path)
@@ -775,17 +768,17 @@ class CertificateManager:
             local_site=local_site,
         )
 
-        if (client_cert_paths and
-            (key_file := client_cert_paths.get('key_file'))):
-            context.load_cert_chain(
-                certfile=client_cert_paths['cert_file'],
-                keyfile=key_file,
-            )
-        else:
-            logger.warning('Unable to locate key for SSL/TLS client '
-                           'authentication certificate for %s:%s. The '
-                           'certificate will be ignored.',
-                           hostname, port)
+        if client_cert_paths:
+            if key_file := client_cert_paths.get('key_file'):
+                context.load_cert_chain(
+                    certfile=client_cert_paths['cert_file'],
+                    keyfile=key_file,
+                )
+            else:
+                logger.warning('Unable to locate key for SSL/TLS client '
+                               'authentication certificate for %s:%s. The '
+                               'certificate will be ignored.',
+                               hostname, port)
 
         return context
 

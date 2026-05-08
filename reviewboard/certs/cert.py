@@ -14,7 +14,12 @@ import ssl
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import TYPE_CHECKING
+from ipaddress import (IPv4Address,
+                       IPv4Network,
+                       IPv6Address,
+                       IPv6Network,
+                       ip_address)
+from typing import TYPE_CHECKING, Union
 from uuid import uuid4
 
 from cryptography import x509
@@ -32,10 +37,12 @@ from typing_extensions import Self
 from reviewboard.certs.errors import (CertificateNotFoundError,
                                       CertificateStorageError,
                                       InvalidCertificateFormatError)
+from reviewboard.certs.utils import (get_cert_hostname_matches,
+                                     normalize_cert_hostname)
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
-    from typing import Final, TypeVar
+    from typing import Final, TypeAlias, TypeVar
 
     from typelets.django.json import (SerializableDjangoJSONDict,
                                       SerializableDjangoJSONDictImmutable)
@@ -57,6 +64,19 @@ _PRIVATE_KEY_PEM_RE = re.compile(
     br'[A-Za-z0-9+/\r\n]+=*[\r\n]+'
     br'-----END PRIVATE KEY-----'
 )
+
+
+#: A value in a certificate SAN field.
+#:
+#: Version Added:
+#:     8.0
+SANValue: TypeAlias = Union[
+    IPv4Address,
+    IPv4Network,
+    IPv6Address,
+    IPv6Network,
+    str,
+]
 
 
 def _format_fingerprint(
@@ -924,10 +944,10 @@ class Certificate:
         return subject
 
     @cached_property
-    def subject_alternative_names(self) -> Sequence[str]:
+    def subject_alternative_names(self) -> Sequence[SANValue]:
         """The Subject Alternative Names of the certificate.
 
-        This will include the string values for any DNS and IP addresses
+        This will include structured values for any DNS and IP addresses
         found in the Subject Alternative Names extension of the certificate,
         if present.
 
@@ -935,7 +955,8 @@ class Certificate:
             8.0
 
         Type:
-            list of str
+            list of SANValue:
+            A list of supported SAN values.
         """
         x509_cert = self.x509_cert
 
@@ -949,7 +970,7 @@ class Certificate:
             )
 
             return [
-                str(item.value)
+                item.value
                 for item in san_ext.value
                 if isinstance(item, (x509.DNSName, x509.IPAddress))
             ]
@@ -1036,6 +1057,85 @@ class Certificate:
             bool
         """
         return '*' in self.hostname
+
+    def matches_host(
+        self,
+        hostname_or_ip: str,
+    ) -> bool:
+        """Return whether the certificate matches the provided hostname or IP.
+
+        A certificate is a match if any of the following conditions are
+        true:
+
+        * The subject is a match for the hostname.
+        * The first label of a cert hostname is a wildcard and matches the
+          first label of the hostname, and the remaining labels are a match.
+        * The value is an IPv4/IPv6 address and matches a SAN entry.
+
+        Hostnames are all normalized for comparison.
+
+        Partial wildcards (e.g., ``foo*.example.com``, ``*bar.example.com``, or
+        ``foo*bar.example.com``) are not supported. Most Certificate
+        Authorities no longer support these, and major browsers (including
+        Chrome) consider them security risks.
+
+        Version Added:
+            8.0
+
+        Args:
+            hostname_or_ip (str):
+                The hostname or IP address to check.
+
+        Returns:
+            bool:
+            ``True`` if the host is matched by the certificate.
+            ``False`` if it is not.
+        """
+        # Check if the provided hostname represents an IP address or a
+        # hostname.
+        #
+        # If it's an IP address, we'll compare against any IPv4Address or
+        # IPv6Address entries in the SAN field.
+        try:
+            check_ip = ip_address(hostname_or_ip)
+        except ValueError:
+            # This is not an IP address. Carry on with hostname checks.
+            pass
+        else:
+            ip_cls = type(check_ip)
+
+            # This is an IP address. Just compare with every equivalent
+            # value in the SAN.
+            return any(
+                san_value == check_ip
+                for san_value in self.subject_alternative_names
+                if isinstance(san_value, ip_cls)
+            )
+
+        # This is a hostname. We'll check against the standard fields.
+        check_hostname = normalize_cert_hostname(hostname_or_ip)
+
+        # First, check against the Subject Common Name, if present.
+        if subject := self.subject:
+            subject = normalize_cert_hostname(subject)
+
+            if get_cert_hostname_matches(cert_hostname=subject,
+                                         check_hostname=check_hostname,
+                                         normalize_hostnames=False):
+                return True
+
+        # Check all the Subject Alternative Name fields.
+        for san_name in self.subject_alternative_names:
+            if isinstance(san_name, str):
+                # This is a string representing a hostname.
+                san_name = normalize_cert_hostname(san_name)
+
+                if get_cert_hostname_matches(cert_hostname=san_name,
+                                             check_hostname=check_hostname,
+                                             normalize_hostnames=False):
+                    return True
+
+        return False
 
     def to_json(self) -> SerializableDjangoJSONDictImmutable:
         """Serialize the certificate to data ready to be serialized to JSON.

@@ -7,7 +7,7 @@ django-stubs~=5.2.8
 p4python
 
 # Install pytest and all the plugin dependencies we use.
-pytest~=9.0.2
+pytest
 pytest-django~=4.11.1
 pytest-env~=1.2.0
 

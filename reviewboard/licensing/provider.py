@@ -338,6 +338,7 @@ class BaseLicenseProvider(Generic[_TLicenseInfo]):
                 f'{self.license_provider_id}:{license_info.license_id}'
             ),
             'actions': actions_data,
+            'autoRenew': license_info.auto_renew,
             'canUploadLicense': license_info.can_upload_license,
             'expiresDate': expires,
             'expiresSoon': license_info.get_expires_soon(),

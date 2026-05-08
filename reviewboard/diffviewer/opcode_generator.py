@@ -2,16 +2,18 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 from typing import TYPE_CHECKING
 
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.diffviewer.processors import (filter_interdiff_opcodes,
                                                post_process_filtered_equals)
 from reviewboard.diffviewer.settings import DiffSettings
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping
+    from collections.abc import Iterable, Iterator, Mapping, Sequence
     from typing import Any
 
     from django.http import HttpRequest
@@ -22,6 +24,9 @@ if TYPE_CHECKING:
         DiffOpcodeTag,
         DiffOpcodeWithMetadata,
     )
+
+
+logger = logging.getLogger(__name__)
 
 
 class MoveRange:
@@ -138,6 +143,14 @@ class DiffOpcodeGenerator:
     #:     7.0.4
     diff_settings: DiffSettings
 
+    #: The normalized lines of the original content of the filediff.
+    #:
+    #: This is used for interdiff filtering.
+    #:
+    #: Version Added:
+    #:     8.0
+    filediff_orig_lines: Sequence[str] | None
+
     #: The generated opcodes.
     groups: list[DiffOpcodeWithMetadata]
 
@@ -148,6 +161,14 @@ class DiffOpcodeGenerator:
 
     #: The raw contents of the interdiff range diff.
     interdiff: bytes | None
+
+    #: The normalized lines of the original content of the interfilediff.
+    #:
+    #: This is used for interdiff filtering.
+    #:
+    #: Version Added:
+    #:     8.0
+    interfilediff_orig_lines: Sequence[str] | None
 
     #: The HTTP request from the client.
     request: HttpRequest | None
@@ -160,6 +181,12 @@ class DiffOpcodeGenerator:
     #: opcode in the ``groups`` list.
     removes: dict[str, list[tuple[int, DiffOpcodeWithMetadata, int]]]
 
+    #: Whether to perform interdiff filtering.
+    #:
+    #: Version Added:
+    #:     8.0
+    _filter_interdiffs: bool
+
     def __init__(
         self,
         differ: Differ,
@@ -167,10 +194,18 @@ class DiffOpcodeGenerator:
         interdiff: (bytes | None) = None,
         request: (HttpRequest | None) = None,
         *,
+        filediff_orig_lines: (Sequence[str] | None) = None,
+        interfilediff_orig_lines: (Sequence[str] | None) = None,
         diff_settings: (DiffSettings | None) = None,
         **kwargs,
     ) -> None:
         """Initialize the opcode generator.
+
+        Version Changed:
+            8.0:
+            Added the ``filediff_orig_lines`` and
+            ``interfilediff_orig_lines`` parameters, which are now needed for
+            interdiff filtering.
 
         Version Changed:
             7.0.4:
@@ -194,6 +229,23 @@ class DiffOpcodeGenerator:
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
+            filediff_orig_lines (list of str, optional):
+                The normalized lines of the original content of the filediff.
+
+                This is required for interdiff filtering.
+
+                Version Added:
+                    8.0
+
+            interfilediff_orig_lines (list of str, optional):
+                The normalized lines of the original content of the
+                interfilediff.
+
+                This is required for interdiff filtering.
+
+                Version Added:
+                    8.0
+
             diff_settings (reviewboard.diffviewer.settings.DiffSettings,
                            optional):
                 The diff settings object.
@@ -204,16 +256,40 @@ class DiffOpcodeGenerator:
             **kwargs (dict):
                 Additional keyword arguments, for future expansion.
         """
-        self.differ = differ
-        self.diff = diff
-        self.interdiff = interdiff
-        self.request = request
-
         if diff_settings is None:
             diff_settings = DiffSettings.create(request=request)
 
         assert diff_settings.tab_size
+
+        filter_interdiffs = bool(
+            diff_settings.interdiff_filtering and
+            diff and
+            interdiff
+        )
+
+        if (filter_interdiffs and
+            (filediff_orig_lines is None or interfilediff_orig_lines is None)):
+            # Interdiff filtering is requested, but new arguments aren't
+            # provided. Warn about this and disable interdiff filtering.
+            #
+            # When we remove this in Review Board 10, raise an exception if
+            # these aren't provided.
+            class_name = type(self).__name__
+            RemovedInReviewBoard10_0Warning.warn(
+                f'filediff_orig_lines and interfilediff_orig_lines must be '
+                f'passed to {class_name} in order to enable interdiff '
+                f'filtering. This will be required in Review Board 10.'
+            )
+            filter_interdiffs = False
+
+        self.differ = differ
+        self.diff = diff
         self.diff_settings = diff_settings
+        self.interdiff = interdiff
+        self.request = request
+        self.filediff_orig_lines = filediff_orig_lines
+        self.interfilediff_orig_lines = interfilediff_orig_lines
+        self._filter_interdiffs = filter_interdiffs
 
     def __iter__(self) -> Iterator[DiffOpcodeWithMetadata]:
         """Yield opcodes from the differ with extra metadata.
@@ -258,14 +334,25 @@ class DiffOpcodeGenerator:
             reviewboard.diffviewer.differ.DiffOpcode:
             A processed opcode.
         """
-        if self.diff and self.interdiff:
+        if self._filter_interdiffs:
+            filediff_orig_lines = self.filediff_orig_lines
+            interfilediff_orig_lines = self.interfilediff_orig_lines
+
+            assert filediff_orig_lines is not None
+            assert interfilediff_orig_lines is not None
+
             # Filter out any lines unrelated to these changes from the
             # interdiff. This will get rid of any merge information.
+            #
+            # Use the newer differ-based approach, which generates ranges
+            # consistent with Review Board's own diff algorithm.
             opcodes = filter_interdiff_opcodes(
                 opcodes=opcodes,
-                filediff_data=self.diff,
-                interfilediff_data=self.interdiff,
-                request=self.request)
+                differ=self.differ,
+                filediff_orig_lines=filediff_orig_lines,
+                interfilediff_orig_lines=interfilediff_orig_lines,
+                request=self.request,
+            )
 
         yield from opcodes
 
@@ -344,7 +431,7 @@ class DiffOpcodeGenerator:
             reviewboard.diffviewer.differ.DiffOpcodeWithMetadata:
             The opcodes.
         """
-        if self.interdiff:
+        if self._filter_interdiffs:
             # When filtering out opcodes, we may have converted chunks into
             # "filtered-equal" chunks. This allowed us to skip any additional
             # processing, particularly the indentation highlighting. It's
