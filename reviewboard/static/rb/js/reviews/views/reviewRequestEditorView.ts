@@ -941,7 +941,7 @@ export class ReviewRequestEditorView extends BaseView<
     async discardDraft() {
         const reviewRequest = this.model.get('reviewRequest');
 
-        if (!reviewRequest.draft.isNew()) {
+        if (reviewRequest.draft.isNew()) {
             console.assert(
                 false,
                 'There is no draft to discard. This is an internal error.');
