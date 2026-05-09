@@ -22,7 +22,7 @@
 package-requirements.txt
 reviewboard/settings_local.py
 reviewboard.log
-settings_local.py
+/settings_local.py
 
 # Generated locale files
 django.mo
