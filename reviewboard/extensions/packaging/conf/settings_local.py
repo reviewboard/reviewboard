@@ -1,6 +1,3 @@
-from __future__ import annotations
-
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
