@@ -39,10 +39,12 @@ more information.
    * :ref:`Bitbucket Data Center <repository-hosting-bitbucket-data-center>`
    * :ref:`Codebase <repository-hosting-codebasehq>`
    * :ref:`Fedora Hosted <repository-hosting-fedorahosted>`
+   * :ref:`Forgejo <repository-hosting-forgejo>`
    * :ref:`GitHub <repository-hosting-github>`
    * :ref:`GitHub Enterprise <repository-hosting-github-enterprise>`
    * :ref:`GitLab <repository-hosting-gitlab>`
    * :ref:`Gitorious <repository-hosting-gitorious>`
+   * :ref:`Review Board Gateway <repository-hosting-rb-gateway>`
    * :ref:`Unfuddle <repository-hosting-unfuddle>`
 
    If your Git repository is hosted on another third-party service, it

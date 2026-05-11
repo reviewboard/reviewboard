@@ -359,6 +359,7 @@ Configuring Self-Hosted Repositories
    clearcase
    mercurial
    perforce
+   rb-gateway
    subversion
 
 
@@ -378,6 +379,7 @@ Configuring Hosted Repositories
    bitbucket-data-center
    codebasehq
    fedorahosted
+   forgejo
    gerrit
    github
    github-enterprise
