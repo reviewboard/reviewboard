@@ -193,9 +193,16 @@ class Kiln(BaseHostingService):
 
     Bug tracker integration is not provided by Kiln. FogBugz is used for
     that purpose instead.
+
+    Deprecated:
+        8.0:
+        This service will no longer appear as an option when configuring a
+        repository.
     """
+
     name = _('Kiln On Demand')
     hosting_service_id = 'kiln'
+    visible = False
 
     needs_authorization = True
     supports_repositories = True
