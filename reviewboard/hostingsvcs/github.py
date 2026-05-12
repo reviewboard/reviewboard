@@ -854,7 +854,7 @@ class GitHub(BaseHostingService, BaseBugTracker):
             if (e.http_code == 403 and
                 'Resource not accessible by personal access token' in str(e)):
                 raise RepositoryError(gettext(
-                    'Your token can access this repository\'s metadata  but '
+                    'Your token can access this repository\'s metadata but '
                     'cannot read its contents. For fine-grained Personal '
                     'Access Tokens, ensure "Contents: Read" is granted on '
                     'this repository.'
