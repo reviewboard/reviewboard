@@ -58,7 +58,7 @@ class Command(BaseCommand):
             except EnablingExtensionError as e:
                 raise CommandError(
                     _('Error enabling extension: %(message)s\n\n%(error)s') % {
-                        'message': e.message,
+                        'message': str(e),
                         'error': e.load_error,
                     })
             except Exception as e:
