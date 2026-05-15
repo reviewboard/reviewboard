@@ -13,7 +13,7 @@ Installing Review Board
 Ready to get started with Review Board? We've made it pretty easy, depending
 on your platform.
 
-Installation will happen in two steps:
+Installation will happen in three steps:
 
 * **Step 1: Install Review Board through:**
 
@@ -31,6 +31,11 @@ Installation will happen in two steps:
 
   Learn how to create your database and Review Board site directory, configure
   SELinux, and set up a web server.
+
+* :doc:`Step 3: Choose a Review Board plan <installation/choosing-a-plan>`
+
+  Pick the edition that fits your team (Community, Plus, or Enterprise),
+  start a trial or purchase a subscription, and activate your server.
 
 
 .. _upgrading-reviewboard-toc:
