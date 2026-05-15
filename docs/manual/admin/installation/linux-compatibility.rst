@@ -24,32 +24,51 @@ Linux Compatibility
 The following Linux distributions are directly supported and tested:
 
 * Amazon Linux 2023
-* Arch Linux
 * CentOS 9 Stream
-* Debian 11 (Buster)
-* Debian 12 (Bullseye)
-* Debian 13 (Bookworm)
-* Fedora 36
-* Fedora 37
-* Fedora 38
-* Fedora 39
-* Fedora 40
+* CentOS 10 Stream
+* Debian 11 (Bullseye)
+* Debian 12 (Bookworm)
+* Debian 13 (Trixie)
+* Fedora 42
+* Fedora 43
+* openSUSE Leap 16
 * openSUSE Tumbleweed
 * Red Hat Enterprise Linux 9
+* Red Hat Enterprise Linux 10
 * Rocky Linux 9
-* Ubuntu 20.04
-* Ubuntu 22.04
-* Ubuntu 23.10
+* Rocky Linux 10
+* Ubuntu 22.04 LTS
+* Ubuntu 24.04 LTS
+* Ubuntu 25.10
+
+
+The following do not work out of the box because they ship Python 3.14, which
+is not currently supported by Review Board. They should work if you manually
+install Python 3.13:
+
+* Arch Linux
+* Fedora Rawhide
 
 
 The following are known to work if you install a newer version of Python
 (see :ref:`installation-installer-legacy-systems` below):
 
-* :ref:`Amazon Linux 2 <installation-installer-amazon-linux-2>`
 * :ref:`openSUSE Leap 15 <installation-installer-opensuse-leap-15>`
 * :ref:`Red Hat Enterprise Linux 8 <installation-installer-rhel-8>`
 * :ref:`Rocky Linux 8 <installation-installer-rockylinux-8>`
 * :ref:`Ubuntu 18.04 <installation-installer-ubuntu-18-04>`
+
+
+The following Linux distributions are end-of-life, but are known to work:
+
+* :ref:`Amazon Linux 2 <installation-installer-amazon-linux-2>`
+* CentOS 8
+* CentOS 8 Stream
+* Debian 10
+* Fedora 36-41
+* Ubuntu 18.04 LTS (requires a newer Python, see below)
+* Ubuntu 20.04 LTS
+* Other non-LTS Ubuntu versions.
 
 
 macOS Compatibility
@@ -59,6 +78,8 @@ The following versions of macOS are directly supported and tested:
 
 * macOS Ventura
 * macOS Sonoma
+* macOS Sequoia
+* macOS Tahoe
 
 Python 3 (provided by the macOS Command Line Developer Tools) and
 Homebrew_ are currently required for installation on macOS.
