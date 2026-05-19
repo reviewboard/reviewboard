@@ -23,6 +23,9 @@ Template hooks have three parameters:
     inject onto a specific page. If this is not provided, the template will be
     rendered for all pages with the given hook point name.
 
+    There are :ref:`many pre-defined URL names <extension-url-names>` that
+    might be useful to you.
+
 
 Template Hook Names
 ===================

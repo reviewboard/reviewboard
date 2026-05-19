@@ -296,42 +296,8 @@ You can make a bundle apply to specific pages by listing their
             },
         }
 
-There are a few useful predefined lists of URL names that might be useful to
-you:
-
-:py:data:`reviewboard.urls.diffviewer_url_names`:
-    URLs for all diff viewer pages.
-
-:py:data:`reviewboard.urls.review_request_url_names`:
-    URLs for the review request and diff viewer pages.
-
-:py:data:`reviewboard.urls.reviewable_url_names`:
-    URLs for the file attachment review and diff viewer pages.
-
-Some other common URL names you might want to use include:
-
-``review-request-detail``:
-    The review request page itself.
-
-``file-attachment``:
-    The file attachment review UI pages (note that this will apply to *all*
-    types of file attachments with review UIs!).
-
-``user-preferences``:
-    The My Account page.
-
-``login``:
-    The login page.
-
-``register``:
-    The user registration page.
-
-``dashboard``:
-    The Dashboard page.
-
-You can look at the :ref:`Review Board codebase reference
-<reviewboard-coderef>` for all the URL names (they'll be listed in the
-:file:`urls.py` files).
+There are :ref:`many pre-defined URL names <extension-url-names>` that might
+be useful to you.
 
 
 Loading Using Template Tags

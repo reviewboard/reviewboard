@@ -70,6 +70,7 @@ APIs:
    extensions/js-extensions
    extensions/testing
    extensions/distribution
+   extensions/url-names
    extensions/hooks/index
 
 
