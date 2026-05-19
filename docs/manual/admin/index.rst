@@ -94,8 +94,9 @@ Configuring Review Board
 
 After your site is set up, you may want to go through settings and set up your
 authentication backend (if using LDAP, Active Directory, etc.), your e-mail
-server, and enable logging, at a minimum. There are multiple settings pages
-available through the Administration UI:
+server, and enable logging, at a minimum.
+
+There are multiple settings pages available through the Administration UI:
 
 * :doc:`General settings <configuration/general-settings>`
 * :doc:`Authentication settings <configuration/authentication-settings>`
@@ -107,6 +108,10 @@ available through the Administration UI:
 * :doc:`File storage settings <configuration/file-storage-settings>`
 * :doc:`User Privacy Settings <configuration/privacy-settings>`
 * :doc:`Search settings <configuration/search-settings>`
+
+You may also need to configure:
+
+* :doc:`SSL/TLS certificates and CA bundles <configuration/ssl-certificates>`
 
 Next, you'll want to configure your repositories, :term:`review groups`, and
 :term:`default reviewers`:

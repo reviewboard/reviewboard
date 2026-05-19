@@ -8,10 +8,29 @@ Glossary
 
 .. glossary::
 
+   CA Bundle
+   CA Bundles
+       A file containing a :term:`Certificate Authority (CA)` root
+       :term:`SSL/TLS certificate` and any intermediate certificates needed
+       to verify any certificates signed by that authority.
+
+   Certificate Authority
+   Certificate Authority (CA)
+       A trusted entity responsible for signing :term:`SSL/TLS certificates`.
+
+       See :ref:`ssl-certificates`.
+
    CI
    Continuous Integration
        A development process where commits are integrated frequently, and
        automated builds and tests are triggered for each commit.
+
+   Client Certificate
+   Client Certificates
+       A :term:`SSL/TLS certificate` used to authenticate with another service
+       using :term:`Mutual TLS (mTLS)`.
+
+       See :ref:`ssl-certificates`.
 
    Context Diff
        A type of :term:`diff file` that represents changes to a file
@@ -94,10 +113,28 @@ Glossary
        Markdown Syntax Overview
        <https://daringfireball.net/projects/markdown/>`_ for more information.
 
+   Mutual TLS
+   Mutual TLS (mTLS)
+   mTLS
+       A TLS protocol mode where both sides of a connection authenticate each
+       other using :term:`SSL/TLS certificates`. The client presents a
+       :term:`Client Certificate` to the server and verifies the server's
+       certificate using a :term:`Trust Certificate`.
+
+       Review Board supports mTLS when connecting to supported external
+       services such as repositories or authentication providers.
+
+       See :ref:`ssl-certificates`.
+
    OAuth2
        OAuth2 is a framework that allows third-party applications to gain
        limited access to user accounts, without the owner of that account
        divulging their authentication credentials.
+
+   PEM
+   PEM File Format
+       A file format commonly used for storing a
+       :term:`SSL/TLS Certificate`, :term:`CA Bundle`, or :term:`Private Key`.
 
    Perforce Operator User
    Perforce Operator Users
@@ -136,6 +173,17 @@ Glossary
 
        See :ref:`using-post-commit-review`.
 
+   Private Key
+   Private Keys
+       A secret cryptographic key used to encrypt, decrypt, or sign
+       data.
+
+       These are required when authenticating to a service using either
+       :term:`Client Certificates` or :term:`SSH`.
+
+       These usually use a :file:`.key` extension, and are in :term:`PEM`
+       format.
+
    Private Review Requests
        A review request that can only be accessed by users meeting certain
        criteria, such as being on an access list for a group or repository.
@@ -171,6 +219,13 @@ Glossary
        documents, and test data) and information (such as a summary,
        description, testing, and branch information) put up for review.
 
+   Self-Signed Certificate
+   Self-Signed Certificates
+       A :term:`SSL/TLS certificate` signed in-house and not by a trusted
+       :term:`Certificate Authority`.
+
+       See :ref:`ssl-certificates`.
+
    Site Directory
    Site Directories
        A file path on the server representing a Review Board install.
@@ -187,12 +242,43 @@ Glossary
        * 0-9
        * ``-``
 
+   SSH
+       A secure communication method for talking to some remote services or
+       running commands on remote machines.
+
+   SSL/TLS Certificate
+   SSL/TLS Certificates
+   SSL Certificate
+   SSL Certificates
+       A digital certificate used to verify the identity of a website,
+       service, or client and enable encrypted communication over a network.
+
+       In Review Board, these are categorized as :term:`Client Certificates`
+       (used for authenticating a client using :term:`Mutual TLS (mTLS)`) or
+       :term:`Trust Certificates` (used for verifying the trust in another
+       service).
+
+       See also:
+
+       * :term:`Certificate Authority`
+       * :term:`Self-Signed Certificates`
+       * :ref:`ssl-certificates`
+
    Status Update
    Status Updates
        Status updates track the progess or results of an :ref:`automated
        code review task <automated-code-review>`, such as whether it's
        pending, running, or finished, along with metadata or links to related
        output.
+
+   Trust Certificate
+   Trust Certificates
+       A :term:`SSL/TLS certificate` used to verify that another service is
+       who they claim to be. Trust certificates must themselves be signed by a
+       trusted :term:`Certificate Authority` or explicitly installed as a
+       trusted certificate in Review Board.
+
+       See :ref:`ssl-certificates`.
 
    Unified Diff
        A type of :term:`diff file` designed to be easy to parse and easy
