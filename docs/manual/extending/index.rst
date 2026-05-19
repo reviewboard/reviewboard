@@ -41,6 +41,7 @@ extensions you might be interested in building:
 
 * :ref:`extension-review-request-fields`
 * :ref:`extension-review-ui-integration`
+* :ref:`extension-actions`
 * :ref:`extension-resources`
 * :ref:`writing-auth-backends`
 
@@ -105,6 +106,7 @@ Djblets
    extensions/rbext
    extensions/hooks/index
    extensions/js-hooks/index
+   extensions/actions
    extensions/review-request-fields
    extensions/review-ui
    auth-backends
