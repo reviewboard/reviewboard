@@ -230,11 +230,17 @@ def filter_interdiff_opcodes(
     #     (range[0]) but extend into or past it.
     #
     #     If it starts before a range, the opcode will be split in two at
-    #     the start of the range boundary. The part before the range will be
-    #     emitted as a "filtered-equal" opcode, and the remainder will be
-    #     put into the buffer for immediate re-processing. Since this will
-    #     start within the range, it will skip phase 1 in the next iteration
-    #     and go straight to phase 2.
+    #     the start of the range boundary. The part before the range will
+    #     normally be emitted as a "filtered-equal" opcode, and the remainder
+    #     will be put into the buffer for immediate re-processing. Since this
+    #     will start within the range, it will skip phase 1 in the next
+    #     iteration and go straight to phase 2.
+    #
+    #     The exception is when the opcode starts exactly at the exclusive end
+    #     of the previous range rather than somewhere before it. That position
+    #     is the boundary of a real change, not an upstream change, so the
+    #     prefix is emitted as the real opcode tag rather than
+    #     "filtered-equal".
     #
     #     If instead the opcode starts within the current range, phase 1
     #     has nothing to do, and we proceed to phase 2.
@@ -249,11 +255,15 @@ def filter_interdiff_opcodes(
     #
     #     An opcode may start within the current range but extend past it.
     #
-    #     If it's not even within the range, then it's emitted as a
-    #     "filtered-equal". Phase 1 would have caught legitimate cases of
-    #     this, so we're in a situation where we couldn't even advance to a
-    #     range that would contain this, meaning it's likely past any change
-    #     ranges in the diff.
+    #     If it's not even within the range, then it's usually emitted as a
+    #     "filtered-equal". Phase 1 would have caught most legitimate cases
+    #     of this, so we're normally in a situation where we couldn't even
+    #     advance to a range that would contain this, meaning it's likely
+    #     past any change ranges in the diff.
+    #
+    #     The exception is deletes or inserts that the diff algorithm shifted
+    #     into the gap between change ranges, which Phase 2 detects separately
+    #     (see the boundary validity checks below).
     #
     #     If it starts within the range, but extends past it, then it's split
     #     at the range's right boundary (range[1]). The first part is emitted
@@ -281,8 +291,11 @@ def filter_interdiff_opcodes(
     #
     #    The opcode straddles the left edge of the range.
     #
-    #    Phase 1 will emit the part before the range as a "filtered-equal",
-    #    and queue processing of the rest.
+    #    Phase 1 will normally emit the part before the range as a
+    #    "filtered-equal" and queue processing of the rest. If the opcode
+    #    starts exactly at the exclusive end of the previous range rather than
+    #    somewhere before it, the prefix sits at a real change boundary and is
+    #    emitted as the real opcode tag instead.
     #
     #    Phase 2 will process the rest as one of the next two cases.
     #
@@ -313,6 +326,12 @@ def filter_interdiff_opcodes(
     # ranges (but did in some edge cases).
     opcodes_iter = iter(opcodes)
     pending_opcode = None
+    prev_orig_range: (_InterdiffChangeRange | None) = None
+    prev_new_range: (_InterdiffChangeRange | None) = None
+    orig_range_entered: bool = False
+    new_range_entered: bool = False
+    prev_orig_range_entered: bool = False
+    prev_new_range_entered: bool = False
 
     # Begin the main opcode processing loop.
     while True:
@@ -338,6 +357,10 @@ def filter_interdiff_opcodes(
         while orig_range is not None and i1 >= orig_range[1]:
             # We've left the range of the current change to consider in the
             # original diff. Move on to the next one.
+            prev_orig_range = orig_range
+            prev_orig_range_entered = orig_range_entered
+            orig_range_entered = False
+
             try:
                 orig_range = next(orig_ranges)
             except StopIteration:
@@ -347,6 +370,10 @@ def filter_interdiff_opcodes(
         while new_range is not None and j1 >= new_range[1]:
             # We've left the range of the current change to consider in the
             # new diff. Move on to the next one.
+            prev_new_range = new_range
+            prev_new_range_entered = new_range_entered
+            new_range_entered = False
+
             try:
                 new_range = next(new_ranges)
             except StopIteration:
@@ -434,12 +461,45 @@ def filter_interdiff_opcodes(
                 # Only split if at least one opcode range's split point is
                 # before the end of the range.
                 if split_i1 < i2 or split_j1 < j2:
-                    # Emit the part we've finished processing as a
+                    # Normally the prefix (up to the split point) is from
+                    # upstream changes and should be emitted as a
                     # "filtered-equal".
                     #
-                    # These will get turned back into "equal" chunks in the
-                    # post-processing step.
-                    yield 'filtered-equal', i1, split_i1, j1, split_j1
+                    # However, at times the diff algorithm for the ranges and
+                    # for the interdiff will calculate some lines differently,
+                    # particularly when reordering a series of lines.
+                    #
+                    # The op can end up being shifted +/- 1 line, causing the
+                    # op to start at the exclusive end of the previous range.
+                    # When this happens, Phase 1 triggers instead of Phase 2,
+                    # and we cut it off as a "filtered-equal".
+                    #
+                    # If we detect this, we'll want to err on the side of
+                    # treating this leading part as a valid tag and then
+                    # yielding the rest as a filtered-equal.
+                    if tag == 'insert':
+                        prefix_is_boundary = (
+                            prev_new_range is not None and
+                            not prev_new_range_entered and
+                            j1 == prev_new_range[1] and
+                            new_range is not None
+                        )
+                    elif tag == 'delete':
+                        prefix_is_boundary = (
+                            prev_orig_range is not None and
+                            not prev_orig_range_entered and
+                            i1 == prev_orig_range[1] and
+                            orig_range is not None
+                        )
+                    else:
+                        prefix_is_boundary = False
+
+                    if prefix_is_boundary:
+                        yield_tag = tag
+                    else:
+                        yield_tag = 'filtered-equal'
+
+                    yield yield_tag, i1, split_i1, j1, split_j1
 
                     # Queue the remainder to be processed next.
                     pending_opcode = (tag, split_i1, i2, split_j1, j2)
@@ -474,12 +534,112 @@ def filter_interdiff_opcodes(
 
         valid_chunk = orig_starts_valid or new_starts_valid
 
+        if orig_starts_valid and tag != 'equal':
+            orig_range_entered = True
+
+        if new_starts_valid and tag != 'equal':
+            new_range_entered = True
+
         if not valid_chunk:
             # The opcode is entirely outside all current valid ranges.
-            # Emit it as "filtered-equal".
             #
-            # These will get turned back into "equal" chunks in the
-            # post-processing step.
+            # Normally we'd emit this as a "filtered-equal", but we can
+            # end up in a situation where the diff algorithm for the ranges
+            # and for the interdiff will calculate some lines differently,
+            # particularly when reordering a series of lines.
+            #
+            # A delete/insert can end up being shifted past a range's
+            # boundary (the exclusive end of the range) by any number of
+            # "equal" lines. When advancing the range, these can be missed,
+            # causing them to be filtered out when it fails the range
+            # validity test.
+            #
+            # We make a best effort at detecting this by checking if the
+            # op starts right at the boundary. For deletes, we can also
+            # detect a shift of more than one line by checking whether the
+            # start of the delete's range on the "b" side is between two
+            # change ranges. Upstream changes shouldn't show up there, so
+            # it's a good indicator that it should be included in the
+            # interdiff.
+            #
+            # We can't do the same heuristic for inserts. An insert may be
+            # there from upstream changes. All we can safely do is check
+            # at the boundary.
+            #
+            # We factor in whether the previous range was entered (an op
+            # starts there) before allowing these heuristics in. That change
+            # range may have been split off from a prior range, so we know
+            # it's one modified by a diff revision but not matched up
+            # against the interdiff, which is why it's considered at all.
+            #
+            # A subsequent range must exist to rule out actual upstream
+            # changes after the last range, and the boundary range cannot
+            # have been previously entered in order to rule out ops that
+            # start where a previous sequence ended.
+            #
+            # These heuristics should prevent loss of changes in these
+            # situations. There is a potential for upstream changes to end
+            # up in the results, but those would be minor and should not
+            # impede the review process.
+            orig_boundary_valid = (
+                tag == 'delete' and
+                i1 != i2 and
+                orig_range is not None and
+                prev_orig_range is not None and
+                not prev_orig_range_entered and
+                (i1 == prev_orig_range[1] or
+                 (i1 > prev_orig_range[1] and
+                  prev_new_range is not None and
+                  new_range is not None and
+                  prev_new_range[1] < j1 < new_range[0]))
+            )
+            new_boundary_valid = (
+                tag == 'insert' and
+                j1 != j2 and
+                new_range is not None and
+                prev_new_range is not None and
+                not prev_new_range_entered and
+                j1 == prev_new_range[1]
+            )
+
+            if orig_boundary_valid or new_boundary_valid:
+                # Cap at the start of the next range to avoid spilling into
+                # territory that is genuinely upstream.
+                if orig_boundary_valid:
+                    assert orig_range is not None
+
+                    cap_i2 = orig_range[0]
+                else:
+                    cap_i2 = i2
+
+                if new_boundary_valid:
+                    assert new_range is not None
+
+                    cap_j2 = new_range[0]
+                else:
+                    cap_j2 = j2
+
+                valid_i2 = min(i2, cap_i2)
+                valid_j2 = min(j2, cap_j2)
+
+                yield tag, i1, valid_i2, j1, valid_j2
+
+                # See if we need to split this out for further processing.
+                if valid_i2 != i2 or valid_j2 != j2:
+                    if orig_boundary_valid:
+                        i1 = valid_i2
+
+                    if new_boundary_valid:
+                        j1 = valid_j2
+
+                    # Queue the remainder to be processed next.
+                    pending_opcode = (tag, i1, i2, j1, j2)
+
+                continue
+
+            # The opcode is genuinely outside all change ranges. Emit it as
+            # "filtered-equal". These will get turned back into "equal" chunks
+            # in the post-processing step.
             yield 'filtered-equal', i1, i2, j1, j2
 
             continue

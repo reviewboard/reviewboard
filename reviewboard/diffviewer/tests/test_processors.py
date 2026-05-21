@@ -1246,6 +1246,503 @@ class FilterInterdiffOpcodesTests(TestCase):
             ],
         )
 
+    def test_filter_interdiff_opcodes_with_customer_dataset_7(self) -> None:
+        """Testing filter_interdiff_opcodes with customer dataset 7"""
+        # Initially tested with the initial version of the interdiff filtering
+        # algorithm v3 (pre-8.0) prior to May 13, 2026.
+        #
+        # Failure case as of commit b19a4cb6b.
+        #
+        # In this interdiff, some lines were reordered.
+        #
+        # Revision 1 looked roughly like:
+        #
+        #     zzzzz
+        #    +aaaaa
+        #
+        # Revision 2 looked roughly like:
+        #
+        #    +aaaaa
+        #     zzzzz
+        #
+        # This led to an unfiltered interdiff that looked like:
+        #
+        #    -zzzzz
+        #     aaaaa
+        #    +zzzzz
+        #
+        # This entire block was filtered out.
+        #
+        # The cause is due to the diff algorithm shifting an "insert" or
+        # "delete" by +/- 1 line, causing it to appear exactly at the end of
+        # the change range returned by the differ on the corresponding side.
+        # We then advance over the range and skip past it. The next range
+        # validity check then fails, and the line gets lost. This can
+        # happen to both sides of the diff.
+        self._run_test_filter_interdiff_opcodes(
+            opcodes=[
+                ('equal', 0, 99, 0, 99),
+                ('delete', 99, 100, 99, 99),
+                ('equal', 100, 101, 99, 100),
+                ('insert', 101, 101, 100, 101),
+                ('equal', 101, 248, 101, 248),
+            ],
+            a_num_lines=248,
+            b_num_lines=248,
+            a_ranges=[
+                (57, 60),
+                (61, 93),
+                (95, 99),
+                (100, 109),
+                (111, 114),
+            ],
+            b_ranges=[
+                (57, 60),
+                (61, 93),
+                (95, 100),
+                (102, 110),
+                (111, 114),
+            ],
+            expected_opcodes=[
+                ('filtered-equal', 0, 99, 0, 99),
+                ('delete', 99, 100, 99, 99),
+                ('equal', 100, 101, 99, 100),
+                ('insert', 101, 101, 100, 101),
+                ('equal', 101, 109, 101, 109),
+                ('equal', 109, 110, 109, 110),
+                ('filtered-equal', 110, 248, 110, 248),
+            ],
+        )
+
+    def test_filter_interdiff_opcodes_with_customer_dataset_7_variant_1(
+        self,
+    ) -> None:
+        """Testing filter_interdiff_opcodes with customer dataset 7
+        (variant 1)
+        """
+        # Initially tested with the initial version of the interdiff filtering
+        # algorithm v3 (pre-8.0) prior to May 13, 2026.
+        #
+        # Failure case as of commit b19a4cb6b.
+        #
+        # This is a variant based on customer dataset 7, adding an additional
+        # equal line in revision 1 and 2.
+        #
+        # Revision 1 looked roughly like:
+        #
+        #     zzzzz
+        #     fffff
+        #    +aaaaa
+        #
+        # Revision 2 looked roughly like:
+        #
+        #    +aaaaa
+        #     fffff
+        #    +zzzzz
+        #
+        # This led to an unfiltered interdiff that looked like:
+        #
+        #    - zzzzz
+        #    - fffff
+        #      aaaaa      aaaaa
+        #               + fffff
+        #               + zzzzz
+        #
+        # The filtered interdiff lost all but the final +zzzzz:
+        #
+        #      zzzzz      aaaaa
+        #      fffff      fffff
+        #      aaaaa
+        #               + zzzzz
+        #
+        # But should have looked like:
+        #
+        #    - zzzzz
+        #    - fffff
+        #      aaaaa      aaaaa
+        #               + fffff
+        #               + zzzzz
+        #
+        # The cause involved two ops being lost.
+        #
+        # 1. The "delete" starts exactly at the exclusive end of the a-side
+        #    range, causing it to be filtered out as a "filtered-equal".
+        #
+        # 2. The "insert" starts exactly at the end of the b-side range and
+        #    spans one line into the next b-side range. The first line of
+        #    the "insert" was being lost as a 'filtered-equal", causing only
+        #    the second line to appear in the interdiff.
+        self._run_test_filter_interdiff_opcodes(
+            opcodes=[
+                ('equal', 0, 99, 0, 99),
+                ('delete', 99, 101, 99, 99),
+                ('equal', 101, 102, 99, 100),
+                ('insert', 102, 102, 100, 102),
+                ('equal', 102, 249, 102, 249),
+            ],
+            a_num_lines=249,
+            b_num_lines=249,
+            a_ranges=[
+                (57, 60),
+                (61, 93),
+                (95, 99),
+                (101, 110),
+                (112, 115),
+            ],
+            b_ranges=[
+                (57, 60),
+                (61, 93),
+                (95, 100),
+                (101, 110),
+                (112, 115),
+            ],
+            expected_opcodes=[
+                ('filtered-equal', 0, 99, 0, 99),
+                ('delete', 99, 101, 99, 99),
+                ('equal', 101, 102, 99, 100),
+                ('insert', 102, 102, 100, 101),
+                ('insert', 102, 102, 101, 102),
+                ('equal', 102, 110, 102, 110),
+                ('filtered-equal', 110, 249, 110, 249),
+            ],
+        )
+
+    def test_filter_interdiff_opcodes_with_customer_dataset_7_variant_2(
+        self,
+    ) -> None:
+        """Testing filter_interdiff_opcodes with customer dataset 7
+        (variant 2)
+        """
+        # Initially tested with the initial version of the interdiff filtering
+        # algorithm v3 (pre-8.0) prior to May 13, 2026.
+        #
+        # Failure case as of commit b19a4cb6b.
+        #
+        # This is another variant based on customer dataset 7, extending
+        # variant 1 with an additional equal line in revision 1 and 2.
+        #
+        # Revision 1 looked roughly like:
+        #
+        #     ggggg
+        #     zzzzz
+        #     fffff
+        #    +aaaaa
+        #
+        # Revision 2 looked roughly like:
+        #
+        #    +aaaaa
+        #     ggggg
+        #    -zzzzz
+        #     fffff
+        #    +zzzzz
+        #
+        # This led to an unfiltered interdiff that looked like:
+        #
+        #               + aaaaa
+        #      ggggg      ggggg
+        #    - zzzzz
+        #               + fffff
+        #    ~ aaaaa    ~ zzzzz
+        #
+        # This ended up losing the middle delete and yielding filtered equals:
+        #
+        #               + aaaaa
+        #      ggggg      ggggg
+        #      zzzzz      fffff
+        #      fffff
+        #    ~ aaaaa    ~ zzzzz
+        #
+        # But should have looked like:
+        #
+        #               + aaaaa
+        #      ggggg      ggggg
+        #    - zzzzz
+        #               + fffff
+        #    ~ aaaaa    ~ zzzzz
+        #
+        # The cause is similar to dataset 7 variant 1, focused on deletes.
+        #
+        # The "delete" is shifted past the exclusive end of the change range
+        # by "equal" lines on both sides, landing in the gap between ranges.
+        # This caused it to be emitted as a "filtered-equal" and lost.
+        self._run_test_filter_interdiff_opcodes(
+            opcodes=[
+                ('equal', 0, 99, 0, 99),
+                ('insert', 99, 99, 99, 100),
+                ('equal', 99, 100, 100, 101),
+                ('delete', 100, 101, 101, 101),
+                ('equal', 101, 102, 101, 102),
+                ('replace', 102, 103, 102, 103),
+                ('equal', 103, 250, 103, 250),
+            ],
+            a_num_lines=250,
+            b_num_lines=250,
+            a_ranges=[
+                (57, 60),
+                (61, 93),
+                (95, 99),
+                (102, 111),
+                (113, 116),
+            ],
+            b_ranges=[
+                (57, 60),
+                (61, 93),
+                (95, 100),
+                (102, 111),
+                (113, 116),
+            ],
+            expected_opcodes=[
+                ('filtered-equal', 0, 99, 0, 99),
+                ('insert', 99, 99, 99, 100),
+                ('filtered-equal', 99, 100, 100, 101),
+                ('delete', 100, 101, 101, 101),
+                ('filtered-equal', 101, 102, 101, 102),
+                ('replace', 102, 103, 102, 103),
+                ('equal', 103, 111, 103, 111),
+                ('filtered-equal', 111, 250, 111, 250),
+            ],
+        )
+
+    def test_filter_interdiff_opcodes_with_customer_dataset_7_variant_3(
+        self,
+    ) -> None:
+        """Testing filter_interdiff_opcodes with customer dataset 7
+        (variant 3)
+        """
+        # Initially tested with the initial version of the interdiff filtering
+        # algorithm v3 (pre-8.0) prior to May 13, 2026.
+        #
+        # Failure case as of commit b19a4cb6b.
+        #
+        # This is another variant based on customer dataset 7, extending
+        # variant 2 with two additional equal lines in revision 1 and 2.
+        #
+        # Revision 1 looked roughly like:
+        #
+        #     ggggg
+        #     hhhhh
+        #     zzzzz
+        #     fffff
+        #    +aaaaa
+        #
+        # Revision 2 looked roughly like:
+        #
+        #    +aaaaa
+        #     ggggg
+        #     hhhhh
+        #    -zzzzz
+        #     fffff
+        #    +zzzzz
+        #
+        # This led to an unfiltered interdiff that looked like:
+        #
+        #               + aaaaa
+        #      ggggg      ggggg
+        #      hhhhh      hhhhh
+        #    - zzzzz
+        #      fffff      fffff
+        #    ~ aaaaa    ~ zzzzz
+        #
+        # This ended up losing the middle delete and yielding filtered equals:
+        #
+        #               + aaaaa
+        #      ggggg      ggggg
+        #      hhhhh      hhhhh
+        #      zzzzz      fffff
+        #      fffff
+        #    ~ aaaaa    ~ zzzzz
+        #
+        # But should have looked like:
+        #
+        #               + aaaaa
+        #      ggggg      ggggg
+        #      hhhhh      hhhhh
+        #    - zzzzz
+        #      fffff      fffff
+        #    ~ aaaaa    ~ zzzzz
+        #
+        # The cause is similar to dataset 7 variant 2, but the "delete" range
+        # is shifted 2 "equal" lines past the end of the range instead of 1.
+        # This verifies the fix covering variant 2 is not limited to an
+        # offset of 1.
+        self._run_test_filter_interdiff_opcodes(
+            opcodes=[
+                ('equal', 0, 116, 0, 116),
+                ('insert', 116, 116, 116, 117),
+                ('equal', 116, 118, 117, 119),
+                ('delete', 118, 119, 119, 119),
+                ('equal', 119, 120, 119, 120),
+                ('replace', 120, 121, 120, 121),
+                ('equal', 121, 268, 121, 268),
+            ],
+            a_num_lines=268,
+            b_num_lines=268,
+            a_ranges=[
+                (74, 77),
+                (78, 110),
+                (112, 116),
+                (120, 129),
+                (131, 134),
+            ],
+            b_ranges=[
+                (74, 77),
+                (78, 110),
+                (112, 117),
+                (120, 129),
+                (131, 134),
+            ],
+            expected_opcodes=[
+                ('filtered-equal', 0, 116, 0, 116),
+                ('insert', 116, 116, 116, 117),
+                ('filtered-equal', 116, 118, 117, 119),
+                ('delete', 118, 119, 119, 119),
+                ('filtered-equal', 119, 120, 119, 120),
+                ('replace', 120, 121, 120, 121),
+                ('equal', 121, 129, 121, 129),
+                ('filtered-equal', 129, 268, 129, 268),
+            ],
+        )
+
+    def test_filter_interdiff_opcodes_with_customer_dataset_7_variant_4(
+        self,
+    ) -> None:
+        """Testing filter_interdiff_opcodes with customer dataset 7
+        (variant 4)
+        """
+        # Initially tested with the initial version of the interdiff filtering
+        # algorithm v3 (pre-8.0) prior to May 13, 2026.
+        #
+        # Failure case as of commit b19a4cb6b.
+        #
+        # This is another variant based on customer dataset 7, extending
+        # variant 3 with 2 more additional equal lines in revision 1 and 2.
+        #
+        # Revision 1 looked roughly like:
+        #
+        #     ggggg
+        #     hhhhh
+        #     iiiii
+        #     zzzzz
+        #     fffff
+        #     eeeee
+        #    +aaaaa
+        #
+        # Revision 2 looked roughly like:
+        #
+        #    +aaaaa
+        #     ggggg
+        #     hhhhh
+        #     iiiii
+        #    -zzzzz
+        #     fffff
+        #     eeeee
+        #    +zzzzz
+        #
+        # This led to an unfiltered interdiff that looked like:
+        #
+        #               + aaaaa
+        #      ggggg      ggggg
+        #      hhhhh      hhhhh
+        #      iiiii      iiiii
+        #    - zzzzz
+        #      fffff      fffff
+        #      eeeee      eeeee
+        #    ~ aaaaa    ~ zzzzz
+        #
+        # This ended up losing the middle delete and yielding filtered equals:
+        #
+        #               + aaaaa
+        #      ggggg      ggggg
+        #      hhhhh      hhhhh
+        #      iiiii      iiiii
+        #      zzzzz      fffff
+        #      fffff      eeeee
+        #      eeeee
+        #    ~ aaaaa    ~ zzzzz
+        #
+        # But should have looked like:
+        #
+        #               + aaaaa
+        #      ggggg      ggggg
+        #      hhhhh      hhhhh
+        #      iiiii      iiiii
+        #    - zzzzz
+        #      fffff      fffff
+        #      eeeee      eeeee
+        #    ~ aaaaa    ~ zzzzz
+        #
+        # This is just an extension of variant 3 that confirms the fix for
+        # a longer range.
+        self._run_test_filter_interdiff_opcodes(
+            opcodes=[
+                ('equal', 0, 116, 0, 116),
+                ('insert', 116, 116, 116, 117),
+                ('equal', 116, 119, 117, 120),
+                ('delete', 119, 120, 120, 120),
+                ('equal', 120, 122, 120, 122),
+                ('replace', 122, 123, 122, 123),
+                ('equal', 123, 270, 123, 270),
+            ],
+            a_num_lines=270,
+            b_num_lines=270,
+            a_ranges=[
+                (74, 77),
+                (78, 110),
+                (112, 116),
+                (122, 131),
+                (133, 136),
+            ],
+            b_ranges=[
+                (74, 77),
+                (78, 110),
+                (112, 117),
+                (122, 131),
+                (133, 136),
+            ],
+            expected_opcodes=[
+                ('filtered-equal', 0, 116, 0, 116),
+                ('insert', 116, 116, 116, 117),
+                ('filtered-equal', 116, 119, 117, 120),
+                ('delete', 119, 120, 120, 120),
+                ('filtered-equal', 120, 122, 120, 122),
+                ('replace', 122, 123, 122, 123),
+                ('equal', 123, 131, 123, 131),
+                ('filtered-equal', 131, 270, 131, 270),
+            ],
+        )
+
+    def test_filter_interdiff_opcodes_with_boundary_shift_no_next_b_range(
+        self,
+    ) -> None:
+        """Testing filter_interdiff_opcodes with shifted delete and no
+        subsequent b_range
+        """
+        # This ensures that there are no unexpected errors when all b_ranges
+        # are exhausted but there's still at least one more a_range. A
+        # shifted delete (such as that seen in dataset 7 variant 2) can
+        # trigger this situation.
+        self._run_test_filter_interdiff_opcodes(
+            opcodes=[
+                ('equal', 0, 21, 0, 21),
+                ('delete', 21, 22, 21, 21),
+                ('equal', 22, 40, 21, 39),
+            ],
+            a_num_lines=40,
+            b_num_lines=39,
+            a_ranges=[
+                (10, 20),
+                (30, 40),
+            ],
+            b_ranges=[
+                (10, 20),
+            ],
+            expected_opcodes=[
+                ('filtered-equal', 0, 21, 0, 21),
+                ('filtered-equal', 21, 22, 21, 21),
+                ('filtered-equal', 22, 40, 21, 39),
+            ],
+        )
+
     def _sanity_check_opcodes(
         self,
         opcodes: Iterable[DiffOpcode],

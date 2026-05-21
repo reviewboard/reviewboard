@@ -243,7 +243,6 @@ PIPELINE_JAVASCRIPT: Mapping[str, StaticBundle] = {
             'rb/js/admin/views/dashboardPageView.es6.js',
             'rb/js/admin/views/inlineFormGroupView.es6.js',
             'rb/js/admin/views/inlineFormView.es6.js',
-            'rb/js/admin/views/supportBannerView.es6.js',
             'rb/js/admin/views/widgetView.es6.js',
             'rb/js/admin/views/newsWidgetView.es6.js',
             'rb/js/admin/views/serverActivityWidgetView.es6.js',

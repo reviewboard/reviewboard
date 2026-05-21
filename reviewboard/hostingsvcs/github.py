@@ -17,10 +17,12 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse, HttpResponseBadRequest
 from django.template.loader import render_to_string
 from django.urls import path
+from django.utils.text import format_lazy
 from django.utils.translation import gettext, gettext_lazy as _
 from django.views.decorators.http import require_POST
 from housekeeping import deprecate_non_keyword_only_args
 
+from reviewboard import get_manual_url
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
@@ -60,8 +62,35 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-#: A list of the scopes that Review Board requires.
-_REQUIRED_SCOPES = ['admin:repo_hook', 'repo', 'user']
+#: A list of the scopes that Review Board requires for classic tokens.
+#:
+#: Fine-grained Personal Access Tokens use a different permission model and
+#: don't return scopes via the ``X-OAuth-Scopes`` header, so this list only
+#: applies to classic Personal Access Tokens.
+_REQUIRED_SCOPES = ['repo']
+
+
+def _is_fine_grained_pat(
+    token: str,
+) -> bool:
+    """Return whether a GitHub token is a fine-grained Personal Access Token.
+
+    Fine-grained Personal Access Tokens are prefixed with ``github_pat_``.
+    Everything else is treated as classic and validated via the X-Oauth-Scopes
+    header.
+
+    Version Added:
+        8.0
+
+    Args:
+        token (str):
+            The token to check.
+
+    Returns:
+        bool:
+        ``True`` if the token is a fine-grained PAT, ``False`` otherwise.
+    """
+    return token.startswith('github_pat_')
 
 
 class GitHubAuthForm(BaseHostingServiceAuthForm):
@@ -80,17 +109,19 @@ class GitHubAuthForm(BaseHostingServiceAuthForm):
                 'Your GitHub username. This must <em>not</em> be your '
                 'e-mail address!'
             ),
-            'hosting_account_password': _(
-                'A new <a href="%(token_url)s" target="_blank">Personal '
-                'Access Token</a> for your GitHub account. This token must '
-                'include the following scopes: %(scopes)s'
-            ) % {
-                'token_url': 'https://github.com/settings/tokens',
-                'scopes': ', '.join(
-                    f'<code>{scope}</code>'
-                    for scope in _REQUIRED_SCOPES
+            'hosting_account_password': format_lazy(
+                _(
+                    'This must be a fine-grained access token (recommended) '
+                    'or a classic access token. See the '
+                    '<a href="{docs_url}" target="_blank">documentation</a> '
+                    'for details on the trade-offs and how to choose the '
+                    'right token for your needs.'
                 ),
-            },
+                docs_url=(
+                    get_manual_url() +
+                    'admin/configuration/repositories/github/'
+                ),
+            ),
         }
 
 
@@ -773,11 +804,12 @@ class GitHub(BaseHostingService, BaseBugTracker):
             reviewboard.hostingsvcs.errors.RepositoryError:
                 The repository is not valid.
         """
+        repo_api_url = self._get_repo_api_url_raw(
+            self._get_repository_owner_raw(plan, kwargs),
+            self._get_repository_name_raw(plan, kwargs))
+
         try:
-            rsp = self.client.http_get(
-                self._get_repo_api_url_raw(
-                    self._get_repository_owner_raw(plan, kwargs),
-                    self._get_repository_name_raw(plan, kwargs)))
+            rsp = self.client.http_get(repo_api_url)
             repo_info = rsp.json
         except HostingServiceError as e:
             if e.http_code == 404:
@@ -811,6 +843,24 @@ class GitHub(BaseHostingService, BaseBugTracker):
                 raise RepositoryError(
                     gettext('This is a public repository, but you have '
                             'selected a private plan.'))
+
+        # Make a request to an endpoint that requires the "Contents" permission
+        # to verify that a fine-grained PAT has the correct permissions. We
+        # use /branches rather than /git/refs/heads because the latter returns
+        # HTTP 409 on empty repositories.
+        try:
+            self.client.http_get(f'{repo_api_url}/branches')
+        except HostingServiceError as e:
+            if (e.http_code == 403 and
+                'Resource not accessible by personal access token' in str(e)):
+                raise RepositoryError(gettext(
+                    'Your token can access this repository\'s metadata but '
+                    'cannot read its contents. For fine-grained Personal '
+                    'Access Tokens, ensure "Contents: Read" is granted on '
+                    'this repository.'
+                ))
+
+            raise
 
     @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def authorize(
@@ -850,24 +900,34 @@ class GitHub(BaseHostingService, BaseBugTracker):
             reviewboard.hostingsvcs.errors.AuthorizationError:
                 The credentials provided were not valid.
         """
+        api_url = self.get_api_url(hosting_url)
+
         # Try to reach an API resource with the provided credentials.
         rsp = self.client.http_get(
-            '%suser' % self.get_api_url(hosting_url),
+            f'{api_url}user',
             username=username,
             password=password)
 
-        # Check to make sure this token has all the necessary scopes.
-        token_scopes = set(rsp.get_header('x-oauth-scopes', '').split(', '))
-        required_scopes = set(self.REQUIRED_SCOPES)
-        missing_scopes = required_scopes - token_scopes
+        # Fine-grained Personal Access Tokens don't return scopes via the
+        # X-OAuth-Scopes header. The /user call above already validated the
+        # token; per-repository permission errors will surface naturally
+        # during check_repository or normal SCM operations.
+        if not _is_fine_grained_pat(password or ''):
+            # Check to make sure this classic token has all the necessary
+            # scopes.
+            scopes_header = rsp.get_header('x-oauth-scopes', '')
+            assert scopes_header is not None
 
-        if missing_scopes:
-            raise AuthorizationError(
-                _('This GitHub Personal Access Token must have the '
-                  'following scopes enabled: %(scopes)s')
-                % {
-                    'scopes': ', '.join(sorted(missing_scopes)),
-                })
+            token_scopes = set(scopes_header.split(', '))
+            missing_scopes = set(self.REQUIRED_SCOPES) - token_scopes
+
+            if missing_scopes:
+                raise AuthorizationError(
+                    _('This GitHub classic Personal Access Token must have '
+                      'the following scopes enabled: %(scopes)s')
+                    % {
+                        'scopes': ', '.join(sorted(missing_scopes)),
+                    })
 
         if 'authorization' in self.account.data:
             # This is an older GitHub linked account, which used the legacy

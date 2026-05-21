@@ -11,6 +11,15 @@ from __future__ import annotations
 
 
 def setup(app):
-    app.add_crossref_type(directivename='rb-management-command',
-                          rolename='rb-management-command',
-                          indextemplate=('pair: %s; management command'))
+    app.add_crossref_type(
+        directivename='rb-management-command',
+        rolename='rb-management-command',
+        indextemplate=('pair: %s; management command'),
+    )
+
+    # Django references.
+    app.add_crossref_type(
+        directivename='templatetag',
+        rolename='ttag',
+        indextemplate='pair: %s; template tag',
+    )

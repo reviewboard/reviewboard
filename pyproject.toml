@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    'buildthings~=1.0',
+    'buildthings~=1.1',
 ]
 build-backend = 'buildthings.backend'
 
@@ -131,10 +131,14 @@ local-packages-path = '.local-packages'
 # process, so install those dependencies. We don't need developer deps.
 include-install-deps = true
 
+# Exclude any build dependencies we don't want in the isolated environment
+# but do want in the final dependency list.
+exclude-deps = { attr = 'reviewboard.dependencies.build_isolated_exclude_deps' }
+
 
 # Editable build information.
 [tool.buildthings.editable]
-exclude-deps = { attr = 'reviewboard.dependencies.build_editable_exclude_deps' }
+dependencies = { attr = 'reviewboard.dependencies.build_editable_dependency_list' }
 
 
 [tool.buildthings.editable.npm]

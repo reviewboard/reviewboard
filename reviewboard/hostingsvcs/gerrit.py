@@ -465,7 +465,7 @@ class Gerrit(BaseHostingService):
                             '%(error)s')
                     % {
                         'url': url,
-                        'error': e.message,
+                        'error': str(e),
                     },
                     http_code=e.http_code)
 
@@ -570,7 +570,7 @@ class Gerrit(BaseHostingService):
                     gettext('Could not retrieve commit "%(rev)s": %(error)s')
                     % {
                         'rev': start,
-                        'error': e.message,
+                        'error': str(e),
                     },
                     http_code=e.http_code,
                     rsp=e.rsp)
@@ -580,7 +580,7 @@ class Gerrit(BaseHostingService):
                             '"%(rev)s": %(error)s')
                     % {
                         'rev': start,
-                        'error': e.message,
+                        'error': str(e),
                     },
                     http_code=e.getcode(),
                     rsp=e.rsp)
@@ -674,7 +674,7 @@ class Gerrit(BaseHostingService):
                 % {
                     'file': path,
                     'rev': revision,
-                    'error': e.read(),
+                    'error': e,
                 },
                 http_code=e.http_code)
 

@@ -26,22 +26,45 @@ handler500 = 'django.views.defaults.server_error'
 
 # Useful collections of URL names that may be interesting to callers.
 # This is especially useful for any apply_to lists in hooks.
+
+#: A list of all diff viewer URL names.
 diffviewer_url_names = [
     'view-diff',
     'view-interdiff',
     'view-diff-revision',
 ]
 
+
+#: A list of all reviewable URL names.
+#:
+#: This contains diffs, file attachments, and legacy screenshot URLs.
+#:
+#: It does not contain the review request URLs. For that, see
+#: :py:data:`all_review_request_url_names`.
 reviewable_url_names = diffviewer_url_names + [
     'file-attachment',
     'screenshot',
 ]
 
+
+#: The URL name for the review request page.
 main_review_request_url_name = 'review-request-detail'
 
+
+#: A list of review request and diff viewer URL names.
+#:
+#: This does not contain URL names for other reviewable content, like
+#: file attachments. For that, see :py:data:`all_review_request_url_names`.
 review_request_url_names = diffviewer_url_names + [
     main_review_request_url_name,
 ]
+
+
+#: A list of all review request and reviewable content URL names.
+#:
+#: Version Added:
+#:     8.0
+all_review_request_url_names = reviewable_url_names + review_request_url_names
 
 
 # URLs global to all modes

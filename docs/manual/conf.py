@@ -312,13 +312,13 @@ django_doc_base_url = ('https://django.readthedocs.io/en/%s.x/'
 
 intersphinx_mapping = {
     'django': (django_doc_base_url, None),
-    'djblets': ('%s/docs/djblets/%s/'
-                % (rbwebsite_url, djblets_doc_major_version),
+    'djblets': (f'{rbwebsite_url}/docs/djblets/{djblets_doc_major_version}/',
                 None),
     'python': ('https://docs.python.org/3', None),
-    'rbtools': ('%s/docs/rbtools/latest/' % rbwebsite_url, None),
-    'rbcontributing': ('%s/docs/codebase/dev/' % rbwebsite_url, None),
-    'reviewbot': ('%s/docs/reviewbot/latest/' % rbwebsite_url, None),
+    'rbcontributing': (f'{rbwebsite_url}/docs/codebase/dev/', None),
+    'rbtools': (f'{rbwebsite_url}/docs/rbtools/latest/', None),
+    'rbgateway': (f'{rbwebsite_url}/docs/rbgateway/latest', None),
+    'reviewbot': (f'{rbwebsite_url}/docs/reviewbot/latest/', None),
 }
 
 

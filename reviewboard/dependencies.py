@@ -25,8 +25,14 @@ if TYPE_CHECKING:
     from djblets.dependencies import Dependency
 
 
+# NOTE: This file may not import other (non-Python) modules! (Except for
+#       the parent reviewboard module, which must be importable anyway). This
+#       module is used for packaging and will be needed before any
+#       dependencies have been installed.
+
+
 ###########################################################################
-# Python and Django compatibility
+# Python and key packages compatibility
 ###########################################################################
 
 #: The minimum supported version of Python.
@@ -34,12 +40,6 @@ PYTHON_MIN_VERSION = (3, 10)
 
 #: A string representation of the minimum supported version of Python.
 PYTHON_MIN_VERSION_STR = '%s.%s' % (PYTHON_MIN_VERSION)
-
-
-# NOTE: This file may not import other (non-Python) modules! (Except for
-#       the parent reviewboard module, which must be importable anyway). This
-#       module is used for packaging and be needed before any dependencies
-#       have been installed.
 
 
 #: The major version of Django we're using for documentation.
@@ -54,13 +54,25 @@ django_version = '~=5.2.12'
 #: The version range required for Djblets.
 djblets_version = '~=7.0a0.dev'
 
+#: The version range for Power Pack.
+powerpack_version = '~=6.0a0.dev'
+
+#: The version range for rbintegrations.
+rbintegrations_version = '~=5.0a0.dev'
+
 
 ###########################################################################
 # Python dependencies
 ###########################################################################
 
-#: All dependencies required to install Review Board.
-package_dependencies: _DependencyMap = {
+#: Base dependencies required to install Review Board.
+#:
+#: These are common for the isolated environment, editable installs, and
+#: package builds. Other dependency lists will be based on these.
+#:
+#: Version Added:
+#:     8.0
+base_package_dependencies: _DependencyMap = {
     'bleach': '~=6.0.0',
     'cryptography': '~=46.0.5',
     'Django': django_version,
@@ -102,14 +114,30 @@ package_dependencies: _DependencyMap = {
     'Whoosh': '>=2.6',
 }
 
+
 #: Dependencies only specified during the packaging process.
 #:
 #: These dependencies are not used when simply developing Review Board.
 #: The dependencies here are generally intended to be those that themselves
 #: require Review Board.
 package_only_dependencies: _DependencyMap = {
-    'rbintegrations': '>=4.0,<6',
+    'ReviewBoardPowerPack': powerpack_version,
+    'rbintegrations': rbintegrations_version,
 }
+
+
+#: All install-time package dependencies.
+package_dependencies: _DependencyMap = {
+    **base_package_dependencies,
+    **package_only_dependencies,
+}
+
+
+#: All editable-time package dependencies.
+#:
+#: Version Added:
+#:     8.0
+editable_package_dependencies: _DependencyMap = base_package_dependencies
 
 
 ###########################################################################
@@ -175,8 +203,21 @@ def build_dependency_list(
     return sorted(new_deps, key=lambda s: s.lower())
 
 
-def build_editable_exclude_deps() -> Sequence[str]:
-    """Return a list of dependencies to exclude from editable builds.
+def build_editable_dependency_list() -> Sequence[str]:
+    """Return a list of dependencies to include in editable installs.
+
+    Version Added:
+        8.0
+
+    Returns:
+        list of str:
+        The list of editable dependencies.
+    """
+    return build_dependency_list(editable_package_dependencies)
+
+
+def build_isolated_exclude_deps() -> Sequence[str]:
+    """Return a list of dependencies to exclude from the isolated environment.
 
     Version Added:
         8.0

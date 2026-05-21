@@ -20,6 +20,7 @@ Top-Level Modules
    reviewboard.deprecation
    reviewboard.rb_platform
    reviewboard.signals
+   reviewboard.urls
 
 
 User Accounts

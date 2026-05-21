@@ -36,23 +36,6 @@ You will need to link an account on GitHub to Review Board, so that Review
 Board can access content from the repository. If you've already linked an
 account with sufficient access to the repository, you can use that instead.
 
-If you're linking for the first time, you'll need to make sure you have your
-username and Personal Access Token handy.
-
-
-.. admonition:: Linking requirements changed in Review Board 3.0.18
-
-   Older versions accepted a standard GitHub account password, which would be
-   used to automatically create an access token on your behalf. Since this
-   capability is `deprecated in GitHub
-   <https://developer.github.com/changes/2020-02-14-deprecating-oauth-auth-endpoint/>`_,
-   Review Board 3.0.18 and higher require that you create this token yourself.
-   You'll be guided through this below.
-
-   If you are running an older version and cannot link an account, you will
-   need to upgrade Review Board.
-
-
 Fill out the following fields:
 
 :guilabel:`GitHub Username`:
@@ -62,16 +45,67 @@ Fill out the following fields:
 :guilabel:`Personal Access Token`:
     A GitHub Personal Access Token, created in your GitHub account under
     `Settings -> Developer Settings -> Personal Access Tokens
-    <https://github.com/settings/tokens>`_.
-    When creating a new token, give it a descriptive name and enable the
-    following scopes:
+    <https://github.com/settings/personal-access-tokens>`_. Both fine-grained
+    and classic Personal Access Tokens are supported.
+
+    For most users, we recommend using fine-grained access tokens. These
+    provide enhanced security, but do come with some trade-offs.
+
+    **For fine-grained tokens**, grant the token access to the repositories
+    you'll be reviewing (or to "All repositories"), and assign the following
+    repository permissions:
+
+    * ``Repositories: Contents: Read-only``
+    * ``Repositories: Metadata: Read-only``
+    * ``Repositories: Issues: Read-only`` (only required when using GitHub
+      as the bug tracker)
+
+    We also have additional planned features that will require these
+    permissions in the future:
+
+    * ``Repositories: Commit statuses: Read and write``
+    * ``Repositories: Webhooks: Read and write``
+
+    Click the following link to open GitHub with the required permissions already
+    selected: `Create a new Persional Access Token on GitHub
+    <https://github.com/settings/personal-access-tokens/new?name=Review%20Board&expires_in=365&contents=read&issues=read&metadata=read>`_
+
+    .. note::
+
+       Fine-grained tokens allow for true read-only access to the repository,
+       but they do come with some trade-offs.
+
+       For each organization or user account that hosts repositories which you
+       want to connect, you will need a separate token (for example, if you
+       have repositories ``org1/repo1``, ``org2/repo2``, and ``user/repo3``, you
+       would need three tokens).
+
+       Fine-grained tokens always expire and must be regenerated periodically.
+
+    **For classic tokens**, give the token a descriptive name.
+
+    This token must include the following scopes:
+
+    * ``repo``
+
+    We also have additional planned features that will require these scopes in
+    the future:
 
     * ``admin:repo_hook``
-    * ``repo``
     * ``user``
 
+    .. note::
+
+       Classic tokens are simpler to use, because they can be set to never
+       expire, and you can use a single token to access repositories across
+       multiple organizations or user accounts. Unfortunately, granting a
+       classic token access to private repositories always gives them
+       read/write access.
+
     See `GitHub's guide on Personal Access Tokens
-    <https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line>`_.
+    <https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens>`_
+    for more detail on the permissions model and the trade-offs between the two
+    types of personal access tokens.
 
 
 The account will be linked when the repository is saved. If there are errors

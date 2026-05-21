@@ -15,7 +15,8 @@ from djblets.testing.decorators import add_fixtures
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.github import GitHub
+from reviewboard.hostingsvcs.github import GitHub, _is_fine_grained_pat
+
 from reviewboard.hostingsvcs.hook_utils import logger
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
@@ -353,12 +354,48 @@ class GitHubTests(GitHubTestCase):
             expected_error='This is a public repository, but you have '
                            'selected a private plan.')
 
-    def test_authorize(self) -> None:
-        """Testing GitHub.authorize"""
+    def test_check_repository_contents_forbidden(self) -> None:
+        """Testing GitHub.check_repository with a token that can read
+        repository metadata but not its contents
+        """
+        paths: dict[str | None, HttpTestPath] = {
+            '/repos/myuser/myrepo': {
+                'payload': b'{}',
+            },
+            '/repos/myuser/myrepo/branches': {
+                'status_code': 403,
+                'payload': b'{"message": "Resource not accessible '
+                           b'by personal access token"}',
+            },
+        }
+
+        message = (
+            'Your token can access this repository\'s metadata but cannot '
+            'read its contents. For fine-grained Personal Access Tokens, '
+            'ensure "Contents: Read" is granted on this repository.'
+        )
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=2) as ctx:
+            with self.assertRaisesMessage(RepositoryError, message):
+                ctx.service.check_repository(
+                    plan='public',
+                    github_public_repo_name='myrepo')
+
+    def test_is_fine_grained_pat(self) -> None:
+        """Testing _is_fine_grained_pat token-prefix detection"""
+        self.assertTrue(_is_fine_grained_pat('github_pat_' + 'a' * 70))
+        self.assertFalse(_is_fine_grained_pat('ghp_' + 'a' * 36))
+        self.assertFalse(_is_fine_grained_pat('a' * 40))
+        self.assertFalse(_is_fine_grained_pat(''))
+
+    def test_authorize_with_classic_pat(self) -> None:
+        """Testing GitHub.authorize with a classic Personal Access Token"""
+        token = 'ghp_' + 'a' * 36
         paths: dict[str | None, HttpTestPath] = {
             '/user': {
                 'headers': {
-                    'X-OAuth-Scopes': 'user, repo, admin:repo_hook',
+                    'X-OAuth-Scopes': 'repo',
                 },
                 'payload': b'{}',
             },
@@ -372,7 +409,7 @@ class GitHubTests(GitHubTestCase):
                                   expected_http_calls=1) as ctx:
             ctx.service.authorize(
                 username='myuser',
-                password='abcde12345abcde12345abcde12345abcde12345')
+                password=token)
 
         self.assertTrue(hosting_account.is_authorized)
 
@@ -381,20 +418,23 @@ class GitHubTests(GitHubTestCase):
             url='https://api.github.com/user',
             method='GET',
             username='myuser',
-            password='abcde12345abcde12345abcde12345abcde12345')
+            password=token)
 
         self.assertIn('personal_token', hosting_account.data)
         self.assertNotIn('authorizations', hosting_account.data)
         self.assertEqual(
             decrypt_password(hosting_account.data['personal_token']),
-            'abcde12345abcde12345abcde12345abcde12345')
+            token)
 
-    def test_authorize_with_missing_scopes(self) -> None:
-        """Testing GitHub.authorize with missing scopes"""
+    def test_authorize_with_classic_pat_missing_scopes(self) -> None:
+        """Testing GitHub.authorize with a classic Personal Access Token
+        missing required scopes
+        """
+        token = 'ghp_' + 'a' * 36
         paths = {
             '/user': {
                 'headers': {
-                    'X-OAuth-Scopes': 'user, foobar',
+                    'X-OAuth-Scopes': 'user',
                 },
                 'payload': b'{}',
             },
@@ -404,8 +444,8 @@ class GitHubTests(GitHubTestCase):
         self.assertFalse(hosting_account.is_authorized)
 
         message = (
-            'This GitHub Personal Access Token must have the following '
-            'scopes enabled: admin:repo_hook, repo'
+            'This GitHub classic Personal Access Token must have the '
+            'following scopes enabled: repo'
         )
 
         with self.setup_http_test(self.make_handler_for_paths(paths),
@@ -414,7 +454,7 @@ class GitHubTests(GitHubTestCase):
             with self.assertRaisesMessage(AuthorizationError, message):
                 ctx.service.authorize(
                     username='myuser',
-                    password='abcde12345abcde12345abcde12345abcde12345')
+                    password=token)
 
         self.assertFalse(hosting_account.is_authorized)
 
@@ -423,10 +463,93 @@ class GitHubTests(GitHubTestCase):
             url='https://api.github.com/user',
             method='GET',
             username='myuser',
-            password='abcde12345abcde12345abcde12345abcde12345')
+            password=token)
 
         self.assertNotIn('personal_token', hosting_account.data)
         self.assertNotIn('authorizations', hosting_account.data)
+
+    def test_authorize_with_fine_grained_pat(self) -> None:
+        """Testing GitHub.authorize with a fine-grained Personal Access Token
+        """
+        token = 'github_pat_' + 'a' * 70
+        paths: dict[str | None, HttpTestPath] = {
+            '/user': {
+                'payload': b'{}',
+            },
+        }
+
+        hosting_account = self.create_hosting_account(data={})
+        self.assertFalse(hosting_account.is_authorized)
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  hosting_account=hosting_account,
+                                  expected_http_calls=1) as ctx:
+            ctx.service.authorize(
+                username='myuser',
+                password=token)
+
+        self.assertTrue(hosting_account.is_authorized)
+
+        ctx.assertHTTPCall(
+            0,
+            url='https://api.github.com/user',
+            method='GET',
+            username='myuser',
+            password=token)
+
+        self.assertIn('personal_token', hosting_account.data)
+        self.assertEqual(
+            decrypt_password(hosting_account.data['personal_token']),
+            token)
+
+    def test_authorize_with_fine_grained_pat_skips_scope_check(self) -> None:
+        """Testing GitHub.authorize with a fine-grained Personal Access Token
+        skips the scope-header check even when the header is missing
+        """
+        token = 'github_pat_' + 'a' * 70
+        # Deliberately omit X-OAuth-Scopes, because requests made with
+        # fine-grained PATs don't return it.
+        paths: dict[str | None, HttpTestPath] = {
+            '/user': {
+                'payload': b'{}',
+            },
+        }
+
+        hosting_account = self.create_hosting_account(data={})
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  hosting_account=hosting_account,
+                                  expected_http_calls=1) as ctx:
+            ctx.service.authorize(
+                username='myuser',
+                password=token)
+
+        self.assertTrue(hosting_account.is_authorized)
+
+    def test_authorize_with_legacy_unprefixed_token(self) -> None:
+        """Testing GitHub.authorize with a legacy unprefixed token treats
+        it as classic
+        """
+        token = 'a' * 40
+        paths: dict[str | None, HttpTestPath] = {
+            '/user': {
+                'headers': {
+                    'X-OAuth-Scopes': 'repo',
+                },
+                'payload': b'{}',
+            },
+        }
+
+        hosting_account = self.create_hosting_account(data={})
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  hosting_account=hosting_account,
+                                  expected_http_calls=1) as ctx:
+            ctx.service.authorize(
+                username='myuser',
+                password=token)
+
+        self.assertTrue(hosting_account.is_authorized)
 
     def test_is_authorized_with_personal_token(self) -> None:
         """Testing GitHub.is_authorized with personal access token"""
@@ -1192,12 +1315,18 @@ class GitHubTests(GitHubTestCase):
                 <reviewboard.hostingsvcs.gitlab.GitLab.check_repository>`.
         """
         with self.setup_http_test(payload=b'{}',
-                                  expected_http_calls=1) as ctx:
+                                  expected_http_calls=2) as ctx:
             ctx.service.check_repository(**kwargs)
 
+        repo_url = f'https://api.github.com/repos/{expected_owner}/myrepo'
         ctx.assertHTTPCall(
             0,
-            url='https://api.github.com/repos/%s/myrepo' % expected_owner,
+            url=repo_url,
+            username='myuser',
+            password='abc123')
+        ctx.assertHTTPCall(
+            1,
+            url=f'{repo_url}/branches',
             username='myuser',
             password='abc123')
 

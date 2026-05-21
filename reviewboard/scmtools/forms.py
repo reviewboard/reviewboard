@@ -1980,7 +1980,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 hosting_service.associate_ssh_key(repository, key)
         except SSHKeyAssociationError as e:
             logger.warning('SSHKeyAssociationError for repository "%s" (%s)',
-                           repository, e.message)
+                           repository, str(e))
             raise ValidationError([
                 _('Unable to associate SSH key with your hosting service. '
                   'This is most often the result of a problem communicating '

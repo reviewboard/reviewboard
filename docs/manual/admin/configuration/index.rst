@@ -12,5 +12,6 @@ Configuration
    permission-groups
    repositories/index
    review-groups
+   ssl-certificates
    users
    webhooks

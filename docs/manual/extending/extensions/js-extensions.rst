@@ -122,8 +122,8 @@ UI, etc., but don't want to carry all that logic around to every page.
 
 To do this, you'll make use of the :py:attr:`JSExtension.apply_to
 <djblets.extensions.extension.JSExtension.apply_to>` attribute. This is a list
-of URL names that the extension will be loaded on. See the Static Media guide
-on :ref:`static-media-apply-to` for a list.
+of URL names that the extension will be loaded on. There are :ref:`many
+pre-defined URL names <extension-url-names>` that might be useful to you.
 
 You should also put your extension in a bundle that will be loaded only for
 those same pages, using the ``apply_to`` key for the bundle.
