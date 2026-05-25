@@ -98,6 +98,12 @@ Djblets
 * :ref:`Djblets Code Base Reference <djblets-coderef>`
 
 
+Power Pack
+----------
+
+* :ref:`Power Pack Code Base Reference <powerpack-coderef>`
+
+
 .. toctree::
    :hidden:
 
