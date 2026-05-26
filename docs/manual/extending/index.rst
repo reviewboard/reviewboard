@@ -43,6 +43,7 @@ extensions you might be interested in building:
 * :ref:`extension-review-ui-integration`
 * :ref:`extension-actions`
 * :ref:`extension-dashboard-columns`
+* :ref:`extension-review-request-conditions`
 * :ref:`extension-resources`
 * :ref:`writing-auth-backends`
 
@@ -115,6 +116,7 @@ Power Pack
    extensions/js-hooks/index
    extensions/actions
    extensions/dashboard-columns
+   extensions/condition-choices
    extensions/review-request-fields
    extensions/review-ui
    auth-backends
