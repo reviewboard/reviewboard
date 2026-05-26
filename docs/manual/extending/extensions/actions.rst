@@ -13,6 +13,9 @@ These are used for:
 * Buttons, menus, and menu items in the review request action bar (used for
   closing a review request, uploading a file, archiving, and more)
 
+* :ref:`Quick Access <review-banner-quick-access-actions>` actions on the
+  :ref:`Review Banner <review-banner>`.
+
 * The menus at the top of the page (account menu, :guilabel:`Support`, and
   :guilabel:`Follow`)
 
@@ -68,15 +71,31 @@ attributes:
 
 *
     :py:attr:`~reviewboard.actions.base.BaseAction.verbose_label`:
-    A more verbose user-visible label for the action. This is used for
-    certain renders where space is available, and as a descriptive label for
-    screen readers and other accessibility tools.
+    A more verbose user-visible label for the action.
+
+    This is used for certain renders where space is available, and as a
+    descriptive label for screen readers and other accessibility tools.
+
+*
+    :py:attr:`~reviewboard.actions.base.BaseAction.description`:
+    An accompanying description for your action.
+
+    This will be a list of strings, each used as a paragraph.
+
+    Each string is plain text, which will be escaped for HTML. It should
+    not contain HTML itself.
+
+    Descriptions will be used for button tooltips and as additional text
+    for detailed menu items (such as those shown in the
+    :ref:`Review menu <review-banner-menu>`). Other renderers may represent
+    them in other ways, or ignore them entirely.
 
 *
     :py:attr:`~reviewboard.actions.base.BaseAction.placements`:
-    A list of places in the UI where the action should show up. This includes
-    the "attachment" (the location within the UI) and an optional ID of the
-    parent action to place it within.
+    A list of places in the UI where the action should show up.
+
+    This includes the "attachment" (the location within the UI) and an
+    optional ID of the parent action to place it within.
 
     Built-in attachment points can be found in
     :py:class:`reviewboard.actions.base.AttachmentPoint`. You can also define
@@ -832,6 +851,68 @@ For example, to add an item to the :guilabel:`Update` menu:
            ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
                            parent_id=UpdateMenuAction.action_id),
        ]
+
+
+.. _extension-actions-quick-access:
+
+Review Banner Quick Access
+--------------------------
+
+The review request page includes a :ref:`banner <review-banner>` at the top of
+the page to help you start or edit a review.
+
+The banner also lets you pin certain actions that you might use frequently
+such as :guilabel:`Ship It!` or :guilabel:`Add General Comment`. We call these
+:ref:`Quick Access actions <review-banner-quick-access-actions>`.
+
+Extensions can add additional Quick Access action buttons that users can pin
+by placing an action in the
+:py:attr:`~reviewboard.actions.base.AttachmentPoint.QUICK_ACCESS` attachment
+point.
+
+The following attributes are particularly useful for Quick Access buttons:
+
+*
+    :py:attr:`~reviewboard.actions.base.BaseAction.description`:
+    A list of strings shown as the button's tooltip. Each string is displayed
+    as a separate paragraph.
+
+*
+    :py:attr:`~reviewboard.actions.base.BaseAction.icon_class`:
+    CSS class name(s) for an icon displayed inside the button. Review Board
+    ships icons such as ``'rb-icon rb-icon-edit'`` and
+    ``'rb-icon rb-icon-shipit'``.
+
+*
+    :py:attr:`~reviewboard.actions.base.BaseAction.verbose_label`:
+    A longer description used as the button's ARIA label for screen readers.
+    Falls back to :py:attr:`~reviewboard.actions.base.BaseAction.label` if
+    not set.
+
+For example:
+
+.. code-block:: python
+
+   from reviewboard.actions.base import (ActionPlacement,
+                                         AttachmentPoint,
+                                         BaseAction)
+
+
+   class MyReviewAction(BaseAction):
+       action_id = 'my-review-action'
+       label = 'My Action'
+       verbose_label = 'Perform my review action'
+       description = [
+           'Performs some action on the current review.',
+       ]
+       icon_class = 'rb-icon rb-icon-edit'
+
+       placements = [
+           ActionPlacement(attachment=AttachmentPoint.QUICK_ACCESS),
+       ]
+
+You'll want to define a :ref:`custom JavaScript model
+<extension-actions-js-model>` to control what happens when this is clicked.
 
 
 .. _extension-actions-admin-sidebar:
