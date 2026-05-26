@@ -13,5 +13,6 @@ Configuration
    repositories/index
    review-groups
    ssl-certificates
+   user-roles
    users
    webhooks

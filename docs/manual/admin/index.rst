@@ -158,12 +158,13 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
 * :doc:`Managing review groups <configuration/review-groups>`
 * :doc:`Managing default reviewers <configuration/default-reviewers>`
 
-You can also configure tighter access control and give special permissions to
-users:
+You can also configure tighter access control and give special permissions
+and roles to users:
 
 * :doc:`Learn about access control <configuration/access-control>`
 * :doc:`Manage users and permissions <configuration/users>`
 * :doc:`Set up permission groups <configuration/permission-groups>`
+* :doc:`Set up user roles <configuration/user-roles>`
 
 That's not all you can set up.
 
