@@ -28,6 +28,7 @@ They include:
    File Storage <file-storage-settings>
    User Privacy <privacy-settings>
    Search <search-settings>
+   Document Review <doc-review-settings>
 
 
 You can also get an overview of a few key settings near the bottom of the side

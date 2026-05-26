@@ -114,6 +114,7 @@ There are multiple settings pages available through the Administration UI:
 * :doc:`File storage settings <configuration/file-storage-settings>`
 * :doc:`User Privacy Settings <configuration/privacy-settings>`
 * :doc:`Search settings <configuration/search-settings>`
+* :doc:`Document Review settings <configuration/doc-review-settings>`
 
 You may also need to configure:
 
