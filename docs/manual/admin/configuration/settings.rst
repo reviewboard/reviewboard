@@ -19,8 +19,9 @@ They include:
 
    General <general-settings>
    Authentication <authentication-settings>
-   Avatar Services <avatar-services-settings>
+   Avatars <avatar-services-settings>
    E-Mail <email-settings>
+   Review Workflow <review-workflow-settings>
    Diff Viewer <diffviewer-settings>
    Logging <logging-settings>
    SSH <ssh-settings>
