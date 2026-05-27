@@ -63,11 +63,6 @@ else
 
     # Force logging all content to stdout.
     echo "LOGGING_TO_STDOUT = True" >> $SETTINGS_LOCAL
-
-    if [ "$ENABLE_POWERPACK" == "yes" ]; then
-        rb-site manage $REVIEWBOARD_SITEDIR \
-            enable-extension rbpowerpack.extension.PowerPackExtension
-    fi
 fi
 
 chown -R reviewboard:reviewboard \

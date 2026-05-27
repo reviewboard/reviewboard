@@ -52,11 +52,6 @@ MAINTAINER Beanbag, Inc. <support@beanbaginc.com>
 # The version of Review Board this will install.
 ARG REVIEWBOARD_VERSION
 
-# Power Pack version to install.
-#
-# This can be in X.Y or X.Y.Z form.
-ARG POWERPACK_VERSION=5.3
-
 # Review Bot extension version to install.
 #
 # This can be in X.Y or X.Y.Z form.
@@ -143,7 +138,6 @@ RUN    set -ex \
            --pre \
            --find-links /tmp/packages \
            ReviewBoard~=${REVIEWBOARD_VERSION} \
-           ReviewBoardPowerPack~=${POWERPACK_VERSION} \
            reviewbot_extension~=${REVIEWBOT_VERSION} \
            ${EXTRA_PACKAGES} \
     && pip3 install \
@@ -181,11 +175,6 @@ ARG REVIEWBOARD_USER_ID=1001
 # Writable directories (such as htdocs/media/uploaded/ and data/) will be owned
 # by this group.
 ARG REVIEWBOARD_GROUP_ID=1001
-
-# Whether to install Power Pack by default.
-#
-# Set to "no" to disable.
-ENV ENABLE_POWERPACK=yes
 
 # Public-facing domain name for the server.
 ENV DOMAIN=

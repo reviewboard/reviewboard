@@ -416,6 +416,7 @@ ALLOWED_MARKDOWN_URL_PROTOCOLS = []
 # extension registration. These won't be re-enabled automatically if disabled.
 EXTENSIONS_ENABLED_BY_DEFAULT = [
     'rbintegrations.extension.RBIntegrationsExtension',
+    'rbpowerpack.extension.PowerPackExtension',
 ]
 
 DJBLETS_EXTENSIONS_BROWSE_URL = 'https://www.reviewboard.org/store/'
