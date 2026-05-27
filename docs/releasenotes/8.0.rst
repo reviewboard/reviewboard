@@ -5,7 +5,7 @@
 Review Board 8.0 Release Notes
 ==============================
 
-**Release date**: TBD
+**Release date**: May 27, 2026
 
 This release contains all bug fixes and features from Review Board version
 :doc:`7.0.6 <7.0.6>`.
