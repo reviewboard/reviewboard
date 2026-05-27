@@ -44,6 +44,7 @@ extensions you might be interested in building:
 * :ref:`extension-actions`
 * :ref:`extension-dashboard-columns`
 * :ref:`extension-review-request-conditions`
+* :ref:`extension-page-banners`
 * :ref:`extension-resources`
 * :ref:`writing-auth-backends`
 
@@ -117,6 +118,7 @@ Power Pack
    extensions/actions
    extensions/dashboard-columns
    extensions/condition-choices
+   extensions/page-banners
    extensions/review-request-fields
    extensions/review-ui
    auth-backends
