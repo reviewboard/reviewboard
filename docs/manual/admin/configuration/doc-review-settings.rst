@@ -34,7 +34,7 @@ The following settings are available:
 * :guilabel:`Broker URL`
 
   The URL to the message broker used for sending new documents to the
-  Doc Converter microservice.
+  `Doc Converter`_ microservice.
 
   This is in the form of:
 
@@ -48,6 +48,7 @@ The following settings are available:
   broker and Doc Converter microservice.
 
 
+.. _Doc Converter: https://hub.docker.com/r/beanbag/docconverter
 .. _Review Bot: https://www.reviewboard.org/downloads/reviewbot/
 
 

@@ -211,7 +211,8 @@ services:
   #
   # * Doc Converter, a document conversion service for Power Pack's Document
   #   Review feature.
-  #   https://www.reviewboard.org/docs/powerpack/latest/features/doc-review/
+  #
+  #   https://hub.docker.com/r/beanbag/docconverter
   #
   # A default user can be configured below for services. If you have multiple
   # services that will connect to this message broker, you will likely need a
