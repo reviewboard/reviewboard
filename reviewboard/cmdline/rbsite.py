@@ -415,6 +415,9 @@ class Site(object):
         # fail, probably due to a missing module. We don't actually care about
         # any kind of long-lived cache during rb-site, so just temporarily set
         # it to the local-memory cache for this process.
+        #
+        # Note that this could end up in siteconfig if this is an initial
+        # install, but installation will set the configured backend there.
         from django.conf import settings
         settings.CACHES = {
             'default': {
@@ -2726,6 +2729,12 @@ class InstallCommand(Command):
         siteconfig.set("site_media_root", site_media_root)
         siteconfig.set("site_admin_name", site.admin_user)
         siteconfig.set("site_admin_email", site.admin_email)
+        siteconfig.set('cache_backend', {
+            'default': {
+                'BACKEND': site.CACHE_BACKENDS[site.cache_type],
+                'LOCATION': site.cache_info,
+            },
+        })
         siteconfig.set('manual-updates', {
             'static-media': True,
         })
