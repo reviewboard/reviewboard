@@ -47,7 +47,7 @@
 # See https://pythonspeed.com/articles/alpine-docker-python/
 ##############################################################################
 FROM ubuntu:22.04 AS builder
-MAINTAINER Beanbag, Inc. <support@beanbaginc.com>
+LABEL org.opencontainers.image.authors="support@beanbaginc.com"
 
 # The version of Review Board this will install.
 ARG REVIEWBOARD_VERSION
@@ -244,7 +244,7 @@ VOLUME /site
 ENV LANG=C.UTF-8
 ENV VIRTUAL_ENV=/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-ENV REVIEWBOARD_SITEDIR /site
+ENV REVIEWBOARD_SITEDIR=/site
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

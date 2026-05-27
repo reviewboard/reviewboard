@@ -25,13 +25,15 @@ Instructions
     * `postgres/` (if using `docker-compose.postgres.yaml`)
 
 2. Change the hostname below to a fully-qualified domain name you'll be
-   able to use for the server. Search for `localhost` for the default.
+   able to use for the server. Search for `reviewboard.example.com` to find
+   which instances need to be changed.
 
    See `DOMAIN` and `NGINX_HOST` in the `docker-compose.yaml` file for the
    settings.
 
    To temporarily test a hostname, you can modify `/etc/hosts` on Linux
-   or macOS and alias it to your IP address.
+   or macOS and alias it to your IP address. If you do this, you will also need
+   to uncomment the network alias in the `nginx` container.
 
    **NOTE:** If you change this later, you will need to edit the sitedir
    volume's `conf/settings_local.py` to include the new hostname in
@@ -78,6 +80,22 @@ This example configuration will create two directories for storage:
   Nginx instances.
 
 
+Setting up Document Conversion
+------------------------------
+
+The sample configurations include the
+[Document Converter microservice](https://reviewboard.org/docs/powerpack/latest/features/doc-review/office-doc]),
+which is used for reviewing Office documents (included with a
+[Review Board Plus or Enterprise](https://reviewboard.org/get/) subscription).
+
+Once your subscription (or trial) is activated, you can enable the Document
+Converter by connecting it to the broker:
+
+1. Go to **Admin UI** -> **Document Review**
+2. Set **Broker URL** to the same value as the `BROKER_URL` in the `docconverter`
+   container configuration.
+
+
 Production Use
 --------------
 
@@ -89,7 +107,7 @@ changes for production use, such as:
 2. Separating out the database and memcached server for other Review Board
    instances to use.
 
-3. Making sure only port 80 is accessible on the network.
+3. Making sure the SSL endpoint is the only exposed port.
 
 These are all beyond the scope of these example configurations.
 [We can help](https://www.reviewboard.org/support/) plan your architecture.
