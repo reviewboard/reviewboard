@@ -19,14 +19,16 @@ They include:
 
    General <general-settings>
    Authentication <authentication-settings>
-   Avatar Services <avatar-services-settings>
+   Avatars <avatar-services-settings>
    E-Mail <email-settings>
+   Review Workflow <review-workflow-settings>
    Diff Viewer <diffviewer-settings>
    Logging <logging-settings>
    SSH <ssh-settings>
    File Storage <file-storage-settings>
    User Privacy <privacy-settings>
    Search <search-settings>
+   Document Review <doc-review-settings>
 
 
 You can also get an overview of a few key settings near the bottom of the side

@@ -4,25 +4,17 @@
 DashboardColumnsHook
 ====================
 
-:py:class:`reviewboard.extensions.hooks.DashboardColumnsHook` allows
-extensions to register new columns for the dashboard. Users can add these
-columns to their dashboard, move them around, and sort them. They behave just
-like the default columns.
+:py:class:`reviewboard.extensions.hooks.DashboardColumnsHook` registers new
+columns for the dashboard. Users can then choose to show them, reorder them,
+and sort by them, just like the built-in columns.
 
-Dashboard columns can simply reflect information from the database, or
-provide any sort of custom rendering needed.
+For a complete guide to writing dashboard columns, see
+:ref:`extension-dashboard-columns`.
 
-A caller simply instantiates :py:class:`DashboardColumnsHook`, passing a list
-of :py:class:`djblets.datagrid.grids.Column` instances. Each instance must
-have an :py:attr:`id` attribute set to a value that's unique.
+.. seealso::
 
-Custom columns can also be created by subclassing
-:py:class:`djblets.datagrid.grids.Column`.
-
-Note that this is a specialization of
-:py:class:`reviewboard.extensions.hooks.DataGridColumnsHook`. If you need to
-add to any other datagrid, such as the one on the All Review Requests page,
-then you should use :ref:`datagrid-columns-hook` instead.
+   If you need to add columns to any other datagrid, such as the
+   :guilabel:`Users` page, use :ref:`datagrid-columns-hook` instead.
 
 
 Example
@@ -30,34 +22,36 @@ Example
 
 .. code-block:: python
 
-    from typing import TYPE_CHECKING
-
-    from django.utils.html import escape
-    from djblets.datagrid.grids import Column
+    from django.utils.html import format_html
+    from django.utils.safestring import SafeString, mark_safe
+    from djblets.datagrid.grids import Column, StatefulColumn
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import DashboardColumnsHook
-
-    if TYPE_CHECKING:
-        from reviewboard.reviews.models import ReviewRequest
+    from reviewboard.reviews.models import ReviewRequest
 
 
     class MilestoneColumn(Column):
+        label = 'Milestone'
+        detailed_label = 'Project milestone'
+        shrink = True
+
         def render_data(
             self,
-            review_request,
-        ) -> str:
-            if 'myvendor_milestone' in review_request.extra_data:
-                return (
-                    '<span class="myvendor-milestone">%s</span>'
-                    % escape(review_request.extra_data['myvendor_milestone'])
-                )
+            state: StatefulColumn,
+            obj: ReviewRequest,
+        ) -> SafeString:
+            milestone = obj.extra_data.get('myvendor_milestone', '')
 
-            return ''
+            if milestone:
+                return format_html(
+                    '<span class="myvendor-milestone">{}</span>',
+                    milestone)
+
+            return mark_safe('')
 
 
     class SampleExtension(Extension):
         def initialize(self) -> None:
             DashboardColumnsHook(self, [
-                MilestoneColumn(id='myvendor_milestone',
-                                label='Milestone'),
+                MilestoneColumn(id='myvendor_milestone'),
             ])

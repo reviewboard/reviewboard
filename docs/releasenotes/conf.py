@@ -249,6 +249,9 @@ intersphinx_mapping = {
     'djblets2.x': ('%s/docs/djblets/2.x/' % rbwebsite_url, None),
     'djblets3.x': ('%s/docs/djblets/3.x/' % rbwebsite_url, None),
     'djblets4.x': ('%s/docs/djblets/4.x/' % rbwebsite_url, None),
+    'djblets5.x': ('%s/docs/djblets/5.x/' % rbwebsite_url, None),
+    'djblets6.x': ('%s/docs/djblets/6.x/' % rbwebsite_url, None),
+    'powerpack': (f'{rbwebsite_url}/docs/powerpack/latest/', None),
     'python': ('https://docs.python.org/2.7', None),
     'python2': ('https://docs.python.org/2.7', None),
     'python3': ('https://docs.python.org/3', None),
@@ -263,6 +266,7 @@ intersphinx_mapping = {
     'rb5.x': ('%s/docs/manual/5.0/' % rbwebsite_url, None),
     'rb6.x': ('%s/docs/manual/6.x/' % rbwebsite_url, None),
     'rb7.x': ('%s/docs/manual/7.x/' % rbwebsite_url, None),
+    'rb8.x': ('%s/docs/manual/8.x/' % rbwebsite_url, None),
 }
 
 extlinks = {

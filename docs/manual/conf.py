@@ -314,6 +314,7 @@ intersphinx_mapping = {
     'django': (django_doc_base_url, None),
     'djblets': (f'{rbwebsite_url}/docs/djblets/{djblets_doc_major_version}/',
                 None),
+    'powerpack': (f'{rbwebsite_url}/docs/powerpack/latest/', None),
     'python': ('https://docs.python.org/3', None),
     'rbcontributing': (f'{rbwebsite_url}/docs/codebase/dev/', None),
     'rbtools': (f'{rbwebsite_url}/docs/rbtools/latest/', None),

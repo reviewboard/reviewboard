@@ -415,6 +415,9 @@ class Site(object):
         # fail, probably due to a missing module. We don't actually care about
         # any kind of long-lived cache during rb-site, so just temporarily set
         # it to the local-memory cache for this process.
+        #
+        # Note that this could end up in siteconfig if this is an initial
+        # install, but installation will set the configured backend there.
         from django.conf import settings
         settings.CACHES = {
             'default': {
@@ -1166,6 +1169,27 @@ class Site(object):
                                           self.admin_password)
 
             os.chdir(cwd)
+
+    def setup_integrations(self) -> None:
+        """Set up integrations needed by Review Board.
+
+        At the moment, this enables Power Pack and ensures it's installed
+        with database tables and static media populated.
+
+        Raises:
+            Exception:
+                An error occurred during setup of an extension.
+
+                Callers must catch this and handle it.
+        """
+        from reviewboard.extensions.base import get_extension_manager
+
+        extension_mgr = get_extension_manager()
+        extension_mgr.load()
+
+        extension_mgr.enable_extension(
+            'rbpowerpack.extension.PowerPackExtension',
+        )
 
     def register_support_page(self):
         """Register this installation with the support data tracker."""
@@ -2600,6 +2624,8 @@ class InstallCommand(Command):
                               site.generate_config_files)
         console.progress_step('Creating database',
                               site.update_database)
+        console.progress_step('Setting up integrations',
+                              site.setup_integrations)
         console.progress_step('Creating administrator account',
                               site.create_admin_user)
         console.progress_step('Saving site settings',
@@ -2703,6 +2729,12 @@ class InstallCommand(Command):
         siteconfig.set('site_media_root', site_media_root)
         siteconfig.set('site_admin_name', site.admin_user)
         siteconfig.set('site_admin_email', site.admin_email)
+        siteconfig.set('cache_backend', {
+            'default': {
+                'BACKEND': site.CACHE_BACKENDS[site.cache_type],
+                'LOCATION': site.cache_info,
+            },
+        })
         siteconfig.set('manual-updates', {
             'static-media': True,
         })
@@ -2873,6 +2905,9 @@ class UpgradeCommand(Command):
                 lambda: site.run_manage_command('fixreviewcounts'))
 
         siteconfig.save()
+
+        console.progress_step('Setting up integrations',
+                              site.setup_integrations)
 
         site.harden_passwords()
 

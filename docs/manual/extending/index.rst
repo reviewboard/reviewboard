@@ -42,6 +42,9 @@ extensions you might be interested in building:
 * :ref:`extension-review-request-fields`
 * :ref:`extension-review-ui-integration`
 * :ref:`extension-actions`
+* :ref:`extension-dashboard-columns`
+* :ref:`extension-review-request-conditions`
+* :ref:`extension-page-banners`
 * :ref:`extension-resources`
 * :ref:`writing-auth-backends`
 
@@ -98,6 +101,12 @@ Djblets
 * :ref:`Djblets Code Base Reference <djblets-coderef>`
 
 
+Power Pack
+----------
+
+* :ref:`Power Pack Code Base Reference <powerpack-coderef>`
+
+
 .. toctree::
    :hidden:
 
@@ -107,6 +116,9 @@ Djblets
    extensions/hooks/index
    extensions/js-hooks/index
    extensions/actions
+   extensions/dashboard-columns
+   extensions/condition-choices
+   extensions/page-banners
    extensions/review-request-fields
    extensions/review-ui
    auth-backends

@@ -208,6 +208,19 @@ Glossary
        The modern package format for Python applications. These are installed
        using modern versions of the :command:`pip` package installer.
 
+   Quick Access
+   Quick Access action
+   Quick Access actions
+       Actions that can be pinned to the top of the :ref:`Review Banner
+       <review-banner>` for one-click access.
+
+       For example, :guilabel:`Ship It!` or :guilabel:`Add General Comment`.
+
+       See :ref:`review-banner-quick-access-actions` for using Quick Access
+       actions.
+
+       See :ref:`extension-actions-quick-access` for writing them.
+
    Review Group
    Review Groups
        A group of users, often a team or set of owners on a component, that

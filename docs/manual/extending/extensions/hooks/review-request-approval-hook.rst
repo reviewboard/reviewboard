@@ -233,3 +233,114 @@ extensions are installed.
 
        # Return the result from any previous hook, if any.
        return prev_approved, prev_failure
+
+
+Useful Data and Resources
+=========================
+
+When writing approval hooks, the following attributes and resources are
+commonly useful.
+
+
+Review Request Attributes
+-------------------------
+
+The ``review_request`` argument provides access to the review request being
+evaluated, with these useful attributes/methods:
+
+* :py:attr:`~reviewboard.reviews.models.ReviewRequest.submitter`
+
+  The :py:class:`~django.contrib.auth.models.User` who submitted the
+  review request.
+
+* :py:attr:`~reviewboard.reviews.models.ReviewRequest.shipit_count`
+
+  The number of current :ref:`Ship It!s <ship-it>`.
+
+* :py:attr:`~reviewboard.reviews.models.ReviewRequest.issue_open_count`
+
+  The number of open :ref:`issues <issue-tracking>`.
+
+* :py:attr:`~reviewboard.reviews.models.ReviewRequest.issue_resolved_count`
+
+  The number of resolved issues.
+
+* :py:attr:`~reviewboard.reviews.models.ReviewRequest.target_groups`
+
+  The review groups targeted by this review request (a queryset of
+  :py:class:`~reviewboard.reviews.models.Group`).
+
+* :py:attr:`~reviewboard.reviews.models.ReviewRequest.target_people`
+
+  The individual reviewers targeted by this review request (a queryset of
+  :py:class:`~django.contrib.auth.models.User`).
+
+* :py:meth:`~reviewboard.reviews.models.ReviewRequest.get_public_reviews()`
+
+  Returns a queryset of all public
+  :py:class:`~reviewboard.reviews.models.Review` objects for this review
+  request. Useful for inspecting reviewer identities and review details.
+
+
+User Roles
+----------
+
+:ref:`User Roles <user-roles>` let you assign named roles to users and check
+for them in your approval hook. This allows for powerful role-based approval
+policies.
+
+For example, you can enforce that each review request must be approved by
+at least one Team Lead:
+
+.. code-block:: python
+
+    from typing import TYPE_CHECKING
+
+    from reviewboard.extensions.base import Extension
+    from reviewboard.extensions.hooks import ReviewRequestApprovalHook
+    from reviewboard.reviews.models import Review
+
+    from rbpowerpack.roles.models import UserRole
+
+    if TYPE_CHECKING:
+        from reviewboard.reviews.models import ReviewRequest
+
+
+    class TeamLeadApprovalHook(ReviewRequestApprovalHook):
+        def is_approved(
+            self,
+            review_request: ReviewRequest,
+            prev_approved: bool,
+            prev_failure: str | None,
+        ) -> bool | tuple[bool, str | None]:
+            # Always preserve prior failures.
+            if not prev_approved:
+                return prev_approved, prev_failure
+
+            try:
+                team_lead_role = UserRole.objects.get(
+                    slug='team-lead',
+                    local_site=review_request.local_site)
+            except UserRole.DoesNotExist:
+                return False, 'No Team Lead role is configured.'
+
+            has_team_lead_ship_it = Review.objects.filter(
+                review_request=review_request,
+                public=True,
+                ship_it=True,
+                user__in=team_lead_role.users.all(),
+            ).exists()
+
+            if has_team_lead_ship_it:
+                return True
+
+            return False, 'A Team Lead must approve this review request.'
+
+
+    class ApprovalExtension(Extension):
+        def initialize(self) -> None:
+            TeamLeadApprovalHook(self)
+
+There's also a useful :py:meth:`UserRole.objects.for_user()
+<rbpowerpack.roles.managers.UserRoleManager.for_user>` method which returns
+all user roles assigned to a given user.

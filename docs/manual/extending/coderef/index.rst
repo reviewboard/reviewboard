@@ -9,6 +9,8 @@ Module and Class References
 
    :ref:`Djblets Code Reference <djblets-coderef>`
 
+   :ref:`Power Pack Code Reference <powerpack-coderef>`
+
 
 Top-Level Modules
 =================

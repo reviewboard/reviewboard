@@ -4,26 +4,17 @@
 DataGridColumnsHook
 ===================
 
-:py:class:`reviewboard.extensions.hooks.DataGridColumnsHook` allows
-extensions to register new columns for any datagrid, such as the ones
-used on the All Review Request or Groups pages. Users can add these columns
-to their dashboard, move them around, and sort them. They behave just like the
-default columns.
+:py:class:`reviewboard.extensions.hooks.DataGridColumnsHook` registers new
+columns for any datagrid, such as the :guilabel:`All Review Requests`,
+:guilabel:`Users`, or :guilabel:`Groups` pages.
 
-Columns can simply reflect information from the database, or provide any sort
-of custom rendering needed.
+For a complete guide to writing columns, see
+:ref:`extension-dashboard-columns`.
 
-A caller simply instantiates :py:class:`DataGridColumnsHook`, passing the
-:py:class:`djblets.datagrid.grids.DataGrid` subclass, plus a list of
-:py:class:`djblets.datagrid.grids.Column` instances. Each instance must have
-an :py:attr:`id` attribute set to a value that's unique to that datagrid.
+.. seealso::
 
-Custom columns can also be created by subclassing
-:py:class:`djblets.datagrid.grids.Column`.
-
-If you want to add to the dashboard specifically, you can use
-:ref:`dashboard-columns-hook`. Columns added using that hook will appear
-only on the dashboard's datagrid.
+   If you need to add columns to the Dashboard, use
+   :ref:`dashboard-columns-hook` instead.
 
 
 Example
@@ -31,26 +22,25 @@ Example
 
 .. code-block:: python
 
-    from typing import TYPE_CHECKING
-
+    from django.contrib.auth.models import User
     from django.utils.html import escape
-    from django.utils.safestring import mark_safe
-    from djblets.datagrid.grids import Column
+    from django.utils.safestring import SafeString, mark_safe
+    from djblets.datagrid.grids import Column, StatefulColumn
+    from reviewboard.datagrids.grids import UsersDataGrid
     from reviewboard.extensions.base import Extension
     from reviewboard.extensions.hooks import DataGridColumnsHook
-    from reviewboard.datagrids.grids import UsersDataGrid
-
-    if TYPE_CHECKING:
-        from django.contrib.auth.models import User
-        from django.utils.safestring import SafeString
 
 
     class TeamColumn(Column):
+        label = 'Team'
+        shrink = True
+
         def render_data(
             self,
-            user: User,
+            state: StatefulColumn,
+            obj: User,
         ) -> SafeString:
-            profile = user.get_profile()
+            profile = obj.get_profile()
 
             if 'myvendor_team' in profile.extra_data:
                 return escape(profile.extra_data['myvendor_team'])
@@ -61,6 +51,5 @@ Example
     class SampleExtension(Extension):
         def initialize(self) -> None:
             DataGridColumnsHook(self, UsersDataGrid, [
-                TeamColumn(id='myvendor_teams',
-                           label='Team'),
+                TeamColumn(id='myvendor_team'),
             ])

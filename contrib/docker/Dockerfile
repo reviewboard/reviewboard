@@ -47,15 +47,10 @@
 # See https://pythonspeed.com/articles/alpine-docker-python/
 ##############################################################################
 FROM ubuntu:22.04 AS builder
-MAINTAINER Beanbag, Inc. <support@beanbaginc.com>
+LABEL org.opencontainers.image.authors="support@beanbaginc.com"
 
 # The version of Review Board this will install.
 ARG REVIEWBOARD_VERSION
-
-# Power Pack version to install.
-#
-# This can be in X.Y or X.Y.Z form.
-ARG POWERPACK_VERSION=5.3
 
 # Review Bot extension version to install.
 #
@@ -143,7 +138,6 @@ RUN    set -ex \
            --pre \
            --find-links /tmp/packages \
            ReviewBoard~=${REVIEWBOARD_VERSION} \
-           ReviewBoardPowerPack~=${POWERPACK_VERSION} \
            reviewbot_extension~=${REVIEWBOT_VERSION} \
            ${EXTRA_PACKAGES} \
     && pip3 install \
@@ -181,11 +175,6 @@ ARG REVIEWBOARD_USER_ID=1001
 # Writable directories (such as htdocs/media/uploaded/ and data/) will be owned
 # by this group.
 ARG REVIEWBOARD_GROUP_ID=1001
-
-# Whether to install Power Pack by default.
-#
-# Set to "no" to disable.
-ENV ENABLE_POWERPACK=yes
 
 # Public-facing domain name for the server.
 ENV DOMAIN=
@@ -255,7 +244,7 @@ VOLUME /site
 ENV LANG=C.UTF-8
 ENV VIRTUAL_ENV=/venv
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
-ENV REVIEWBOARD_SITEDIR /site
+ENV REVIEWBOARD_SITEDIR=/site
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1

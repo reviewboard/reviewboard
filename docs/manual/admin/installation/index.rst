@@ -13,3 +13,4 @@ Installation
    windows
    development-releases
    creating-sites
+   choosing-a-plan

@@ -124,7 +124,7 @@ Text Editing
   text fields. When this box is checked, Markdown will be preferred for all
   text boxes, even if you've turned it off when previously editing it.
 
-* **Enable spell checking for Markdown text fields**
+* **Enable writing assistance for Markdown text fields**
 
   .. versionadded:: 8.0
 

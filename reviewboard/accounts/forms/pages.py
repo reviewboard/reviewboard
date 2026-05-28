@@ -95,11 +95,15 @@ class AccountSettingsForm(AccountPageForm):
         required=False)
 
     enable_spell_checking = forms.NullBooleanField(
-        label=_('Enable spell checking for Markdown text fields'),
+        label=_(
+            'Enable writing assistance for Markdown text fields'
+        ),
         required=False,
         help_text=mark_safe(_(
-            '<strong>This feature is in beta.</strong> Spell checking in '
-            'Markdown text fields may not work right in all browsers.'
+            'Enabling this option will allow the use of spell checkers, voice '
+            'input, AI assistants, and other tools to manipulate text fields '
+            'when Markdown is enabled. <strong>This feature is in beta and '
+            'may not work correctly in all browsers.</strong>'
         )),
         widget=forms.Select(choices=(
             ('', _('Default (disabled)')),

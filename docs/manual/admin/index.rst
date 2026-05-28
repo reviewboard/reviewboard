@@ -13,7 +13,7 @@ Installing Review Board
 Ready to get started with Review Board? We've made it pretty easy, depending
 on your platform.
 
-Installation will happen in two steps:
+Installation will happen in three steps:
 
 * **Step 1: Install Review Board through:**
 
@@ -31,6 +31,11 @@ Installation will happen in two steps:
 
   Learn how to create your database and Review Board site directory, configure
   SELinux, and set up a web server.
+
+* :doc:`Step 3: Choose a Review Board plan <installation/choosing-a-plan>`
+
+  Pick the edition that fits your team (Community, Plus, or Enterprise),
+  start a trial or purchase a subscription, and activate your server.
 
 
 .. _upgrading-reviewboard-toc:
@@ -100,14 +105,16 @@ There are multiple settings pages available through the Administration UI:
 
 * :doc:`General settings <configuration/general-settings>`
 * :doc:`Authentication settings <configuration/authentication-settings>`
-* :doc:`Avatar services settings <configuration/avatar-services-settings>`
+* :doc:`Avatars settings <configuration/avatar-services-settings>`
 * :doc:`E-mail settings <configuration/email-settings>`
+* :doc:`Review Workflow settings <configuration/review-workflow-settings>`
 * :doc:`Diff viewer settings <configuration/diffviewer-settings>`
 * :doc:`Logging settings <configuration/logging-settings>`
 * :doc:`SSH settings <configuration/ssh-settings>`
 * :doc:`File storage settings <configuration/file-storage-settings>`
 * :doc:`User Privacy Settings <configuration/privacy-settings>`
 * :doc:`Search settings <configuration/search-settings>`
+* :doc:`Document Review settings <configuration/doc-review-settings>`
 
 You may also need to configure:
 
@@ -151,12 +158,13 @@ Next, you'll want to configure your repositories, :term:`review groups`, and
 * :doc:`Managing review groups <configuration/review-groups>`
 * :doc:`Managing default reviewers <configuration/default-reviewers>`
 
-You can also configure tighter access control and give special permissions to
-users:
+You can also configure tighter access control and give special permissions
+and roles to users:
 
 * :doc:`Learn about access control <configuration/access-control>`
 * :doc:`Manage users and permissions <configuration/users>`
 * :doc:`Set up permission groups <configuration/permission-groups>`
+* :doc:`Set up user roles <configuration/user-roles>`
 
 That's not all you can set up.
 

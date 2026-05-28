@@ -671,6 +671,23 @@ class BaseAction:
     #:     8.0
     default_renderer_cls: (type[BaseActionRenderer] | None) = None
 
+    #: An optional description for your action.
+    #:
+    #: If provided, this must be a list of strings, each used as a paragraph.
+    #: Each must be plain text, and will be escaped for display.
+    #:
+    #: When rendered as a button, this will be used for the button's tooltip.
+    #:
+    #: When rendered as a detailed menu item (which is used in the
+    #: :ref:`Review menu <review-banner-menu>`), this will be shown as
+    #: additional text below the label.
+    #:
+    #: Other renderers may use this for other purposes.
+    #:
+    #: Version Added:
+    #:     8.0
+    description: (Sequence[StrOrPromise] | None) = None
+
     #: A class name to use for an icon.
     #:
     #: If specified, this should be the entire class to apply to a <span>

@@ -82,6 +82,12 @@ All Pages
 ``base-after-content``
     Right after the page content (at the end of ``#content``).
 
+``page-banners``
+    The area right below the page's header where important banners (such
+    as maintenance notices or expired license warnings) are shown.
+
+    See :ref:`extension-page-banners` for more on creating page banners.
+
 
 Login Page
 ----------
