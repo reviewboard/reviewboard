@@ -430,6 +430,13 @@ Usability Improvements
 Bug Fixes
 =========
 
+Installation
+------------
+
+* Fixed setting the configured cache server when creating a brand-new
+  Review Board install.
+
+
 Automated Reviews
 -----------------
 
