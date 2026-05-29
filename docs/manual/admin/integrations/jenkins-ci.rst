@@ -183,15 +183,20 @@ To add these, perform the following steps:
 
 3. For each of the following parameter names, repeat these two steps:
 
-   * ``REVIEWBOARD_REVIEW_ID``
-   * ``REVIEWBOARD_REVIEW_BRANCH``
    * ``REVIEWBOARD_DIFF_REVISION``
-   * ``REVIEWBOARD_STATUS_UPDATE_ID``
+   * ``REVIEWBOARD_REVIEW_ID``
    * ``REVIEWBOARD_SERVER``
+   * ``REVIEWBOARD_STATUS_UPDATE_ID``
 
    1. Click :guilabel:`Add parameter` and select :guilabel:`String parameter`.
    2. Input the parameter name into :guilabel:`Name` and leave all other fields
       blank.
+
+   The integration will also send these additional parameters. These are not
+   required, but can be added if they are useful for your build configuration.
+
+   * ``REVIEWBOARD_REPOSITORY_ID``
+   * ``REVIEWBOARD_REVIEW_BRANCH`` (new in Review Board 8.0)
 
 4. Scroll down to the :guilabel:`Build` section. Here we can add the
    :guilabel:`Apply patch from Review Board` step by clicking
