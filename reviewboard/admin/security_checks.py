@@ -158,7 +158,7 @@ class BaseExecutableFileCheck(BaseSecurityCheck):
             ``True`` if the default (local) storage backend is being used.
             ``False`` if a different backend is being used.
         """
-        return (settings.DEFAULT_FILE_STORAGE ==
+        return (settings.STORAGES['default']['BACKEND'] ==
                 'django.core.files.storage.FileSystemStorage')
 
 
