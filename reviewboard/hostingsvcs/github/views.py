@@ -24,13 +24,18 @@ from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
                                                 get_review_request_id)
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
     from django.http import HttpRequest
+    from typelets.json import JSONDict
+
+    from reviewboard.scmtools.models import Repository
 
 
 logger = logging.getLogger(__name__)
 
 
-class GitHubHookViews(object):
+class GitHubHookViews:
     """Container class for hook views."""
 
     @staticmethod
@@ -82,7 +87,7 @@ class GitHubHookViews(object):
         m = hmac.new(repository.get_or_create_hooks_uuid().encode('utf-8'),
                      request.body, hashlib.sha1)
 
-        sig_parts = request.META.get('HTTP_X_HUB_SIGNATURE').split('=')
+        sig_parts = request.META.get('HTTP_X_HUB_SIGNATURE', '').split('=')
 
         if sig_parts[0] != 'sha1' or len(sig_parts) != 2:
             # We don't know what this is.
@@ -112,7 +117,11 @@ class GitHubHookViews(object):
         return HttpResponse()
 
     @staticmethod
-    def _get_review_request_id_to_commits_map(payload, server_url, repository):
+    def _get_review_request_id_to_commits_map(
+        payload: JSONDict,
+        server_url: str,
+        repository: Repository,
+    ) -> Mapping[int | None, Sequence[str]] | None:
         """Return a mapping of review request ID to a list of commits.
 
         If a commit's commit message does not contain a review request ID,
@@ -122,7 +131,7 @@ class GitHubHookViews(object):
             payload (dict):
                 The decoded webhook payload.
 
-            server_url (unicode):
+            server_url (str):
                 The URL of the Review Board server.
 
             repository (reviewboard.scmtools.models.Repository):
@@ -136,18 +145,28 @@ class GitHubHookViews(object):
         review_request_id_to_commits_map = defaultdict(list)
 
         ref_name = payload.get('ref')
+
         if not ref_name:
             return None
+
+        assert isinstance(ref_name, str)
 
         branch_name = get_git_branch_name(ref_name)
         if not branch_name:
             return None
 
         commits = payload.get('commits', [])
+        assert isinstance(commits, list)
 
         for commit in commits:
+            assert isinstance(commit, dict)
+
             commit_hash = commit.get('id')
+            assert isinstance(commit_hash, str)
+
             commit_message = commit.get('message')
+            assert isinstance(commit_message, str)
+
             review_request_id = get_review_request_id(
                 commit_message=commit_message,
                 server_url=server_url,
@@ -155,6 +174,6 @@ class GitHubHookViews(object):
                 repository=repository)
 
             review_request_id_to_commits_map[review_request_id].append(
-                '%s (%s)' % (branch_name, commit_hash[:7]))
+                f'{branch_name} ({commit_hash[:7]})')
 
         return review_request_id_to_commits_map

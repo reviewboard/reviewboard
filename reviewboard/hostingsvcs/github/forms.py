@@ -7,6 +7,8 @@ Version Added:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from django import forms
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
@@ -17,6 +19,11 @@ from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceRepositoryForm,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from typelets.django.strings import StrOrPromise
+
 
 class GitHubAuthForm(BaseHostingServiceAuthForm):
     """Form for authenticating to GitHub."""
@@ -24,12 +31,12 @@ class GitHubAuthForm(BaseHostingServiceAuthForm):
     class Meta:
         """Metadata for the GitHubAuthForm."""
 
-        labels = {
+        labels: Mapping[str, StrOrPromise] = {
             'hosting_account_username': _('GitHub Username'),
             'hosting_account_password': _('Personal Access Token'),
         }
 
-        help_texts = {
+        help_texts: Mapping[str, StrOrPromise] = {
             'hosting_account_username': _(
                 'Your GitHub username. This must <em>not</em> be your '
                 'e-mail address!'

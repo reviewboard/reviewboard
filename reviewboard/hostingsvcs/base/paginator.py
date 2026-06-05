@@ -25,16 +25,15 @@ if TYPE_CHECKING:
     from reviewboard.hostingsvcs.base.http import HTTPHeaders, QueryArgs
 
 
-_PageDataItemT = TypeVar('_PageDataItemT')
-_PageDataT = TypeVar('_PageDataT')
+PageDataItemT = TypeVar('PageDataItemT')
+PageDataT = TypeVar('PageDataT')
 
 
 #: Type alias for a normalize function for ProxyPaginator.
 #:
 #: Version Added:
 #:     6.0
-_ProxyNormalizePageDataFunc: TypeAlias = Callable[[Any],
-                                                  Union[_PageDataT, None]]
+_ProxyNormalizePageDataFunc: TypeAlias = Callable[[Any], PageDataT | None]
 
 
 class APIPaginatorPageData(TypedDict):
@@ -97,7 +96,7 @@ class InvalidPageError(Exception):
     """
 
 
-class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
+class BasePaginator(Generic[PageDataItemT, PageDataT]):
     """Base class for a paginator used in the hosting services code.
 
     This provides the basic state and stubbed functions for a simple
@@ -123,7 +122,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
     #:
     #: Type:
     #:     object
-    page_data: _PageDataT | None
+    page_data: PageDataT | None
 
     #: The number of items to fetch per page.
     #:
@@ -208,7 +207,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
         """
         raise NotImplementedError
 
-    def prev(self) -> _PageDataT | None:
+    def prev(self) -> PageDataT | None:
         """Fetch the previous page, returning the page data.
 
         Subclasses must override this to provide the logic for fetching pages.
@@ -226,7 +225,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
         """
         raise NotImplementedError
 
-    def next(self) -> _PageDataT | None:
+    def next(self) -> PageDataT | None:
         """Fetch the next page, returning the page data.
 
         Subclasses must override this to provide the logic for fetching pages.
@@ -247,7 +246,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
     def iter_items(
         self,
         max_pages: (int | None) = None,
-    ) -> Iterator[_PageDataItemT]:
+    ) -> Iterator[PageDataItemT]:
         """Iterate through all items across pages.
 
         This will repeatedly fetch pages, iterating through all items and
@@ -278,7 +277,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
     def iter_pages(
         self,
         max_pages: (int | None) = None,
-    ) -> Iterator[_PageDataT | None]:
+    ) -> Iterator[PageDataT | None]:
         """Iterate through pages of results.
 
         This will repeatedly fetch pages, providing each parsed page payload
@@ -309,7 +308,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
         except InvalidPageError:
             pass
 
-    def __iter__(self) -> Iterator[_PageDataT | None]:
+    def __iter__(self) -> Iterator[PageDataT | None]:
         """Iterate through pages of results.
 
         This is a simple wrapper for :py:meth:`iter_pages`.
@@ -321,7 +320,7 @@ class BasePaginator(Generic[_PageDataItemT, _PageDataT]):
         yield from self.iter_pages()
 
 
-class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
+class APIPaginator(BasePaginator[PageDataItemT, PageDataT]):
     """Handles pagination for API requests to a hosting service.
 
     Hosting services may provide subclasses of ``APIPaginator`` that can handle
@@ -372,7 +371,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     #:
     #: Type:
     #:     reviewboard.hostingsvcs.base.client.HostingServiceClient
-    client: HostingServiceClient
+    client: HostingServiceClient[Any]
 
     #: The URL for the next set of results in the page.
     #:
@@ -404,7 +403,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         *,
         client: HostingServiceClient[Any],
         url: str,
-        query_params: QueryArgs = {},
+        query_params: (QueryArgs | None) = None,
         start: (int | None) = None,
         per_page: (int | None) = None,
         request_kwargs: (KwargsDict | None) = None,
@@ -459,7 +458,10 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         self.page_headers = None
 
         # Augment the URL with the provided query parameters.
-        query_params = query_params.copy()
+        if query_params:
+            query_params = dict(query_params)
+        else:
+            query_params = {}
 
         if self.start_query_param and self.start:
             query_params[self.start_query_param] = self.start
@@ -489,7 +491,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         """
         return self.next_url is not None
 
-    def prev(self) -> _PageDataT | None:
+    def prev(self) -> PageDataT | None:
         """Fetch the previous page, returning the page data.
 
         Returns:
@@ -509,7 +511,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         self.url = self.prev_url
         return self._fetch_page()
 
-    def next(self) -> _PageDataT | None:
+    def next(self) -> PageDataT | None:
         """Fetch the next page, returning the page data.
 
         Returns:
@@ -549,7 +551,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         """
         raise NotImplementedError
 
-    def _fetch_page(self) -> _PageDataT | None:
+    def _fetch_page(self) -> PageDataT | None:
         """Fetch a page and extracts the information from it.
 
         Returns:
@@ -598,7 +600,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         return self.page_data
 
 
-class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
+class ProxyPaginator(BasePaginator[PageDataItemT, PageDataT]):
     """A paginator that proxies to another paginator, transforming data.
 
     This attaches to another paginator, forwarding all requests and proxying
@@ -636,14 +638,14 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     #: Type:
     #:     callable
     normalize_page_data_func: (
-        _ProxyNormalizePageDataFunc[_PageDataItemT] | None
+        _ProxyNormalizePageDataFunc[PageDataT] | None
     )
 
     def __init__(
         self,
         paginator: BasePaginator[Any, Any],
         normalize_page_data_func: (
-            _ProxyNormalizePageDataFunc[_PageDataItemT] | None
+            _ProxyNormalizePageDataFunc[PageDataT] | None
         ) = None,
     ) -> None:
         """Initialize the paginator.
@@ -698,7 +700,7 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         """
         return self.paginator.total_count
 
-    def prev(self) -> _PageDataT | None:
+    def prev(self) -> PageDataT | None:
         """Fetch the previous page, returning the page data.
 
         Returns:
@@ -714,7 +716,7 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
         """
         return self._process_page(self.paginator.prev())
 
-    def next(self) -> _PageDataT | None:
+    def next(self) -> PageDataT | None:
         """Fetch the next page, returning the page data.
 
         Returns:
@@ -733,7 +735,7 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     def normalize_page_data(
         self,
         data: Any,
-    ) -> _PageDataT | None:
+    ) -> PageDataT | None:
         """Normalize a page of data.
 
         If :py:attr:`normalize_page_data_func` was passed on construction, this
@@ -759,7 +761,7 @@ class ProxyPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     def _process_page(
         self,
         page_data: Any,
-    ) -> _PageDataT | None:
+    ) -> PageDataT | None:
         """Process a page of data.
 
         This will normalize the page data, store it, and return it.
