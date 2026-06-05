@@ -90,7 +90,7 @@ class CodebaseHQForm(BaseHostingServiceRepositoryForm):
                     'side of the repository browser.'))
 
 
-class CodebaseHQClient(HostingServiceClient):
+class CodebaseHQClient(HostingServiceClient['CodebaseHQ']):
     """Client for talking to the Codebase API.
 
     This implements the API methods that the hosting service needs, converting
@@ -334,7 +334,7 @@ class CodebaseHQClient(HostingServiceClient):
         return result
 
 
-class CodebaseHQ(BaseHostingService):
+class CodebaseHQ(BaseHostingService[CodebaseHQClient]):
     """Repository hosting support for Codebase.
 
     Codebase is a repository hosting service that supports Subversion, Git,

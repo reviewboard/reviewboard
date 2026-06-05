@@ -78,7 +78,7 @@ def _is_fine_grained_pat(
     return token.startswith('github_pat_')
 
 
-class GitHub(BaseHostingService, BaseBugTracker):
+class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
     """Hosting service for GitHub."""
 
     name = _('GitHub')

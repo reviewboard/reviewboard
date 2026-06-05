@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import json
 from contextlib import contextmanager
-from typing import (Generic, Type, TypeVar, TypedDict, TYPE_CHECKING, cast,
+from typing import (Any, Generic, Type, TypeVar, TypedDict, TYPE_CHECKING, cast,
                     overload)
 from urllib.error import HTTPError
 from urllib.parse import urlparse
@@ -21,11 +21,11 @@ from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Generator, Mapping, Sequence
-    from typing import Any, Literal
+    from typing import Literal, TypeAlias
 
     from kgb.calls import SpyCall
     from typelets.json import JSONValue
-    from typing_extensions import NotRequired, TypeAlias
+    from typing_extensions import NotRequired
 
     from reviewboard.hostingsvcs.base.client import HostingServiceClient
     from reviewboard.hostingsvcs.base.forms import (
@@ -53,7 +53,7 @@ if TYPE_CHECKING:
 #:
 #: Version Added:
 #:     8.0
-_THostingService = TypeVar('_THostingService', bound=BaseHostingService)
+_THostingService = TypeVar('_THostingService', bound=BaseHostingService[Any])
 
 
 class HttpTestContext(Generic[_THostingService]):

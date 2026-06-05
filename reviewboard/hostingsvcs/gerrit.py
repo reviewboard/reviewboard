@@ -178,7 +178,7 @@ class GerritHTTPResponse(HostingServiceHTTPResponse):
         return data
 
 
-class GerritClient(HostingServiceClient):
+class GerritClient(HostingServiceClient['Gerrit']):
     """The Gerrit hosting service API client."""
 
     http_response_cls = GerritHTTPResponse
@@ -261,7 +261,7 @@ class GerritClient(HostingServiceClient):
             raise HostingServiceError(e.reason)
 
 
-class Gerrit(BaseHostingService):
+class Gerrit(BaseHostingService[GerritClient]):
     """Source code hosting support for Gerrit.
 
     Gerrit does not have an API that supports being a hosting service, so the

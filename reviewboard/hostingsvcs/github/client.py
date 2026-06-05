@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from urllib.error import URLError
 
     from reviewboard.hostingsvcs.base.http import HostingServiceHTTPRequest
+    from reviewboard.hostingsvcs.github.service import GitHub
 
 
 logger = logging.getLogger(__name__)
@@ -64,13 +65,22 @@ class GitHubAPIPaginator(APIPaginator):
         }
 
 
-class GitHubClient(HostingServiceClient):
+class GitHubClient(HostingServiceClient['GitHub']):
     """Hosting service client for GitHub."""
 
     RAW_MIMETYPE = 'application/vnd.github.v3.raw'
 
-    def __init__(self, hosting_service):
-        super(GitHubClient, self).__init__(hosting_service)
+    def __init__(
+        self,
+        hosting_service: GitHub,
+    ) -> None:
+        """Initialize the client.
+
+        Args:
+            hosting_service (reviewboard.hostingsvcs.base.hosting_service):
+                The hosting service instance.
+        """
+        super().__init__(hosting_service)
         self.account = hosting_service.account
 
     def get_http_credentials(self, account, username=None, password=None,

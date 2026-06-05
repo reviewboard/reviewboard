@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ForgejoClient(HostingServiceClient):
+class ForgejoClient(HostingServiceClient['Forgejo']):
     """Hosting service client for Forgejo.
 
     Version Added:
