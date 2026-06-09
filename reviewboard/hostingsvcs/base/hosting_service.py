@@ -13,7 +13,10 @@ from collections.abc import Mapping
 from typing import Any, Generic, TYPE_CHECKING
 from urllib.parse import urlparse
 
-from django.utils.translation import gettext_lazy as _
+from django.template.loader import render_to_string
+from django.utils.functional import classproperty
+from django.utils.safestring import mark_safe
+from django.utils.translation import gettext_lazy as _, ngettext
 from housekeeping import deprecate_non_keyword_only_args
 from typing_extensions import TypedDict, TypeVar
 
@@ -148,6 +151,13 @@ class BaseHostingService(Generic[THostingServiceClient]):
           :py:mod:`reviewboard.hostingsvcs.base.hosting_service` and
           renamed from ``HostingService`` to ``BaseHostingService``.
     """
+
+    #: The template to use for rendering the services list entry.
+    #:
+    #: Version Added:
+    #:     9.0
+    connected_services_list_entry_template: ClassVar[str] = \
+        'admin/connected_services/_parts/list_entry_hosting_service.html'
 
     #: The unique ID of the hosting service.
     #:
@@ -416,6 +426,12 @@ class BaseHostingService(Generic[THostingServiceClient]):
     #:     list of str
     visible_scmtools: ClassVar[Sequence[str] | None] = None
 
+    #: The static files path to a logo image (SVG) for the service.
+    #:
+    #: Version Added:
+    #:     9.0
+    _logo_image: ClassVar[str | None] = None
+
     ######################
     # Instance variables #
     ######################
@@ -440,6 +456,17 @@ class BaseHostingService(Generic[THostingServiceClient]):
         self.account = account
 
         self.client = self.client_class(self)  # type:ignore
+
+    @classproperty
+    def logo_image(
+        cls,  # noqa: N805
+    ) -> str | None:
+        """The static files path to a logo image (SVG) for the service.
+
+        Version Added:
+            9.0
+        """
+        return cls._logo_image
 
     def is_authorized(self) -> bool:
         """Return whether or not the account is currently authorized.
@@ -1118,3 +1145,115 @@ class BaseHostingService(Generic[THostingServiceClient]):
                     return info[name]
 
         return getattr(cls, name, default)
+
+    @classmethod
+    def render_connected_services_list_entry(
+        cls,
+        request: HttpRequest,
+        accounts: Sequence[HostingServiceAccount],
+    ) -> SafeString:
+        """Render the services list entry for this hosting service.
+
+        Version Added:
+            9.0
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            accounts (list of
+                      reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The accounts for this hosting service.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered entry for the connected services list page.
+        """
+        return mark_safe(render_to_string(
+            cls.connected_services_list_entry_template,
+            cls.make_connected_services_list_entry_context(
+                request, accounts),
+            request=request))
+
+    @classmethod
+    def make_connected_services_list_entry_context(
+        cls,
+        request: HttpRequest,
+        accounts: Sequence[HostingServiceAccount],
+    ) -> dict[str, Any]:
+        """Return template context for rendering the services list entry.
+
+        Version Added:
+            9.0
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            accounts (list of
+                      reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The accounts for this hosting service.
+
+        Returns:
+            dict:
+            Template context to use when rendering the entry.
+        """
+        # TODO: create a central enum for these and let each hosting service
+        # mark what they are?
+        if cls.supports_repositories:
+            service_type = _('Source hosting')
+        elif cls.supports_bug_trackers:
+            service_type = _('Issue tracking')
+        else:
+            service_type = None
+
+        return {
+            'service_name': cls.name,
+            'service_logo': cls.logo_image,
+            'service_type': service_type,
+            'accounts_data': [
+                {
+                    'account': account,
+                    'detail':
+                        cls.get_connected_services_list_account_detail(
+                            account),
+                }
+                for account in accounts
+            ],
+        }
+
+    @classmethod
+    def get_connected_services_list_account_detail(
+        cls,
+        account: HostingServiceAccount,
+    ) -> str | None:
+        """Return a detail string describing an account in the admin list.
+
+        This is shown beside the account in the "Connected Services" page.
+        Services that support repositories show the number of repositories
+        associated with the account. Other services currently show nothing.
+
+        Version Added:
+            9.0
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The account to describe. This is expected to be annotated
+                with a ``repository_count`` attribute (see
+                :py:class:`reviewboard.admin.views.ConnectedServicesListView`).
+
+        Returns:
+            str:
+            The detail string, or ``None`` if there is nothing to show.
+        """
+        if not cls.supports_repositories:
+            return None
+
+        count = getattr(account, 'repository_count', 0)
+
+        return (
+            ngettext('{count} repository',
+                     '{count} repositories',
+                     count)
+            .format(count=count)
+        )

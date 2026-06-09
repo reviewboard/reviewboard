@@ -2,16 +2,22 @@ from __future__ import annotations
 
 import json
 import logging
+from itertools import groupby
+from operator import attrgetter
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
+from django.db.models import Count
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render
 from django.template.loader import render_to_string
 from django.urls import reverse
+from django.utils.decorators import method_decorator
 from django.utils.html import format_html_join
 from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_protect
+from django.views.generic.base import View
 from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
 from djblets.siteconfig.views import site_settings as djblets_site_settings
 
@@ -22,8 +28,17 @@ from reviewboard.admin.security_checks import SecurityCheckRunner
 from reviewboard.admin.support import get_support_url, serialize_support_data
 from reviewboard.admin.widgets import (admin_widgets_registry,
                                        dynamic_activity_data)
+from reviewboard.hostingsvcs.base import hosting_service_registry
+from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.site.models import LocalSite
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.utils import humanize_key
+
+if TYPE_CHECKING:
+    from django.http import HttpRequest
+    from django.utils.safestring import SafeString
+
+    from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
 logger = logging.getLogger(__name__)
@@ -228,3 +243,114 @@ def widget_activity(request):
 def support_redirect(request, **kwargs):
     """Return an HttpResponseRedirect to the Beanbag support page."""
     return HttpResponseRedirect(get_support_url(request))
+
+
+@method_decorator(
+    (staff_member_required, csrf_protect),
+    name='dispatch',
+)
+class ConnectedServicesListView(View):
+    """Management view for connected services.
+
+    Version Added:
+        9.0
+    """
+
+    def get(
+        self,
+        request: HttpRequest,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP GET requests.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            django.http.HttpResponse:
+            The rendered response.
+        """
+        # Build the list of available services.
+        available_services = [
+            {
+                'id': service.hosting_service_id,
+                'name': service.name,
+            }
+            for service in hosting_service_registry
+            if service.visible and service.needs_authorization
+        ]
+
+        # Build the list of entries for the page.
+        entries: list[tuple[str, SafeString]] = [
+            *self._build_hosting_service_entries(request),
+            # TODO: integrations and repositories w/o hosting services.
+        ]
+        entries.sort(key=lambda entry: entry[0])
+
+        return render(
+            request=request,
+            template_name='admin/connected_services/list.html',
+            context={
+                'available_services': available_services,
+                'service_entries': [entry[1] for entry in entries],
+                'title': _('Connected Services'),
+            },
+        )
+
+    def _build_hosting_service_entries(
+        self,
+        request: HttpRequest,
+    ) -> list[tuple[str, SafeString]]:
+        """Build a list of entries for hosting services.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            list of tuple:
+            A list of 2-tuples, each of:
+
+            Tuple:
+                0 (str):
+                    The sort key to use.
+
+                1 (django.utils.safestring.SafeString):
+                    The rendered entry.
+        """
+        accounts = (
+            HostingServiceAccount.objects
+            .accessible(visible_only=False, local_site=LocalSite.ALL)
+            .annotate(repository_count=Count('repositories'))
+            .order_by('service_name')
+        )
+
+        # Group accounts by the associated hosting service. If there are any
+        # accounts whose service cannot be loaded from the registry, they will
+        # be grouped under None.
+        service_groups: list[tuple[
+            type[BaseHostingService] | None,
+            list[HostingServiceAccount]]
+        ] = []
+
+        for name, group in groupby(accounts, key=attrgetter('service_name')):
+            service = hosting_service_registry.get_hosting_service(name)
+            service_groups.append((service, list(group)))
+
+        return [
+            (
+                (service.name or '').lower(),
+                service.render_connected_services_list_entry(
+                    request, accounts),
+            )
+            for service, accounts in service_groups
+            if service
+        ]

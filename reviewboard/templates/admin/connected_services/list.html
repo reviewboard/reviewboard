@@ -1,0 +1,32 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block page_class %}{{block.super}} -is-fixed-width{% endblock %}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div id="content-main" class="rb-c-admin-cs-list">
+ <div class="rb-c-admin-cs-list__header">
+{%  comment %}
+  <div class="ink-c-button-group" role="group" aria-orientation="horizontal">
+   TODO: filter selector
+   ...
+  </div>
+{%  endcomment %}
+
+{%  comment %}
+  TODO: "Connect a service" button.
+  <button class="ink-c-button -is-primary">
+   <span class="ink-c-button__icon ink-i-add" aria-hidden="true"></span>
+   <span class="ink-c-button__label">{% trans "Connect a service" %}</span>
+  </button>
+{%  endcomment %}
+ </div>
+
+ <ul class="rb-c-admin-cs-list__entries">
+{%  for entry in service_entries %}
+  {{entry}}
+{%  endfor %}
+ </ul>
+</div>
+{% endblock content %}
