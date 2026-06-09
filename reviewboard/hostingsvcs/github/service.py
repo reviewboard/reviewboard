@@ -36,6 +36,7 @@ from reviewboard.hostingsvcs.github.accounts import (
     get_github_app_role,
     is_app_record_account,
     is_app_record_data,
+    is_installation_account,
     is_installation_data,
 )
 from reviewboard.hostingsvcs.github.client import GitHubClient
@@ -61,6 +62,8 @@ if TYPE_CHECKING:
     from django.utils.safestring import SafeString
 
     from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
+    from reviewboard.hostingsvcs.base.connect_ui import \
+        AdminServicesListAccountMenuItem
     from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
     from reviewboard.hostingsvcs.base.hosting_service import HostingServicePlan
     from reviewboard.hostingsvcs.utils.paginator import BasePaginator
@@ -346,6 +349,40 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
             'github_app_installed': app_account is not None,
             'github_app_settings_url': github_app_settings_url,
         }
+
+    def get_connected_services_list_account_menu_items(
+        self,
+        request: HttpRequest,
+        *,
+        account: HostingServiceAccount,
+    ) -> Sequence[AdminServicesListAccountMenuItem]:
+        """Return the menu items for an account in the admin list.
+
+        App installation accounts have no stored credentials to edit, so they
+        do not get the default "Edit Credentials" item. App-specific items will
+        be added here later.
+
+        Version Added:
+            9.0
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The account the menu is for.
+
+        Returns:
+            list of reviewboard.hostingsvcs.base.hosting_service.
+            AdminServicesListAccountMenuItem:
+            The menu items to show for the account.
+        """
+        if is_installation_account(account):
+            return []
+
+        return super().get_connected_services_list_account_menu_items(
+            request,
+            account=account)
 
 
 class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):

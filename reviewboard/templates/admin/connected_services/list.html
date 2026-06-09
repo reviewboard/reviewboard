@@ -32,49 +32,14 @@
 {{block.super}}
 <script>
 RB.PageManager.ready(function() {
-    const button = document.getElementById('rb-connect-service-button');
-    const services = {{available_services|json_dumps}};
-    const connectURLTemplate =
-        "{% url 'connected-services-connect' service_id='__SERVICE_ID__' %}";
-
-    function openWizard(initialConnectURL) {
-        const wizard = new RB.Admin.ConnectServiceWizardView({
-            connectURLTemplate: connectURLTemplate,
-            csrfToken: "{{csrf_token|escapejs}}",
-            initialConnectURL: initialConnectURL,
-            services: services,
-        });
-
-        wizard.render();
-        wizard.open();
-    }
-
-    button.addEventListener('click', function() {
-        openWizard();
-    });
-
-{%  if auto_connect_url %}
-    /*
-     * A connect flow asked us to finish in the wizard (such as returning from
-     * a GitHub App installation). Open it on that step. The URL is built by
-     * the server, not taken from a query parameter, so it is safe to load.
-     */
-    openWizard("{{auto_connect_url|escapejs}}");
-{%  endif %}
-
-    /*
-     * Service entries can deep-link to a specific connect step (such as the
-     * GitHub App creation page). Open these in the wizard instead of
-     * navigating to the bare fragment.
-     */
-    document.addEventListener('click', function(e) {
-        const link = e.target.closest('[data-wizard-connect-url]');
-
-        if (link) {
-            e.preventDefault();
-            openWizard(link.getAttribute('data-wizard-connect-url'));
-        }
-    });
+    new RB.Admin.ConnectedServicesView({
+        el: document.querySelector('.rb-c-admin-cs-list'),
+        autoConnectURL: {{auto_connect_url|json_dumps}},
+        connectURLTemplate:
+            "{% url 'connected-services-connect' service_id='__SERVICE_ID__' %}",
+        csrfToken: "{{csrf_token|escapejs}}",
+        services: {{available_services|json_dumps}},
+    }).render();
 });
 </script>
 {% endblock admin_scripts_post %}

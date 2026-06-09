@@ -1,13 +1,16 @@
+"""Views for the Review Board admin."""
+
 from __future__ import annotations
 
 import json
 import logging
 from itertools import groupby
 from operator import attrgetter
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.models import User
 from django.db.models import Count
 from django.http import (Http404,
                          HttpResponse,
@@ -47,6 +50,7 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.utils.safestring import SafeString
 
+    from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
@@ -265,6 +269,42 @@ def support_redirect(request, **kwargs):
     return HttpResponseRedirect(get_support_url(request))
 
 
+class BaseServicesView(View):
+    """Base class for connected services views.
+
+    Version Added:
+        9.0
+    """
+
+    def _get_authorized_hosting_service(
+        self,
+        service_id: str,
+    ) -> type[BaseHostingService]:
+        """Return a hosting service based on its ID.
+
+        Args:
+            service_id (str):
+                The ID of the hosting service.
+
+        Returns:
+            type:
+            The hosting service class.
+
+        Raises:
+            django.http.Http404:
+                The given service did not exist, was not visible, or does not
+                require authorization.
+        """
+        service = hosting_service_registry.get_hosting_service(service_id)
+
+        if (service is None or
+            not service.visible or
+            not service.needs_authorization):
+            raise Http404
+
+        return service
+
+
 @method_decorator(
     (staff_member_required, csrf_protect),
     name='dispatch',
@@ -422,11 +462,72 @@ class ConnectedServicesListView(View):
         return sections
 
 
+def _save_hosting_auth_form(
+    form: BaseHostingServiceAuthForm,
+    service_id: str,
+    *,
+    force_authorize: bool = False,
+) -> bool:
+    """Save a hosting service auth form, recording any failure on the form.
+
+    This wraps :py:meth:`~reviewboard.hostingsvcs.base.forms.
+    BaseHostingServiceAuthForm.save` and translates the errors it can raise
+    into form errors. It is shared by the connect and edit-credentials views so
+    both handle save failures identically.
+
+    Version Added:
+        9.0
+
+    Args:
+        form (reviewboard.hostingsvcs.base.forms.BaseHostingServiceAuthForm):
+            The validated form to save.
+
+        service_id (str):
+            The ID of the hosting service, used for logging.
+
+        force_authorize (bool, optional):
+            Whether to re-authorize the account even if it is already
+            authorized.
+
+    Returns:
+        bool:
+        ``True`` if the account was saved, or ``False`` if an error occurred.
+        On failure, the error is added to the form.
+    """
+    try:
+        form.save(force_authorize=force_authorize)
+    except ValueError as e:
+        form.add_error(None, str(e))
+    except TwoFactorAuthCodeRequiredError as e:
+        form.add_error(None, str(e))
+    except AuthorizationError as e:
+        form.add_error(
+            None,
+            _('Unable to link the account: {e}').format(e=e))
+    except (CertificateVerificationError,
+            LegacyUnverifiedCertificateError) as e:
+        form.add_error(None, str(e))
+    except Exception as e:
+        logger.exception('Unexpected error connecting hosting '
+                         'service "%s": %s',
+                         service_id, e)
+        form.add_error(
+            None,
+            _(
+                'Unexpected error when linking the account: {e}. Additional '
+                'details may be found in the Review Board log file.'
+            ).format(e=e))
+    else:
+        return True
+
+    return False
+
+
 @method_decorator(
     (staff_member_required, csrf_protect),
     name='dispatch',
 )
-class ConnectServiceView(View):
+class ConnectServiceView(BaseServicesView):
     """View for connecting a hosting service account.
 
     This handles the per-service step of the "Connect a service" flow. A
@@ -465,7 +566,7 @@ class ConnectServiceView(View):
             django.http.HttpResponse:
             The rendered connect UI fragment.
         """
-        service = self._get_service(service_id)
+        service = self._get_authorized_hosting_service(service_id)
 
         return HttpResponse(service.connect_ui.render_connect_ui(request))
 
@@ -496,70 +597,166 @@ class ConnectServiceView(View):
             A JSON response indicating success (with a redirect URL) or
             failure (with the re-rendered connect UI fragment).
         """
-        service = self._get_service(service_id)
+        service = self._get_authorized_hosting_service(service_id)
 
         form = service.connect_ui.get_auth_form_class()(
             data=request.POST,
             hosting_service_cls=service)
 
-        if form.is_valid():
-            try:
-                form.save()
-            except ValueError as e:
-                form.add_error(None, str(e))
-            except TwoFactorAuthCodeRequiredError as e:
-                form.add_error(None, str(e))
-            except AuthorizationError as e:
-                form.add_error(
-                    None,
-                    _('Unable to link the account: %s') % e)
-            except (CertificateVerificationError,
-                    LegacyUnverifiedCertificateError) as e:
-                form.add_error(None, str(e))
-            except Exception as e:
-                logger.exception('Unexpected error connecting hosting '
-                                 'service "%s": %s',
-                                 service_id, e)
-                form.add_error(
-                    None,
-                    _('Unexpected error when linking the account: %s. '
-                      'Additional details may be found in the Review Board '
-                      'log file.') % e)
-            else:
-                return JsonResponse({
-                    'success': True,
-                    'redirect': reverse('connected-services-list'),
-                })
+        if form.is_valid() and _save_hosting_auth_form(form, service_id):
+            return JsonResponse({
+                'success': True,
+                'redirect': reverse('connected-services-list'),
+            })
 
         return JsonResponse({
             'success': False,
             'html': service.connect_ui.render_connect_ui(request, form=form),
         })
 
-    def _get_service(
+
+@method_decorator(
+    (staff_member_required, csrf_protect),
+    name='dispatch',
+)
+class EditServiceCredentialsView(BaseServicesView):
+    """View for editing the credentials of a connected account.
+
+    This backs the "Edit Credentials" item in an account's menu on the
+    "Connected Services" page. A ``GET`` request returns the credentials form,
+    pre-populated from the account, as an HTML fragment. A ``POST`` request
+    updates and re-authorizes the account.
+
+    Version Added:
+        9.0
+    """
+
+    def get(
         self,
+        request: HttpRequest,
         service_id: str,
-    ) -> type[BaseHostingService]:
-        """Return the hosting service for the given ID.
+        account_id: int,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP GET requests.
 
         Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
             service_id (str):
                 The ID of the hosting service.
 
+            account_id (int):
+                The ID of the account whose credentials are being edited.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
         Returns:
-            type:
-            The hosting service class.
+            django.http.HttpResponse:
+            The rendered edit-credentials UI fragment.
+        """
+        service, account = self._get_service_and_account(
+            request, service_id, account_id)
+
+        return HttpResponse(
+            service.connect_ui.render_edit_credentials_ui(request, account))
+
+    def post(
+        self,
+        request: HttpRequest,
+        service_id: str,
+        account_id: int,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP POST requests.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            service_id (str):
+                The ID of the hosting service.
+
+            account_id (int):
+                The ID of the account whose credentials are being edited.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            django.http.JsonResponse:
+            A JSON response indicating success (with a redirect URL) or
+            failure (with the re-rendered edit-credentials fragment).
+        """
+        service, account = self._get_service_and_account(
+            request, service_id, account_id)
+
+        form = service.connect_ui.get_auth_form_class()(
+            data=request.POST,
+            hosting_service_cls=service,
+            hosting_account=account,
+            local_site=account.local_site)
+
+        if (form.is_valid() and
+            _save_hosting_auth_form(form, service_id, force_authorize=True)):
+            return JsonResponse({
+                'success': True,
+                'redirect': reverse('connected-services-list'),
+            })
+
+        return JsonResponse({
+            'success': False,
+            'html': service.connect_ui.render_edit_credentials_ui(
+                request, account, form=form),
+        })
+
+    def _get_service_and_account(
+        self,
+        request: HttpRequest,
+        service_id: str,
+        account_id: int,
+    ) -> tuple[type[BaseHostingService], HostingServiceAccount]:
+        """Return the service and account for the given IDs.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            service_id (str):
+                The ID of the hosting service.
+
+            account_id (int):
+                The ID of the account.
+
+        Returns:
+            tuple:
+            A 2-tuple of the hosting service class and the account.
 
         Raises:
             django.http.Http404:
-                The service does not exist, is not visible, or does not
-                require authorization.
+                The service or account does not exist, they do not match, or
+                the user cannot modify the account.
         """
-        service = hosting_service_registry.get_hosting_service(service_id)
+        service = self._get_authorized_hosting_service(service_id)
 
-        if (service is None or
-            not service.visible or
-            not service.needs_authorization):
+        try:
+            account = HostingServiceAccount.objects.get(pk=account_id)
+        except HostingServiceAccount.DoesNotExist:
             raise Http404
 
-        return service
+        # The view requires a staff user, so request.user is a real User here.
+        if (account.service_name != service_id or
+            not account.is_mutable_by(cast(User, request.user))):
+            raise Http404
+
+        return service, account

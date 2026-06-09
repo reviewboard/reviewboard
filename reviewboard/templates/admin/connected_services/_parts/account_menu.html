@@ -1,0 +1,9 @@
+{% load djblets_js %}
+{% if entry.menu_items %}
+<div class="rb-c-admin-cs-accounts__account__menu"
+     data-account-menu
+     data-account-id="{{entry.account.pk}}"
+     data-service-id="{{entry.account.service_name}}">
+ <script type="application/json">{{entry.menu_items|json_dumps}}</script>
+</div>
+{% endif %}

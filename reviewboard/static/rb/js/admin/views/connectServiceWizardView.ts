@@ -803,7 +803,10 @@ export class ConnectServiceWizardView extends DialogView<
             });
 
             this.#setAction({
-                label: _`Connect`,
+                label: $connectForm.attr('data-wizard-action-label') ||
+                       _`Connect`,
+                iconName: $connectForm.attr('data-wizard-action-icon') ||
+                          undefined,
                 onClick: () => this.#submitConnectForm($connectForm),
             });
 

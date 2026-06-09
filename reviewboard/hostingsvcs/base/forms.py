@@ -258,21 +258,22 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
         Generally, sensitive information, like passwords, should not be
         provided.
 
-        By default, the :py:attr:`username` and :py:attr:`hosting_url` fields
+        By default, the ``hosting_account_username`` and ``hosting_url`` fields
         will have data provided. Subclasses can override this to present more
         initial data.
 
-        This is only called if the form was provided a hosting account during
-        construction.
+        This is only used if :py:meth:`load` is called, which happens when
+        relinking or editing the credentials for an existing account.
 
         Returns:
             dict:
-            Initial data for the form.
+            Initial data for the form. Keys are field names.
         """
         initial: JSONDict = {}
 
         if self.hosting_account:
-            initial['username'] = self.hosting_account.username
+            initial['hosting_account_username'] = \
+                self.hosting_account.username
 
             if self.hosting_service_cls.self_hosted:
                 initial['hosting_url'] = self.hosting_account.hosting_url

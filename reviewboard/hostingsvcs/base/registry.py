@@ -96,7 +96,7 @@ class HostingServiceRegistry(EntryPointRegistry[type[BaseHostingService]]):
             The :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
             BaseHostingService` subclasses.
         """
-        for _module, _service_cls_name in (
+        for module, service_cls_name in (
                 ('assembla', 'Assembla'),
                 ('beanstalk', 'Beanstalk'),
                 ('bitbucket', 'Bitbucket'),
@@ -120,9 +120,9 @@ class HostingServiceRegistry(EntryPointRegistry[type[BaseHostingService]]):
                 ('unfuddle', 'Unfuddle'),
                 ('versionone', 'VersionOne'),
             ):
-            mod = import_module(f'reviewboard.hostingsvcs.{_module}')
+            mod = import_module(f'reviewboard.hostingsvcs.{module}')
 
-            yield getattr(mod, _service_cls_name)
+            yield getattr(mod, service_cls_name)
 
         yield from super().get_defaults()
 

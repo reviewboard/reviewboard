@@ -73,6 +73,48 @@ class ConnectedServicesListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn(b'2 repositories', response.content)
 
+    def test_get_renders_account_menu(self) -> None:
+        """Testing ConnectedServicesListView GET renders the account settings
+        menu with an Edit Credentials item
+        """
+        account = HostingServiceAccount.objects.create(
+            service_name='bitbucket',
+            username='user1',
+            visible=True)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content
+        self.assertIn(b'data-account-menu', content)
+        self.assertIn(b'edit-credentials', content)
+        self.assertIn(
+            reverse(
+                'connected-services-account-edit-credentials',
+                kwargs={
+                    'service_id': 'bitbucket',
+                    'account_id': account.pk,
+                }).encode('utf-8'),
+            content)
+
+    def test_get_github_pat_renders_account_menu(self) -> None:
+        """Testing ConnectedServicesListView GET renders the account menu for a
+        GitHub Personal Access Token account
+        """
+        HostingServiceAccount.objects.create(
+            service_name='github',
+            username='user1',
+            visible=True)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'data-account-menu', response.content)
+        self.assertIn(b'edit-credentials', response.content)
+
     def test_get_sorts_entries_by_service_name(self) -> None:
         """Testing ConnectedServicesListView GET sorts entries by service
         name
