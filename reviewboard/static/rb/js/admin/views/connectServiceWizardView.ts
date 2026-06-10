@@ -139,6 +139,15 @@ export class ConnectServiceWizardView extends DialogView<
     #backButton: ButtonView;
 
     /**
+     * The close action in the footer.
+     *
+     * This closes the dialog. Its label defaults to "Cancel", but a step can
+     * relabel it (for example, to "Skip") by marking content with
+     * ``data-wizard-cancel-label``.
+     */
+    #cancelButton: ButtonView;
+
+    /**
      * The primary action in the footer.
      *
      * Each step that has a form to submit configures this button with its
@@ -189,6 +198,22 @@ export class ConnectServiceWizardView extends DialogView<
     #currentService: ConnectServiceInfo | null = null;
 
     /**
+     * A title supplied by the current step.
+     *
+     * A connect page can override the dialog title and icon by marking
+     * content with ``data-wizard-title`` and ``data-wizard-title-icon``. This
+     * is used by deep-linked steps that are not reached through the picker,
+     * where there is no selected service to derive the title from.
+     */
+    #titleOverride: ({
+        /** The icon URL to show, if any. */
+        icon: string | null;
+
+        /** The title label to show. */
+        label: string;
+    } | null) = null;
+
+    /**
      * Render the body for the dialog.
      *
      * Returns:
@@ -227,6 +252,7 @@ export class ConnectServiceWizardView extends DialogView<
              ${_`Cancel`}
             </Ink.DialogAction>
         `;
+        this.#cancelButton = cancelButton;
 
         this.#actionButton = craft<ButtonView>`
             <Ink.DialogAction type="primary"
@@ -407,6 +433,10 @@ export class ConnectServiceWizardView extends DialogView<
 
         this.#updateBackVisibility();
         this.#setAction(null);
+
+        if (this.#cancelButton) {
+            this.#cancelButton.label = _`Cancel`;
+        }
     }
 
     /**
@@ -533,6 +563,12 @@ export class ConnectServiceWizardView extends DialogView<
      *     The title contents.
      */
     #renderTitleContent(): HTMLElement {
+        const titleOverride = this.#titleOverride;
+
+        if (titleOverride !== null) {
+            return this.#renderTitleParts(titleOverride.label, titleOverride.icon);
+        }
+
         const service = this.#currentService;
 
         if (service === null) {
@@ -543,13 +579,35 @@ export class ConnectServiceWizardView extends DialogView<
             `;
         }
 
+        return this.#renderTitleParts(
+            _`Connect to ${service.name}`, service.logo);
+    }
+
+    /**
+     * Render a title pairing an optional icon with a label.
+     *
+     * Args:
+     *     label (string):
+     *         The title label to show.
+     *
+     *     icon (string):
+     *         The icon URL to show, or ``null`` for no icon.
+     *
+     * Returns:
+     *     HTMLElement:
+     *     The title contents.
+     */
+    #renderTitleParts(
+        label: string,
+        icon: string | null,
+    ): HTMLElement {
         return paint`
             <span class="rb-c-connect-wizard__title">
-            ${service.logo
+            ${icon
               ? paint`<img class="rb-c-connect-wizard__title-icon"
-                           src=${service.logo} aria-role="hidden" />`
+                           src=${icon} aria-hidden="true" />`
               : null}
-             <span>${_`Connect to ${service.name}`}</span>
+             <span>${label}</span>
             </span>
         `;
     }
@@ -606,6 +664,34 @@ export class ConnectServiceWizardView extends DialogView<
             .appendTo($body);
 
         this.#bindConnectContent($content);
+        this.#focusConnectContent($content);
+    }
+
+    /**
+     * Move focus to the start of a loaded connect page.
+     *
+     * Focus is placed on the content container itself rather than on a
+     * specific field, so that the first Tab moves into the content instead of
+     * starting on a particular field or on a footer action such as the close
+     * button.
+     *
+     * The container is made focusable with ``tabindex="-1"`` for this, without
+     * becoming a tab stop of its own. Its focus outline is suppressed, since
+     * it is only an anchor for Tab entry; the interactive controls inside keep
+     * their own focus indicators.
+     *
+     * The service picker focuses its search field through its own path, so it
+     * does not go through here.
+     *
+     * Args:
+     *     $content (jQuery):
+     *         The element containing the connect UI.
+     */
+    #focusConnectContent($content: JQuery) {
+        $content
+            .attr('tabindex', '-1')
+            .css('outline', 'none');
+        $content[0].focus({ preventScroll: true });
     }
 
     /**
@@ -616,8 +702,59 @@ export class ConnectServiceWizardView extends DialogView<
      *         The element containing the connect UI.
      */
     #bindConnectContent($content: JQuery) {
+        this.#updateTitleFromContent($content);
+        this.#updateCancelLabel($content);
         this.#bindConnectPageLinks($content);
         this.#bindStepAction($content);
+    }
+
+    /**
+     * Update the dialog title from a loaded connect page.
+     *
+     * A step can set the title and icon by marking any element with
+     * ``data-wizard-title`` (and optionally ``data-wizard-title-icon``). When
+     * no such element is present, the title falls back to the selected service
+     * or the default.
+     *
+     * Args:
+     *     $content (jQuery):
+     *         The element containing the connect UI.
+     */
+    #updateTitleFromContent($content: JQuery) {
+        const titleEl = $content.find('[data-wizard-title]')[0];
+
+        if (titleEl) {
+            this.#titleOverride = {
+                icon: titleEl.dataset.wizardTitleIcon || null,
+                label: titleEl.dataset.wizardTitle || '',
+            };
+        } else {
+            this.#titleOverride = null;
+        }
+
+        this.#updateTitle();
+    }
+
+    /**
+     * Update the label of the close button for a loaded connect page.
+     *
+     * A step can relabel the close button by marking any element with
+     * ``data-wizard-cancel-label`` (such as a "Skip" label on an optional
+     * step). When no such label is present, the default "Cancel" is restored.
+     *
+     * Args:
+     *     $content (jQuery):
+     *         The element containing the connect UI.
+     */
+    #updateCancelLabel($content: JQuery) {
+        const button = this.#cancelButton;
+
+        if (!button) {
+            return;
+        }
+
+        button.label = $content.find('[data-wizard-cancel-label]')
+            .attr('data-wizard-cancel-label') || _`Cancel`;
     }
 
     /**

@@ -215,6 +215,26 @@
       flex: 1;
     }
   }
+
+  &__form-actions {
+    align-items: center;
+    display: flex;
+    gap: var(--ink-u-spacing-std);
+    margin-top: var(--ink-u-spacing-l);
+  }
+}
+
+
+/**
+ * Extra controls to operate on the service as a whole.
+ *
+ * Structure:
+ *     <div class="rb-c-admin-cs-service-controls">...</div>
+ */
+.rb-c-admin-cs-service-controls {
+  background-color: var(--ink-p-grey-150);
+  border-bottom: 1px solid var(--ink-p-container-border-color-weak);
+  padding: var(--ink-u-spacing-std);
 }
 
 
@@ -269,7 +289,14 @@
       padding-bottom: 0;
     }
 
-    > div {
+    > a {
+      align-items: center;
+      display: flex;
+      gap: var(--ink-u-spacing-xs);
+    }
+
+    > div,
+    > div > a {
       align-items: center;
       display: flex;
       gap: var(--ink-u-spacing-std);
