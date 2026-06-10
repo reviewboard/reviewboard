@@ -292,7 +292,22 @@ class BaseHostingService(Generic[THostingServiceClient]):
     #:     bool
     self_hosted: ClassVar[bool] = False
 
-    #: Custom URL patterns to include for the hosting service.
+    #: Custom URL patterns to include for this hosting service.
+    #:
+    #: This can be used to create URLs for the hosting service generally (not
+    #: scoped to a single repository). These will be installed under:
+    #:
+    #: * ``/hosting-services/<hosting_service_id>/``
+    #: * ``/s/<local_site>/hosting-services/<hosting_service_id>``
+    #:
+    #: Version Added:
+    #:     9.0
+    #:
+    #: Type:
+    #:     list
+    hosting_service_url_patterns: ClassVar[list[_AnyURL] | None] = None
+
+    #: Custom URL patterns to include for repositories on this hosting service.
     #:
     #: This can be used to create URLs for hooks or other utility purposes.
     #: These will be installed under:
