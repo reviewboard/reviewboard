@@ -104,8 +104,9 @@ class ConnectedServicesListViewTests(TestCase):
             username='user1',
             visible=False)
 
-        self.client.login(username='admin', password='admin')
-        response = self.client.get(self.url)
+        client = self.client
+        client.login(username='admin', password='admin')
+        response = client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
 
@@ -131,10 +132,38 @@ class ConnectedServicesListViewTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['service_entries'], [])
 
+    def test_get_pops_auto_connect_url(self) -> None:
+        """Testing ConnectedServicesListView GET pops connect_wizard_url"""
+        client = self.client
+        client.login(username='admin', password='admin')
+
+        session = client.session
+        session['connect_wizard_url'] = '/admin/connected-services/foo/'
+        session.save()
+
+        response = client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['auto_connect_url'],
+                         '/admin/connected-services/foo/')
+
+        # The value is single-use, so it should be cleared from the session.
+        self.assertNotIn('connect_wizard_url', client.session)
+
+    def test_get_without_auto_connect_url(self) -> None:
+        """Testing ConnectedServicesListView GET without connect_wizard_url"""
+        client = self.client
+        client.login(username='admin', password='admin')
+        response = client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context['auto_connect_url'])
+
     def test_get_requires_staff(self) -> None:
         """Testing ConnectedServicesListView GET requires a staff member"""
-        self.client.login(username='doc', password='doc')
-        response = self.client.get(self.url)
+        client = self.client
+        client.login(username='doc', password='doc')
+        response = client.get(self.url)
 
         # Non-staff users are redirected to the admin login.
         self.assertEqual(response.status_code, 302)

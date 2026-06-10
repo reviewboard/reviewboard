@@ -53,6 +53,15 @@ RB.PageManager.ready(function() {
         openWizard();
     });
 
+{%  if auto_connect_url %}
+    /*
+     * A connect flow asked us to finish in the wizard (such as returning from
+     * a GitHub App installation). Open it on that step. The URL is built by
+     * the server, not taken from a query parameter, so it is safe to load.
+     */
+    openWizard("{{auto_connect_url|escapejs}}");
+{%  endif %}
+
     /*
      * Service entries can deep-link to a specific connect step (such as the
      * GitHub App creation page). Open these in the wizard instead of
