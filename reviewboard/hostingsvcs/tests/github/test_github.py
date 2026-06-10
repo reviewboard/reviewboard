@@ -14,7 +14,6 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.test.client import RequestFactory
 from django.utils.safestring import SafeString
 
-from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.hostingsvcs.errors import (
     AuthorizationError,
     HostingServiceError,
@@ -23,8 +22,11 @@ from reviewboard.hostingsvcs.errors import (
 from reviewboard.hostingsvcs.github.service import GitHub, _is_fine_grained_pat
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.hostingsvcs.tests.github.base import GitHubTestCase
-from reviewboard.scmtools.crypto_utils import (decrypt_password,
-                                               encrypt_password)
+from reviewboard.scmtools.core import Branch, Commit
+from reviewboard.scmtools.crypto_utils import (
+    decrypt_password,
+    encrypt_password,
+)
 
 if TYPE_CHECKING:
     from typing import Any

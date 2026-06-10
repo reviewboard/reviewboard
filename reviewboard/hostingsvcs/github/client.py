@@ -372,33 +372,42 @@ class GitHubClient(HostingServiceClient['GitHub']):
             repository=repository,
         )
 
-    def get_repository(
+    def get_installation_info(
         self,
-        *,
-        repo_api_url: str,
-        repository: Repository | None,
-    ) -> api.Repository:
-        """Make a get request to the repository API.
+        installation_id: int,
+    ) -> api.InstallationResponse:
+        """Return metadata for a GitHub App installation.
+
+        This must be called on the client for the hidden app-record account,
+        which authenticates as the app. The installation identifies the account
+        (user or organization) the app was installed on.
+
+        Version Added:
+            9.0
 
         Args:
-            repo_api_url (str):
-                The absolute URL of the base repository API.
-
-            repository (reviewboard.scmtools.models.Repository):
-                The repository object, if available.
+            installation_id (int):
+                The ID of the installation to look up.
 
         Returns:
-            reviewboard.hostingsvcs.github.api.Repository:
-            The fetched data.
+            reviewboard.hostingsvcs.github.api.InstallationResponse:
+            The parsed installation response from GitHub.
 
         Raises:
-            reviewboard.hostingsvcs.errors.HostingServiceError:
-                There was an error fetching the repository.
+            reviewboard.hostingsvcs.base.errors.HostingServiceError:
+                The request to GitHub failed, or the response could not be
+                parsed.
         """
-        return self._api_get(
-            url=repo_api_url,
-            result_type=api.Repository,
-            repository=repository)
+        api_url = self.hosting_service.get_api_url(self.account.hosting_url)
+        url = f'{api_url}app/installations/{installation_id}'
+
+        rsp = self.http_get(
+            url=url,
+            headers={
+                'Accept': 'application/vnd.github+json',
+            })
+
+        return api.InstallationResponse.model_validate_json(rsp.data)
 
     def get_commit(
         self,
@@ -520,6 +529,39 @@ class GitHubClient(HostingServiceClient['GitHub']):
             result_type=api.CompareCommitsResponse,
             repository=repository)
 
+    def get_installation_accessible_repositories(
+        self,
+        api_url: str,
+    ) -> BasePaginator[api.Repository, Sequence[api.Repository]]:
+        """Return the repositories a GitHub App installation can access.
+
+        This authenticates as the installation account this client is bound to
+        and lists every repository the app was granted access to. It is used to
+        limit reassignment suggestions to repositories the app can actually
+        read.
+
+        Version Added:
+            9.0
+
+        Args:
+            api_url (str):
+                The root URL for the API.
+
+        Returns:
+            reviewboard.hostingsvcs.base.paginator.BasePaginator:
+            A paginator for the repository results.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                An error occurred while talking to GitHub.
+        """
+        return self._api_get_paginated(
+            url=f'{api_url}installation/repositories',
+            result_type=TypeAdapter(list[api.Repository]),
+            list_key='repositories',
+            per_page=100,
+            repository=None)
+
     def get_issue(
         self,
         *,
@@ -606,6 +648,34 @@ class GitHubClient(HostingServiceClient['GitHub']):
             params=params,
             per_page=per_page)
 
+    def get_repository(
+        self,
+        *,
+        repo_api_url: str,
+        repository: Repository | None,
+    ) -> api.Repository:
+        """Make a get request to the repository API.
+
+        Args:
+            repo_api_url (str):
+                The absolute URL of the base repository API.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+        Returns:
+            reviewboard.hostingsvcs.github.api.Repository:
+            The fetched data.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching the repository.
+        """
+        return self._api_get(
+            url=repo_api_url,
+            result_type=api.Repository,
+            repository=repository)
+
     def get_tree(
         self,
         *,
@@ -676,12 +746,12 @@ class GitHubClient(HostingServiceClient['GitHub']):
             The deserialized data.
 
         Raises:
-            reviewboard.hostingsvcs.base.errors.HostingServiceError:
-                An error occurred while making the request.
-
-            reviewboard.hostingsvcs.base.errors.HostingServiceAPIError:
+            reviewboard.hostingsvcs.errors.HostingServiceAPIError:
                 An error occurred while making the request, with a parsed error
                 structure.
+
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                An error occurred while making the request.
         """
         if params:
             url = f'{url}?{urlencode(params)}'
@@ -711,8 +781,13 @@ class GitHubClient(HostingServiceClient['GitHub']):
         repository: Repository | None,
         params: (dict[str, str] | None) = None,
         per_page: (int | None) = None,
+        list_key: (str | None) = None,
     ) -> ProxyPaginator[_T, Sequence[_T]]:
         """Perform an HTTP GET to the API and return a paginator.
+
+        Version Changed:
+            9.0:
+            Added the ``list_key`` argument.
 
         Args:
             url (str):
@@ -728,19 +803,31 @@ class GitHubClient(HostingServiceClient['GitHub']):
                 Parameters to include in the URL.
 
             per_page (int, optional):
-                The number of items to return per page.
+                The number of items to return per page. This is added to the
+                query parameters in the URL.
+
+            list_key (str, optional):
+                The key under which the list of results is nested, for
+                endpoints that wrap the list in an object instead of returning
+                a bare array.
+
+                Version Added:
+                    9.0
 
         Returns:
             reviewboard.hostingsvcs.paginator.ProxyPaginator:
             A paginator over the validated results.
 
         Raises:
-            reviewboard.hostingsvcs.base.errors.HostingServiceError:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
                 An error occurred while making the request.
         """
         def normalize_page_data(
             page_data: Sequence[Any],
         ) -> Sequence[_T] | None:
+            if list_key is not None and isinstance(page_data, dict):
+                page_data = page_data.get(list_key) or []
+
             try:
                 return result_type.validate_python(page_data)
             except ValidationError as e:

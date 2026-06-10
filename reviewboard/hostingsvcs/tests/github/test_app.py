@@ -88,6 +88,66 @@ class GitHubAppTests(GitHubTestCase):
         self.assertEqual(branches_request.get_header('Authorization'),
                          'Bearer ghs_installationtoken')
 
+    def test_get_installation_accessible_repositories(self) -> None:
+        """Testing GitHubClient.get_installation_accessible_repositories"""
+        base_url = ('https://api.github.com/installation/repositories'
+                    '?per_page=100')
+        account = self._create_app_installation_account()
+
+        handler = self.make_handler_for_paths({
+            f'/app/installations/{self.installation_id}/access_tokens': {
+                'payload': self.dump_json({
+                    'token': 'ghs_installationtoken',
+                    'expires_at': '2099-01-01T00:00:00Z',
+                }),
+            },
+            '/installation/repositories?per_page=100': {
+                'payload': self.dump_json({
+                    'total_count': 2,
+                    # The list is nested under "repositories", and the owner is
+                    # mixed-case to confirm the result is lowercased.
+                    'repositories': [
+                        {
+                            'clone_url': 'repo1_path',
+                            'default_branch': 'master',
+                            'mirror_url': 'repo1_mirror',
+                            'name': 'Repo1',
+                            'owner': {'login': 'myuser'},
+                        },
+                    ],
+                }),
+                'headers': {
+                    'Link': f'<{base_url}&page=2>; rel="next"',
+                },
+            },
+            '/installation/repositories?per_page=100&page=2': {
+                'payload': self.dump_json({
+                    'total_count': 2,
+                    'repositories': [
+                        {
+                            'clone_url': 'repo2_path',
+                            'default_branch': 'master',
+                            'mirror_url': 'repo2_mirror',
+                            'name': 'repo2',
+                            'owner': {'login': 'myuser'},
+                        },
+                    ],
+                }),
+            },
+        })
+
+        # Three calls: minting the installation token and one http_get per
+        # page of repositories.
+        with self.setup_http_test(handler,
+                                  hosting_account=account,
+                                  expected_http_calls=3) as ctx:
+            full_names = ctx.service.get_accessible_repositories()
+
+        self.assertEqual(full_names, {
+            ('myuser', 'repo1'),
+            ('myuser', 'repo2'),
+        })
+
     def test_installation_token_is_cached(self) -> None:
         """Testing GitHub App installation token is cached and reused"""
         branches_payload = self.dump_json([
@@ -269,6 +329,41 @@ class GitHubAppTests(GitHubTestCase):
 
         claims = json.loads(self._b64url_decode(claims_b64))
         self.assertEqual(claims['iss'], self.app_id)
+
+    def test_get_installation_info(self) -> None:
+        """Testing GitHubClient.get_installation_info reads the installation"""
+        app_account = self._create_app_record_account()
+
+        handler = self.make_handler_for_paths({
+            f'/app/installations/{self.installation_id}': {
+                'payload': self.dump_json({
+                    'account': {
+                        'login': 'myorg',
+                        'type': 'Organization',
+                        'avatar_url': 'https://example.com/a.png',
+                    },
+                    'repository_selection': 'all',
+                }),
+            },
+        })
+
+        with self.setup_http_test(handler,
+                                  hosting_account=app_account,
+                                  expected_http_calls=1) as ctx:
+            install_info = ctx.service.client.get_installation_info(
+                self.installation_id)
+
+        self.assertEqual(install_info.account.login, 'myorg')
+        self.assertEqual(install_info.account.type, 'Organization')
+        self.assertEqual(install_info.repository_selection, 'all')
+
+        # The request authenticates as the app via a signed JWT.
+        request = ctx.http_requests[0]
+        self.assertEqual(request.url,
+                         'https://api.github.com/app/installations/99')
+        self.assertEqual(request.method, 'GET')
+        self.assertTrue(
+            request.get_header('Authorization').startswith('Bearer '))
 
     def test_is_authorized_with_installation_account(self) -> None:
         """Testing GitHub.is_authorized with a GitHub App installation account

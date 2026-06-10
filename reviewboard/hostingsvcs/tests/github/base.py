@@ -12,19 +12,24 @@ from typing import TYPE_CHECKING
 
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
+from django.contrib.messages import Message
+from django.contrib.messages.test import MessagesTestMixin
 
 from reviewboard.hostingsvcs.github.service import GitHub
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import encrypt_password
+from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
     from typing import ClassVar, Literal
 
+    from django.test.client import _MonkeyPatchedWSGIResponse
+
     from reviewboard.hostingsvcs.models import HostingServiceAccount
 
 
-class GitHubTestCase(HostingServiceTestCase[GitHub]):
+class GitHubTestCase(MessagesTestMixin, HostingServiceTestCase[GitHub]):
     """Base class for GitHub test suites."""
 
     service_name = 'github'
@@ -73,6 +78,29 @@ class GitHubTestCase(HostingServiceTestCase[GitHub]):
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
             encryption_algorithm=serialization.NoEncryption())
+
+    def _assert_error_redirect(
+        self,
+        response: _MonkeyPatchedWSGIResponse,
+        message: str,
+    ) -> None:
+        """Assert a response redirects to the list with an error message.
+
+        Version Added:
+            9.0
+
+        Args:
+            response (django.http.HttpResponse):
+                The response returned by the view.
+
+            message (str):
+                The error message expected to be shown.
+        """
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'],
+                         local_site_reverse('connected-services-list'))
+
+        self.assertMessages(response, [Message(40, message)])
 
     def _create_app_record_account(self) -> HostingServiceAccount:
         """Return a hidden app-record account holding the app credentials.

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING
+from unittest import skip
 
 from django.urls import reverse
 
@@ -65,6 +66,62 @@ class ConnectServiceViewTests(TestCase):
         response = self.client.get(self._get_url('test'))
 
         self.assertEqual(response.status_code, 302)
+
+    def test_get_with_github_renders_choices(self) -> None:
+        """Testing ConnectServiceView GET for GitHub renders the connection
+        method choices
+        """
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self._get_url('github'))
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content
+        self.assertIn(b'Connect using a GitHub App', content)
+        self.assertIn(b'Connect with a Personal Access Token', content)
+
+        # The PAT method links to its own page rather than rendering the form
+        # inline.
+        self.assertIn(b'method=pat', content)
+        self.assertNotIn(b'hosting_account_username', content)
+
+    @skip('Disabled until implementation is complete')
+    def test_get_with_github_connected_accounts(self) -> None:
+        """Testing ConnectServiceView GET for GitHub renders "Add a
+        repository" options for connected accounts
+        """
+        HostingServiceAccount.objects.create(
+            service_name='github',
+            username='acme-org',
+            data={
+                'github_app': {
+                    'app_account_id': 1,
+                    'installation_id': 42,
+                    'owner_avatar_url': 'https://example.com/avatar.png',
+                    'owner_login': 'acme-org',
+                    'role': 'installation',
+                },
+            })
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self._get_url('github'))
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content
+        self.assertIn(b'Add a repository for acme-org', content)
+        self.assertIn(b'https://example.com/avatar.png', content)
+
+    def test_get_with_github_pat_method(self) -> None:
+        """Testing ConnectServiceView GET for GitHub with ?method=pat renders
+        the Personal Access Token form
+        """
+        self.client.login(username='admin', password='admin')
+        url = f'{self._get_url("github")}?method=pat'
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'hosting_account_username', response.content)
 
     def test_post_creates_account(self) -> None:
         """Testing ConnectServiceView POST creates a hosting service account"""

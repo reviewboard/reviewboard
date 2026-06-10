@@ -1,0 +1,87 @@
+{% extends "admin/connected_services/_parts/list_entry_hosting_service.html" %}
+{% load i18n %}
+
+{% block service_controls %}
+{%  if github_app_installed %}
+<div id="github-cs-entry-controls"
+     class="rb-c-admin-cs-service-controls">
+ <h2>
+  <span class="ink-i-check"></span>
+  {% trans "GitHub App connected" %}
+ </h2>
+ <a href="{{github_app_settings_url}}" target="_blank"
+    rel="noopener noreferrer">
+  App Settings <span class="ink-i-external-link"></span>
+ </a>
+</div>
+{%  else %}
+<div id="github-cs-entry-controls"
+     class="rb-c-admin-cs-service-controls -no-github-app">
+ <h2>
+  <span class="ink-i-info"></span>
+  {% trans "No GitHub App configured" %}
+ </h2>
+ <p>
+{%   blocktrans %}
+  GitHub is currently only connected using Personal Access Tokens. A GitHub App
+  will allow Review Board to connect using server-owned credentials instead of
+  being tied to an individual GitHub user, and can be scoped to specific
+  organizations and repositories.
+{%   endblocktrans %}
+ </p>
+
+ <a class="ink-c-button" role="button"
+    href="{{github_app_create_url}}"
+    data-wizard-connect-url="{{github_app_create_url}}">
+  {% trans "Create GitHub App" %}
+ </a>
+</div>
+{%  endif %}
+{% endblock %}
+
+{% block service_accounts %}
+{# Show app installs first, then PATs #}
+{%  for entry in accounts_data %}
+{%   if entry.account.visible and entry.is_app_install %}
+<li class="rb-c-admin-cs-accounts__account">
+ <div>
+  <img class="rb-c-admin-cs-accounts__account__icon"
+       src="{{entry.avatar_url}}" alt="">
+  {{entry.account.username}}
+ </div>
+ <div>
+{%    if entry.detail %}
+  <span class="rb-c-admin-cs-accounts__account__detail">{{entry.detail}}</span>
+{%    endif %}
+ </div>
+</li>
+{%   endif %}
+{%  endfor %}
+
+{%  for entry in accounts_data %}
+{%   if entry.account.visible and not entry.is_app_install %}
+<li class="rb-c-admin-cs-accounts__account">
+ <div>
+  <a href="{% url "admin:hostingsvcs_hostingserviceaccount_change" entry.account.pk %}">
+   {{entry.account.username}}
+   <span class="ink-c-badge">Personal Access Token</span>
+  </a>
+ </div>
+ <div>
+{%    if entry.detail %}
+  <span class="rb-c-admin-cs-accounts__account__detail">{{entry.detail}}</span>
+{%    endif %}
+ </div>
+</li>
+{%   endif %}
+{%  endfor %}
+
+{%  if github_app_installed %}
+<li class="rb-c-admin-cs-accounts__account">
+ <a href="{{github_app_install_url}}">
+  <span class="ink-i-add"></span>
+  {% trans "Install app into another organization" %}
+ </a>
+</li>
+{%  endif %}
+{% endblock service_accounts %}

@@ -1,0 +1,91 @@
+{% load i18n static %}
+
+{% if github_app_create_url %}
+{%  if connected_accounts %}
+{#   There are existing GitHub connections, but only via PAT. #}
+<h1>{% trans "How do you want to connect to GitHub?" %}</h1>
+<p>
+{%   blocktrans %}
+ GitHub is currently linked via a <strong>Personal Access Token</strong>.
+ Creating a <strong>GitHub App</strong> will allow Review Board to connect
+ using server-owned credentials instead of being tied to an individual GitHub
+ user, and can be scoped to specific organizations and repositories.
+{%   endblocktrans %}
+</p>
+{%  else %}
+{#   No existing GitHub connections. #}
+<h1>{% trans "How do you want to connect to GitHub?" %}</h1>
+<p>
+{%   blocktrans %}
+ Review Board can connect to GitHub with either a <strong>GitHub App</strong>
+ (recommended) or a <strong>Personal Access Token</strong>.
+{%   endblocktrans %}
+</p>
+{%  endif %}
+{% elif github_app_install_url %}
+{#   GitHub App is available. #}
+<h1>{% trans "GitHub is connected using a GitHub App" %}</h1>
+{% endif %}
+
+<ul class="rb-c-connect-wizard__options">
+{% comment %}
+{# TODO: wire up the "Add a repository" flow. #}
+{% for account in connected_accounts %}
+ <li class="rb-c-connect-wizard__option">
+  <a href="#">
+{%  if account.avatar_url %}
+   <img src="{{account.avatar_url}}" aria-hidden="true">
+{%  else %}
+   <img src="{% static github_logo %}" aria-hidden="true">
+{%  endif %}
+   <h2>
+{%  blocktrans with name=account.username %}
+    Add a repository for {{name}}
+{%  endblocktrans %}
+{%  if not account.is_app_install %}
+    <span class="ink-c-badge">Personal Access Token</span>
+{%  endif %}
+   </h2>
+  </a>
+ </li>
+{% endfor %}
+{% endcomment %}
+{% if github_app_create_url %}
+ <li class="rb-c-connect-wizard__option">
+  <a href="{{github_app_create_url}}" data-connect-page>
+   <h2>{% trans "Connect using a GitHub App" %}</h2>
+   <p>
+{%  blocktrans %}
+    Create a new GitHub App using an app manifest.
+{%  endblocktrans %}
+   </p>
+  </a>
+ </li>
+{% endif %}
+{% if github_app_install_url %}
+ <li class="rb-c-connect-wizard__option">
+  <a href="{{github_app_install_url}}">
+   <h2>
+    {% trans "Link another organization" %}
+    <span class="ink-i-external-link"></span>
+   </h2>
+   <p>
+{%  blocktrans %}
+    Open GitHub to connect to install the GitHub App for another user or organization.
+{%  endblocktrans %}
+   </p>
+  </a>
+ </li>
+{% endif %}
+ <li class="rb-c-connect-wizard__option">
+  <a href="{% url 'connected-services-connect' service_id=hosting_service_id %}?method=pat"
+     data-connect-page>
+   <h2>{% trans "Connect with a Personal Access Token" %}</h2>
+   <p>
+{%  blocktrans %}
+    Add a new connection using a fine-grained or legacy Personal Access Token.
+{%  endblocktrans %}
+   </p>
+  </a>
+ </li>
+</ul>

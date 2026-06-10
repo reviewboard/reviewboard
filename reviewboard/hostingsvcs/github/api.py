@@ -24,6 +24,38 @@ class APIError(BaseModel):
     message: str
 
 
+class AppManifestOwner(BaseModel):
+    """The owner of a GitHub App created from a manifest.
+
+    Version Added:
+        9.0
+    """
+
+    login: str = ''
+    type: str = ''
+
+
+class AppManifestResponse(BaseModel):
+    """API response for a GitHub App manifest conversion.
+
+    This is returned when exchanging a temporary manifest code for the
+    credentials of the newly-created app. The required fields hold the
+    credentials we must store.
+
+    Version Added:
+        9.0
+    """
+
+    id: int
+    slug: str
+    client_id: str
+    client_secret: str
+    pem: str
+    html_url: str = ''
+    webhook_secret: str = ''
+    owner: (AppManifestOwner | None) = None
+
+
 class BaseCommit(BaseModel):
     """Data for the base commit in a comparison.
 
@@ -123,6 +155,36 @@ class GitObject(BaseModel):
     """
 
     sha: str
+
+
+class InstallationAccount(BaseModel):
+    """The user or organization a GitHub App is installed on.
+
+    Version Added:
+        9.0
+    """
+
+    avatar_url: str = ''
+
+    #: The stable numeric ID of the account.
+    #:
+    #: Unlike the login, this does not change when a user or organization is
+    #: renamed, so it is used to match an installation across reinstalls.
+    id: int = 0
+
+    login: str
+    type: str = ''
+
+
+class InstallationResponse(BaseModel):
+    """API response for a GitHub App installation.
+
+    Version Added:
+        9.0
+    """
+
+    account: InstallationAccount
+    repository_selection: str = ''
 
 
 class Issue(BaseModel):

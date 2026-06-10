@@ -584,3 +584,86 @@
     padding: 0;
   }
 }
+
+
+#github-app-manifest-details {
+  border: var(--ink-u-border-thin) var(--ink-p-container-border-color-weak) solid;
+  border-radius: var(--ink-u-border-radius-container);
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 0;
+  width: 100%;
+
+  th, td {
+    padding: var(--ink-u-spacing-std);
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    font-weight: bold;
+    white-space: nowrap;
+  }
+
+  /* Separators between rows. */
+  tr:not(:last-child) th,
+  tr:not(:last-child) td {
+    border-bottom: var(--ink-u-border-thin)
+                   var(--ink-p-container-border-color-weak) solid;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+
+#github-cs-entry-controls {
+  display: grid;
+  gap: var(--ink-u-spacing-std);
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "header action";
+
+  h2 {
+    align-items: center;
+    display: flex;
+    font-size: var(--ink-u-font-m);
+    gap: var(--ink-u-spacing-s);
+    grid-area: header;
+    margin: 0;
+    padding: 0;
+  }
+
+  p {
+    grid-area: detail;
+    margin: 0;
+    padding: 0;
+  }
+
+  a {
+    align-self: center;
+    grid-area: action;
+
+    &:not(.ink-c-button) {
+      align-items: center;
+      display: flex;
+      gap: var(--ink-u-spacing-s);
+    }
+  }
+
+  &.-no-github-app {
+    background-color: var(--ink-p-accent-info-bg);
+    grid-template-areas:
+      "header action"
+      "detail action";
+  }
+}
+
+
+#github-repo-reassign-account-form .rb-c-form-field {
+  align-items: center;
+  display: flex;
+  gap: var(--ink-u-spacing-s);
+}

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
-from urllib.parse import urljoin
+from urllib.parse import quote as urlquote, urljoin
 
 from django.db.models import ObjectDoesNotExist
 from django.template.loader import render_to_string
@@ -20,6 +20,7 @@ from housekeeping import deprecate_non_keyword_only_args
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
+from reviewboard.hostingsvcs.base.connect_ui import BaseHostingServiceConnectUI
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.base.paginator import ProxyPaginator
 from reviewboard.hostingsvcs.errors import (
@@ -30,7 +31,12 @@ from reviewboard.hostingsvcs.errors import (
 )
 from reviewboard.hostingsvcs.github import views
 from reviewboard.hostingsvcs.github.accounts import (
+    GitHubAppRecordData,
+    get_github_app_data,
     get_github_app_role,
+    is_app_record_account,
+    is_app_record_data,
+    is_installation_data,
 )
 from reviewboard.hostingsvcs.github.client import GitHubClient
 from reviewboard.hostingsvcs.github.forms import (
@@ -40,6 +46,7 @@ from reviewboard.hostingsvcs.github.forms import (
     GitHubPublicForm,
     GitHubPublicOrgForm,
 )
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
@@ -54,6 +61,7 @@ if TYPE_CHECKING:
     from django.utils.safestring import SafeString
 
     from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
+    from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
     from reviewboard.hostingsvcs.base.hosting_service import HostingServicePlan
     from reviewboard.hostingsvcs.utils.paginator import BasePaginator
     from reviewboard.scmtools.models import Repository
@@ -97,6 +105,249 @@ def _is_fine_grained_pat(
     return token.startswith('github_pat_')
 
 
+class GitHubConnectUI(BaseHostingServiceConnectUI):
+    """Connect UI for GitHub.
+
+    Version Added:
+        9.0
+    """
+
+    connected_services_list_entry_template: ClassVar[str] = \
+        'hostingsvcs/github/connected_services_list_entry.html'
+
+    def render_connect_ui(
+        self,
+        request: HttpRequest,
+        *,
+        form: (BaseHostingServiceAuthForm | None) = None,
+    ) -> SafeString:
+        """Render the connect UI for GitHub.
+
+        By default, this shows the list of connection methods. When requested
+        with ``?method=pat``, it shows the Personal Access Token form on its
+        own page instead.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            form (reviewboard.hostingsvcs.base.forms.
+                  BaseHostingServiceAuthForm, optional):
+                The authentication form to render.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered connect UI.
+        """
+        if request.GET.get('method') == 'pat':
+            return super().render_connect_ui(request, form=form)
+
+        if form is None:
+            form = self.get_auth_form_class()(
+                hosting_service_cls=self._hosting_service_cls,
+                local_site=request.local_site)
+
+        return render_to_string(
+            'hostingsvcs/github/connect_choice.html',
+            self.make_connect_ui_context(request, form=form),
+            request=request)
+
+    def make_connect_ui_context(
+        self,
+        request: HttpRequest,
+        *,
+        form: BaseHostingServiceAuthForm,
+    ) -> dict[str, Any]:
+        """Return template context for rendering the connect UI.
+
+        This adds the URLs for the GitHub App flows, which are offered
+        alongside the standard Personal Access Token form. If no GitHub App
+        has been created yet, the "Create a GitHub App" flow is offered;
+        otherwise, the "Connect another organization" (install) flow is
+        offered.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            form (reviewboard.hostingsvcs.base.forms.
+                  BaseHostingServiceAuthForm):
+                The authentication form to render.
+
+        Returns:
+            dict:
+            Template context to use when rendering the connect UI.
+        """
+        context = super().make_connect_ui_context(request, form=form)
+
+        # Find the hidden app-record account (if any) and build the list of
+        # connected accounts a repository can be added to. The app-record
+        # account holds the app's credentials and is what the install link
+        # acts on; it is not a usable connection on its own, so it is
+        # excluded from the connected accounts.
+        app_account: (HostingServiceAccount | None) = None
+        connected_accounts: list[dict[str, Any]] = []
+
+        service = self._hosting_service_cls
+
+        accounts = HostingServiceAccount.objects.filter(
+            service_name=service.hosting_service_id,
+            local_site=request.local_site)
+
+        for account in accounts:
+            app_data = get_github_app_data(account)
+
+            if is_app_record_data(app_data):
+                app_account = account
+            else:
+                if is_installation_data(app_data):
+                    avatar_url = app_data.owner_avatar_url
+                    is_app_install = True
+                else:
+                    avatar_url = ''
+                    is_app_install = False
+
+                connected_accounts.append({
+                    'avatar_url': avatar_url,
+                    'is_app_install': is_app_install,
+                    'username': account.username,
+                })
+
+        github_app_create_url: (str | None) = None
+        github_app_install_url: (str | None) = None
+
+        if app_account is None:
+            github_app_create_url = local_site_reverse(
+                'github-app-create',
+                request=request,
+                kwargs={
+                    'hosting_service_id': service.hosting_service_id,
+                })
+        else:
+            github_app_install_url = local_site_reverse(
+                'github-app-install',
+                local_site=app_account.local_site,
+                kwargs={
+                    'hosting_service_id': service.hosting_service_id,
+                    'account_id': app_account.pk,
+                })
+
+        context['connected_accounts'] = connected_accounts
+        context['github_app_create_url'] = github_app_create_url
+        context['github_app_install_url'] = github_app_install_url
+        context['github_logo'] = service.logo_image
+
+        return context
+
+    def make_connected_services_list_entry_context(
+        self,
+        request: HttpRequest,
+        *,
+        accounts: Sequence[HostingServiceAccount],
+    ) -> dict[str, Any]:
+        """Return template context for rendering the accounts list entry.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            accounts (list of
+                      reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The connected hosting service accounts.
+
+        Returns:
+            dict:
+            Template context to use when rendering the entry.
+        """
+        for account in accounts:
+            if is_app_record_account(account):
+                app_account = account
+                break
+        else:
+            app_account = None
+
+        github_app_create_url: (str | None) = None
+        github_app_install_url: (str | None) = None
+        github_app_settings_url: (str | None) = None
+
+        service = self._hosting_service_cls
+
+        if app_account is None:
+            github_app_create_url = local_site_reverse(
+                'github-app-create',
+                request=request,
+                kwargs={
+                    'hosting_service_id': service.hosting_service_id,
+                })
+        else:
+            github_app_install_url = local_site_reverse(
+                'github-app-install',
+                local_site=app_account.local_site,
+                kwargs={
+                    'hosting_service_id': service.hosting_service_id,
+                    'account_id': app_account.pk,
+                })
+
+            # Build a link to the app's management page on GitHub. This lives
+            # under the owner's settings, and the path differs for apps owned
+            # by an organization versus a user.
+            app_data = get_github_app_data(app_account)
+            assert isinstance(app_data, GitHubAppRecordData)
+
+            app_slug = app_data.app_slug
+
+            if app_slug:
+                app_base = (app_account.hosting_url or
+                            'https://github.com').rstrip('/')
+
+                if app_data.owner_type == 'organization':
+                    github_app_settings_url = (
+                        f'{app_base}/organizations/'
+                        f'{urlquote(app_account.username)}/settings/apps/'
+                        f'{urlquote(app_slug)}')
+                else:
+                    github_app_settings_url = (
+                        f'{app_base}/settings/apps/{urlquote(app_slug)}')
+
+        context = super().make_connected_services_list_entry_context(
+            request,
+            accounts=accounts)
+
+        # Flag each account entry as either a GitHub App installation or a
+        # Personal Access Token, so the template can group them, and build a
+        # sized avatar URL for the app installs.
+        for entry in context['accounts_data']:
+            account = entry['account']
+            app_data = get_github_app_data(account)
+
+            if is_installation_data(app_data):
+                avatar_url = app_data.owner_avatar_url
+                entry['is_app_install'] = True
+            else:
+                avatar_url = None
+                entry['is_app_install'] = False
+
+            if avatar_url:
+                # Request a 40px avatar. Merge into the existing query string
+                # if the URL already has one (the avatar URL is an opaque value
+                # that we get from GitHub, and they've been known to change
+                # them around in the past).
+                if '?' in avatar_url:
+                    avatar_url = f'{avatar_url}&s=40'
+                else:
+                    avatar_url = f'{avatar_url}?s=40'
+
+            entry['avatar_url'] = avatar_url
+
+        return {
+            **context,
+            'github_app_create_url': github_app_create_url,
+            'github_app_install_url': github_app_install_url,
+            'github_app_installed': app_account is not None,
+            'github_app_settings_url': github_app_settings_url,
+        }
+
+
 class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
     """Hosting service for GitHub."""
 
@@ -105,6 +356,7 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
 
     auth_form = GitHubAuthForm
     client_class = GitHubClient
+    connect_ui_cls = GitHubConnectUI
     has_repository_hook_instructions = True
     needs_authorization = True
     supported_scmtools: ClassVar[Sequence[str]] = ['Git']
@@ -180,6 +432,18 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
     ]
 
     hosting_service_url_patterns: ClassVar[Sequence[_AnyURL] | None] = [
+        path('app/create/',
+             views.GitHubAppCreateView.as_view(),
+             name='github-app-create'),
+        path('app/callback/',
+             views.GitHubAppCallbackView.as_view(),
+             name='github-app-callback'),
+        path('github-app/<int:account_id>/install/',
+             views.GitHubAppInstallView.as_view(),
+             name='github-app-install'),
+        path('github-app/install-callback/',
+             views.GitHubAppInstallCallbackView.as_view(),
+             name='github-app-install-callback'),
         path('github-app/webhook/',
              views.GitHubAppWebhookView.as_view(),
              name='github-app-webhook'),
@@ -445,6 +709,37 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         # Check for a legacy authorizations-generated API token.
         return ('authorization' in account_data and
                 'token' in account_data['authorization'])
+
+    def get_accessible_repositories(
+        self,
+    ) -> set[tuple[str, str]]:
+        """Return the repositories which are accessible from the account.
+
+        Version Added:
+            9.0
+
+        Returns:
+            set of tuple:
+            A set of 2-tuples for each accessible repository, in the form of:
+
+            Tuple:
+                0 (str):
+                    The repository owner.
+
+                1 (str):
+                    The repository name.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                An error occurred while fetching the data.
+        """
+        repos = self.client.get_installation_accessible_repositories(
+            api_url=self.get_api_url(self.account.hosting_url))
+
+        return {
+            (repo.owner.login.lower(), repo.name.lower())
+            for repo in repos.iter_items()
+        }
 
     def get_file(
         self,
