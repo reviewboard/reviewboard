@@ -15,7 +15,10 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from django.http import HttpResponse, HttpResponseBadRequest
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.views.generic.base import View
 
 from reviewboard.admin.server import get_server_url
 from reviewboard.hostingsvcs.hook_utils import (close_all_review_requests,
@@ -177,3 +180,48 @@ class GitHubHookViews:
                 f'{branch_name} ({commit_hash[:7]})')
 
         return review_request_id_to_commits_map
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class GitHubAppWebhookView(View):
+    """Receive webhook events from a GitHub App.
+
+    A GitHub App has a single, app-wide webhook URL that receives events from
+    every account the app is installed on.
+
+    This is currently a stub. It acknowledges deliveries so GitHub considers
+    the webhook healthy, but does not yet act on any events.
+
+    Version Added:
+        9.0
+    """
+
+    def post(
+        self,
+        request: HttpRequest,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP POST requests.
+
+        Args:
+            request (django.http.HttpRequest):
+                The webhook request from GitHub.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            django.http.HttpResponse:
+            An empty response acknowledging the delivery.
+        """
+        event = request.META.get('HTTP_X_GITHUB_EVENT', '')
+
+        # TODO: Verify the X-Hub-Signature-256 header against the app's stored
+        # webhook secret and dispatch events once handlers exist.
+        logger.debug('Received GitHub App webhook event: %s', event)
+
+        return HttpResponse(status=204)

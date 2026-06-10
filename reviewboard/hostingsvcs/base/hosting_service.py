@@ -327,7 +327,7 @@ class BaseHostingService(Generic[THostingServiceClient]):
     #:
     #: Type:
     #:     list
-    hosting_service_url_patterns: ClassVar[list[_AnyURL] | None] = None
+    hosting_service_url_patterns: ClassVar[Sequence[_AnyURL] | None] = None
 
     #: Custom URL patterns to include for repositories on this hosting service.
     #:
@@ -339,7 +339,7 @@ class BaseHostingService(Generic[THostingServiceClient]):
     #:
     #: Type:
     #:     list
-    repository_url_patterns: ClassVar[list[_AnyURL] | None] = None
+    repository_url_patterns: ClassVar[Sequence[_AnyURL] | None] = None
 
     #: The utility class used to perform client functionality.
     #:

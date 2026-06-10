@@ -28,18 +28,18 @@ from reviewboard.hostingsvcs.errors import (
     InvalidPlanError,
     RepositoryError,
 )
+from reviewboard.hostingsvcs.github import views
 from reviewboard.hostingsvcs.github.accounts import (
     get_github_app_role,
 )
 from reviewboard.hostingsvcs.github.client import GitHubClient
 from reviewboard.hostingsvcs.github.forms import (
     GitHubAuthForm,
-    GitHubPublicForm,
-    GitHubPublicOrgForm,
     GitHubPrivateForm,
     GitHubPrivateOrgForm,
+    GitHubPublicForm,
+    GitHubPublicOrgForm,
 )
-from reviewboard.hostingsvcs.github.views import GitHubHookViews
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
@@ -181,9 +181,15 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
 
     client_class = GitHubClient
 
-    repository_url_patterns: ClassVar[list[_AnyURL] | None] = [
+    hosting_service_url_patterns: ClassVar[Sequence[_AnyURL] | None] = [
+        path('github-app/webhook/',
+             views.GitHubAppWebhookView.as_view(),
+             name='github-app-webhook'),
+    ]
+
+    repository_url_patterns: ClassVar[Sequence[_AnyURL] | None] = [
         path('hooks/close-submitted/',
-             GitHubHookViews.post_receive_hook_close_submitted,
+             views.GitHubHookViews.post_receive_hook_close_submitted,
              name='github-hooks-close-submitted'),
     ]
 
