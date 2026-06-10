@@ -540,8 +540,24 @@ class HostingServiceHTTPRequest:
         """
         self._urlopen_handlers.append(handler)
 
-    def open(self) -> HostingServiceHTTPResponse:
+    def open(
+        self,
+        *,
+        timeout: (float | None) = None,
+    ) -> HostingServiceHTTPResponse:
         """Open the request to the server, returning the response.
+
+        Version Changed:
+            9.0:
+            Added the ``timeout`` argument.
+
+        Args:
+            timeout (float, optional):
+                The timeout, in seconds, for the request. If not provided,
+                the urllib default is used.
+
+                Version Added:
+                    9.0
 
         Returns:
             HostingServiceHTTPResponse:
@@ -596,7 +612,10 @@ class HostingServiceHTTPRequest:
 
         with log_timed(timer_msg,
                        logger=logger):
-            response = opener.open(request)
+            if timeout is None:
+                response = opener.open(request)
+            else:
+                response = opener.open(request, timeout=timeout)
 
         if hosting_service:
             response_cls = hosting_service.client.http_response_cls
