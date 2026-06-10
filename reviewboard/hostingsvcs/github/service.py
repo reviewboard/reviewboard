@@ -28,6 +28,9 @@ from reviewboard.hostingsvcs.errors import (
     InvalidPlanError,
     RepositoryError,
 )
+from reviewboard.hostingsvcs.github.accounts import (
+    get_github_app_role,
+)
 from reviewboard.hostingsvcs.github.client import GitHubClient
 from reviewboard.hostingsvcs.github.forms import (
     GitHubAuthForm,
@@ -419,7 +422,16 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             bool:
             Whether or not the associated account is authorized.
         """
-        account_data = self.account.data
+        account = self.account
+
+        if get_github_app_role(account) in {'app', 'installation'}:
+            # This is a GitHub App account. Authorization is provided by the
+            # app's credentials, not a stored token. Whether the installation
+            # is still live on GitHub's side is tracked separately and surfaces
+            # when minting an installation token.
+            return True
+
+        account_data = account.data
 
         if account_data.get('personal_token'):
             # This is a newer linked account using a GitHub user's custom
