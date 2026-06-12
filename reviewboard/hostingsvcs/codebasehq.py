@@ -590,7 +590,7 @@ class CodebaseHQ(BaseHostingService[CodebaseHQClient]):
                 Extra unused keyword arguments passed to this function.
 
         Returns:
-            byets:
+            bytes:
             The content of the file in the repository.
         """
         try:

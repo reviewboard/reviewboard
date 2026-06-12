@@ -61,7 +61,7 @@ RB.RelatedUserSelectorView = Djblets.RelatedObjectSelectorView.extend({
      *         The URL prefix for the local site, if any.
      *
      *     multivalued (boolean):
-     *         Whether or not the widget should allow selecting multuple
+     *         Whether or not the widget should allow selecting multiple
      *         values.
      *
      *     useAvatars (boolean):

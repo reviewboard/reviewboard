@@ -767,7 +767,7 @@ class BaseCertificateStorageBackend(
 
         Raises:
             reviewboard.cert.errors.CertificateStorageError:
-                There was an error looking up cetificate stats.
+                There was an error looking up certificate stats.
         """
         raise NotImplementedError
 

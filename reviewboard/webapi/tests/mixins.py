@@ -1153,7 +1153,7 @@ class BasicDeleteNotAllowedTestsMixin(BasicTestsMixin):
         self,
         user: User,
     ) -> str:
-        """Set up a basic HTTP 405 Not Allowed test for DELETEs.
+        """Set up a basic HTTP 405 Not Allowed test for DELETE operations.
 
         Subclasses must override this to create objects that should be
         used when deleting items for this resource. The user must not be

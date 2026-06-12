@@ -1051,7 +1051,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         """Common tests for checking all available columns.
 
         This accesses the Dashboard, enabling all columns and checking the
-        resutling queries.
+        resulting queries.
 
         Args:
             with_local_site (bool, optional):

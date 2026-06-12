@@ -364,7 +364,7 @@ class CaptureSSLContext:
 class CertificateTestCase(TestCase):
     """Base test case for certificate unit tests.
 
-    Version Aded:
+    Version Added:
         6.0
     """
 

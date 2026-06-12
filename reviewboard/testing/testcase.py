@@ -1970,7 +1970,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if depends_on:
             ReviewRequest.depends_on.through.objects.bulk_create(
                 ReviewRequest.depends_on.through(
-                    from_review_equest=_from_review_request,
+                    from_review_request=_from_review_request,
                     to_reviewrequest=_to_review_request)
                 for _from_review_request in review_requests
                 for _to_review_request in depends_on
@@ -1988,7 +1988,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if target_groups:
             ReviewRequest.target_groups.through.objects.bulk_create(
                 ReviewRequest.target_groups.through(
-                    review_equest=_review_request,
+                    review_request=_review_request,
                     group=_group)
                 for _review_request in review_requests
                 for _group in target_groups
@@ -2498,7 +2498,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         specified.
 
         This is not meant to be called directly by tests. Callers should
-        generallly use one of:
+        generally use one of:
 
         * :py:meth:`create_file_attachment`
         * :py:meth:`create_user_file_attachment`

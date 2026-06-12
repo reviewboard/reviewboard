@@ -852,7 +852,7 @@ class BaseHostingService(Generic[THostingServiceClient]):
             The remote repository.
 
         Raises:
-            django.core.excptions.ObjectDoesNotExist:
+            django.core.exceptions.ObjectDoesNotExist:
                 If the remote repository does not exist.
         """
         raise NotImplementedError

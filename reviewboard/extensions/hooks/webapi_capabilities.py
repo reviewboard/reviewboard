@@ -25,7 +25,7 @@ class WebAPICapabilitiesHook(ExtensionHook, metaclass=ExtensionHookPoint):
 
         Args:
             caps (dict):
-                The dictionary of capabilities to register. Each key msut
+                The dictionary of capabilities to register. Each key must
                 be a string, and each value should be a boolean or a
                 dictionary of string keys to booleans.
 

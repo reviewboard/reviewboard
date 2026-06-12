@@ -426,7 +426,7 @@ export class ReviewRequestEditor extends BaseModel<ReviewRequestEditorAttrs> {
      *     * fieldChanged(fieldName, value)
      *     * fieldChanged:<fieldName>(value)
      *
-     * Veersion Changed:
+     * Version Changed:
      *     6.0:
      *     Removed the callbacks entirely, along with the ``context`` argument.
      *

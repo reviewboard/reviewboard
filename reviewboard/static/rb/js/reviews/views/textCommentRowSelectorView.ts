@@ -279,7 +279,7 @@ export class TextCommentRowSelector extends BaseView<
      *         The index of the row to start the search at.
      *
      *     endRow (number):
-     *         The index of the row to end the sarch at.
+     *         The index of the row to end the search at.
      */
     findLineNumRow(
         lineNum: number,

@@ -168,7 +168,7 @@ class ReviewRequestViewMixinTests(TestCase):
                         'timestamp': datetime(2018, 2, 11, 23, 32, 00,
                                               tzinfo=timezone.utc),
                         'extra_vars': {
-                            'var': 'Thingie',
+                            'var': 'Thingy',
                         },
                     },
                 ])
@@ -179,6 +179,6 @@ class ReviewRequestViewMixinTests(TestCase):
             '<time class="timesince" datetime="2018-02-10T07:19:23-08:00">'
             'Feb. 10, 2018, 7:19 a.m.</time>'
             ' &mdash; '
-            'Thingie updated at '
+            'Thingy updated at '
             '<time class="timesince" datetime="2018-02-11T15:32:00-08:00">'
             'Feb. 11, 2018, 3:32 p.m.</time>')

@@ -747,7 +747,7 @@ class DiffParser(BaseDiffParser):
     #: The ID of the commit this change is based on.
     base_commit_id: Optional[str]
 
-    #: The list of resuting parsed diff files from this parser.
+    #: The list of resulting parsed diff files from this parser.
     files: list[ParsedDiffFile]
 
     #: The diff content, split into lines.

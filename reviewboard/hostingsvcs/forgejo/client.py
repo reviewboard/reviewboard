@@ -353,7 +353,7 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
             hosting_url (str):
                 The URL of the Forgejo server.
 
-            repository (reviewboard.scmtools.models.Repsitory):
+            repository (reviewboard.scmtools.models.Repository):
                 The repository.
 
             path (str):
