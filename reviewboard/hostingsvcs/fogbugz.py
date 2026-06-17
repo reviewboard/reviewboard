@@ -23,10 +23,13 @@ class FogBugz(BaseHostingService):
     FogBugz is a bug tracker service provided by Fog Creek. This integration
     supports linking bug numbers to reports on a FogBugz account.
     """
-    name = _('FogBugz')
+
     hosting_service_id = 'fogbugz'
-    supports_bug_trackers = True
+    name = _('FogBugz')
+    visible = False
 
     form = FogBugzForm
+    supports_bug_trackers = True
+
     bug_tracker_field = \
         'https://%(fogbugz_account_domain)s.fogbugz.com/f/cases/%%s'

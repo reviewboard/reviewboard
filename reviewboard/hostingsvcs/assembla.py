@@ -20,6 +20,8 @@ if TYPE_CHECKING:
 
 
 class AssemblaForm(BaseHostingServiceRepositoryForm):
+    """Repository form for Assembla."""
+
     assembla_project_id = forms.CharField(
         label=_('Project ID'),
         max_length=64,
@@ -63,16 +65,19 @@ class Assembla(BaseHostingService):
     impossible for us to support Git. However, Perforce and Subversion work.
     """
 
-    name = 'Assembla'
     hosting_service_id = 'assembla'
-
-    needs_authorization = True
-    supports_bug_trackers = True
-    supports_repositories = True
-    supported_scmtools = ['Perforce', 'Subversion']
+    name = 'Assembla'
 
     form = AssemblaForm
+    needs_authorization = True
+    supported_scmtools = ['Perforce', 'Subversion']
+    supports_bug_trackers = True
+    supports_repositories = True
 
+    bug_tracker_field = (
+        'https://www.assembla.com/spaces/%(assembla_project_id)s/'
+        'tickets/%%s'
+    )
     repository_fields = {
         'Perforce': {
             'path': 'perforce.assembla.com:1666',
@@ -82,11 +87,6 @@ class Assembla(BaseHostingService):
                     '%(assembla_project_id)s/',
         },
     }
-
-    bug_tracker_field = (
-        'https://www.assembla.com/spaces/%(assembla_project_id)s/'
-        'tickets/%%s'
-    )
 
     @classmethod
     def make_p4_client_name(cls, project_id):

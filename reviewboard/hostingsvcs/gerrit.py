@@ -32,6 +32,8 @@ from reviewboard.scmtools.crypto_utils import (decrypt_password,
 from reviewboard.scmtools.errors import FileNotFoundError
 
 if TYPE_CHECKING:
+    from typing import ClassVar
+
     from reviewboard.hostingsvcs.base.hosting_service import \
         HostingServiceCredentials
 
@@ -274,18 +276,16 @@ class Gerrit(BaseHostingService[GerritClient]):
        https://downloads.reviewboard.org/releases/gerrit-reviewboard-plugin/
     """
 
-    REQUIRED_PLUGIN_VERSION = (1, 0, 0)
-    REQUIRED_PLUGIN_VERSION_STR = '%d.%d.%d' % REQUIRED_PLUGIN_VERSION
-
-    name = _('Gerrit')
     hosting_service_id = 'gerrit'
+    name = _('Gerrit')
+
+    auth_form = GerritAuthForm
     client_class = GerritClient
     form = GerritForm
-    auth_form = GerritAuthForm
     needs_authorization = True
-    supports_repositories = True
-    supports_post_commit = True
     supported_scmtools = ['Git']
+    supports_post_commit = True
+    supports_repositories = True
 
     repository_fields = {
         'Git': {
@@ -296,6 +296,11 @@ class Gerrit(BaseHostingService[GerritClient]):
                 '%(gerrit_ssh_port)s/%(gerrit_project_name)s',
         },
     }
+
+    REQUIRED_PLUGIN_VERSION: ClassVar[tuple[int, int, int]] = (1, 0, 0)
+    REQUIRED_PLUGIN_VERSION_STR: ClassVar[str] = (
+        '%d.%d.%d' % REQUIRED_PLUGIN_VERSION
+    )
 
     @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def check_repository(

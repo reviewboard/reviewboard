@@ -61,6 +61,8 @@ class BeanstalkAuthForm(BaseHostingServiceAuthForm):
 
 
 class BeanstalkForm(BaseHostingServiceRepositoryForm):
+    """Repository form for Beanstalk."""
+
     beanstalk_account_domain = forms.CharField(
         label=_('Beanstalk account domain'),
         max_length=64,
@@ -228,16 +230,16 @@ class Beanstalk(BaseHostingService):
     Beanstalk is a source hosting service that supports Git and Subversion
     repositories. It's available at http://beanstalkapp.com/.
     """
-    name = 'Beanstalk'
-    hosting_service_id = 'beanstalk'
 
+    hosting_service_id = 'beanstalk'
+    name = 'Beanstalk'
+
+    auth_form = BeanstalkAuthForm
+    form = BeanstalkForm
     needs_authorization = True
+    supported_scmtools = ['Git', 'Subversion']
     supports_bug_trackers = False
     supports_repositories = True
-    supported_scmtools = ['Git', 'Subversion']
-
-    form = BeanstalkForm
-    auth_form = BeanstalkAuthForm
 
     repository_fields = {
         'Git': {

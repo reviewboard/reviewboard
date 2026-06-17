@@ -636,14 +636,12 @@ class ReviewBoardGateway(BaseHostingService[ReviewBoardGatewayClient]):
 
     client_class = ReviewBoardGatewayClient
     form = ReviewBoardGatewayForm
-
-    self_hosted = True
-    needs_authorization = True
-    supports_repositories = True
-    supports_post_commit = True
-    supported_scmtools = ['Git', 'Mercurial']
-
     has_repository_hook_instructions = True
+    needs_authorization = True
+    self_hosted = True
+    supported_scmtools = ['Git', 'Mercurial']
+    supports_post_commit = True
+    supports_repositories = True
 
     repository_fields = {
         'Git': {

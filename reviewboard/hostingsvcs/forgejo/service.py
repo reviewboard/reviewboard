@@ -52,7 +52,6 @@ class Forgejo(BaseHostingService[ForgejoClient], BaseBugTracker):
 
     client_class = ForgejoClient
     form = ForgejoForm
-
     has_repository_hook_instructions = True
     needs_authorization = True
     self_hosted = True
@@ -76,9 +75,6 @@ class Forgejo(BaseHostingService[ForgejoClient], BaseBugTracker):
              view=WebHookView.as_view(),
              name='forgejo-hooks-close-submitted'),
     ]
-
-    # Set this for typing.
-    client: ForgejoClient
 
     def is_authorized(self) -> bool:
         """Return whether the account has stored authorization.

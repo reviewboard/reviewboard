@@ -1,3 +1,5 @@
+"""Hosting service for VersionOne."""
+
 from __future__ import annotations
 
 from django import forms
@@ -9,6 +11,8 @@ from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
 class VersionOneForm(BaseHostingServiceRepositoryForm):
+    """Form service for VersionOne."""
+
     versionone_url = forms.CharField(
         label=_('VersionOne URL'),
         max_length=64,
@@ -18,8 +22,13 @@ class VersionOneForm(BaseHostingServiceRepositoryForm):
 
 
 class VersionOne(BaseHostingService):
-    name = 'VersionOne'
+    """Hosting service for VersionOne."""
+
     hosting_service_id = 'versionone'
+    name = 'VersionOne'
+    visible = False
+
     form = VersionOneForm
-    bug_tracker_field = '%(versionone_url)s/assetdetail.v1?Number=%%s'
     supports_bug_trackers = True
+
+    bug_tracker_field = '%(versionone_url)s/assetdetail.v1?Number=%%s'
