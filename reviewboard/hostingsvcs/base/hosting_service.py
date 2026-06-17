@@ -159,6 +159,18 @@ class BaseHostingService(Generic[THostingServiceClient]):
     connected_services_list_entry_template: ClassVar[str] = \
         'admin/connected_services/_parts/list_entry_hosting_service.html'
 
+    #: The template to use for rendering the connect UI.
+    #:
+    #: This is the per-service step of the "Connect a service" flow. The
+    #: default template renders the service's authentication form. Services
+    #: that need to offer additional or alternative connection methods can
+    #: override this template or :py:meth:`render_connect_ui`.
+    #:
+    #: Version Added:
+    #:     9.0
+    connect_ui_template: ClassVar[str] = \
+        'admin/connected_services/_parts/connect_form.html'
+
     #: The unique ID of the hosting service.
     #:
     #: This should be lowercase, and only consist of the characters a-z, 0-9,
@@ -1257,3 +1269,89 @@ class BaseHostingService(Generic[THostingServiceClient]):
                      count)
             .format(count=count)
         )
+
+    @classmethod
+    def get_auth_form_class(cls) -> type[BaseHostingServiceAuthForm]:
+        """Return the authentication form class for this service.
+
+        This returns the service's :py:attr:`auth_form`, falling back to
+        the default :py:class:`~reviewboard.hostingsvcs.base.forms.
+        BaseHostingServiceAuthForm` if one is not set.
+
+        Version Added:
+            9.0
+
+        Returns:
+            type:
+            The authentication form class to use for this service.
+        """
+        from reviewboard.hostingsvcs.base.forms import \
+            BaseHostingServiceAuthForm
+
+        return cls.auth_form or BaseHostingServiceAuthForm
+
+    @classmethod
+    def render_connect_ui(
+        cls,
+        request: HttpRequest,
+        *,
+        form: (BaseHostingServiceAuthForm | None) = None,
+    ) -> SafeString:
+        """Render the connect UI for this hosting service.
+
+        This is the per-service step of the "Connect a service" flow. The
+        default implementation renders the service's authentication form.
+        Services can override this method (or :py:attr:`connect_ui_template`)
+        to offer additional or alternative connection methods.
+
+        Version Added:
+            9.0
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            form (BaseHostingServiceAuthForm, optional):
+                The authentication form to render. If not provided, a new
+                unbound form will be created.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered connect UI.
+        """
+        if form is None:
+            form = cls.get_auth_form_class()(hosting_service_cls=cls,
+                                             local_site=request.local_site)
+
+        return mark_safe(render_to_string(
+            cls.connect_ui_template,
+            cls.make_connect_ui_context(request, form=form),
+            request=request))
+
+    @classmethod
+    def make_connect_ui_context(
+        cls,
+        request: HttpRequest,
+        *,
+        form: BaseHostingServiceAuthForm,
+    ) -> dict[str, Any]:
+        """Return template context for rendering the connect UI.
+
+        Version Added:
+            9.0
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            form (BaseHostingServiceAuthForm):
+                The authentication form to render.
+
+        Returns:
+            dict:
+            Template context to use when rendering the connect UI.
+        """
+        return {
+            'form': form,
+            'hosting_service_id': cls.hosting_service_id,
+        }

@@ -52,6 +52,9 @@ urlpatterns = [
         path('',
              views.ConnectedServicesListView.as_view(),
              name='connected-services-list'),
+        path('<str:service_id>/connect/',
+             views.ConnectServiceView.as_view(),
+             name='connected-services-connect'),
     ])),
 
     path('db/', admin_site.urls),

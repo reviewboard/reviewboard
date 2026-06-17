@@ -1,0 +1,15 @@
+{% load i18n %}
+
+<div class="rb-c-admin-cs-connect">
+ <form class="rb-c-admin-cs-connect__form" method="post"
+       data-service-id="{{hosting_service_id}}">
+{% if form.non_field_errors %}
+  <div class="rb-c-form-field__errors">
+   {{form.non_field_errors}}
+  </div>
+{% endif %}
+{% for field in form %}
+{%  include "forms/field.html" %}
+{% endfor %}
+ </form>
+</div>

@@ -9,9 +9,13 @@ from typing import TYPE_CHECKING
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import (Http404,
+                         HttpResponse,
+                         HttpResponseRedirect,
+                         JsonResponse)
 from django.shortcuts import render
 from django.template.loader import render_to_string
+from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.html import format_html_join
@@ -28,8 +32,13 @@ from reviewboard.admin.security_checks import SecurityCheckRunner
 from reviewboard.admin.support import get_support_url, serialize_support_data
 from reviewboard.admin.widgets import (admin_widgets_registry,
                                        dynamic_activity_data)
+from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.hostingsvcs.base import hosting_service_registry
+from reviewboard.hostingsvcs.errors import (AuthorizationError,
+                                            TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.scmtools.errors import \
+    UnverifiedCertificateError as LegacyUnverifiedCertificateError
 from reviewboard.site.models import LocalSite
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.utils import humanize_key
@@ -42,6 +51,17 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+#: Hosting service IDs to highlight in the "Popular" section of the connect UI.
+#:
+#: Version Added:
+#:     9.0
+_POPULAR_SERVICE_IDS = {
+    'forgejo',
+    'github',
+    'gitlab',
+}
 
 
 @staff_member_required
@@ -282,7 +302,11 @@ class ConnectedServicesListView(View):
         available_services = [
             {
                 'id': service.hosting_service_id,
-                'name': service.name,
+                'name': str(service.name),
+                'logo': (static(service.logo_image)
+                         if service.logo_image
+                         else None),
+                'sections': self._get_service_sections(service),
             }
             for service in hosting_service_registry
             if service.visible and service.needs_authorization
@@ -354,3 +378,179 @@ class ConnectedServicesListView(View):
             for service, accounts in service_groups
             if service
         ]
+
+    def _get_service_sections(
+        self,
+        service: type[BaseHostingService],
+    ) -> list[str]:
+        """Return the section IDs a service belongs to in the connect UI.
+
+        A service can appear in more than one section.
+
+        Args:
+            service (type):
+                The hosting service class.
+
+        Returns:
+            list of str:
+            The section IDs for the service.
+        """
+        sections: list[str] = []
+
+        if service.hosting_service_id in _POPULAR_SERVICE_IDS:
+            sections.append('popular')
+
+        # A service that supports repositories is listed under "Source
+        # hosting", even if it also supports bug trackers. Only services that
+        # are bug trackers alone are listed under "Issue tracking". This
+        # matches the service type shown for connected accounts (see
+        # BaseHostingService.make_admin_services_list_entry_context).
+        if service.supports_repositories:
+            sections.append('source_hosting')
+        elif service.supports_bug_trackers:
+            sections.append('issue_tracking')
+
+        return sections
+
+
+@method_decorator(
+    (staff_member_required, csrf_protect),
+    name='dispatch',
+)
+class ConnectServiceView(View):
+    """View for connecting a hosting service account.
+
+    This handles the per-service step of the "Connect a service" flow. A
+    ``GET`` request returns the service-specific connect UI as an HTML
+    fragment, and a ``POST`` request processes the authentication form and
+    creates the :py:class:`~reviewboard.hostingsvcs.models.
+    HostingServiceAccount`.
+
+    Version Added:
+        9.0
+    """
+
+    def get(
+        self,
+        request: HttpRequest,
+        service_id: str,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP GET requests.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            service_id (str):
+                The ID of the hosting service to connect.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            django.http.HttpResponse:
+            The rendered connect UI fragment.
+        """
+        service = self._get_service(service_id)
+
+        return HttpResponse(service.render_connect_ui(request))
+
+    def post(
+        self,
+        request: HttpRequest,
+        service_id: str,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP POST requests.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            service_id (str):
+                The ID of the hosting service to connect.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            django.http.JsonResponse:
+            A JSON response indicating success (with a redirect URL) or
+            failure (with the re-rendered connect UI fragment).
+        """
+        service = self._get_service(service_id)
+
+        form = service.get_auth_form_class()(
+            data=request.POST,
+            hosting_service_cls=service)
+
+        if form.is_valid():
+            try:
+                form.save()
+            except ValueError as e:
+                form.add_error(None, str(e))
+            except TwoFactorAuthCodeRequiredError as e:
+                form.add_error(None, str(e))
+            except AuthorizationError as e:
+                form.add_error(
+                    None,
+                    _('Unable to link the account: %s') % e)
+            except (CertificateVerificationError,
+                    LegacyUnverifiedCertificateError) as e:
+                form.add_error(None, str(e))
+            except Exception as e:
+                logger.exception('Unexpected error connecting hosting '
+                                 'service "%s": %s',
+                                 service_id, e)
+                form.add_error(
+                    None,
+                    _('Unexpected error when linking the account: %s. '
+                      'Additional details may be found in the Review Board '
+                      'log file.') % e)
+            else:
+                return JsonResponse({
+                    'success': True,
+                    'redirect': reverse('connected-services-list'),
+                })
+
+        return JsonResponse({
+            'success': False,
+            'html': service.render_connect_ui(request, form=form),
+        })
+
+    def _get_service(
+        self,
+        service_id: str,
+    ) -> type[BaseHostingService]:
+        """Return the hosting service for the given ID.
+
+        Args:
+            service_id (str):
+                The ID of the hosting service.
+
+        Returns:
+            type:
+            The hosting service class.
+
+        Raises:
+            django.http.Http404:
+                The service does not exist, is not visible, or does not
+                require authorization.
+        """
+        service = hosting_service_registry.get_hosting_service(service_id)
+
+        if (service is None or
+            not service.visible or
+            not service.needs_authorization):
+            raise Http404
+
+        return service

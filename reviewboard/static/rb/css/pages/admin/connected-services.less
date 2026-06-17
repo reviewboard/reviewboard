@@ -297,3 +297,263 @@
     }
   }
 }
+
+
+/**
+ * The "Connect a service" wizard.
+ *
+ * This is the body of the dialog shown when connecting a new service. It first
+ * shows a search field and a grouped list of services to pick from, and then
+ * the service-specific connect UI once a service is chosen.
+ *
+ * Version Added:
+ *     9.0
+ *
+ * Structure:
+ *     <div class="ink-c-dialog rb-c-connect-wizard">
+ *      <div class="ink-c-dialog__title">
+ *       <span class="rb-c-connect-wizard__title">
+ *        [<span class="rb-c-connect-wizard__title-icon"></span>]
+ *        <span>...</span>
+ *       </span>
+ *      </div>
+ *      <div class="ink-c-dialog__body">
+ *       <div class="rb-c-connect-wizard__body">
+ *        <div class="rb-c-search-field rb-c-connect-wizard__search-field">
+ *         <span class="ink-i-search"></span>
+ *         <input class="rb-c-search-field__input rb-c-connect-wizard__search">
+ *        </div>
+ *        <div class="rb-c-connect-wizard__sections">...</div>
+ *       </div>
+ *      </div>
+ *     </div>
+ */
+.rb-c-connect-wizard {
+  max-width: inherit;
+  max-height: inherit;
+  min-width: inherit;
+  width: 50em !important;
+  height: 40em !important;
+
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    width: calc(100vw - 1em) !important;
+    height: calc(100vh - 1em) !important;
+  });
+
+  .ink-c-dialog__title {
+    padding: var(--ink-u-spacing-sm);
+  }
+
+  .ink-c-dialog__body {
+    border-bottom: var(--ink-u-border-thin) var(--ink-c-dialog-title-border-color) solid;
+    overflow: auto;
+  }
+
+  .rb-c-form-row:is(:first-child) {
+    margin-top: 0;
+  }
+
+  h1 {
+    font-size: var(--ink-u-font-l);
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  /**
+   * The service identity shown in the dialog title.
+   *
+   * This pairs the service's icon with the "Connect to <X>" label once a
+   * service has been chosen.
+   */
+  &__title {
+    align-items: center;
+    display: flex;
+    height: 1.5rem;
+    font-size: var(--ink-u-font-ml);
+    gap: var(--ink-u-spacing-s);
+  }
+
+  &__title-icon {
+    height: 1.5rem;
+    object-fit: contain;
+    width: 1.5rem;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-std);
+
+    /*
+     * Fill the dialog body so the search field can stay pinned at the top
+     * while the scrollable region below it does the scrolling.
+     */
+    height: 100%;
+  }
+
+  /**
+   * The search field for filtering services.
+   *
+   * This builds on the shared ``rb-c-search-field`` component, which provides
+   * the leading search icon and the input styling. The only wizard-specific
+   * behavior is keeping the field pinned at the top while the list scrolls.
+   */
+  &__search-field {
+    flex: 0 0 auto;
+  }
+
+  /**
+   * The container for the service sections.
+   *
+   * This fills the remaining space below the search field and scrolls, so
+   * filtering the list does not change the size of the dialog and the search
+   * field never scrolls away.
+   */
+  &__sections {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-l);
+    min-height: 0;
+    overflow-y: auto;
+    margin: calc(-1 * var(--ink-u-spacing-std));
+    padding: var(--ink-u-spacing-std);
+  }
+
+  /**
+   * The service-specific connect step.
+   *
+   * Like the service list, this fills the remaining space and scrolls on its
+   * own.
+   */
+  &__connect {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-std);
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /**
+   * The title for a section of services.
+   */
+  &__section-title {
+    color: var(--ink-p-fg-weak);
+    font-size: var(--ink-u-font-s);
+    font-weight: 700;
+    margin: 0 0 var(--ink-u-spacing-std) 0;
+    text-transform: uppercase;
+  }
+
+  /**
+   * A list of options to choose from.
+   *
+   * Structure:
+   *     <ul class="rb-c-connect-wizard__options">
+   *      [
+   *       <li>
+   *        <a href="#">
+   *         <img src="...">
+   *         ...
+   *        </a>
+   *       </li>
+   *      ]
+   *     </ul>
+   */
+  &__options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-std);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    a {
+      color: var(--ink-p-fg);
+      align-items: center;
+      cursor: pointer;
+      display: grid;
+      flex: 1;
+      grid-template-areas:
+        "icon title       chevron"
+        ".    description chevron";
+      grid-template-columns: auto 1fr auto;
+      padding: var(--ink-u-spacing-std);
+
+      &:hover, &:link, &:visited {
+        color: var(--ink-p-fg);
+        text-decoration: none;
+      }
+
+      /* The chevron at the right edge. */
+      &::after {
+        color: var(--ink-p-fg-weak);
+        content: '›';
+        grid-area: chevron;
+        line-height: 1;
+        margin-left: var(--ink-u-spacing-std);
+        font-size: var(--ink-u-font-m);
+      }
+    }
+
+    h2 {
+      font-size: var(--ink-u-font-m);
+      grid-area: title;
+      margin: 0;
+      padding: 0;
+
+      span[class*="ink-i-"] {
+        vertical-align: bottom;
+      }
+
+      .ink-c-badge {
+        font-weight: normal;
+        font-size: var(--ink-u-font-s);
+      }
+    }
+
+    p {
+      color: var(--ink-p-fg-weak);
+      font-size: var(--ink-u-font-s);
+      grid-area: description;
+      margin: var(--ink-u-spacing-s) 0 0 0;
+    }
+
+    img {
+      grid-area: icon;
+      height: 1.5rem;
+      object-fit: contain;
+      margin-right: var(--ink-u-spacing-s);
+      width: 1.5rem;
+    }
+
+    li {
+      align-items: center;
+      background: var(--ink-p-surface-bright-bg);
+      border-radius: var(--ink-u-border-radius-s);
+      border: var(--ink-u-border-thin) solid var(--ink-p-container-border-color);
+      display: flex;
+
+      &:hover {
+        background: var(--ink-p-accent-info-bg);
+        border-color: var(--ink-p-accent-primary-bg);
+      }
+    }
+  }
+
+  /**
+   * The "Back" button shown above the connect UI.
+   */
+  &__back {
+    align-self: flex-start;
+    background: transparent;
+    border: 0;
+    color: var(--ink-p-link-fg);
+    cursor: pointer;
+    padding: 0;
+  }
+}
