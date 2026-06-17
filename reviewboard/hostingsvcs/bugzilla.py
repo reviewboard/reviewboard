@@ -49,6 +49,7 @@ class Bugzilla(BaseHostingService, BaseBugTracker):
 
     form = BugzillaForm
     supports_bug_trackers = True
+    _logo_image = 'rb/images/services/bugzilla.svg'
 
     bug_tracker_field = '%(bugzilla_url)s/show_bug.cgi?id=%%s'
 

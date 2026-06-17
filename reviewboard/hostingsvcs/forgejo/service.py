@@ -60,6 +60,7 @@ class Forgejo(BaseHostingService[ForgejoClient], BaseBugTracker):
     supports_post_commit = True
     supports_repositories = True
     supports_two_factor_auth = True
+    _logo_image = 'rb/images/services/forgejo.svg'
 
     bug_tracker_field = \
         '%(hosting_url)s/%(repository_owner)s/%(repository_name)s/issues/%%s'

@@ -844,6 +844,7 @@ class Bitbucket(BaseHostingService[BitbucketClient]):
     supports_post_commit = True
     supports_repositories = True
     visible_scmtools = ['Git']
+    _logo_image = 'rb/images/services/bitbucket-cloud.svg'
 
     plans = [
         ('personal', {

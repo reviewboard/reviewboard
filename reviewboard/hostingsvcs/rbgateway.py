@@ -642,6 +642,7 @@ class ReviewBoardGateway(BaseHostingService[ReviewBoardGatewayClient]):
     supported_scmtools = ['Git', 'Mercurial']
     supports_post_commit = True
     supports_repositories = True
+    _logo_image = 'rb/images/services/rb-gateway.svg'
 
     repository_fields = {
         'Git': {

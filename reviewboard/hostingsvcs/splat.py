@@ -43,6 +43,7 @@ class Splat(BaseHostingService, BaseBugTracker):
 
     form = SplatForm
     supports_bug_trackers = True
+    _logo_image = 'rb/images/services/splat.svg'
 
     bug_tracker_field = \
         'https://hellosplat.com/s/%(splat_org_name)s/tickets/%%s/'

@@ -66,6 +66,7 @@ class Unfuddle(BaseHostingService):
     supported_scmtools = ['Git', 'Subversion']
     supports_bug_trackers = True
     supports_repositories = True
+    _logo_image = 'rb/images/services/unfuddle.svg'
 
     bug_tracker_field = (
         'https://%(unfuddle_account_domain)s.unfuddle.com/a#/projects/'

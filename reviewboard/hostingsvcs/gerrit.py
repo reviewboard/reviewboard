@@ -286,6 +286,7 @@ class Gerrit(BaseHostingService[GerritClient]):
     supported_scmtools = ['Git']
     supports_post_commit = True
     supports_repositories = True
+    _logo_image = 'rb/images/services/gerrit.svg'
 
     repository_fields = {
         'Git': {

@@ -694,6 +694,7 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
     supports_list_remote_repositories = True
     supports_post_commit = True
     supports_repositories = True
+    _logo_image = 'rb/images/services/github.svg'
 
     plans: ClassVar[Sequence[tuple[str, HostingServicePlan]] | None] = [
         ('public', {

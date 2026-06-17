@@ -266,6 +266,7 @@ class GitLab(BaseHostingService):
     supports_bug_trackers = True
     supports_post_commit = True
     supports_repositories = True
+    _logo_image = 'rb/images/services/gitlab.svg'
 
     plans = [
         ('personal', {
