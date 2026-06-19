@@ -80,8 +80,17 @@ rbintegrations_version = '~=5.0'
 #: Version Added:
 #:     8.0
 base_package_dependencies: _DependencyMap = {
-    'bleach': '~=6.0.0',
-    'cryptography': '~=46.0.5',
+    'bleach': '>=6.1.0,<7',
+    'cryptography': [
+        {
+            'version': '~=47.0.0',
+            'python': '=="3.8"',
+        },
+        {
+            'version': '~=49.0.0',
+            'python': '>="3.9"',
+        },
+    ],
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
     'django_evolution': '~=2.4.2',
@@ -117,7 +126,16 @@ base_package_dependencies: _DependencyMap = {
     # cryptography (impacting pip as well). So we pin a compatible version.
     #
     # This must match cryptography compatibility.
-    'pyOpenSSL': '~=26.0.0',
+    'pyOpenSSL': [
+        {
+            'version': '~=26.1.0',
+            'python': '=="3.8"',
+        },
+        {
+            'version': '~=26.3.0',
+            'python': '>="3.9"',
+        },
+    ],
 
     'pymdown-extensions': [
         {
