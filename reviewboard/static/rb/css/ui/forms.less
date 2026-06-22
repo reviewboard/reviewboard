@@ -352,24 +352,7 @@ textarea {
    *     <a href="#" class="rb-c-form__action">Frobnicate</button>
    */
   &__action {
-    box-sizing: border-box;
     font-size: var(--ink-u-font-m);
-    text-align: center;
-
-    /*
-     * See the comment for &__actions below to see how we're handling the
-     * spacing around actions.
-     */
-    #rb-ns-pages.base.on-shell-desktop-mode({
-      margin: var(--ink-u-spacing-m) var(--ink-u-spacing-m) 0 0;
-    }, @else: {
-      margin: var(--ink-u-spacing-m) 0 0 0;
-      width: 100%;
-
-      /* Force one action per line. */
-      float: left;
-      clear: left;
-    });
   }
 
   /**
@@ -387,77 +370,28 @@ textarea {
    *     </div>
    */
   &__actions {
-    .clearfix();
-    display: block;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ink-u-spacing-l);
+    justify-content: space-between;
+    padding: var(--ink-u-spacing-m);
 
-    /*
-     * In order to ensure proper spacing along the sides and between each
-     * action (when in one row and when wrapped), we need to divvy up which
-     * element is responsible for which part of the padding.
-     *
-     * On desktop, the bottom and left of this container will contain padding.
-     * The top and right of each action will contain a margin with the same
-     * padding value. In the end, this creates a consistent padding across all
-     * actions and the container.
-     *
-     * Mobile is similar, but each action on mobile gets a full width and its
-     * own row, so we're going to want to let this container own the padding
-     * on both sides.
-     */
-    #rb-ns-pages.base.on-shell-desktop-mode({
-      margin: var(--ink-u-spacing-m) 0
-              var(--ink-u-spacing-m) var(--ink-u-spacing-m);
-    }, @else: {
-      margin: var(--ink-u-spacing-m);
-    });
-  }
-
-  /**
-   * The primary set of actions for a form.
-   *
-   * This is intended to contain form submission buttons and any other
-   * prominent actions that the user may want to invoke.
-   *
-   * This is displayed on the left of the action area.
-   *
-   * Structure:
-   *     <div class="rb-c-form__actions-primary">
-   *      <input class="rb-c-form__action" type="submit">
-   *      <button class="rb-c-form__action">...</button>
-   *      ...
-   *     </div>
-   */
-  &__actions-primary {
-    #rb-ns-pages.base.on-shell-desktop-mode({
-      float: left;
-    });
-  }
-
-  /**
-   * A secondary set of actions for a form.
-   *
-   * This is intended to contain form submission buttons and any other
-   * prominent actions that the user may want to invoke.
-   *
-   * This is displayed on the right of the action area.
-   *
-   * Structure:
-   *     <div class="rb-c-form__actions-secondary">
-   *      <button class="rb-c-form__action">...</button>
-   *      <a href="rb-c-form__action">...</a>
-   *      ...
-   *     </div>
-   */
-  &__actions-secondary {
-    #rb-ns-pages.base.on-shell-desktop-mode({
-      float: right;
-    });
+    #rb-ns-pages.base.on-shell-mobile-mode({
+      flex-direction: column;
+      flex-wrap: nowrap;
+    })
   }
 
   &__actions-primary,
   &__actions-secondary {
-    /* Remove any extra whitespace gaps between actions. */
-    font-size: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ink-u-spacing-s);
+
+    #rb-ns-pages.base.on-shell-mobile-mode({
+      flex-direction: column;
+      flex-wrap: nowrap;
+    })
   }
 }
 
