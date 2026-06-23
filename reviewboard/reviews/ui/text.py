@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import (Any, Iterator, List, Optional, Sequence, TYPE_CHECKING,
-                    Union, cast)
+from collections.abc import Sequence
+from typing import Any, Iterator, Optional, TYPE_CHECKING, Union, cast
 
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
@@ -193,7 +193,7 @@ class TextBasedReviewUI(ReviewUI[
         future renders.
         """
         return cast(
-            List[str],
+            Sequence[str],
             cache_memoize('text-attachment-%d-lines' % self.obj.pk,
                           lambda: list(self.generate_highlighted_text())))
 
@@ -210,7 +210,7 @@ class TextBasedReviewUI(ReviewUI[
         """
         if self.can_render_text:
             return cast(
-                List[str],
+                list[str],
                 cache_memoize('text-attachment-%d-rendered' % self.obj.pk,
                               lambda: list(self.generate_render())))
         else:
@@ -310,7 +310,7 @@ class TextBasedReviewUI(ReviewUI[
             SerializedCommentBlocks:
             The serialized comments.
         """
-        result: SerializedCommentBlocks[SerializedTextComment] = {}
+        result: dict[str, list[SerializedTextComment]] = {}
 
         for comment in self.flat_serialized_comments(comments):
             try:

@@ -19,7 +19,7 @@ from datetime import datetime
 from importlib import import_module
 from pprint import pformat
 from random import choice as random_choice
-from typing import Dict, List, Optional
+from typing import Optional, TYPE_CHECKING
 from urllib.request import urlopen
 
 import importlib_resources
@@ -41,6 +41,9 @@ from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
 from reviewboard.upgrade import (UpgradeState,
                                  run_post_upgrade_tasks,
                                  run_pre_upgrade_tasks)
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 # Ignore the PendingDeprecationWarnings that we'll get from Django.
@@ -1085,7 +1088,7 @@ class Site(object):
                 end_custom_settings_i is not None):
                 break
 
-        custom_lines: List[str]
+        custom_lines: list[str]
 
         if begin_custom_settings_i is None or end_custom_settings_i is None:
             # We want to find anything that would have been injected from a
@@ -1278,7 +1281,7 @@ class Site(object):
 
     def run_pip(
         self,
-        args: List[str],
+        args: list[str],
     ) -> None:
         """Run the correct version of pip.
 
@@ -1296,10 +1299,10 @@ class Site(object):
 
     def run_python(
         self,
-        args: List[str] = [],
+        args: list[str] = [],
         *,
         capture_output: bool = False,
-        env: Dict[str, str] = {},
+        env: Mapping[str, str] = {},
         stdin: Optional[bytes] = None,
     ) -> None:
         """Run the correct version of Python.
@@ -3128,7 +3131,7 @@ class ManageCommand(Command):
         initialize()
 
         manage_command = options.manage_command[0]
-        manage_args: List[str] = options.manage_command[1:]
+        manage_args: list[str] = options.manage_command[1:]
 
         if manage_command == 'list-commands':
             manage_command = 'help'

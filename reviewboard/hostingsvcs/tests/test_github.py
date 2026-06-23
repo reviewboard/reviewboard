@@ -15,7 +15,7 @@ from djblets.testing.decorators import add_fixtures
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             RepositoryError)
-from reviewboard.hostingsvcs.github import GitHub, _is_fine_grained_pat
+from reviewboard.hostingsvcs.github.service import GitHub, _is_fine_grained_pat
 
 from reviewboard.hostingsvcs.hook_utils import logger
 from reviewboard.hostingsvcs.repository import RemoteRepository

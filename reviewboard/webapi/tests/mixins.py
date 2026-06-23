@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import timedelta
-from typing import (Any, Dict, Iterator, List, Optional, Sequence,
-                    TYPE_CHECKING, Tuple, Union, cast)
+from typing import Any, Iterator, Optional, TYPE_CHECKING, Union, cast
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -30,6 +29,8 @@ from reviewboard.webapi.testing.queries import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from djblets.features.testing import FeatureStates
     from djblets.testing.testcases import ExpectedQueries
     from typelets.json import JSONDict
@@ -48,7 +49,7 @@ else:
 #:
 #: Version Added:
 #:     5.0.7
-APIRequestData: TypeAlias = Union[bytes, Dict[str, Any]]
+APIRequestData: TypeAlias = Union[bytes, dict[str, Any]]
 
 
 class AuthenticateSetupState(TypedDict):
@@ -110,7 +111,7 @@ class BasicTestSetupState(TypedDict):
     #:
     #: These are local to the unit test, and can be used however the test
     #: suite requires.
-    test_objects: Dict[str, Any]
+    test_objects: dict[str, Any]
 
     #: The URL to the API resource.
     url: str
@@ -122,7 +123,7 @@ class BasicTestSetupState(TypedDict):
     with_local_site: bool
 
     #: Custom positional arguments to pass to response-checking functions.
-    check_result_args: NotRequired[Tuple[Any, ...]]
+    check_result_args: NotRequired[tuple[Any, ...]]
 
     #: Custom keyword arguments to pass to response-checking functions.
     check_result_kwargs: NotRequired[KwargsDict]
@@ -208,8 +209,8 @@ class BasicTestsMetaclass(type):
     def __new__(
         cls,
         name: str,
-        bases: Tuple[type, ...],
-        d: Dict[str, Any],
+        bases: tuple[type, ...],
+        d: dict[str, Any],
     ) -> BasicTestsMetaclass:
         """Return a new testcase class with built-in test methods.
 
@@ -227,7 +228,7 @@ class BasicTestsMetaclass(type):
             type:
             The resulting class.
         """
-        mixins: Tuple[type, ...]
+        mixins: tuple[type, ...]
 
         test_local_sites = d.get('test_local_sites', True)
         test_api_token_access = d.get('test_api_token_access', True)
@@ -431,7 +432,7 @@ class BasicTestsMixin(_MixinsParentClass):
         owner: Optional[User] = None,
         with_local_site: bool = False,
         **auth_kwargs,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Set up common state for a test.
 
         This performs some built-in setup for all HTTP method tests. It's
@@ -628,7 +629,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
     #:
     #: Type:
     #:     list of str
-    basic_delete_fixtures: List[str] = []
+    basic_delete_fixtures: Sequence[str] = []
 
     #: Whether to log in as an administrator for basic HTTP DELETE tests.
     #:
@@ -671,7 +672,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         user: User,
         with_local_site: bool,
         local_site_name: Optional[str],
-    ) -> Tuple[str, Tuple[Any, ...]]:
+    ) -> tuple[str, tuple[Any, ...]]:
         """Set up a basic HTTP DELETE unit test.
 
         Subclasses must override this to create an object that should be
@@ -1152,7 +1153,7 @@ class BasicDeleteNotAllowedTestsMixin(BasicTestsMixin):
         self,
         user: User,
     ) -> str:
-        """Set up a basic HTTP 405 Not Allowed test for DELETEs.
+        """Set up a basic HTTP 405 Not Allowed test for DELETE operations.
 
         Subclasses must override this to create objects that should be
         used when deleting items for this resource. The user must not be
@@ -1205,7 +1206,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
     #:
     #: Type:
     #:     list of str
-    basic_get_fixtures: List[str] = []
+    basic_get_fixtures: Sequence[str] = []
 
     #: Whether the results from the resource are JSON payloads.
     #:
@@ -1257,7 +1258,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         user: User,
         with_local_site: bool,
         local_site_name: Optional[str],
-    ) -> Tuple[str, str, Any]:
+    ) -> tuple[str, str, Any]:
         """Set up a basic HTTP GET unit test.
 
         Subclasses must override this to create an object that should be
@@ -1760,7 +1761,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
     #:
     #: Type:
     #:     list of str
-    basic_get_fixtures: List[str] = []
+    basic_get_fixtures: Sequence[str] = []
 
     #: Whether to log in as an administrator for basic HTTP GET list tests.
     #:
@@ -1807,7 +1808,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         with_local_site: bool,
         local_site_name: Optional[str],
         populate_items: bool,
-    ) -> Tuple[str, str, Sequence[str]]:
+    ) -> tuple[str, str, Sequence[str]]:
         """Set up a basic HTTP GET unit test.
 
         Subclasses must override this to create objects that should be
@@ -2292,7 +2293,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
     #:
     #: Type:
     #:     list of str
-    basic_post_fixtures: List[str] = []
+    basic_post_fixtures: Sequence[str] = []
 
     #: Whether to log in as an administrator for basic HTTP POST tests.
     #:
@@ -2350,7 +2351,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
         with_local_site: bool,
         local_site_name: Optional[str],
         post_valid_data: bool,
-    ) -> Tuple[str, str, APIRequestData, Tuple[Any, ...]]:
+    ) -> tuple[str, str, APIRequestData, tuple[Any, ...]]:
         """Set up a basic HTTP POST unit test.
 
         Subclasses must override this to create objects that should be
@@ -2964,7 +2965,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
     #:
     #: Type:
     #:     list of str
-    basic_put_fixtures: List[str] = []
+    basic_put_fixtures: Sequence[str] = []
 
     #: Whether to log in as an administrator for basic HTTP PUT tests.
     #:
@@ -3017,7 +3018,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
         with_local_site: bool,
         local_site_name: Optional[str],
         put_valid_data: bool,
-    ) -> Tuple[str, str, APIRequestData, Any, Tuple[Any, ...]]:
+    ) -> tuple[str, str, APIRequestData, Any, tuple[Any, ...]]:
         """Set up a basic HTTP PUT unit test.
 
         Subclasses must override this to create objects that should be
@@ -3683,7 +3684,7 @@ class BaseReviewRequestChildMixin(_MixinsParentClass):
     def setup_review_request_child_test(
         self,
         review_request: ReviewRequest,
-    ) -> Tuple[str, str]:
+    ) -> tuple[str, str]:
         """Set up a basic HTTP GET test for review request resource children.
 
         Subclasses must override this to create objects nested within a

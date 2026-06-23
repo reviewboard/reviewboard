@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class Forgejo(BaseHostingService, BaseBugTracker):
+class Forgejo(BaseHostingService[ForgejoClient], BaseBugTracker):
     """Hosting service for Forgejo.
 
     Version Added:

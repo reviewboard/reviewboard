@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, ClassVar, Optional, Sequence, Set, TYPE_CHECKING, Union
+from typing import Any, ClassVar, Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -47,6 +47,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from datetime import datetime
 
     from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
@@ -1455,15 +1456,15 @@ class ReviewRequest(BaseReviewRequestDetails):
         if inactive_attachments is None:
             inactive_attachments = list(self.get_inactive_file_attachments())
 
-        attachment_ids: Set[Any] = {
+        attachment_ids: set[Any] = {
             file.pk for file in active_attachments
         }
-        inactive_attachment_ids: Set[Any] = {
+        inactive_attachment_ids: set[Any] = {
             file.pk for file in inactive_attachments
         }
 
-        draft_attachment_ids: Set[Any] = set()
-        draft_inactive_attachment_ids: Set[Any] = set()
+        draft_attachment_ids: set[Any] = set()
+        draft_inactive_attachment_ids: set[Any] = set()
         draft = self.get_draft()
 
         if draft:

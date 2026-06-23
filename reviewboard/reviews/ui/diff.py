@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.reviews.models import Comment
@@ -15,6 +15,8 @@ from reviewboard.reviews.ui.base import (ReviewUI,
                                          SerializedCommentBlocks)
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.http import HttpRequest
 
     from reviewboard.reviews.models import ReviewRequest
@@ -111,7 +113,7 @@ class DiffReviewUI(ReviewUI[FileDiff, Comment, SerializedDiffComment]):
             SerializedCommentBlocks:
             The serialized comments.
         """
-        result: SerializedCommentBlocks[SerializedDiffComment] = {}
+        result: dict[str, list[SerializedDiffComment]] = {}
 
         for comment in self.flat_serialized_comments(comments):
             key = f'{comment["line"]}-{comment["num_lines"]}'

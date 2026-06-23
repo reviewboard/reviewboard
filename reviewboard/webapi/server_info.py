@@ -198,7 +198,7 @@ def register_webapi_capabilities(capabilities_id, caps):
             This can only be used once until unregistered.
 
         caps (dict):
-            The dictionary of capabilities to register. Each key msut
+            The dictionary of capabilities to register. Each key must
             be a string, and each value should be a boolean or a
             dictionary of string keys to booleans.
 

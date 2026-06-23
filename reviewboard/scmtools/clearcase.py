@@ -269,12 +269,12 @@ class ClearCaseTool(SCMTool):
             cwd=repopath)
 
         for line in result.splitlines(True):
-            splitted = line.split(' ')
+            parts = line.split(' ')
 
-            if splitted[0] == 'Properties:':
-                if 'snapshot' in splitted:
+            if parts[0] == 'Properties:':
+                if 'snapshot' in parts:
                     return self.VIEW_SNAPSHOT
-                elif 'dynamic' in splitted:
+                elif 'dynamic' in parts:
                     return self.VIEW_DYNAMIC
 
         return self.VIEW_UNKNOWN

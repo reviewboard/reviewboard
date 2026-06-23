@@ -9,12 +9,13 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Mapping, TYPE_CHECKING
+from collections.abc import Mapping
+from typing import Any, Generic, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.utils.translation import gettext_lazy as _
 from housekeeping import deprecate_non_keyword_only_args
-from typing_extensions import TypedDict
+from typing_extensions import TypedDict, TypeVar
 
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
@@ -38,6 +39,15 @@ if TYPE_CHECKING:
     from reviewboard.hostingsvcs.repository import RemoteRepository
     from reviewboard.scmtools.core import Branch, Commit, SCMTool
     from reviewboard.scmtools.models import Repository
+
+
+#: A type variable for the hosting service client.
+#:
+#: Version Added:
+#:     9.0
+THostingServiceClient = TypeVar('THostingServiceClient',
+                                bound=HostingServiceClient,
+                                default=HostingServiceClient)
 
 
 logger = logging.getLogger(__name__)
@@ -93,7 +103,7 @@ class HostingServicePlan(TypedDict):
 #:
 #: Version Added:
 #:     6.0
-HostingServiceCredentials: TypeAlias = Dict[str, Any]
+HostingServiceCredentials: TypeAlias = dict[str, Any]
 
 
 #: Information on fields in a repository.
@@ -103,7 +113,7 @@ HostingServiceCredentials: TypeAlias = Dict[str, Any]
 #:
 #: Version Added:
 #:     6.0
-RepositoryFields: TypeAlias = Dict[str, Any]
+RepositoryFields: TypeAlias = dict[str, Any]
 
 
 #: A mapping of SCMTool IDs to repository fields.
@@ -113,7 +123,7 @@ RepositoryFields: TypeAlias = Dict[str, Any]
 SCMToRepositoryFields: TypeAlias = Mapping[str, RepositoryFields]
 
 
-class BaseHostingService:
+class BaseHostingService(Generic[THostingServiceClient]):
     """An interface to a hosting service for repositories and bug trackers.
 
     Subclasses are used to more easily configure repositories and to make use
@@ -127,6 +137,10 @@ class BaseHostingService:
     repositories, private repositories, or other types available to the hosting
     service), along with configuration specific to the plan. These plans will
     be available when configuring the repository.
+
+    Version Changed:
+        9.0:
+        Made this class generic for the hosting service client.
 
     Version Changed:
         6.0:
@@ -301,7 +315,8 @@ class BaseHostingService:
     #:
     #: Type:
     #:     type
-    client_class: ClassVar[type[HostingServiceClient]] = HostingServiceClient
+    client_class: ClassVar[type[HostingServiceClient[Any]]] = \
+        HostingServiceClient
 
     #: Optional form used to configure authentication settings for an account.
     #:
@@ -394,7 +409,7 @@ class BaseHostingService:
     #:
     #: Type:
     #:     HostingServiceClient
-    client: HostingServiceClient
+    client: THostingServiceClient
 
     def __init__(
         self,
@@ -409,7 +424,7 @@ class BaseHostingService:
         assert account
         self.account = account
 
-        self.client = self.client_class(self)
+        self.client = self.client_class(self)  # type:ignore
 
     def is_authorized(self) -> bool:
         """Return whether or not the account is currently authorized.
@@ -837,7 +852,7 @@ class BaseHostingService:
             The remote repository.
 
         Raises:
-            django.core.excptions.ObjectDoesNotExist:
+            django.core.exceptions.ObjectDoesNotExist:
                 If the remote repository does not exist.
         """
         raise NotImplementedError

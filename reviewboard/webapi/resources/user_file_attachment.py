@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, TYPE_CHECKING, Union
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpRequest
@@ -25,6 +25,9 @@ from reviewboard.webapi.decorators import (webapi_check_local_site,
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.base_file_attachment import \
     BaseFileAttachmentResource
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class UserFileAttachmentResource(BaseFileAttachmentResource):
@@ -139,7 +142,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
         self,
         request: HttpRequest,
         local_site_name: Optional[str] = None,
-        extra_fields: Dict[str, Any] = {},
+        extra_fields: Mapping[str, Any] = {},
         *args,
         **kwargs,
     ) -> Union[tuple, WebAPIError]:
@@ -222,7 +225,7 @@ class UserFileAttachmentResource(BaseFileAttachmentResource):
         self,
         request: HttpRequest,
         local_site_name: Optional[str] = None,
-        extra_fields: Dict[str, Any] = {},
+        extra_fields: Mapping[str, Any] = {},
         *args,
         **kwargs,
     ) -> Union[tuple, WebAPIError]:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, Sequence, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING, Union
 
 import importlib_metadata
 from django.db.models import Manager, Q
@@ -14,6 +14,8 @@ from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.contrib.auth.models import AnonymousUser, User
 
     from reviewboard.scmtools.models import Repository, Tool

@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
@@ -19,6 +19,8 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing.queries.http import get_http_request_start_equeries
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django_assert_queries.query_comparator import ExpectedQueries
 
 
@@ -917,7 +919,7 @@ class UsersDataGridTests(BaseViewTestCase):
         self,
         *,
         user: Union[AnonymousUser, User],
-        user_pks: List[int],
+        user_pks: Sequence[int],
         profile: Optional[Profile] = None,
         local_site: Optional[LocalSite] = None,
         local_sites_in_db: bool = False,

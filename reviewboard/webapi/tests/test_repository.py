@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Optional, Sequence, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 import kgb
 import paramiko
@@ -39,6 +39,8 @@ from reviewboard.webapi.tests.urls import (get_repository_item_url,
                                            get_repository_list_url)
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.contrib.auth.models import User
     from typelets.json import JSONDict
 

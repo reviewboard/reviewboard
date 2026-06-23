@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Sequence, Tuple
+from typing import TYPE_CHECKING
 
 from django.utils import timezone
 
 from reviewboard.diffviewer.models import DiffCommit, DiffSet
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class DiffCommitTests(TestCase):
@@ -145,7 +148,7 @@ class DiffCommitTests(TestCase):
 
         self.assertIsNone(diffcommit.commit_message_body)
 
-    def _populate_commits(self) -> Tuple[DiffSet, Sequence[DiffCommit]]:
+    def _populate_commits(self) -> tuple[DiffSet, Sequence[DiffCommit]]:
         """Populate and return commits used for testing.
 
         Returns:

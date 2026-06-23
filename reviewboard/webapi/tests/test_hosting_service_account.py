@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from email.message import Message
 from http import HTTPStatus
-from typing import Any, Optional, Sequence, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 from urllib.error import HTTPError
 
 import kgb
@@ -27,6 +27,8 @@ from reviewboard.webapi.tests.urls import (
     get_hosting_service_account_list_url)
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.contrib.auth.models import User
     from typelets.json import JSONDict
 

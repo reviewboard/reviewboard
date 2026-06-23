@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import User
@@ -51,6 +51,8 @@ from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django.db.models import QuerySet
     from django.http import HttpRequest
     from typelets.django.strings import StrOrPromise
@@ -469,7 +471,7 @@ class DashboardDataGrid(DataGridSidebarMixin, ReviewRequestDataGrid):
     def load_extra_state(
         self,
         profile: Profile,
-    ) -> List[str]:
+    ) -> Sequence[str]:
         """Load extra state for the datagrid.
 
         Args:

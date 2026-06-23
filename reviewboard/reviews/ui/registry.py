@@ -7,7 +7,7 @@ Version Added:
 from __future__ import annotations
 
 from importlib import import_module
-from typing import Iterator, Type
+from typing import Iterator
 
 from django.utils.translation import gettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
@@ -17,7 +17,7 @@ from reviewboard.registries.registry import Registry
 from reviewboard.reviews.ui.base import ReviewUI
 
 
-class ReviewUIRegistry(Registry[Type[ReviewUI]]):
+class ReviewUIRegistry(Registry[type[ReviewUI]]):
     """A registry for managing ReviewUIs.
 
     Version Added:

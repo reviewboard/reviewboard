@@ -402,7 +402,7 @@ class APIPaginator(BasePaginator[_PageDataItemT, _PageDataT]):
     def __init__(
         self,
         *,
-        client: HostingServiceClient | None,
+        client: HostingServiceClient[Any],
         url: str,
         query_params: QueryArgs = {},
         start: (int | None) = None,

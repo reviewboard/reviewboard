@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 import logging
-from typing import (Any, ClassVar, Literal, Optional, Sequence,
-                    TYPE_CHECKING, Union, overload)
+from typing import (Any, ClassVar, Literal, Optional, TYPE_CHECKING, Union,
+                    overload)
 from uuid import uuid4
 
 from django.contrib.auth.models import AnonymousUser, User as DjangoUser
@@ -40,6 +40,7 @@ from reviewboard.site.models import AnyOrAllLocalSites, LocalSite
 from reviewboard.site.signals import local_site_user_added
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from typing import TypeAlias
 
     BaseUser = DjangoUser

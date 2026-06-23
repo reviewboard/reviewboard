@@ -9,8 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import (Any, Dict, Iterator, Optional, Sequence, TYPE_CHECKING,
-                    Tuple)
+from typing import Any, Iterator, Optional, TYPE_CHECKING
 
 try:
     import pysvn
@@ -34,6 +33,8 @@ from reviewboard.scmtools.svn.utils import (collapse_svn_keywords,
                                             has_expanded_svn_keywords)
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
     from reviewboard.scmtools.core import RevisionID
     from reviewboard.scmtools.svn.base import (AcceptCertificateFunc,
                                                SVNDirEntry,
@@ -164,7 +165,7 @@ class Client(base.Client):
         self,
         path: str,
         revision: RevisionID = HEAD,
-    ) -> Iterator[Tuple[str, str]]:
+    ) -> Iterator[tuple[str, str]]:
         """Perform an operation on a given path.
 
         This will normalize the provided path and revision and then call the
@@ -342,7 +343,7 @@ class Client(base.Client):
         self,
         path: str,
         on_failure: Optional[AcceptCertificateFunc] = None,
-    ) -> Dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Attempt to accept a SSL certificate.
 
         If the repository uses SSL, this method is used to determine whether
@@ -366,7 +367,7 @@ class Client(base.Client):
             reviewboard.scmtools.errors.SCMError:
                 There was an error accepting the certificate.
         """
-        cert: Dict[str, Any] = {}
+        cert: dict[str, Any] = {}
 
         def ssl_server_trust_prompt(trust_dict):
             cert.update(trust_dict.copy())

@@ -7,7 +7,7 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
+from typing import Any, Optional, TYPE_CHECKING, cast
 
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
@@ -650,7 +650,7 @@ class BaseAction:
     #:
     #: Type:
     #:     list of str
-    apply_to: Optional[List[str]] = None
+    apply_to: Optional[Sequence[str]] = None
 
     #: The attachment point for the action.
     #:
@@ -1471,7 +1471,7 @@ class BaseAction:
 
                 return render_to_string(
                     template_name=self.js_template_name,
-                    context=cast(Dict[str, Any], context.flatten()),
+                    context=cast(dict[str, Any], context.flatten()),
                     request=request)
             except Exception as e:
                 logger.exception('Error rendering JavaScript for action model '

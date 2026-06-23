@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Type
+from typing import Optional, TYPE_CHECKING
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -285,7 +285,7 @@ def submitter(
     else:
         user = get_object_or_404(User, username=username)
 
-    datagrid_cls: Type[DataGrid]
+    datagrid_cls: type[DataGrid]
 
     if grid is None or grid == 'review-requests':
         datagrid_cls = UserPageReviewRequestDataGrid

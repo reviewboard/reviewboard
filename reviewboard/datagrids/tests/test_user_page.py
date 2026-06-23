@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, TYPE_CHECKING
+from typing import Any, Optional, TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -29,6 +29,8 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing.queries.http import get_http_request_start_equeries
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django_assert_queries.query_comparator import ExpectedQueries
 
 
@@ -154,8 +156,8 @@ class SubmitterViewTests(BaseViewTestCase):
             invite_only=True)
         group2.users.add(grumpy)
 
-        review_requests: List[ReviewRequest] = []
-        review_request_pks: List[int] = []
+        review_requests: list[ReviewRequest] = []
+        review_request_pks: list[int] = []
 
         for i in range(5):
             review_request = self.create_review_request(
@@ -361,8 +363,8 @@ class SubmitterViewTests(BaseViewTestCase):
             publish=True)
         review_request2.target_groups.add(group)
 
-        reviews: List[Review] = []
-        review_pks: List[int] = []
+        reviews: list[Review] = []
+        review_pks: list[int] = []
 
         for i in range(5):
             review = self.create_review(review_request1,
@@ -412,7 +414,7 @@ class SubmitterViewTests(BaseViewTestCase):
         *,
         user: User,
         viewed_user: User,
-        review_request_pks: List[int],
+        review_request_pks: Sequence[int],
         profile: Optional[Profile] = None,
         local_site: Optional[LocalSite] = None,
         local_sites_in_db: bool = False,
@@ -456,7 +458,7 @@ class SubmitterViewTests(BaseViewTestCase):
         else:
             local_site_q = Q()
 
-        extra: Dict[str, Any] = {
+        extra: dict[str, Any] = {
             'new_review_count': ("""
                 SELECT COUNT(*)
                   FROM reviews_review, accounts_reviewrequestvisit
@@ -659,7 +661,7 @@ class SubmitterViewTests(BaseViewTestCase):
         *,
         user: User,
         viewed_user: User,
-        review_pks: List[int],
+        review_pks: Sequence[int],
         profile: Optional[Profile] = None,
         local_site: Optional[LocalSite] = None,
         local_sites_in_db: bool = False,
@@ -701,7 +703,7 @@ class SubmitterViewTests(BaseViewTestCase):
         else:
             local_site_q = Q()
 
-        extra: Dict[str, Any] = {}
+        extra: dict[str, Any] = {}
 
         groups_q_result = get_review_groups_accessible_q(
             user=user,

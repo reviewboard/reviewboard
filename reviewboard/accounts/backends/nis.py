@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from importlib import import_module
 from types import ModuleType
-from typing import Optional, TYPE_CHECKING, Tuple
+from typing import Optional, TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 #:
 #: Version Added:
 #:     6.0
-_NISPasswdEntry: TypeAlias = Tuple[str, str, int, int, str, str, str]
+_NISPasswdEntry: TypeAlias = tuple[str, str, int, int, str, str, str]
 
 
 class NISBackend(BaseAuthBackend):

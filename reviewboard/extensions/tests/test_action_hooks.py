@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Type
+from typing import Any, TYPE_CHECKING
 
 from django.template import Context, Template
 
@@ -23,6 +23,9 @@ from reviewboard.extensions.hooks.actions import BaseReviewRequestActionHook
 from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 from reviewboard.reviews.actions import (BaseReviewRequestAction,
                                          BaseReviewRequestMenuAction)
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 class ActionHookTests(BaseExtensionHookTestCase):
@@ -351,7 +354,7 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
     def _test_base_review_request_action_hook(
         self,
         url_name: str,
-        hook_cls: Type[ActionHook],
+        hook_cls: type[ActionHook],
         should_render: bool,
     ) -> None:
         """Test if the action hook renders or not at the given URL.
@@ -406,7 +409,7 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
     def _test_review_request_dropdown_action_hook(
         self,
         url_name: str,
-        hook_cls: Type[ActionHook],
+        hook_cls: type[ActionHook],
     ) -> None:
         """Test if the dropdown action hook renders or not at the given URL.
 
@@ -476,7 +479,7 @@ class LegacyActionHookTests(BaseExtensionHookTestCase):
 
     def _build_action_template(
         self,
-        action: Dict[str, Any],
+        action: Mapping[str, Any],
     ) -> str:
         """Create HTML rendering of an action.
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from itertools import chain
-from typing import Dict, List, Optional, Sequence, TYPE_CHECKING, Tuple, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
@@ -17,6 +17,7 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from typelets.funcs import KwargsDict
 
     from reviewboard.site.models import AnyOrAllLocalSites
@@ -41,7 +42,7 @@ class AccessibleTestsMixin(_MixinParent):
         with_member: bool = False,
         with_member_by_group: bool = False,
         group_kwargs: KwargsDict = {},
-    ) -> Tuple[Sequence[Repository], Optional[LocalSite]]:
+    ) -> tuple[Sequence[Repository], Optional[LocalSite]]:
         """Create test repository data for accessibility checks.
 
         This will create repositories on the global site and, optionally,
@@ -79,8 +80,8 @@ class AccessibleTestsMixin(_MixinParent):
                     The first Local Site created, or ``None`` if not creating
                     Local Sites.
         """
-        repositories_by_site: Dict[Optional[LocalSite], List[Repository]] = {}
-        local_sites: List[Optional[LocalSite]] = []
+        repositories_by_site: dict[Optional[LocalSite], list[Repository]] = {}
+        local_sites: list[Optional[LocalSite]] = []
         local_site_kwargs: KwargsDict = {}
         repository_i = 1
 

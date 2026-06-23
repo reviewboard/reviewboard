@@ -13,7 +13,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Dict, List, Set, TYPE_CHECKING, Tuple, Type
+from typing import TYPE_CHECKING
 
 from django.db import DatabaseError
 from typing_extensions import TypedDict
@@ -48,7 +48,7 @@ class UpgradeState(TypedDict, total=False):
     #:
     #: Type:
     #:     set
-    tables: Set[str]
+    tables: set[str]
 
     #: Whether SCMTool IDs need to be migrated.
     #:
@@ -64,7 +64,7 @@ class UpgradeState(TypedDict, total=False):
     #:
     #: Type:
     #:     dict
-    scmtool_id_data: Dict[str, List[int]]
+    scmtool_id_data: dict[str, list[int]]
 
     #: A mapping of legacy Tool PKs to modern SCMTool IDs.
     #:
@@ -72,7 +72,7 @@ class UpgradeState(TypedDict, total=False):
     #:
     #: Type:
     #:     dict
-    tool_pk_to_scmtool_id: Dict[int, str]
+    tool_pk_to_scmtool_id: dict[int, str]
 
     #: A set of IntegrationConfig PKs with conditions to update for SCMTools.
     #:
@@ -80,12 +80,12 @@ class UpgradeState(TypedDict, total=False):
     #:
     #: Type:
     #:     set
-    conditions_for_scmtool_migration: Set[int]
+    conditions_for_scmtool_migration: set[int]
 
 
 def _had_model(
     upgrade_state: UpgradeState,
-    model_cls: Type[Model],
+    model_cls: type[Model],
 ) -> bool:
     """Return whether a model was installed in the pre-upgrade database.
 
@@ -367,8 +367,8 @@ def pre_upgrade_store_scmtool_data(
 
         upgrade_state['needs_scmtool_id_migration'] = True
 
-        scmtool_id_data: Dict[str, List[int]] = {}
-        missing_tools: List[Tuple[str, Exception]] = []
+        scmtool_id_data: dict[str, list[int]] = {}
+        missing_tools: list[tuple[str, Exception]] = []
 
         for tool in tools:
             try:
@@ -384,7 +384,7 @@ def pre_upgrade_store_scmtool_data(
                 for repository in tool.repositories.all()
             ]
 
-        errors: List[List[str]] = []
+        errors: list[list[str]] = []
 
         if missing_tools:
             errors.append([
@@ -500,8 +500,8 @@ def pre_upgrade_store_condition_tool_info(
     from reviewboard.scmtools.models import Tool
 
     # This was a Review Board 3.0+ installation.
-    tool_pks: Set[int] = set()
-    affected_configs: Set[int] = set()
+    tool_pks: set[int] = set()
+    affected_configs: set[int] = set()
 
     configs = IntegrationConfig.objects.only('pk', 'settings')
 

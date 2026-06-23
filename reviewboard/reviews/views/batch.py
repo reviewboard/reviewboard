@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import logging
 from enum import Enum
-from typing import List
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -29,6 +29,8 @@ from reviewboard.notifications.email.utils import send_email
 from reviewboard.reviews.models import ReviewRequest, Review
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -320,8 +322,8 @@ class BatchOperationView(CheckRequestMethodViewMixin,
         *,
         request: HttpRequest,
         user: User,
-        review_requests: List[ReviewRequest],
-        reviews: List[Review],
+        review_requests: Sequence[ReviewRequest],
+        reviews: Sequence[Review],
         trivial: bool,
         archive_after_publish: bool,
     ) -> JsonResponse:
@@ -528,7 +530,7 @@ class BatchOperationView(CheckRequestMethodViewMixin,
         *,
         request: HttpRequest,
         user: User,
-        review_requests: List[ReviewRequest],
+        review_requests: Sequence[ReviewRequest],
         close_type: str,
     ) -> JsonResponse:
         """Close a set of review requests.
@@ -598,7 +600,7 @@ class BatchOperationView(CheckRequestMethodViewMixin,
         *,
         request: HttpRequest,
         user: User,
-        review_requests: List[ReviewRequest],
+        review_requests: Sequence[ReviewRequest],
         visibility: str,
     ) -> JsonResponse:
         """Set the visibility of a set of review requests.

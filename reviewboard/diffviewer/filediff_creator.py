@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import os
 from copy import deepcopy
-from typing import (Iterator, Mapping, Optional, Protocol, Sequence,
-                    TYPE_CHECKING, Union)
+from typing import Iterator, Optional, Protocol, TYPE_CHECKING, Union
 
 from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext as _
@@ -21,6 +20,8 @@ from reviewboard.scmtools.core import (FileLookupContext,
 from reviewboard.scmtools.errors import FileNotFoundError
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
     from django.http import HttpRequest
 
     from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff

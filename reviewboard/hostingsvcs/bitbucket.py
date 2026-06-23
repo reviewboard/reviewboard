@@ -356,7 +356,7 @@ class BitbucketAPIPaginator(APIPaginator):
         }
 
 
-class BitbucketClient(HostingServiceClient):
+class BitbucketClient(HostingServiceClient['Bitbucket']):
     """Client interface to the Bitbucket Cloud API."""
 
     def __init__(self, *args, **kwargs):
@@ -824,7 +824,7 @@ class BitbucketClient(HostingServiceClient):
                    quote(path)))
 
 
-class Bitbucket(BaseHostingService):
+class Bitbucket(BaseHostingService[BitbucketClient]):
     """Hosting service support for Bitbucket.
 
     Bitbucket is a hosting service that supports Git and Mercurial

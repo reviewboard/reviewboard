@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Sequence, Set, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import OuterRef, Q, Value
@@ -21,6 +21,8 @@ from reviewboard.scmtools.testing.queries import \
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django_assert_queries.query_comparator import ExpectedQueries
     from typing_extensions import NotRequired, TypedDict, Unpack
 
@@ -151,8 +153,8 @@ def get_review_requests_accessible_q(
     # 2. Access control filter queries
     init_q: Q
     access_q: Q
-    tables: Set[str] = {'reviews_reviewrequest'}
-    join_types: Dict[str, str] = {}
+    tables: set[str] = {'reviews_reviewrequest'}
+    join_types: dict[str, str] = {}
 
     # Stage 1 has the following states (excluding Local Sites in DB):
     #
@@ -524,8 +526,8 @@ def get_review_requests_from_user_q(
         dict:
         The expected Q results.
     """
-    extra_tables: Set[str] = set()
-    extra_join_types: Dict[str, str] = {}
+    extra_tables: set[str] = set()
+    extra_join_types: dict[str, str] = {}
 
     if isinstance(from_user, User):
         extra_query = Q(submitter=from_user)
@@ -638,8 +640,8 @@ def get_review_requests_to_user_q(
         dict:
         The expected Q results.
     """
-    extra_join_types: Dict[str, str] = {}
-    extra_tables: Set[str] = set()
+    extra_join_types: dict[str, str] = {}
+    extra_tables: set[str] = set()
 
     target_group_ids = [
         _group.pk
@@ -775,8 +777,8 @@ def get_review_requests_to_user_directly_q(
         dict:
         The expected Q results.
     """
-    extra_join_types: Dict[str, str] = {}
-    extra_tables: Set[str] = set()
+    extra_join_types: dict[str, str] = {}
+    extra_tables: set[str] = set()
     prep_equeries: ExpectedQueries = []
 
     if isinstance(to_user, User):
@@ -981,8 +983,8 @@ def get_review_requests_to_or_from_user_q(
         dict:
         The expected Q results.
     """
-    extra_tables: Set[str] = set()
-    extra_join_types: Dict[str, str] = {}
+    extra_tables: set[str] = set()
+    extra_join_types: dict[str, str] = {}
 
     target_group_ids = [
         _group.pk

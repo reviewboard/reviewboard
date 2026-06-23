@@ -6,15 +6,13 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Type
-
 from django.db.models.signals import pre_delete
 
 from reviewboard.attachments.models import FileAttachment
 
 
 def _on_file_attachment_deleted(
-    sender: Type[FileAttachment],
+    sender: type[FileAttachment],
     instance: FileAttachment,
     using: str,
     **kwargs,

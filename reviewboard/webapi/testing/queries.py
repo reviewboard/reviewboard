@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, Set, TYPE_CHECKING, Type, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Count, Q
@@ -130,10 +130,10 @@ def get_webapi_request_start_equeries(
 
 def get_webapi_response_start_equeries(
     *,
-    model: Type[Model],
+    model: type[Model],
     items_q_result: ExpectedQResult,
     items_distinct: bool = False,
-    items_select_related: Set[str] = set(),
+    items_select_related: set[str] = set(),
 ) -> ExpectedQueries:
     """Return expected queries for the start of an API payload response.
 

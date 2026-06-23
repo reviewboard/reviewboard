@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, TYPE_CHECKING, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -25,6 +25,7 @@ from reviewboard.reviews.signals import review_request_published
 from reviewboard.scmtools.errors import InvalidChangeNumberError
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from datetime import datetime
 
     from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
@@ -588,7 +589,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         self,
         commit_id: str,
         changeset: ChangeSet,
-    ) -> List[str]:
+    ) -> Sequence[str]:
         """Update the data from a server-side pending changeset.
 
         This will fetch the metadata from the server and update the fields on

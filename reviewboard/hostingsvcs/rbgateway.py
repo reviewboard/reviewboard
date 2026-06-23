@@ -158,7 +158,7 @@ class ReviewBoardGatewayForm(BaseHostingServiceRepositoryForm):
                     'specified in the configuration file for rb-gateway.'))
 
 
-class ReviewBoardGatewayClient(HostingServiceClient):
+class ReviewBoardGatewayClient(HostingServiceClient['ReviewBoardGateway']):
     """Client interface to the RB Gateway API."""
 
     def __init__(self, *args, **kwargs):
@@ -621,7 +621,7 @@ class ReviewBoardGatewayClient(HostingServiceClient):
                        quote(path)))
 
 
-class ReviewBoardGateway(BaseHostingService):
+class ReviewBoardGateway(BaseHostingService[ReviewBoardGatewayClient]):
     """Hosting service support for Review Board Gateway.
 
     Review Board Gateway is a lightweight self-installed source hosting service

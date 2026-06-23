@@ -25,7 +25,7 @@ class ApplicationTests(TestCase):
     fixtures = ['test_users']
 
     def test_is_accessible_by_with_anonymous(self):
-        """Testing Application.is_accessible_by with anonyomus user"""
+        """Testing Application.is_accessible_by with anonymous user"""
         user = User.objects.get(username='doc')
         application = self.create_oauth_application(user=user)
 
@@ -120,7 +120,7 @@ class ApplicationTests(TestCase):
                                                       local_site=local_site1))
 
     def test_is_mutable_by_with_anonymous(self):
-        """Testing Application.is_mutable_by with anonyomus user"""
+        """Testing Application.is_mutable_by with anonymous user"""
         user = User.objects.get(username='doc')
         application = self.create_oauth_application(user=user)
 

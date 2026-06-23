@@ -7,7 +7,7 @@ import os
 import re
 import traceback
 from io import BytesIO
-from typing import Any, Mapping, Optional, TYPE_CHECKING, Union
+from typing import Any, Optional, TYPE_CHECKING, Union
 from zipfile import ZipFile
 
 from django.conf import settings
@@ -50,6 +50,8 @@ from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from django.http import HttpRequest
 
     from reviewboard.diffviewer.diffutils import SerializedDiffFile

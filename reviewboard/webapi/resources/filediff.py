@@ -537,7 +537,7 @@ class FileDiffResource(WebAPIResource):
               :name: whitespace_lines
               :type: list[[int, int]]
 
-              A list of ``(start, end)`` row indexes in the lins that contain
+              A list of ``(start, end)`` row indexes in the lines that contain
               whitespace-only changes. These are 1-based.
 
         Other meta information may be available, but most is intended for

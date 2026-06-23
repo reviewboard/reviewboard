@@ -101,7 +101,7 @@ class BeanstalkHookViews(object):
                 The name of the hosting service.
 
             *args (list):
-                Additional postitional arguments.
+                Additional positional arguments.
 
             **kwargs (dict):
                 Additional keyword arguments.

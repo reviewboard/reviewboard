@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -24,6 +24,8 @@ from reviewboard.site.models import LocalSite
 from reviewboard.testing.queries.http import get_http_request_start_equeries
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from django_assert_queries.query_comparator import ExpectedQueries
 
 

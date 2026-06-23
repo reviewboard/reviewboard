@@ -6,13 +6,14 @@
 
 from __future__ import annotations
 
-from typing import Dict, Optional, Tuple
+from collections.abc import Mapping
+from typing import Optional
 
 from typing_extensions import TypeAlias
 
 
-ConfusablesMapValue: TypeAlias = Tuple[str, Optional[int]]
-ConfusablesMap: TypeAlias = Dict[str, ConfusablesMapValue]
+ConfusablesMapValue: TypeAlias = tuple[str, Optional[int]]
+ConfusablesMap: TypeAlias = Mapping[str, ConfusablesMapValue]
 
 
 COMMON_CONFUSABLES_MAP: ConfusablesMap = {
@@ -20,16 +21,19 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     '´': ("'", None),  # B4; COMMON
     '¸': (',', None),  # B8; COMMON
     '×': ('x', None),  # D7; COMMON
+    'þ': ('p', None),  # FE; LATIN
     'ı': ('i', None),  # 131; LATIN
     'ſ': ('f', None),  # 17F; LATIN
     'Ƅ': ('b', None),  # 184; LATIN
     'ƍ': ('g', None),  # 18D; LATIN
+    'ƒ': ('f', None),  # 192; LATIN
     'Ɩ': ('l', None),  # 196; LATIN
     'Ʀ': ('R', None),  # 1A6; LATIN
     'Ƨ': ('2', None),  # 1A7; LATIN
     'Ʒ': ('3', None),  # 1B7; LATIN
     'Ƽ': ('5', None),  # 1BC; LATIN
     'ƽ': ('s', None),  # 1BD; LATIN
+    'ƿ': ('p', None),  # 1BF; LATIN
     'ǀ': ('l', None),  # 1C0; LATIN
     'ǃ': ('!', None),  # 1C3; LATIN
     'Ȝ': ('3', None),  # 21C; LATIN
@@ -93,9 +97,12 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     'ϒ': ('Y', 0),  # 3D2; GREEK
     'Ϝ': ('F', 0),  # 3DC; GREEK
     'Ϩ': ('2', None),  # 3E8; COPTIC
+    'Ϭ': ('6', None),  # 3EC; COPTIC
+    'ϭ': ('o', None),  # 3ED; COPTIC
     'ϱ': ('p', 0),  # 3F1; GREEK
     'ϲ': ('c', 0),  # 3F2; GREEK
     'ϳ': ('j', 0),  # 3F3; GREEK
+    'ϸ': ('p', 0),  # 3F8; GREEK
     'Ϲ': ('C', 0),  # 3F9; GREEK
     'Ϻ': ('M', 0),  # 3FA; GREEK
     'Ѕ': ('S', 1),  # 405; CYRILLIC
@@ -124,6 +131,7 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     'с': ('c', 1),  # 441; CYRILLIC
     'у': ('y', 1),  # 443; CYRILLIC
     'х': ('x', 1),  # 445; CYRILLIC
+    'ш': ('w', 1),  # 448; CYRILLIC
     'ѕ': ('s', 1),  # 455; CYRILLIC
     'і': ('i', 1),  # 456; CYRILLIC
     'ј': ('j', 1),  # 458; CYRILLIC
@@ -135,7 +143,7 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     'һ': ('h', 1),  # 4BB; CYRILLIC
     'ҽ': ('e', 1),  # 4BD; CYRILLIC
     'Ӏ': ('l', 1),  # 4C0; CYRILLIC
-    'ӏ': ('i', 1),  # 4CF; CYRILLIC
+    'ӏ': ('l', 1),  # 4CF; CYRILLIC
     'Ӡ': ('3', 1),  # 4E0; CYRILLIC
     'ԁ': ('d', 1),  # 501; CYRILLIC
     'Ԍ': ('G', 1),  # 50C; CYRILLIC
@@ -155,6 +163,7 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     'ռ': ('n', 2),  # 57C; ARMENIAN
     'ս': ('u', 2),  # 57D; ARMENIAN
     'ց': ('g', 2),  # 581; ARMENIAN
+    'ւ': ('i', 2),  # 582; ARMENIAN
     'ք': ('f', 2),  # 584; ARMENIAN
     'օ': ('o', 2),  # 585; ARMENIAN
     '։': (':', 2),  # 589; ARMENIAN
@@ -194,8 +203,9 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     'ߺ': ('_', None),  # 7FA; NKO
     'ः': (':', 4),  # 903; DEVANAGARI
     '०': ('o', 4),  # 966; DEVANAGARI
+    '३': ('3', 4),  # 969; DEVANAGARI
     'ॽ': ('?', 4),  # 97D; DEVANAGARI
-    '০': ('O', 5),  # 9E6; BENGALI
+    '০': ('o', 5),  # 9E6; BENGALI
     '৪': ('8', 5),  # 9EA; BENGALI
     '৭': ('9', 5),  # 9ED; BENGALI
     '੦': ('o', 6),  # A66; GURMUKHI
@@ -203,24 +213,28 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     '੪': ('8', 6),  # A6A; GURMUKHI
     'ઃ': (':', 7),  # A83; GUJARATI
     '૦': ('o', 7),  # AE6; GUJARATI
+    '૩': ('3', 7),  # AE9; GUJARATI
     'ଃ': ('8', 8),  # B03; ORIYA
     'ଠ': ('O', 8),  # B20; ORIYA
-    '୦': ('O', 8),  # B66; ORIYA
+    '୦': ('o', 8),  # B66; ORIYA
     '୨': ('9', 8),  # B68; ORIYA
     '௦': ('o', None),  # BE6; TAMIL
     'ం': ('o', 9),  # C02; TELUGU
     '౦': ('o', 9),  # C66; TELUGU
     'ಂ': ('o', 10),  # C82; KANNADA
-    '೦': ('o', 10),  # CE6; KANNADA
+    '೦': ('O', 10),  # CE6; KANNADA
     'ം': ('o', None),  # D02; MALAYALAM
+    'ട': ('s', None),  # D1F; MALAYALAM
     'ഠ': ('o', None),  # D20; MALAYALAM
     '൦': ('o', None),  # D66; MALAYALAM
     '൭': ('9', None),  # D6D; MALAYALAM
     'ං': ('o', None),  # D82; SINHALA
     '๐': ('o', None),  # E50; THAI
     '໐': ('o', None),  # ED0; LAO
+    'င': ('c', None),  # 1004; MYANMAR
     'ဝ': ('o', None),  # 101D; MYANMAR
     '၀': ('o', None),  # 1040; MYANMAR
+    'ၚ': ('c', None),  # 105A; MYANMAR
     'ყ': ('y', None),  # 10E7; GEORGIAN
     'ჿ': ('o', None),  # 10FF; GEORGIAN
     'ሀ': ('U', None),  # 1200; ETHIOPIC
@@ -291,6 +305,7 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     '᛬': (':', None),  # 16EC; COMMON
     '᛭': ('+', None),  # 16ED; COMMON
     '᜵': ('/', None),  # 1735; COMMON
+    '០': ('o', None),  # 17E0; KHMER
     '᠃': (':', None),  # 1803; COMMON
     '᠉': (':', None),  # 1809; MONGOLIAN
     'ᴄ': ('c', None),  # 1D04; LATIN
@@ -431,12 +446,15 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     '⧸': ('/', None),  # 29F8; COMMON
     '⧹': ('\\', None),  # 29F9; COMMON
     '⨯': ('x', None),  # 2A2F; COMMON
+    'Ⲃ': ('B', None),  # 2C82; COPTIC
     'ⲅ': ('r', None),  # 2C85; COPTIC
     'Ⲏ': ('H', None),  # 2C8E; COPTIC
     'Ⲓ': ('l', None),  # 2C92; COPTIC
+    'ⲓ': ('i', None),  # 2C93; COPTIC
     'Ⲕ': ('K', None),  # 2C94; COPTIC
     'Ⲙ': ('M', None),  # 2C98; COPTIC
     'Ⲛ': ('N', None),  # 2C9A; COPTIC
+    'Ⲝ': ('3', None),  # 2C9C; COPTIC
     'Ⲟ': ('O', None),  # 2C9E; COPTIC
     'ⲟ': ('o', None),  # 2C9F; COPTIC
     'Ⲣ': ('P', None),  # 2CA2; COPTIC
@@ -445,13 +463,23 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     'ⲥ': ('c', None),  # 2CA5; COPTIC
     'Ⲧ': ('T', None),  # 2CA6; COPTIC
     'Ⲩ': ('Y', None),  # 2CA8; COPTIC
+    'ⲩ': ('y', None),  # 2CA9; COPTIC
     'Ⲭ': ('X', None),  # 2CAC; COPTIC
     'Ⲻ': ('-', None),  # 2CBA; COPTIC
+    'ⲻ': ('-', None),  # 2CBB; COPTIC
+    'ⲽ': ('w', None),  # 2CBD; COPTIC
+    'Ⳅ': ('3', None),  # 2CC4; COPTIC
     'Ⳇ': ('/', None),  # 2CC6; COPTIC
+    'ⳇ': ('/', None),  # 2CC7; COPTIC
     'Ⳋ': ('9', None),  # 2CCA; COPTIC
+    'ⳋ': ('9', None),  # 2CCB; COPTIC
     'Ⳍ': ('3', None),  # 2CCC; COPTIC
+    'Ⳏ': ('P', None),  # 2CCE; COPTIC
+    'ⳏ': ('p', None),  # 2CCF; COPTIC
     'Ⳑ': ('L', None),  # 2CD0; COPTIC
     'Ⳓ': ('6', None),  # 2CD2; COPTIC
+    'ⳓ': ('6', None),  # 2CD3; COPTIC
+    'Ⳝ': ('6', None),  # 2CDC; COPTIC
     'ⴸ': ('V', None),  # 2D38; TIFINAGH
     'ⴹ': ('E', None),  # 2D39; TIFINAGH
     'ⵏ': ('l', None),  # 2D4F; TIFINAGH
@@ -651,7 +679,7 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     '𐔦': ('L', None),  # 10526; ELBASAN
     '𐔧': ('X', None),  # 10527; ELBASAN
     '𐩐': ('.', None),  # 10A50; KHAROSHTHI
-    '𑓐': ('O', None),  # 114D0; TIRHUTA
+    '𑓐': ('o', None),  # 114D0; TIRHUTA
     '𑜆': ('v', None),  # 11706; AHOM
     '𑜊': ('w', None),  # 1170A; AHOM
     '𑜎': ('w', None),  # 1170E; AHOM
@@ -691,6 +719,12 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     '𑣬': ('X', None),  # 118EC; WARANG_CITI
     '𑣯': ('W', None),  # 118EF; WARANG_CITI
     '𑣲': ('C', None),  # 118F2; WARANG_CITI
+    '\U00011dd9': (':', None),  # 11DD9; TOLONG_SIKI
+    '\U00011dda': ('l', None),  # 11DDA; TOLONG_SIKI
+    '\U00011de0': ('O', None),  # 11DE0; TOLONG_SIKI
+    '\U00011de1': ('l', None),  # 11DE1; TOLONG_SIKI
+    '\U00016eaa': ('l', None),  # 16EAA; BERIA_ERFE
+    '\U00016eb6': ('b', None),  # 16EB6; BERIA_ERFE
     '𖼈': ('V', None),  # 16F08; MIAO
     '𖼊': ('T', None),  # 16F0A; MIAO
     '𖼖': ('L', None),  # 16F16; MIAO
@@ -704,6 +738,42 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     '𖽃': ('Y', None),  # 16F43; MIAO
     '𖽑': ("'", None),  # 16F51; MIAO
     '𖽒': ("'", None),  # 16F52; MIAO
+    '\U0001ccd6': ('A', None),  # 1CCD6; COMMON
+    '\U0001ccd7': ('B', None),  # 1CCD7; COMMON
+    '\U0001ccd8': ('C', None),  # 1CCD8; COMMON
+    '\U0001ccd9': ('D', None),  # 1CCD9; COMMON
+    '\U0001ccda': ('E', None),  # 1CCDA; COMMON
+    '\U0001ccdb': ('F', None),  # 1CCDB; COMMON
+    '\U0001ccdc': ('G', None),  # 1CCDC; COMMON
+    '\U0001ccdd': ('H', None),  # 1CCDD; COMMON
+    '\U0001ccde': ('l', None),  # 1CCDE; COMMON
+    '\U0001ccdf': ('J', None),  # 1CCDF; COMMON
+    '\U0001cce0': ('K', None),  # 1CCE0; COMMON
+    '\U0001cce1': ('L', None),  # 1CCE1; COMMON
+    '\U0001cce2': ('M', None),  # 1CCE2; COMMON
+    '\U0001cce3': ('N', None),  # 1CCE3; COMMON
+    '\U0001cce4': ('O', None),  # 1CCE4; COMMON
+    '\U0001cce5': ('P', None),  # 1CCE5; COMMON
+    '\U0001cce6': ('Q', None),  # 1CCE6; COMMON
+    '\U0001cce7': ('R', None),  # 1CCE7; COMMON
+    '\U0001cce8': ('S', None),  # 1CCE8; COMMON
+    '\U0001cce9': ('T', None),  # 1CCE9; COMMON
+    '\U0001ccea': ('U', None),  # 1CCEA; COMMON
+    '\U0001cceb': ('V', None),  # 1CCEB; COMMON
+    '\U0001ccec': ('W', None),  # 1CCEC; COMMON
+    '\U0001cced': ('X', None),  # 1CCED; COMMON
+    '\U0001ccee': ('Y', None),  # 1CCEE; COMMON
+    '\U0001ccef': ('Z', None),  # 1CCEF; COMMON
+    '\U0001ccf0': ('O', None),  # 1CCF0; COMMON
+    '\U0001ccf1': ('l', None),  # 1CCF1; COMMON
+    '\U0001ccf2': ('2', None),  # 1CCF2; COMMON
+    '\U0001ccf3': ('3', None),  # 1CCF3; COMMON
+    '\U0001ccf4': ('4', None),  # 1CCF4; COMMON
+    '\U0001ccf5': ('5', None),  # 1CCF5; COMMON
+    '\U0001ccf6': ('6', None),  # 1CCF6; COMMON
+    '\U0001ccf7': ('7', None),  # 1CCF7; COMMON
+    '\U0001ccf8': ('8', None),  # 1CCF8; COMMON
+    '\U0001ccf9': ('9', None),  # 1CCF9; COMMON
     '𝄔': ('{', None),  # 1D114; COMMON
     '𝅭': ('.', None),  # 1D16D; COMMON
     '𝈆': ('3', 0),  # 1D206; GREEK
@@ -1523,6 +1593,7 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     '𝟽': ('7', None),  # 1D7FD; COMMON
     '𝟾': ('8', None),  # 1D7FE; COMMON
     '𝟿': ('9', None),  # 1D7FF; COMMON
+    '\U0001e6e9': ('+', None),  # 1E6E9; TAI_YO
     '𞣇': ('l', None),  # 1E8C7; MENDE_KIKAKUI
     '𞣋': ('8', None),  # 1E8CB; MENDE_KIKAKUI
     '𞸀': ('l', 3),  # 1EE00; ARABIC
@@ -1544,7 +1615,7 @@ COMMON_CONFUSABLES_MAP: ConfusablesMap = {
     '🯹': ('9', None),  # 1FBF9; COMMON
 }
 
-CONFUSABLES_ID_TO_ALIAS_MAP: Tuple[str, ...] = (
+CONFUSABLES_ID_TO_ALIAS_MAP: tuple[str, ...] = (
     'Greek',
     'Cyrillic',
     'Armenian',
@@ -1559,7 +1630,7 @@ CONFUSABLES_ID_TO_ALIAS_MAP: Tuple[str, ...] = (
     'Katakana',
 )
 
-CONFUSABLES_ALIAS_TO_ID_MAP: Dict[str, int] = {
+CONFUSABLES_ALIAS_TO_ID_MAP: Mapping[str, int] = {
     'Greek': 0,
     'Cyrillic': 1,
     'Armenian': 2,

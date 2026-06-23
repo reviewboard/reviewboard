@@ -316,8 +316,8 @@ class ShipItColumnTests(BaseColumnTestCase):
                 'shipits_stale': True,
             })
 
-    def test_to_josn_with_one_open_issue(self) -> None:
-        """Testing ShipItColumn.to_josn with one open issue"""
+    def test_to_json_with_one_open_issue(self) -> None:
+        """Testing ShipItColumn.to_json with one open issue"""
         review_request = self.create_review_request(publish=True)
         review_request.issue_open_count = 1
         review_request.shipit_count = 1

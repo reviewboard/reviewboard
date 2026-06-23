@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict
+from typing import Any, TYPE_CHECKING
 
 from django.views.generic.base import TemplateView
 
@@ -12,6 +12,9 @@ from reviewboard.accounts.mixins import (LoginRequiredViewMixin,
 from reviewboard.admin.mixins import CheckReadOnlyViewMixin
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.mixins import CheckLocalSiteAccessViewMixin
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 logger = logging.getLogger(__name__)
@@ -35,7 +38,7 @@ class NewReviewRequestView(LoginRequiredViewMixin,
     def get_context_data(
         self,
         **kwargs,
-    ) -> Dict[str, Any]:
+    ) -> Mapping[str, Any]:
         """Return data for the template.
 
         This will return information on each repository shown on the page.

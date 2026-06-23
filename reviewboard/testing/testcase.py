@@ -7,8 +7,7 @@ import re
 import warnings
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
-from typing import (Any, Callable, List, Optional, TYPE_CHECKING, Tuple, Type,
-                    Union)
+from typing import Any, Callable, Optional, TYPE_CHECKING, Union
 from uuid import uuid4
 
 import kgb
@@ -493,7 +492,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         username: str = 'test-user',
         password: str = '',
         email: str = 'test@example.com',
-        perms: Optional[Sequence[Tuple[str, str]]] = None,
+        perms: Optional[Sequence[tuple[str, str]]] = None,
         **kwargs,
     ) -> User:
         """Create a User for testing.
@@ -705,7 +704,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
     @contextmanager
     def assert_warns(
         self,
-        cls: Type[DeprecationWarning] = DeprecationWarning,
+        cls: type[DeprecationWarning] = DeprecationWarning,
         message: Optional[str] = None,
     ) -> Iterator[None]:
         """A context manager for asserting code generates a warning.
@@ -1784,7 +1783,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         target_people: Optional[Sequence[User]] = None,
         target_groups: Optional[Sequence[Group]] = None,
         **kwargs,
-    ) -> List[ReviewRequest]:
+    ) -> list[ReviewRequest]:
         """Batch-create multiple ReviewRequests for testing.
 
         This will execute the minimum number of SQL statements needed to
@@ -1923,7 +1922,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         # Create the DiffSetHistories, one per ReviewRequest.
         next_diffset_history_id = DiffSetHistory.objects.count() + 1
 
-        diffset_histories: List[DiffSetHistory] = [
+        diffset_histories: list[DiffSetHistory] = [
             DiffSetHistory(id=next_diffset_history_id + i)
             for i in range(count)
         ]
@@ -1934,8 +1933,8 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if start_id is None:
             start_id = ReviewRequest.objects.count() + 1
 
-        review_requests: List[ReviewRequest] = []
-        review_request_ids: List[int] = []
+        review_requests: list[ReviewRequest] = []
+        review_request_ids: list[int] = []
 
         for i in range(count):
             if start_local_id is None:
@@ -1971,7 +1970,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if depends_on:
             ReviewRequest.depends_on.through.objects.bulk_create(
                 ReviewRequest.depends_on.through(
-                    from_review_equest=_from_review_request,
+                    from_review_request=_from_review_request,
                     to_reviewrequest=_to_review_request)
                 for _from_review_request in review_requests
                 for _to_review_request in depends_on
@@ -1989,7 +1988,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         if target_groups:
             ReviewRequest.target_groups.through.objects.bulk_create(
                 ReviewRequest.target_groups.through(
-                    review_equest=_review_request,
+                    review_request=_review_request,
                     group=_group)
                 for _review_request in review_requests
                 for _group in target_groups
@@ -2499,7 +2498,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         specified.
 
         This is not meant to be called directly by tests. Callers should
-        generallly use one of:
+        generally use one of:
 
         * :py:meth:`create_file_attachment`
         * :py:meth:`create_user_file_attachment`

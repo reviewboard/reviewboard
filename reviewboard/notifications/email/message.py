@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional, TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -31,6 +31,9 @@ from reviewboard.reviews.signals import (review_request_published,
                                          review_published, reply_published,
                                          review_request_closed)
 from reviewboard.webapi.models import WebAPIToken
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 logger = logging.getLogger(__name__)
@@ -543,8 +546,8 @@ def prepare_batch_review_request_mail(
     review_request: ReviewRequest,
     review_request_changed: bool,
     changedesc: Optional[ChangeDescription],
-    reviews: List[Review],
-    review_replies: List[Review],
+    reviews: Sequence[Review],
+    review_replies: Sequence[Review],
     request: HttpRequest,
 ) -> Optional[EmailMessage]:
     """Return an e-mail with batched review request and reviews.
@@ -629,7 +632,7 @@ def prepare_batch_review_request_mail(
             comment_template_name=(
                 'notifications/email_diff_comment_fragment.html'))[1]
 
-    extra_context: Dict[str, Any] = {
+    extra_context: dict[str, Any] = {
         'review_request_changed': review_request_changed,
         'reviews': reviews,
         'review_replies': review_replies,

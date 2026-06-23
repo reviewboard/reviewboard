@@ -278,7 +278,7 @@ class BaseCommentResource(MarkdownFieldsMixin, WebAPIResource):
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
-            comment (reviewboard.reviews.models.base_commet.BaseComment):
+            comment (reviewboard.reviews.models.base_comet.BaseComment):
                 The comment being replied to.
 
             reply (reviewboard.reviews.models.review.Review):

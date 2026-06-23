@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import sys
 from itertools import chain
-from typing import Optional, TYPE_CHECKING, Type, Union
+from typing import Optional, TYPE_CHECKING, Union
 
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple

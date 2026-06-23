@@ -109,7 +109,7 @@ class CustomPayloadParser(Parser):
     """A custom template parser that blocks certain tags.
 
     This extends Django's Parser class for template parsing, and removes
-    some built-in tags, in order to prevent mailicious use.
+    some built-in tags, in order to prevent malicious use.
     """
     BLACKLISTED_TAGS = ('block', 'debug', 'extends', 'include', 'load', 'ssi')
 

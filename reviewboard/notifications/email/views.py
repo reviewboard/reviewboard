@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Union
+from typing import Any, Union
 
 from django.http import HttpResponse
 from django.views.generic.base import View
@@ -51,7 +51,7 @@ class BasePreviewEmailView(View):
         self,
         *args,
         **kwargs,
-    ) -> Union[Dict[str, Any], HttpResponse]:
+    ) -> Union[dict[str, Any], HttpResponse]:
         """Return data used for the e-mail builder.
 
         The data returned will be passed to :py:attr:`build_email` to handle

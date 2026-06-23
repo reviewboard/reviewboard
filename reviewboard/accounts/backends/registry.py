@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
-from typing import (Iterable, List, Optional, Sequence, TYPE_CHECKING, Type,
-                    cast)
+from typing import Iterable, Optional, TYPE_CHECKING, cast
 
 from django.conf import settings
 from django.contrib.auth import get_backends
@@ -19,6 +18,7 @@ from reviewboard.accounts.backends.standard import StandardAuthBackend
 from reviewboard.registries.registry import EntryPointRegistry
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
     from importlib_metadata import EntryPoint
 
 
@@ -26,13 +26,13 @@ if TYPE_CHECKING:
 #:
 #: Version Added:
 #:     6.0
-_BaseAuthBackendClass: TypeAlias = Type[BaseAuthBackend]
+_BaseAuthBackendClass: TypeAlias = type[BaseAuthBackend]
 
 
 logger = logging.getLogger(__name__)
 
 
-_enabled_auth_backends: List[_BaseAuthBackendClass] = []
+_enabled_auth_backends: list[_BaseAuthBackendClass] = []
 _auth_backend_setting: Optional[str] = None
 
 
@@ -181,7 +181,7 @@ def get_enabled_auth_backends() -> Sequence[_BaseAuthBackendClass]:
 
         # We're casting because we control all the auth backends, and know
         # they're all actually ours.
-        _enabled_auth_backends = cast(List[_BaseAuthBackendClass],
+        _enabled_auth_backends = cast(list[_BaseAuthBackendClass],
                                       list(get_backends()))
 
     return _enabled_auth_backends

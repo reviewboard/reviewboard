@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any, Callable, Dict, Literal, Optional, TYPE_CHECKING, Type
+from typing import Any, Callable, Literal, Optional, TYPE_CHECKING
 
 import kgb
 
@@ -15,7 +15,10 @@ from reviewboard.certs.errors import (CertificateVerificationError,
 from reviewboard.webapi.errors import UNVERIFIED_HOST_CERT
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from reviewboard.webapi.tests.base import BaseWebAPITestCase
+
     MixinParent = BaseWebAPITestCase
 else:
     MixinParent = object
@@ -33,9 +36,9 @@ class SSLTestsMixin(MixinParent):
         *,
         url: str,
         spy_func: Callable,
-        spy_owner: Optional[Type] = None,
+        spy_owner: Optional[type[Any]] = None,
         method: Literal['post', 'get', 'delete', 'put'] = 'post',
-        data: Dict[str, Any] = {},
+        data: Mapping[str, Any] = {},
     ) -> None:
         assert hasattr(self, 'spy_on'), (
             'This test suite must inherit from kgb.SpyAgency.'

@@ -5,10 +5,7 @@ from __future__ import annotations
 import logging
 from typing import (Callable,
                     Collection,
-                    List,
                     Optional,
-                    Set,
-                    Tuple,
                     Union,
                     TYPE_CHECKING)
 
@@ -23,6 +20,8 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.reviews.models import Group, ReviewRequest
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from reviewboard.notifications.email.message import EmailMessage
 
 
@@ -38,7 +37,7 @@ def build_recipients(
     review_request: ReviewRequest,
     extra_recipients: Optional[RecipientList] = None,
     limit_recipients_to: Optional[RecipientList] = None,
-) -> Tuple[RecipientList, RecipientList]:
+) -> tuple[RecipientList, RecipientList]:
     """Build the recipient sets for an e-mail.
 
     By default, the user sending the e-mail, the review request submitter (if
@@ -75,8 +74,8 @@ def build_recipients(
         :py:class:`Users <django.contrib.auth.models.User>` and
         :py:class:`Groups <reviewboard.reviews.models.Group>`.
     """
-    recipients: Set[Recipient] = set()
-    to_field: Set[Recipient] = set()
+    recipients: set[Recipient] = set()
+    to_field: set[Recipient] = set()
 
     local_site = review_request.local_site_id
     submitter = review_request.submitter
@@ -210,7 +209,7 @@ def build_recipients(
 def get_email_addresses_for_group(
     group: Group,
     review_request_id: Optional[int] = None,
-) -> List[str]:
+) -> Sequence[str]:
     """Build a list of e-mail addresses for the group.
 
     Args:
@@ -226,7 +225,7 @@ def get_email_addresses_for_group(
         A list of properly formatted e-mail addresses for all users in the
         review group.
     """
-    addresses: List[str] = []
+    addresses: list[str] = []
 
     if group.mailing_list:
         if ',' not in group.mailing_list:
@@ -277,7 +276,7 @@ def get_email_addresses_for_group(
 def recipients_to_addresses(
     recipients: RecipientList,
     review_request_id: Optional[int] = None,
-) -> Set[str]:
+) -> set[str]:
     """Return the set of e-mail addresses for the recipients.
 
     Args:
@@ -310,7 +309,7 @@ def recipients_to_addresses(
 def send_email(
     email_builder: Callable,
     **kwargs,
-) -> Tuple[Optional[EmailMessage], bool]:
+) -> tuple[Optional[EmailMessage], bool]:
     """Attempt to send an e-mail, logging any exceptions that occur.
 
     Args:

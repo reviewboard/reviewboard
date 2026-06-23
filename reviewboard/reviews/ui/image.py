@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.utils.html import escape
@@ -17,6 +17,8 @@ from reviewboard.reviews.ui.base import (ReviewUI,
 
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from typelets.json import JSONDict
 
 
@@ -108,7 +110,7 @@ class ImageReviewUI(ReviewUI[
             SerializedCommentBlocks:
             The serialized comment data.
         """
-        result: SerializedCommentBlocks[SerializedRegionComment] = {}
+        result: dict[str, list[SerializedRegionComment]] = {}
 
         for comment in self.flat_serialized_comments(comments):
             try:

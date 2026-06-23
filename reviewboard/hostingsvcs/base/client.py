@@ -13,7 +13,7 @@ import json
 import logging
 import ssl
 from email.generator import _make_boundary as generate_boundary
-from typing import TYPE_CHECKING
+from typing import Any, Generic, TYPE_CHECKING
 from urllib.error import URLError
 from urllib.parse import urlparse
 
@@ -21,8 +21,8 @@ from cryptography import x509
 from cryptography.x509.oid import NameOID
 from cryptography.hazmat.backends import default_backend
 from django.utils.encoding import force_bytes, force_str
+from typing_extensions import TypeVar
 
-from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.hostingsvcs.base.http import (HostingServiceHTTPRequest,
                                                HostingServiceHTTPResponse)
 from reviewboard.scmtools.certs import Certificate
@@ -43,7 +43,16 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class HostingServiceClient:
+#: A type variable for the hosting service that owns a client.
+#:
+#: Version Added:
+#:     9.0
+THostingService = TypeVar('THostingService',
+                          bound='BaseHostingService[Any]',
+                          default='BaseHostingService[Any]')
+
+
+class HostingServiceClient(Generic[THostingService]):
     """Client for communicating with a hosting service's API.
 
     This implementation includes abstractions for performing HTTP operations,
@@ -107,11 +116,11 @@ class HostingServiceClient:
     #:
     #: Type:
     #:     The hosting service that owns this client.
-    hosting_service: BaseHostingService
+    hosting_service: THostingService
 
     def __init__(
         self,
-        hosting_service: BaseHostingService,
+        hosting_service: THostingService,
     ) -> None:
         """Initialize the client.
 

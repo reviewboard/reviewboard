@@ -13,7 +13,7 @@ import { BaseView, spina } from '@beanbag/spina';
  */
 interface SlideshowViewOptions {
     /**
-     * The time in milliseconds between automatic cyling of slides.
+     * The time in milliseconds between automatic cycling of slides.
      *
      * If not provided, this will default to either the ``data-cycle-time-ms=``
      * attribute on the element (if present) or 2 seconds.
@@ -92,7 +92,7 @@ export class SlideshowView extends BaseView<
     #$slidesContainer: JQuery = null;
 
     /**
-     * The time in milliseconds between automatic cyling of slides.
+     * The time in milliseconds between automatic cycling of slides.
      *
      * If not provided, this will default to either the ``data-cycle-time-ms=``
      * attribute on the element (if present) or 2 seconds.

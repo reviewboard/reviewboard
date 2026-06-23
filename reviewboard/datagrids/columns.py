@@ -230,7 +230,7 @@ class UsernameColumn(Column):
         """
         user = self.get_user(obj)
 
-        # If avatars are eanbled, we'll want to include that in the resulting
+        # If avatars are enabled, we'll want to include that in the resulting
         # HTML.
         siteconfig = SiteConfiguration.objects.get_current()
         request = state.datagrid.request

@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Iterator, Optional, Type
+from typing import Iterator, Optional
 
 from django.utils.translation import gettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
@@ -17,7 +17,7 @@ from reviewboard.certs.storage.base import BaseCertificateStorageBackend
 
 
 class CertificateStorageBackendRegistry(
-    Registry[Type[BaseCertificateStorageBackend]]
+    Registry[type[BaseCertificateStorageBackend]]
 ):
     """Registry for managing certificate storage backends.
 
@@ -43,7 +43,7 @@ class CertificateStorageBackendRegistry(
     def get_backend(
         self,
         backend_id: str,
-    ) -> Optional[Type[BaseCertificateStorageBackend]]:
+    ) -> Optional[type[BaseCertificateStorageBackend]]:
         """Return a storage backend class with the given ID.
 
         Args:
@@ -56,7 +56,7 @@ class CertificateStorageBackendRegistry(
         """
         return self.get('backend_id', backend_id)
 
-    def get_defaults(self) -> Iterator[Type[BaseCertificateStorageBackend]]:
+    def get_defaults(self) -> Iterator[type[BaseCertificateStorageBackend]]:
         """Return the default storage backend classes.
 
         Yields:

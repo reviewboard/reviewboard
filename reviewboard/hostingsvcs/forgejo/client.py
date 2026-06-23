@@ -10,7 +10,7 @@ import json
 import logging
 import re
 from base64 import b64decode
-from typing import List, TypeVar, TYPE_CHECKING
+from typing import TypeVar, TYPE_CHECKING
 from urllib.error import HTTPError
 from urllib.parse import quote as urlquote, urlencode
 from uuid import uuid4
@@ -51,7 +51,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ForgejoClient(HostingServiceClient):
+class ForgejoClient(HostingServiceClient['Forgejo']):
     """Hosting service client for Forgejo.
 
     Version Added:
@@ -353,7 +353,7 @@ class ForgejoClient(HostingServiceClient):
             hosting_url (str):
                 The URL of the Forgejo server.
 
-            repository (reviewboard.scmtools.models.Repsitory):
+            repository (reviewboard.scmtools.models.Repository):
                 The repository.
 
             path (str):
@@ -435,7 +435,7 @@ class ForgejoClient(HostingServiceClient):
 
         refs = self._api_get(
             url=f'{repo_root}/git/refs',
-            result_type=TypeAdapter(List[api.GitReference]),
+            result_type=TypeAdapter(list[api.GitReference]),
             repository=repository)
 
         results: list[Branch] = []
@@ -523,7 +523,7 @@ class ForgejoClient(HostingServiceClient):
 
         commits = self._api_get(
             url=f'{repo_root}/commits',
-            result_type=TypeAdapter(List[api.Commit]),
+            result_type=TypeAdapter(list[api.Commit]),
             params={
                 'sha': sha,
                 'stat': '0',
