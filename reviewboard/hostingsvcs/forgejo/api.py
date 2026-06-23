@@ -23,7 +23,7 @@ class APIError(BaseModel):
     """
 
     message: str
-    url: str
+    url: Optional[str]
 
 
 class AccessToken(BaseModel):

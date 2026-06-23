@@ -547,7 +547,7 @@ class HostingServiceClient:
             password (str):
                 The accompanying password.
 
-            header (dict):
+            headers (dict):
                 A dictionary of authentication headers to add to the request.
 
         By default, this will return a ``username`` and ``password`` based on
