@@ -156,7 +156,7 @@ class Repository(BaseModel):
 
     clone_url: str
     default_branch: str
-    mirror_url: str
+    mirror_url: str | None
     name: str
     owner: RepositoryOwner
 
