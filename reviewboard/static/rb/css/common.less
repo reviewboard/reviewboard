@@ -15,23 +15,19 @@
  * Modal Boxes
  ****************************************************************************/
 .modalbox {
-  margin: 10px;
+  margin: var(--ink-u-spacing-std);
 
   .modalbox-contents {
-    margin: 10px;
+    margin: var(--ink-u-spacing-std);
     position: relative; /* Makes this the offsetParent for calculations. */
   }
 
   .modalbox-buttons {
     position: absolute;
-    margin: 10px;
+    margin: var(--ink-u-spacing-std);
     text-align: right;
     bottom: 0;
     right: 0;
-
-    input, .split-btn {
-      margin-left: 10px;
-    }
   }
 }
 
@@ -97,18 +93,6 @@
   .body {
     margin-left: 20px;
     padding: 10px;
-  }
-}
-
-#manual-updates {
-  padding-top: 1em;
-
-  .box-main {
-    padding: 1em;
-
-    h1, h2 {
-      margin-top: 2em;
-    }
   }
 }
 

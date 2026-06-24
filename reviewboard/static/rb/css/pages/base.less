@@ -122,9 +122,6 @@
 body {
   @_page-sidebar-mobile-menu-vars: #rb-ns-ui.page-sidebar.mobile-menu();
 
-  margin: 0;
-  padding: 0;
-
   &.-is-content-flush {
     #rb-ns-pages.base.set-content-flush();
   }
@@ -184,20 +181,6 @@ body {
       display: none;
     }
   });
-}
-
-:root,
-[data-ink-color-scheme] {
-  #rb-ns-ui.design-tokens();
-  #rb-ns-ui.ink-overrides();
-}
-
-html {
-  scroll-behavior: smooth;
-}
-
-html, body {
-  min-height: 100vh;
 }
 
 
@@ -268,28 +251,6 @@ html, body {
 }
 
 
-a:link, a:visited {
-  color: var(--ink-p-link-fg);
-  text-decoration: none;
-}
-
-a:hover {
-  color: var(--ink-p-link-hover-fg);
-  text-decoration: underline;
-}
-
-h1 {
-  font-size: 10pt;
-}
-
-h3 {
-  margin-top: 2em;
-}
-
-img {
-  border: 0;
-}
-
 pre, textarea, .CodeMirror, .editable.field-text-area {
   font-family: var(--rb-c-textarea-font-family);
   font-size: var(--rb-c-textarea-font-size);
@@ -302,10 +263,6 @@ pre, textarea, .CodeMirror, .editable.field-text-area {
    * placeholder, so the entire thing feels like a text field.
    */
   cursor: text;
-}
-
-textarea {
-  resize: none;
 }
 
 

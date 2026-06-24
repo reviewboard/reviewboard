@@ -96,18 +96,25 @@
 }
 
 
-#ink-ns-theme.init(
-  @root-var-rules: {
-    @_icons: #rb-ns-assets[@icon-svg-paths];
+/*
+ * These are emitted as ":root .rb-icon-*", which is specific enough to
+ * beat most unlayered component rules. Keep them in the defaults layer
+ * so components can size icons without specificity hacks.
+ */
+@layer defaults {
+  #ink-ns-theme.init(
+    @root-var-rules: {
+      @_icons: #rb-ns-assets[@icon-svg-paths];
 
-    each(@_icons, {
-      .rb-icon-@{key} {
-        #ink-ns-ui.icons.svg-icon(~"var(--rb-i-@{key})");
-      }
-    });
-  };
+      each(@_icons, {
+        .rb-icon-@{key} {
+          #ink-ns-ui.icons.svg-icon(~"var(--rb-i-@{key})");
+        }
+      });
+    };
 
-  @theme-var-rules: {
-    #rb-ns-assets.icons();
-  };
-);
+    @theme-var-rules: {
+      #rb-ns-assets.icons();
+    };
+  );
+}

@@ -9,42 +9,51 @@
 {% endblock css %}
 
 {% block content %}
-{%  box 'oauth-authorize' %}
-{%   if not error %}
+{%  if not error %}
+
+{%   box 'oauth-authorize' %}
 <div class="box-head">
- <h1>{% blocktrans with application_name=application.name %}Authorize {{application_name}}?{% endblocktrans %}</h1>
+ <h1 class="box-title">{% blocktrans with application_name=application.name %}Authorize {{application_name}}?{% endblocktrans %}</h1>
 </div>
 <div class="box-main box-foot">
-<form method="POST" action=".">
- {% csrf_token %}
+ <form method="POST" action="." class="rb-c-form -is-aligned">
+  <fieldset class="rb-c-form-fieldset">
+   {% csrf_token %}
 {%    for field in form %}
 {%     if field.is_hidden %}
- {{field}}
+   {{field}}
 {%     endif %}
 {%    endfor %}
 {%    if scopes_descriptions %}
- <p>{% trans 'This application requires the following permissions:' %}</p>
- <ul>
+   <p>{% trans 'This application requires the following permissions:' %}</p>
+   <ul>
 {%     for scope in scopes_descriptions %}
-  <li>{{scope}}</li>
+    <li>{{scope}}</li>
 {%     endfor %}
- </ul>
+   </ul>
 {%    else %}
- <p>{% trans 'This application is not requesting any permissions.' %}</p>
+   <p>{% trans 'This application is not requesting any permissions.' %}</p>
 {%    endif %}
 
- {{form.errors}}
- {{form.non_field_errors}}
+   {{form.errors}}
+   {{form.non_field_errors}}
+  </fieldset>
 
- <div class="oauth-actions">
-  <input type="submit" value="{% trans 'Cancel' %}">
-  <input type="submit" class="btn primary" name="allow" value="{% trans 'Authorize' %}">
- </div>
-</form>
+  <div class="rb-c-form__actions">
+   <input type="submit" class="ink-c-button -is-primary" name="allow" value="{% trans 'Authorize' %}">
+   <input type="submit" class="ink-c-button -is-danger" value="{% trans 'Cancel' %}">
+  </div>
+ </form>
 </div>
-{%   else %}
-<h1>{% blocktrans with err_msg=error.error %}Error: {{err_msg}}{% endblocktrans %}</h1>
+{%  endbox %}
+{%  else %}
+{%   box 'oauth-authorize-error' %}
+<div class="box-head">
+ <h1 class="box-title">{% blocktrans with err_msg=error.error %}Error: {{err_msg}}{% endblocktrans %}</h1>
+</div>
+<div class="box-main box-foot">
  <p>{{error.description}}</p>
-{%  endif %}
+</div>
 {%   endbox %}
+{%  endif %}
 {% endblock content %}

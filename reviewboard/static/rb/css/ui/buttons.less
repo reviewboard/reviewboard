@@ -422,11 +422,16 @@
 
 /*
  * Give all standard buttons the .rb-c-button component by default.
+ *
+ * This skips any button that has opted into a component class (anything
+ * containing "-c-", such as .ink-c-button or .rb-c-button). Those components
+ * provide their own styling. Buttons with only legacy modifier classes, such
+ * as .primary or .large, are still styled here.
  */
 button,
 input[type="button"],
 input[type="submit"] {
-  &:not(.ink-c-button) {
+  &:not([class*="-c-"]) {
     &:extend(.rb-c-button all);
   }
 }
@@ -803,8 +808,8 @@ input[type="submit"] {
 }
 
 
-button:not(.ink-c-button),
-input[type="submit"]:not(.ink-c-button),
+button:not([class*="-c-"]),
+input[type="submit"]:not([class*="-c-"]),
 .btn,
 .btn-segment {
   &:hover,

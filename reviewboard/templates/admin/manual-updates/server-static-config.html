@@ -9,7 +9,7 @@
   You will need to make manual changes to your web server configuration.
 {% endblocktrans %}
  </p>
- <h2>{% trans "Apache" %}</h2>
+ <h3>{% trans "Apache" %}</h3>
  <pre>
   Alias {{SITE_ROOT}}static "{{STATIC_ROOT}}"
 
@@ -18,7 +18,7 @@
   &lt;/Location&gt;
 </pre>
  <p>
- <h2>{% trans "lighttpd" %}</h2>
+ <h3>{% trans "lighttpd" %}</h3>
  <p>
 {% blocktrans %}
   Add the following to <code>alias.url</code>:
@@ -40,7 +40,7 @@
   These lines will look similar to the existing lines for the media files.
 {% endblocktrans %}
  </p>
- <h2>{% trans "Finishing up" %}</h2>
+ <h3>{% trans "Finishing up" %}</h3>
  <p>
 {% blocktrans %}
   Once you have made these changes, type the following to resolve this:
