@@ -15,7 +15,7 @@ RB.RepositorySelectionView = RB.CollectionView.extend({
           <li class="rb-c-sidebar__item">
            <div class="rb-c-sidebar__item-label">
             <div class="rb-c-search-field">
-             <span class="fa fa-search"></span>
+             <span class="ink-i-search"></span>
              <input class="rb-c-search-field__input" type="search"
                     placeholder="<%- filterLabel %>">
             </div>

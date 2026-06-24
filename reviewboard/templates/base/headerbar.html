@@ -9,7 +9,7 @@
   <form method="get" action="{% url 'search' %}">
 {% endif %}
  <div class="rb-c-search-field" id="search">
-   <span class="fa fa-search"></span>
+   <span class="ink-i-search"></span>
    <input class="rb-c-search-field__input" type="search" name="q" placeholder="{% if siteconfig_settings.search_enable %}{% trans "Search" %}{% else %}{% trans "Jump to..." %}{% endif %}" id="search_field" {% attr "value" %}{{query}}{% endattr %} />
  </div>
 {% if siteconfig_settings.search_enable %}
