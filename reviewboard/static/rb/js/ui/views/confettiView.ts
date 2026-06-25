@@ -703,12 +703,11 @@ export class ConfettiView extends BaseView<
             if (bounds.width > 1 &&
                 bounds.height > 1 &&
                 bounds.top >= canvasBounds.top &&
-                bounds.bottom <= canvasBounds.bottom &&
                 bounds.left >= canvasBounds.left &&
                 bounds.right <= canvasBounds.right) {
                 /*
-                 * This fits into the bounds of the canvas. It's a candidate
-                 * platform for any landing confetti.
+                 * The platform top fits into the bounds of the canvas. It's
+                 * a candidate platform for any landing confetti.
                  */
                 platforms.push({
                     bounds: DOMRect.fromRect({
@@ -837,8 +836,6 @@ export class ConfettiView extends BaseView<
      *
      * If the piece has hit a side, it will be deflected back in.
      *
-     * Pieces do not bounce off of platforms.
-     *
      * Args:
      *     piece (ConfettiPiece):
      *         The piece of confetti to check.
@@ -867,6 +864,10 @@ export class ConfettiView extends BaseView<
      * midpoint of the piece. If the piece moves down across the top of the
      * platform, it will begin bouncing or landing on that platform.
      *
+     * If the piece enters a platform's bounds from the left or right side, it
+     * will bounce off that side and continue falling, eventually landing on
+     * top of the nearest platform.
+     *
      * Args:
      *     piece (ConfettiPiece):
      *         The piece of confetti to check.
@@ -890,12 +891,10 @@ export class ConfettiView extends BaseView<
         const pieceBounds = piece.bounds;
         const prevPiecePos = piece.prevPos;
 
-        const bucketSizePx = options.platformBucketSizePx;
         const centerX = pieceBounds.x + (pieceBounds.width / 2);
         const platformBucketIndex = this.#getPlatformBucketIndex(centerX);
         const platformBuckets = this.#platformBuckets;
         const maxPlatformChecks = options.maxPlatformChecks;
-        const bounceMinVelocity = options.bounceMinVelocity;
 
         /*
          * Build candidate buckets for the midpoint and the two buckets on
@@ -944,7 +943,7 @@ export class ConfettiView extends BaseView<
                 }
 
                 if (pieceBounds.right <= platformBounds.left ||
-                    pieceBounds.x >= platformBounds.right) {
+                    pieceBounds.left >= platformBounds.right) {
                     /* This is out of bounds. Skip it. */
                     continue;
                 }
@@ -960,6 +959,30 @@ export class ConfettiView extends BaseView<
                      * It will land on top of it once it finishes bouncing.
                      */
                     return this.#bounceOrLandPiece(piece, platform);
+                }
+
+                const centerY = pieceBounds.y + (pieceBounds.height / 2);
+
+                /* Check if the piece hit a vertical side of a platform. */
+                if (pieceBounds.left <= platformBounds.right &&
+                    pieceBounds.right >= platformBounds.left &&
+                    centerY <= platformBounds.bottom &&
+                    centerY >= platformBounds.top) {
+                    if (prevPiecePos.x < pieceBounds.left) {
+                        /*
+                         * The piece came from the left. Bounce it off the
+                         * left side and let it continue falling.
+                         */
+                        return this.#bounceOrLandPiece(
+                            piece,
+                            platform,
+                            'left');
+                    } else {
+                        return this.#bounceOrLandPiece(
+                            piece,
+                            platform,
+                            'right');
+                    }
                 }
             }
         }
@@ -1007,6 +1030,11 @@ export class ConfettiView extends BaseView<
      *     platform (Platform):
      *         The platform to bounce or land on.
      *
+     *     lateralDirection (string):
+     *         If the piece hit a vertical side of the platform, this is the
+     *         lateral direction that the piece was travelling (``left`` or
+     *         ``right``).
+     *
      * Returns:
      *     boolean:
      *     ``true`` if the piece fully landed on the platform. ``false`` if it
@@ -1015,23 +1043,36 @@ export class ConfettiView extends BaseView<
     #bounceOrLandPiece(
         piece: ConfettiPiece,
         platform: Platform,
+        lateralDirection: string = null,
     ): boolean {
         const options = this.#options;
         const pieceBounds = piece.bounds;
         const pieceVelocity = piece.velocity;
         const platformBounds = platform.bounds;
 
-        /* Cap the Y position of the piece to not clip below the bounds. */
-        pieceBounds.y = platformBounds.top - pieceBounds.height;
+        /* Cap the position of the piece to not clip beyond the bounds. */
+        if (lateralDirection === 'left') {
+            pieceBounds.x = platformBounds.left - pieceBounds.width;
+        } else if (lateralDirection === 'right') {
+            pieceBounds.x = platformBounds.right;
+        } else {
+            pieceBounds.y = platformBounds.top - pieceBounds.height;
+        }
 
         /* Check if the piece is still bouncing. */
-        if (Math.abs(pieceVelocity.y) >= options.bounceMinVelocity) {
+        if (Math.abs(pieceVelocity.y) >= options.bounceMinVelocity ||
+            Math.abs(pieceVelocity.x) >= options.bounceMinVelocity) {
             /*
              * The piece is bouncing. Reduce its velocity and adjust its
              * position based on the bounce.
              */
-            pieceVelocity.x *= options.bounceFrictionX;
-            pieceVelocity.y = -pieceVelocity.y * piece.bounce;
+
+            if (lateralDirection) {
+                piece.velocity.x = -piece.velocity.x * piece.bounce;
+            } else {
+                pieceVelocity.x *= options.bounceFrictionX;
+                pieceVelocity.y = -pieceVelocity.y * piece.bounce;
+            }
 
             return false;
         } else {
