@@ -33,6 +33,15 @@ interface ConfettiViewOptions {
     /** The number of pieces of confetti to display. */
     count?: number;
 
+    /**
+     * Whether to enable the floor at the bottom of the viewport.
+     *
+     * When ``true``, pieces that do not land on any platform can land on
+     * the bottom of the viewport. When ``false``, the pieces will disappear
+     * below the bottom of the viewport rather than landing.
+     */
+    floorEnabled?: boolean;
+
     /** Padding to apply to the floor at the bottom of the viewport. */
     floorPadding?: number;
 
@@ -189,6 +198,9 @@ interface ConfettiPiece {
     /** The color of the piece. */
     color: string;
 
+    /** Whether the piece has fallen through the floor. */
+    fellThrough: boolean;
+
     /** The phase of the flip after bounce. */
     flipPhase: number;
 
@@ -277,7 +289,7 @@ export class ConfettiView extends BaseView<
     #devicePixelRatio: number;
 
     /** The floor at the bottom of the viewport. */
-    #floor: Platform;
+    #floor: (Platform | null) = null;
 
     /** All options provided by the caller. */
     #options: Required<ConfettiViewOptions>;
@@ -329,6 +341,7 @@ export class ConfettiView extends BaseView<
                 '#F77F00',
             ],
             count: 70,
+            floorEnabled: true,
             floorPadding: 0,
             gravity: 700,
             maxDurationMs: 6000,
@@ -355,15 +368,17 @@ export class ConfettiView extends BaseView<
 
         this.#options = _.defaults({}, options, defaultOptions);
 
-        /* Define the floor. */
-        this.#floor = {
-            bounds: DOMRect.fromRect({
-                x: 0,
-                y: 0,
-                width: 0,
-                height: 0,
-            }),
-        };
+        if (this.#options.floorEnabled === true) {
+            /* Define the floor. */
+            this.#floor = {
+                bounds: DOMRect.fromRect({
+                    x: 0,
+                    y: 0,
+                    width: 0,
+                    height: 0,
+                }),
+            };
+        }
     }
 
     /**
@@ -397,6 +412,7 @@ export class ConfettiView extends BaseView<
         /* Pull out the state we'll be working with each frame. */
         const canvasCtx = this.#canvasCtx;
         const pieces = this.#pieces;
+        const floor = this.#floor;
 
         /*
          * These are our cheap caches, which will be reset if the canvas
@@ -454,7 +470,7 @@ export class ConfettiView extends BaseView<
              * Landed pieces will not be moved.
              */
             for (const piece of pieces) {
-                if (!piece.landedOn) {
+                if (!piece.landedOn && !piece.fellThrough) {
                     const pieceBounds = piece.bounds;
                     const pieceVelocity = piece.velocity;
 
@@ -478,10 +494,12 @@ export class ConfettiView extends BaseView<
                      * screen.
                      */
                     pieceBounds.x += pieceVelocity.x * dt;
-                    pieceBounds.y = Math.min(
-                        canvasBounds.height - pieceBounds.height,
-                        pieceBounds.y + pieceVelocity.y * dt,
-                    );
+                    pieceBounds.y = (floor !== null)
+                        ? Math.min(
+                            canvasBounds.height - pieceBounds.height,
+                            pieceBounds.y + pieceVelocity.y * dt,
+                        )
+                        : pieceBounds.y + pieceVelocity.y * dt;
 
                     this.#bounceOffSides(piece);
 
@@ -539,7 +557,7 @@ export class ConfettiView extends BaseView<
 
         /* Set the canvas as a full-page overlay, with events turned off. */
         const canvasStyle = el.style;
-        canvasStyle.position = 'fixed';
+        canvasStyle.position = 'absolute';
         canvasStyle.left = '0';
         canvasStyle.top = '0';
         canvasStyle.width = '100vw';
@@ -658,6 +676,7 @@ export class ConfettiView extends BaseView<
                 }),
                 bounce: bounceMin + Math.random() * bounceRange,
                 color: colors[Math.floor(Math.random() * numColors)],
+                fellThrough: false,
                 flipPhase: Math.random() * flipPhase,
                 landedOn: null,
                 landRelX: null,
@@ -774,11 +793,15 @@ export class ConfettiView extends BaseView<
      * at the very bottom but raised up for the provided padding.
      */
     #updateFloor() {
-        const canvasBounds = this.#canvasBounds;
-        const floorBounds = this.#floor.bounds;
+        const floor = this.#floor;
 
-        floorBounds.y = canvasBounds.height - this.#options.floorPadding;
-        floorBounds.width = canvasBounds.width;
+        if (floor !== null) {
+            const canvasBounds = this.#canvasBounds;
+            const floorBounds = floor.bounds;
+
+            floorBounds.y = canvasBounds.height - this.#options.floorPadding;
+            floorBounds.width = canvasBounds.width;
+        }
     }
 
     /**
@@ -806,7 +829,7 @@ export class ConfettiView extends BaseView<
         ctx.translate(centerX, centerY);
         ctx.rotate(piece.rotation);
 
-        if (!piece.landedOn) {
+        if (!piece.landedOn && !piece.fellThrough) {
             const flip = Math.cos(
                 piece.flipPhase +
                 pieceBounds.x * constructor.FLIP_RADIANS_PER_PX,
@@ -994,22 +1017,35 @@ export class ConfettiView extends BaseView<
     /**
      * Attempt landing a piece of confetti on the floor.
      *
+     * If ``floorEnabled=false``, the piece falls through the floor
+     * instead of landing.
+     *
      * Args:
      *     piece (ConfettiPiece):
      *         The piece of confetti to check.
      *
      * Returns:
      *     boolean:
-     *     ``true`` if the piece fully landed on the floor. ``false`` if it
-     *     didn't, or if it hit the floor but began bouncing.
+     *     ``true`` if the piece fully landed on or fell past the floor.
+     *     ``false`` if it didn't, or if it hit the floor but began bouncing.
      */
     #attemptLandingOnFloor(
         piece: ConfettiPiece,
     ): boolean {
         const floor = this.#floor;
 
-        if (piece.bounds.bottom >= floor.bounds.y) {
-            return this.#bounceOrLandPiece(piece, floor);
+        if (floor !== null) {
+            if (piece.bounds.bottom >= floor.bounds.y) {
+                return this.#bounceOrLandPiece(piece, floor);
+            }
+        } else if (piece.bounds.y >= this.#canvasBounds.height) {
+            piece.fellThrough = true;
+            piece.landRelX = 0;
+            piece.velocity.x = 0;
+            piece.velocity.y = 0;
+            piece.velocity.rotation = 0;
+
+            return true;
         }
 
         return false;
