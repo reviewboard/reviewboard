@@ -1,5 +1,6 @@
 export * from './views/inlineEditorView';
 export { CenteredElementManager } from './views/centeredElementManager';
+export { ConfettiView } from './views/confettiView';
 export { DialogView } from './views/dialogView';
 export { DnDUploader } from './views/dndUploaderView';
 export {
