@@ -9,6 +9,7 @@ from __future__ import annotations
 from django.template import Context
 from django.utils.safestring import SafeString
 
+from reviewboard.actions import ActionPlacement, AttachmentPoint
 from reviewboard.actions.renderers import BaseActionRenderer
 from reviewboard.actions.tests.base import TestAction, TestActionsRegistry
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
@@ -32,6 +33,26 @@ class BaseActionRendererTests(TestCase):
 
         self.assertEqual(renderer.get_js_view_data(context=Context()),
                          {})
+
+    def test_get_js_view_data_with_action_override(self) -> None:
+        """Testing BaseActionRenderer.get_js_view_data forwards a legacy
+        action's get_js_view_data
+        """
+        class MyAction(TestAction):
+            action_id = 'js-data-test'
+
+            def get_js_view_data(self, *, context):
+                return {'foo': 'bar'}
+
+        with self.assertWarns(RemovedInReviewBoard10_0Warning):
+            action = MyAction()
+
+        placement = action.get_placement('review-request')
+
+        renderer = BaseActionRenderer(action=action, placement=placement)
+
+        self.assertEqual(renderer.get_js_view_data(context=Context()),
+                         {'foo': 'bar'})
 
     def test_get_extra_context(self) -> None:
         """Testing BaseActionRenderer.get_extra_context"""
@@ -64,6 +85,95 @@ class BaseActionRendererTests(TestCase):
                 'verbose_label': None,
                 'visible': True,
             })
+
+    def test_get_extra_context_with_dom_element_id_override(self) -> None:
+        """Testing BaseActionRenderer.get_extra_context with a
+        get_dom_element_id override
+        """
+        class MyAction(TestAction):
+            action_id = 'override-test'
+
+            def get_dom_element_id(self) -> str:
+                return 'override-id'
+
+        with self.assertWarns(RemovedInReviewBoard10_0Warning):
+            action = MyAction()
+
+        placement = action.get_placement('review-request')
+
+        registry = TestActionsRegistry()
+        registry.register(action)
+
+        renderer = BaseActionRenderer(action=action, placement=placement)
+
+        extra_context = renderer.get_extra_context(
+            request=self.create_http_request(),
+            context=Context())
+
+        self.assertEqual(extra_context['dom_element_id'], 'override-id')
+
+    def test_get_extra_context_with_placement_dom_element_id(self) -> None:
+        """Testing BaseActionRenderer.get_extra_context with
+        placement.dom_element_id
+        """
+        class MyAction(TestAction):
+            action_id = 'placement-test'
+            placements = [
+                ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                                dom_element_id='placement-id'),
+            ]
+
+        action = MyAction()
+        placement = action.get_placement('review-request')
+
+        registry = TestActionsRegistry()
+        registry.register(action)
+
+        renderer = BaseActionRenderer(action=action, placement=placement)
+
+        extra_context = renderer.get_extra_context(
+            request=self.create_http_request(),
+            context=Context())
+
+        self.assertEqual(extra_context['dom_element_id'],
+                         'placement-id')
+
+    def test_get_extra_context_with_multiple_placements(self) -> None:
+        """Testing BaseActionRenderer.get_extra_context with multiple
+        placements produces unique DOM element IDs
+        """
+        class MyAction(TestAction):
+            action_id = 'multi-placement-test'
+            placements = [
+                ActionPlacement(attachment=AttachmentPoint.HEADER),
+                ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST),
+            ]
+
+        action = MyAction()
+
+        registry = TestActionsRegistry()
+        registry.register(action)
+
+        request = self.create_http_request()
+        context = Context()
+
+        header_context = BaseActionRenderer(
+            action=action,
+            placement=action.get_placement('header'),
+        ).get_extra_context(request=request, context=context)
+
+        review_request_context = BaseActionRenderer(
+            action=action,
+            placement=action.get_placement('review-request'),
+        ).get_extra_context(request=request, context=context)
+
+        # Each placement gets its own attachment-qualified ID, so the same
+        # action placed in multiple attachment points never produces duplicate
+        # DOM element IDs.
+        self.assertEqual(header_context['dom_element_id'],
+                         'action-header-multi-placement-test')
+        self.assertEqual(review_request_context['dom_element_id'],
+                         'action-review-request-multi-placement-test')
 
     def test_render(self) -> None:
         """Testing BaseActionRenderer.render"""
