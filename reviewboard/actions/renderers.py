@@ -107,6 +107,11 @@ class BaseActionRenderer:
 
         Subclasses can override this to provide custom data for a view.
 
+        By default, for backwards-compatibility, this will call
+        :py:meth:`BaseAction.get_js_view_data()
+        <reviewboard.actions.base.BaseAction.get_js_view_data>`. That method is
+        deprecated, and this call will be removed in Review Board 10.
+
         Args:
             context (django.template.Context):
                 The current rendering context.
@@ -115,7 +120,9 @@ class BaseActionRenderer:
             dict:
             A dictionary of options to pass to the view instance.
         """
-        return {}
+        # This will be {} by default. In Review Board 10, we can drop this
+        # call and just return {}.
+        return self.action.get_js_view_data(context=context)
 
     def get_extra_context(
         self,
@@ -141,8 +148,22 @@ class BaseActionRenderer:
             dict:
             Extra context to use when rendering the action's template.
         """
+        from reviewboard.actions.base import BaseAction
+
         action = self.action
+        action_cls = type(action)
         placement = self.placement
+
+        if action_cls.get_dom_element_id is not BaseAction.get_dom_element_id:
+            # The action overrode get_dom_element_id(). Use it so that we're
+            # not breaking anything during the deprecation period.
+            legacy_dom_element_id = action.get_dom_element_id()
+        else:
+            # The action didn't override get_dom_element_id(). Don't use it
+            # here because it assumes we're rendering the first placement (for
+            # backwards compatibility purposes), but for modern actions we may
+            # be rendering a placement that's not the first here.
+            legacy_dom_element_id = None
 
         extra_context = action.get_extra_context(request=request,
                                                  context=context)
@@ -152,7 +173,7 @@ class BaseActionRenderer:
             'attachment_point_id': placement.attachment,
             'dom_element_id': (
                 placement.dom_element_id or
-                action.get_dom_element_id() or
+                legacy_dom_element_id or
                 f'action-{placement.attachment}-{action.action_id}'
             ),
             'has_parent': placement.parent_id is not None,
@@ -283,29 +304,6 @@ class DefaultActionRenderer(BaseActionRenderer):
 
     template_name = 'actions/action.html'
     js_view_class = 'RB.Actions.ActionView'
-
-    def get_js_view_data(
-        self,
-        *,
-        context: Context,
-    ) -> SerializableDjangoJSONDict:
-        """Return data to be passed to the JavaScript view.
-
-        By default, for backwards-compatibility, this will call
-        :py:meth:`BaseAction.get_js_view_data()
-        <reviewboard.actions.base.BaseAction.get_js_view_data>`. This method is
-        deprecated, and will be removed in Review Board 9.
-
-        Args:
-            context (django.template.Context):
-                The current rendering context.
-
-        Returns:
-            dict:
-            A dictionary of options to pass to the view instance.
-        """
-        # This will be {} by default. In Review Board 9, we can drop this call.
-        return self.action.get_js_view_data(context=context)
 
 
 class BaseActionGroupRenderer(BaseActionRenderer):

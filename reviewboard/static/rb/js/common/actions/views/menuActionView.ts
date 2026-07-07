@@ -106,6 +106,22 @@ export class MenuActionView<
                             url: url,
                         });
 
+                        /*
+                         * This menu item is built entirely from the action's
+                         * model data, so the action's own rendered element is
+                         * redundant and should not be shown alongside the menu.
+                         *
+                         * Our default templates already render these children
+                         * inside a hidden container, making this a no-op. But
+                         * legacy custom menu templates render them inline and
+                         * visible, which leaves a duplicate set of actions
+                         * below the menu. Hiding the element here provides
+                         * backwards compatibility with those templates.
+                         *
+                         * TODO: This can be removed in Review Board 10.
+                         */
+                        childActionView.$el.hide();
+
                         /* Update the menu item when these change. */
                         this.listenTo(
                             childAction,
