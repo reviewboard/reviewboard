@@ -1056,7 +1056,8 @@ class UsersDataGridTests(BaseViewTestCase):
                         'column_pending_review_request_count': Count(
                             'review_requests',
                             filter=(Q(review_requests__public=True) &
-                                    Q(review_requests__status='P'))),
+                                    Q(review_requests__status='P')),
+                            distinct=True),
                     },
                     'group_by': True,
                     'join_types': {
