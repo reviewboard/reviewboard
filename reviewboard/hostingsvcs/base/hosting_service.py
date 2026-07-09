@@ -26,6 +26,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import ClassVar
 
+    from django.db.models import Model
     from django.http import HttpRequest
     from django.urls import _AnyURL
     from django.utils.safestring import SafeString
@@ -1164,3 +1165,34 @@ class BaseHostingService(Generic[THostingServiceClient]):
                     return info[name]
 
         return getattr(cls, name, default)
+
+    @classmethod
+    def get_protected_objects_for_account_deletion(
+        cls,
+        accounts: Sequence[HostingServiceAccount],
+    ) -> Sequence[Model]:
+        """Return objects that must not be orphaned by deleting accounts.
+
+        This lets a service report state that depends on an account but that
+        the database does not protect, such as a reference stored in JSON data
+        rather than as a foreign key. The admin refuses to delete the accounts
+        while anything is returned, and names what is in the way, the same as
+        it does for a protected foreign key.
+
+        The accounts being deleted are passed together so that a service can
+        ignore dependencies that are themselves going away. The default
+        implementation returns nothing.
+
+        Version Added:
+            9.0
+
+        Args:
+            accounts (list of
+                      reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The accounts of this service that are being deleted.
+
+        Returns:
+            list of django.db.models.Model:
+            The objects blocking the deletion.
+        """
+        return []

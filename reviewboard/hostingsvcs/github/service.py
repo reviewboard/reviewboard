@@ -1414,3 +1414,58 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
                 The provided plan was not valid.
         """
         return self.get_plan_field(plan, extra_data, 'repo_name')
+
+    @classmethod
+    def get_protected_objects_for_account_deletion(
+        cls,
+        accounts: Sequence[HostingServiceAccount],
+    ) -> Sequence[HostingServiceAccount]:
+        """Return installations that deleting these accounts would orphan.
+
+        Installation accounts reference their hidden app-record account by
+        primary key stored in JSON data rather than a database foreign key, so
+        nothing at the database level stops the record from being deleted out
+        from under them. An installation left without its app record can no
+        longer authenticate.
+
+        Installations being deleted alongside their app record are not
+        reported, so deleting a record together with everything depending on
+        it is allowed.
+
+        Version Added:
+            9.0
+
+        Args:
+            accounts (list of
+                      reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The GitHub accounts being deleted.
+
+        Returns:
+            list of reviewboard.hostingsvcs.models.HostingServiceAccount:
+            The installation accounts blocking the deletion.
+        """
+        app_account_pks = {
+            account.pk
+            for account in accounts
+            if is_app_record_account(account)
+        }
+
+        if not app_account_pks:
+            return []
+
+        deleting_pks = {
+            account.pk
+            for account in accounts
+        }
+        blocked: list[HostingServiceAccount] = []
+
+        for account in HostingServiceAccount.objects.filter(
+                service_name='github'):
+            app_data = get_github_app_data(account)
+
+            if (account.pk not in deleting_pks and
+                is_installation_data(app_data) and
+                app_data.app_account_id in app_account_pks):
+                blocked.append(account)
+
+        return blocked

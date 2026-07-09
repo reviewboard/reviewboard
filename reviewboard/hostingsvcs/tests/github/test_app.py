@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, cast
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 from django.core.cache import cache
+from django.urls import reverse
 
 from reviewboard.hostingsvcs.github.accounts import (
     GitHubAppRecordData,
@@ -20,6 +21,7 @@ from reviewboard.hostingsvcs.github.accounts import (
 )
 from reviewboard.hostingsvcs.github.app_auth import build_app_jwt_from_data
 from reviewboard.hostingsvcs.github.client import GitHubClient
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.tests.github.base import GitHubTestCase
 from reviewboard.scmtools.core import Branch
 
@@ -451,3 +453,156 @@ class GitHubAppTests(GitHubTestCase):
         padded = data + '=' * (-len(data) % 4)
 
         return base64.urlsafe_b64decode(padded)
+
+
+class GitHubAppRecordDeletionTests(GitHubTestCase):
+    """Unit tests for deleting an app-record account in the admin UI.
+
+    Version Added:
+        9.0
+    """
+
+    fixtures = ['test_users']
+
+    def test_admin_delete_app_record_with_dependents_blocked(self) -> None:
+        """Testing the admin UI refuses to delete an app-record account while
+        an installation depends on it
+        """
+        app_account = self._create_app_record()
+        installation = self._create_installation(app_account)
+
+        self.login_user(admin=True)
+
+        response = self.client.post(
+            reverse('admin:hostingsvcs_hostingserviceaccount_delete',
+                    args=(app_account.pk,)),
+            {'post': 'yes'})
+
+        # The confirmation page is re-rendered listing what blocks the delete,
+        # rather than the delete failing partway through.
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(str(installation).encode('utf-8'), response.content)
+
+        self.assertTrue(
+            HostingServiceAccount.objects.filter(pk=app_account.pk).exists())
+
+    def test_admin_delete_app_record_without_dependents_allowed(self) -> None:
+        """Testing the admin UI deletes an app-record account with no
+        installations
+        """
+        app_account = self._create_app_record()
+
+        self.login_user(admin=True)
+
+        response = self.client.post(
+            reverse('admin:hostingsvcs_hostingserviceaccount_delete',
+                    args=(app_account.pk,)),
+            {'post': 'yes'})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            HostingServiceAccount.objects.filter(pk=app_account.pk).exists())
+
+    def test_admin_delete_pat_account_allowed(self) -> None:
+        """Testing the admin UI deletes a Personal Access Token account"""
+        pat_account = self.create_hosting_account()
+
+        self.login_user(admin=True)
+
+        response = self.client.post(
+            reverse('admin:hostingsvcs_hostingserviceaccount_delete',
+                    args=(pat_account.pk,)),
+            {'post': 'yes'})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            HostingServiceAccount.objects.filter(pk=pat_account.pk).exists())
+
+    def test_admin_delete_account_for_unknown_service(self) -> None:
+        """Testing the admin UI deletes an account whose hosting service is no
+        longer registered
+        """
+        account = HostingServiceAccount.objects.create(
+            service_name='not-a-registered-service',
+            username='user1',
+            hosting_url='')
+
+        self.login_user(admin=True)
+
+        response = self.client.post(
+            reverse('admin:hostingsvcs_hostingserviceaccount_delete',
+                    args=(account.pk,)),
+            {'post': 'yes'})
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(
+            HostingServiceAccount.objects.filter(pk=account.pk).exists())
+
+    def test_admin_delete_app_record_with_dependents_together(self) -> None:
+        """Testing the admin UI deletes an app-record account selected together
+        with the installations depending on it
+        """
+        app_account = self._create_app_record()
+        installation = self._create_installation(app_account)
+
+        self.login_user(admin=True)
+
+        response = self.client.post(
+            reverse('admin:hostingsvcs_hostingserviceaccount_changelist'),
+            {
+                'action': 'delete_selected',
+                '_selected_action': [app_account.pk, installation.pk],
+                'post': 'yes',
+            })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(HostingServiceAccount.objects.exists())
+
+    def _create_app_record(self) -> HostingServiceAccount:
+        """Return an app-record account with valid ``github_app`` data.
+
+        The credential fields are placeholders. The deletion path never
+        reads them, but they must be present for the data to validate.
+
+        Returns:
+            reviewboard.hostingsvcs.models.HostingServiceAccount:
+            The new app-record account.
+        """
+        return self.create_hosting_account(data={
+            'github_app': {
+                'app_id': 12345,
+                'app_slug': 'rb-app',
+                'client_id': 'client-id',
+                'client_secret': 'encrypted-client-secret',
+                'private_key': 'encrypted-private-key',
+                'role': 'app',
+                'webhook_secret': 'encrypted-webhook-secret',
+            },
+        })
+
+    def _create_installation(
+        self,
+        app_account: HostingServiceAccount,
+    ) -> HostingServiceAccount:
+        """Return an installation account referencing an app record.
+
+        Args:
+            app_account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The app-record account holding the credentials.
+
+        Returns:
+            reviewboard.hostingsvcs.models.HostingServiceAccount:
+            The new installation account.
+        """
+        return HostingServiceAccount.objects.create(
+            service_name='github',
+            username='myorg',
+            hosting_url='',
+            data={
+                'github_app': {
+                    'app_account_id': app_account.pk,
+                    'installation_id': 1,
+                    'owner_login': 'myorg',
+                    'role': 'installation',
+                },
+            })
