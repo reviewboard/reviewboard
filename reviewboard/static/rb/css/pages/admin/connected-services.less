@@ -45,6 +45,48 @@
     gap: var(--ink-u-spacing-std);
     justify-content: space-between;
   }
+
+  /**
+   * The list of connections needing attention within the alert.
+   *
+   * Each item lays its description out on one row, with the fix action pushed
+   * to the end.
+   *
+   * Structure:
+   *     <ul class="rb-c-admin-cs-list__attention-items">
+   *      [<li class="rb-c-admin-cs-list__attention-item">...</li>]
+   *     </ul>
+   */
+  &__attention-items {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-s);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /**
+   * An item in the needs-attention list.
+   *
+   * Structure:
+   *     <li class="rb-c-admin-cs-list__attention-item">
+   *      <span class="rb-c-admin-cs-list__attention-detail">...</span>
+   *      <span class="rb-c-admin-cs-list__attention-fix">...</span>
+   *     </li>
+   */
+  &__attention-item {
+    align-items: center;
+    display: flex;
+    gap: var(--ink-u-spacing-std);
+  }
+
+  /**
+   * The detail string for a needs-attention item.
+   */
+  &__attention-detail {
+    flex-grow: 1;
+  }
 }
 
 

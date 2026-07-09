@@ -115,6 +115,112 @@ class ConnectedServicesListViewTests(TestCase):
         self.assertIn(b'data-account-menu', response.content)
         self.assertIn(b'edit-credentials', response.content)
 
+    def test_get_github_app_install_omits_account_menu(self) -> None:
+        """Testing ConnectedServicesListView GET omits the account menu for a
+        GitHub App installation account
+        """
+        HostingServiceAccount.objects.create(
+            service_name='github',
+            username='acme-org',
+            visible=True,
+            data={
+                'github_app': {
+                    'app_account_id': 1,
+                    'installation_id': 42,
+                    'owner_login': 'myuser',
+                    'owner_type': 'user',
+                    'repository_selection': 'all',
+                    'role': 'installation',
+                },
+            })
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        # App installations have no credentials to edit, so they get no menu.
+        self.assertIn(b'acme-org', response.content)
+        self.assertNotIn(b'data-account-menu', response.content)
+
+    def test_get_without_attention_items(self) -> None:
+        """Testing ConnectedServicesListView GET shows no alert when no
+        connection needs attention
+        """
+        HostingServiceAccount.objects.create(
+            service_name='github',
+            username='user1',
+            visible=True)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['attention_items'], [])
+        self.assertNotIn(b'needs attention', response.content)
+
+    def test_get_with_attention_item(self) -> None:
+        """Testing ConnectedServicesListView GET shows an alert for a
+        suspended GitHub installation
+        """
+        account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='acme-org',
+            visible=True,
+            data={
+                'github_app': {
+                    'role': 'installation',
+                    'status': 'suspended',
+                    'app_account_id': 1,
+                    'installation_id': 42,
+                    'owner_login': 'acme-org',
+                    'owner_type': 'organization',
+                },
+            })
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        self.assertEqual(len(response.context['attention_items']), 1)
+
+        content = response.content
+        self.assertIn(b'1 connection needs attention', content)
+        self.assertIn(b'Suspended on GitHub', content)
+
+        # The fix action is wired up for the client to dispatch, pointing at
+        # the reconnect view, which verifies the state with GitHub first.
+        self.assertIn(b'data-attention-fix', content)
+        self.assertIn(
+            f'github-app/{account.pk}/reconnect/'.encode('utf-8'),
+            content)
+
+    def test_get_attention_items_pluralize(self) -> None:
+        """Testing ConnectedServicesListView GET pluralizes the alert heading
+        """
+        for username in ('acme-org', 'beta-org'):
+            HostingServiceAccount.objects.create(
+                service_name='github',
+                username=username,
+                visible=True,
+                data={
+                    'github_app': {
+                        'role': 'installation',
+                        'status': 'removed',
+                        'app_account_id': 1,
+                        'installation_id': 42,
+                        'owner_login': username,
+                    },
+                })
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['attention_items']), 2)
+        self.assertIn(b'2 connections need attention', response.content)
+
     def test_get_sorts_entries_by_service_name(self) -> None:
         """Testing ConnectedServicesListView GET sorts entries by service
         name

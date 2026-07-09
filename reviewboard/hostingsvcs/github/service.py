@@ -31,7 +31,9 @@ from reviewboard.hostingsvcs.errors import (
 )
 from reviewboard.hostingsvcs.github import views
 from reviewboard.hostingsvcs.github.accounts import (
+    GitHubAppInstallationData,
     GitHubAppRecordData,
+    InstallationStatus,
     get_github_app_data,
     get_github_app_role,
     is_app_record_account,
@@ -39,7 +41,7 @@ from reviewboard.hostingsvcs.github.accounts import (
     is_installation_account,
     is_installation_data,
 )
-from reviewboard.hostingsvcs.github.client import GitHubClient
+from reviewboard.hostingsvcs.github.client import GitHubClient, get_github_urls
 from reviewboard.hostingsvcs.github.forms import (
     GitHubAuthForm,
     GitHubPrivateForm,
@@ -60,10 +62,13 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.urls import _AnyURL
     from django.utils.safestring import SafeString
+    from typelets.django.strings import StrOrPromise
 
     from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
-    from reviewboard.hostingsvcs.base.connect_ui import \
-        AdminServicesListAccountMenuItem
+    from reviewboard.hostingsvcs.base.connect_ui import (
+        AdminServicesListAccountMenuItem,
+        AdminServicesListAttentionItem,
+    )
     from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
     from reviewboard.hostingsvcs.base.hosting_service import HostingServicePlan
     from reviewboard.hostingsvcs.utils.paginator import BasePaginator
@@ -106,6 +111,34 @@ def _is_fine_grained_pat(
         ``True`` if the token is a fine-grained PAT, ``False`` otherwise.
     """
     return token.startswith('github_pat_')
+
+
+def _get_installation_status_label(
+    status: InstallationStatus,
+) -> StrOrPromise | None:
+    """Return the human-readable label for an installation status.
+
+    This is the text shown for a suspended or removed install, both on the
+    account's badge and in the "needs attention" alert.
+
+    Version Added:
+        9.0
+
+    Args:
+        status (reviewboard.hostingsvcs.github.accounts.InstallationStatus):
+            The installation status.
+
+    Returns:
+        str:
+        The label, or ``None`` if the status is active or unrecognized.
+    """
+    if status == InstallationStatus.SUSPENDED:
+        return _('Suspended on GitHub')
+
+    if status == InstallationStatus.REMOVED:
+        return _('Removed on GitHub')
+
+    return None
 
 
 class GitHubConnectUI(BaseHostingServiceConnectUI):
@@ -326,6 +359,13 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
             if is_installation_data(app_data):
                 avatar_url = app_data.owner_avatar_url
                 entry['is_app_install'] = True
+
+                status = app_data.status
+                entry['app_status'] = status
+                entry['app_status_label'] = _get_installation_status_label(
+                    status)
+                entry['app_needs_reconnect'] = (
+                    status != InstallationStatus.ACTIVE)
             else:
                 avatar_url = None
                 entry['is_app_install'] = False
@@ -359,11 +399,9 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
         """Return the menu items for an account in the admin list.
 
         App installation accounts have no stored credentials to edit, so they
-        do not get the default "Edit Credentials" item. App-specific items will
-        be added here later.
-
-        Version Added:
-            9.0
+        do not get the default "Edit Credentials" item. Installations that
+        have been suspended or removed on GitHub get a "Reconnect" item (see
+        :py:meth:`get_reconnect_url`).
 
         Args:
             request (django.http.HttpRequest):
@@ -378,11 +416,208 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
             The menu items to show for the account.
         """
         if is_installation_account(account):
-            return []
+            if (reconnect_item := self._get_reconnect_menu_item(account)):
+                return [reconnect_item]
+            else:
+                return []
 
         return super().get_connected_services_list_account_menu_items(
             request,
             account=account)
+
+    def get_connected_services_list_attention_items(
+        self,
+        request: HttpRequest,
+        *,
+        accounts: Sequence[HostingServiceAccount],
+    ) -> Sequence[AdminServicesListAttentionItem]:
+        """Return installations needing attention for the admin list.
+
+        Installations that GitHub has suspended or removed are reported, each
+        with the "Reconnect" action that resolves the problem, so the page can
+        list them in the aggregate "needs attention" alert.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            accounts (list of
+                      reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The connected accounts for this service.
+
+        Returns:
+            list of reviewboard.hostingsvcs.base.hosting_service.
+            AdminServicesListAttentionItem:
+            The installations needing attention.
+        """
+        service = self._hosting_service_cls
+        service_name = service.name
+        service_id = service.hosting_service_id
+        assert service_name is not None
+        assert service_id is not None
+
+        items: list[AdminServicesListAttentionItem] = []
+
+        for account in accounts:
+            app_data = get_github_app_data(account)
+
+            if not is_installation_data(app_data):
+                continue
+
+            message = _get_installation_status_label(app_data.status)
+
+            if message is None:
+                continue
+
+            item: AdminServicesListAttentionItem = {
+                'account_id': account.pk,
+                'account_label': account.username,
+                'message': message,
+                'service_id': service_id,
+                'service_name': service_name,
+            }
+
+            reconnect_item = self._get_reconnect_menu_item(account)
+
+            if reconnect_item is not None:
+                item['action'] = reconnect_item
+
+            items.append(item)
+
+        return items
+
+    def _get_reconnect_menu_item(
+        self,
+        account: HostingServiceAccount,
+    ) -> AdminServicesListAccountMenuItem | None:
+        """Return the "Reconnect" menu item for an installation, or None.
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The installation account.
+
+        Returns:
+            reviewboard.hostingsvcs.base.hosting_service.
+            AdminServicesListAccountMenuItem:
+            The reconnect item, or ``None`` if the install does not need
+            reconnecting.
+        """
+        app_data = get_github_app_data(account)
+
+        if (not is_installation_data(app_data) or
+            app_data.status == InstallationStatus.ACTIVE):
+            return None
+
+        service = self._hosting_service_cls
+
+        # This links to the reconnect view rather than directly to GitHub.
+        # The stored status may be stale (webhook deliveries can be missed),
+        # so the view first verifies the state with GitHub, repairing it if
+        # the problem was already resolved, and only forwards to GitHub if
+        # the problem still exists (see get_reconnect_url).
+        return {
+            'id': 'reconnect',
+            'label': _('Reconnect'),
+            'url': local_site_reverse(
+                'github-app-reconnect',
+                local_site=account.local_site,
+                kwargs={
+                    'hosting_service_id': service.hosting_service_id,
+                    'account_id': account.pk,
+                }),
+        }
+
+    def get_reconnect_url(
+        self,
+        account: HostingServiceAccount,
+    ) -> str | None:
+        """Return the URL that resolves an installation's problem, or None.
+
+        This is where the reconnect view forwards the administrator once it
+        has confirmed with GitHub that the problem still exists. A suspended
+        install still exists on GitHub, so this links straight to that
+        installation's settings page, where it can be reviewed and
+        unsuspended. A removed install is gone from GitHub, so this sends the
+        administrator back through the install flow to reinstall it.
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The installation account.
+
+        Returns:
+            str:
+            The reconnect URL, or ``None`` if the install does not need
+            reconnecting or is missing the data needed to build the URL.
+        """
+        app_data = get_github_app_data(account)
+
+        if not is_installation_data(app_data):
+            return None
+
+        status = app_data.status
+
+        if status == InstallationStatus.SUSPENDED:
+            return self._get_installation_settings_url(account)
+
+        if status == InstallationStatus.REMOVED:
+            # A removed install no longer exists on GitHub. Send the admin back
+            # through the install flow, keyed on the hidden app-record account
+            # that the installation stores by primary key.
+            app_data = get_github_app_data(account)
+            assert isinstance(app_data, GitHubAppInstallationData)
+
+            service = self._hosting_service_cls
+
+            url = local_site_reverse(
+                'github-app-install',
+                local_site=account.local_site,
+                kwargs={
+                    'hosting_service_id': service.hosting_service_id,
+                    'account_id': app_data.app_account_id,
+                })
+
+            # Deep-link to the account the app was removed from, so GitHub
+            # pre-selects it instead of showing the account chooser.
+            owner_id = app_data.owner_id
+
+            if owner_id is not None:
+                url = f'{url}?target_id={owner_id}'
+
+            return url
+
+        return None
+
+    def _get_installation_settings_url(
+        self,
+        account: HostingServiceAccount,
+    ) -> str | None:
+        """Return the GitHub settings URL for an installation.
+
+        This is the page on GitHub that manages a single app installation. The
+        path differs for installs on an organization versus a user account.
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The installation account.
+
+        Returns:
+            str:
+            The installation's settings URL, or ``None`` if the account is
+            missing the installation ID needed to build it.
+        """
+        app_data = get_github_app_data(account)
+
+        if not isinstance(app_data, GitHubAppInstallationData):
+            return None
+
+        installation_id = app_data.installation_id
+        base = (account.hosting_url or 'https://github.com').rstrip('/')
+
+        if app_data.owner_type == 'organization':
+            return (f'{base}/organizations/{urlquote(account.username)}'
+                    f'/settings/installations/{installation_id}')
+
+        return f'{base}/settings/installations/{installation_id}'
 
 
 class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
@@ -481,6 +716,9 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         path('github-app/install-callback/',
              views.GitHubAppInstallCallbackView.as_view(),
              name='github-app-install-callback'),
+        path('github-app/<int:account_id>/reconnect/',
+             views.GitHubAppReconnectView.as_view(),
+             name='github-app-reconnect'),
         path('github-app/webhook/',
              views.GitHubAppWebhookView.as_view(),
              name='github-app-webhook'),
@@ -508,8 +746,7 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
     ) -> str:
         """Return the API URL for GitHub.
 
-        This can be overridden to provide more advanced lookup (intended
-        for the GitHub Enterprise support).
+        This can be overridden to provide more advanced lookup.
 
         Args:
             hosting_url (str):
@@ -520,7 +757,10 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             The API URL to use.
         """
         assert not hosting_url
-        return 'https://api.github.com/'
+
+        api_url = get_github_urls(None)['api_url']
+
+        return f'{api_url}/'
 
     def get_plan_field(
         self,

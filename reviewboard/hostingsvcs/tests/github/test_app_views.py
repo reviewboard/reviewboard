@@ -1019,3 +1019,193 @@ class GitHubAppInstallCallbackViewTests(GitHubTestCase):
                 'github_public_org_repo_name': name,
             },
             **kwargs)
+
+
+class GitHubAppReconnectViewTests(GitHubTestCase):
+    """Unit tests for GitHubAppReconnectView.
+
+    Version Added:
+        9.0
+    """
+
+    #: The installation ID stored on the test account.
+    installation_id = 99
+
+    #: The numeric ID of the account the app is installed on.
+    owner_id = 4567
+
+    def setUp(self) -> None:
+        """Set up the test, logging in a staff user."""
+        super().setUp()
+
+        user = self.create_user(username='admin',
+                                is_staff=True,
+                                is_superuser=True)
+        self.client.force_login(user)
+
+    def test_get_with_restored_connection(self) -> None:
+        """Testing GitHubAppReconnectView GET repairs the stored state and
+        reports success when GitHub says the installation is fine
+        """
+        account = self._create_installation_account(status='suspended')
+
+        self.spy_on(GitHubClient.refresh_installation_status,
+                    op=kgb.SpyOpReturn('active'))
+
+        response = self.client.get(self._get_reconnect_url(account))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'],
+                         local_site_reverse('connected-services-list'))
+
+        self.assertMessages(response, [
+            Message(
+                25,
+                f'The GitHub App installation for "{account.username}" is '
+                f'connected.',
+            ),
+        ])
+
+    def test_get_with_still_suspended(self) -> None:
+        """Testing GitHubAppReconnectView GET forwards to the GitHub settings
+        page when the installation is still suspended
+        """
+        account = self._create_installation_account(status='suspended')
+
+        self.spy_on(GitHubClient.refresh_installation_status,
+                    op=kgb.SpyOpReturn('suspended'))
+
+        response = self.client.get(self._get_reconnect_url(account))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            response['Location'],
+            f'https://github.com/settings/installations/'
+            f'{self.installation_id}')
+
+    def test_get_with_still_removed(self) -> None:
+        """Testing GitHubAppReconnectView GET forwards to the install flow
+        when the installation is still removed
+        """
+        account = self._create_installation_account(status='removed')
+
+        self.spy_on(GitHubClient.refresh_installation_status,
+                    op=kgb.SpyOpReturn('removed'))
+
+        response = self.client.get(self._get_reconnect_url(account))
+
+        app_account_id = account.data['github_app']['app_account_id']
+        install_url = local_site_reverse(
+            'github-app-install',
+            kwargs={
+                'hosting_service_id': 'github',
+                'account_id': app_account_id,
+            })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'],
+                         f'{install_url}?target_id={self.owner_id}')
+
+    def test_get_with_check_failure(self) -> None:
+        """Testing GitHubAppReconnectView GET reports an error when the
+        installation state could not be determined
+        """
+        account = self._create_installation_account(status='suspended')
+
+        self.spy_on(GitHubClient.refresh_installation_status,
+                    op=kgb.SpyOpRaise(HostingServiceError('boom')))
+
+        response = self.client.get(self._get_reconnect_url(account))
+
+        self._assert_error_redirect(
+            response,
+            'Could not check the installation with GitHub. Please try '
+            'again.')
+
+        # The stored status must be untouched.
+        account = HostingServiceAccount.objects.get(pk=account.pk)
+        self.assertEqual(account.data['github_app']['status'], 'suspended')
+
+    def test_get_with_non_installation_account(self) -> None:
+        """Testing GitHubAppReconnectView GET with a non-installation account
+        """
+        pat_account = self.create_hosting_account()
+
+        response = self.client.get(self._get_reconnect_url(pat_account))
+
+        self._assert_error_redirect(
+            response,
+            'The GitHub App installation was not found.')
+
+    def test_get_with_invalid_account_id(self) -> None:
+        """Testing GitHubAppReconnectView GET with an unknown account ID"""
+        response = self.client.get(
+            local_site_reverse(
+                'github-app-reconnect',
+                kwargs={
+                    'hosting_service_id': 'github',
+                    'account_id': 12345,
+                }))
+
+        self._assert_error_redirect(
+            response,
+            'The GitHub App installation was not found.')
+
+    def _create_installation_account(
+        self,
+        *,
+        status: str,
+    ) -> HostingServiceAccount:
+        """Return an installation account with the given stored status.
+
+        Args:
+            status (str):
+                The installation status to store.
+
+        Returns:
+            reviewboard.hostingsvcs.models.HostingServiceAccount:
+            The new installation account.
+        """
+        app_account = self.create_hosting_account(data={
+            'github_app': {
+                'role': 'app',
+                'app_id': 12345,
+            },
+        })
+
+        return HostingServiceAccount.objects.create(
+            service_name='github',
+            username='myuser',
+            hosting_url='',
+            data={
+                'github_app': {
+                    'role': 'installation',
+                    'app_account_id': app_account.pk,
+                    'installation_id': self.installation_id,
+                    'owner_id': self.owner_id,
+                    'owner_login': 'myuser',
+                    'owner_type': 'user',
+                    'status': status,
+                },
+            })
+
+    def _get_reconnect_url(
+        self,
+        account: HostingServiceAccount,
+    ) -> str:
+        """Return the URL for the reconnect view for an account.
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The account to reconnect.
+
+        Returns:
+            str:
+            The URL for the reconnect view.
+        """
+        return local_site_reverse(
+            'github-app-reconnect',
+            kwargs={
+                'hosting_service_id': 'github',
+                'account_id': account.pk,
+            })

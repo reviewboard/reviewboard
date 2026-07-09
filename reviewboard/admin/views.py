@@ -51,7 +51,10 @@ if TYPE_CHECKING:
     from django.utils.safestring import SafeString
 
     from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
-    from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+    from reviewboard.hostingsvcs.base.hosting_service import (
+        AdminServicesListAttentionItem,
+        BaseHostingService,
+    )
 
 
 logger = logging.getLogger(__name__)
@@ -352,11 +355,11 @@ class ConnectedServicesListView(View):
             if service.visible and service.needs_authorization
         ]
 
-        # Build the list of entries for the page.
-        entries: list[tuple[str, SafeString]] = [
-            *self._build_hosting_service_entries(request),
-            # TODO: integrations and repositories w/o hosting services.
-        ]
+        # Build the list of entries for the page, along with any connections
+        # needing attention.
+        # TODO: integrations and repositories w/o hosting services.
+        entries, attention_items = \
+            self._build_hosting_service_entries(request)
         entries.sort(key=lambda entry: entry[0])
 
         # A connect flow that needs to finish in the wizard (such as returning
@@ -370,6 +373,7 @@ class ConnectedServicesListView(View):
             request=request,
             template_name='admin/connected_services/list.html',
             context={
+                'attention_items': attention_items,
                 'auto_connect_url': auto_connect_url,
                 'available_services': available_services,
                 'service_entries': [entry[1] for entry in entries],
@@ -380,23 +384,27 @@ class ConnectedServicesListView(View):
     def _build_hosting_service_entries(
         self,
         request: HttpRequest,
-    ) -> list[tuple[str, SafeString]]:
-        """Build a list of entries for hosting services.
+    ) -> tuple[list[tuple[str, SafeString]],
+               list[AdminServicesListAttentionItem]]:
+        """Build the hosting service entries and attention items.
 
         Args:
             request (django.http.HttpRequest):
                 The HTTP request from the client.
 
         Returns:
-            list of tuple:
-            A list of 2-tuples, each of:
+            tuple:
+            A 2-tuple of:
 
             Tuple:
-                0 (str):
-                    The sort key to use.
+                0 (list of tuple):
+                    The rendered entries, each a 2-tuple of a sort key (str)
+                    and the rendered entry
+                    (:py:class:`~django.utils.safestring.SafeString`).
 
-                1 (django.utils.safestring.SafeString):
-                    The rendered entry.
+                1 (list):
+                    The connections needing attention, aggregated across all
+                    services.
         """
         accounts = (
             HostingServiceAccount.objects
@@ -417,16 +425,25 @@ class ConnectedServicesListView(View):
             service = hosting_service_registry.get_hosting_service(name)
             service_groups.append((service, list(group)))
 
-        return [
-            (
+        entries: list[tuple[str, SafeString]] = []
+        attention_items: list[AdminServicesListAttentionItem] = []
+
+        for service, accounts in service_groups:
+            if not service:
+                continue
+
+            entries.append((
                 (service.name or '').lower(),
                 service.connect_ui.render_connected_services_list_entry(
                     request,
                     accounts=accounts),
-            )
-            for service, accounts in service_groups
-            if service
-        ]
+            ))
+            attention_items += \
+                service.connect_ui.get_connected_services_list_attention_items(
+                    request,
+                    accounts=accounts)
+
+        return entries, attention_items
 
     def _get_service_sections(
         self,
@@ -453,7 +470,7 @@ class ConnectedServicesListView(View):
         # hosting", even if it also supports bug trackers. Only services that
         # are bug trackers alone are listed under "Issue tracking". This
         # matches the service type shown for connected accounts (see
-        # BaseHostingService.make_admin_services_list_entry_context).
+        # BaseHostingService.make_connected_services_list_entry_context).
         if service.supports_repositories:
             sections.append('source_hosting')
         elif service.supports_bug_trackers:

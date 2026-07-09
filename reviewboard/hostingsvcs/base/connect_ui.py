@@ -81,6 +81,63 @@ class AdminServicesListAccountMenuItem(TypedDict):
     url: NotRequired[str]
 
 
+class AdminServicesListAttentionItem(TypedDict):
+    """A connection needing attention on the Connected Services page.
+
+    Each item describes one account whose connection is in an error state, so
+    the page can show an aggregate alert listing every failure. The item
+    carries the account context and a fix action, so the alert can resolve the
+    problem the same way the account's settings menu does.
+
+    Version Added:
+        9.0
+    """
+
+    #: The ID of the account, for dispatching the fix action.
+    #:
+    #: Type:
+    #:     int
+    account_id: int
+
+    #: A label identifying the account, such as its username.
+    #:
+    #: Type:
+    #:     str
+    account_label: StrOrPromise
+
+    #: A human-readable description of what is wrong.
+    #:
+    #: Type:
+    #:     str
+    message: StrOrPromise
+
+    #: The ID of the hosting service, for dispatching the fix action.
+    #:
+    #: Type:
+    #:     str
+    service_id: str
+
+    #: The name of the hosting service the account belongs to.
+    #:
+    #: Type:
+    #:     str
+    service_name: StrOrPromise
+
+    #: The action that resolves the problem, when one is available.
+    #:
+    #: This is the same descriptor used for account menu items, so the client
+    #: dispatches it the same way: opening a dialog, navigating to a URL, or
+    #: running a registered handler.
+    #:
+    #: For example, a suspended GitHub install uses a ``url`` to reconnect,
+    #: while a repository with bad credentials #: would use a ``dialogURL`` to
+    #: open its credentials form.
+    #:
+    #: Type:
+    #:     AdminServicesListAccountMenuItem
+    action: NotRequired[AdminServicesListAccountMenuItem]
+
+
 class BaseHostingServiceConnectUI:
     """Base class for the UI implementation of connecting to hosting services.
 
@@ -401,3 +458,33 @@ class BaseHostingServiceConnectUI:
             self.connect_ui_template,
             context,
             request=request)
+
+    def get_connected_services_list_attention_items(
+        self,
+        request: HttpRequest,
+        *,
+        accounts: Sequence[HostingServiceAccount],
+    ) -> Sequence[AdminServicesListAttentionItem]:
+        """Return connections needing attention for the admin list.
+
+        These drive the aggregate "needs attention" alert at the top of the
+        "Connected Services" page. The default implementation returns nothing.
+        Subclasses override this to report accounts whose connection is in an
+        error state, along with an action to resolve it.
+
+        Version Added:
+            9.0
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            accounts (list of
+                      reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The connected accounts for this service.
+
+        Returns:
+            list of AdminServicesListAttentionItem:
+            The connections needing attention.
+        """
+        return []

@@ -33,6 +33,7 @@ from django.utils.translation import gettext as _, ngettext
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 from django.views.generic.base import View
+from pydantic import ValidationError
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.base.http import HostingServiceHTTPRequest
@@ -44,12 +45,16 @@ from reviewboard.hostingsvcs.github import api
 from reviewboard.hostingsvcs.github.accounts import (
     GitHubAppInstallationData,
     GitHubAppRecordData,
+    InstallationStatus,
+    find_installation_account,
     get_github_app_data,
     is_app_record_data,
     is_installation_account,
     is_installation_data,
     set_github_app_data,
+    set_installation_status,
 )
+from reviewboard.hostingsvcs.github.client import get_github_urls
 from reviewboard.hostingsvcs.hook_utils import (
     close_all_review_requests,
     get_git_branch_name,
@@ -57,7 +62,10 @@ from reviewboard.hostingsvcs.hook_utils import (
     get_review_request_id,
 )
 from reviewboard.hostingsvcs.models import HostingServiceAccount
-from reviewboard.scmtools.crypto_utils import encrypt_password
+from reviewboard.scmtools.crypto_utils import (
+    decrypt_password,
+    encrypt_password,
+)
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -66,7 +74,6 @@ if TYPE_CHECKING:
     from typing import Final
 
     from django.http import HttpRequest
-    from typelets.json import JSONDict
 
 
 logger = logging.getLogger(__name__)
@@ -153,9 +160,9 @@ class GitHubHookViews:
             return HttpResponseBadRequest('Bad signature.')
 
         try:
-            payload = json.loads(request.body.decode('utf-8'))
-        except ValueError as e:
-            logger.error('The payload is not in JSON format: %s', e)
+            payload = api.PushHookPayload.model_validate_json(request.body)
+        except ValidationError as e:
+            logger.error('The GitHub push webhook payload is invalid: %s', e)
             return HttpResponseBadRequest('Invalid payload format')
 
         server_url = get_server_url(request=request)
@@ -174,7 +181,7 @@ class GitHubHookViews:
 
     @staticmethod
     def _get_review_request_id_to_commits_map(
-        payload: JSONDict,
+        payload: api.PushHookPayload,
         server_url: str,
         repository: Repository,
     ) -> Mapping[int | None, Sequence[str]] | None:
@@ -184,7 +191,7 @@ class GitHubHookViews:
         we append the commit to the key None.
 
         Args:
-            payload (dict):
+            payload (reviewboard.hostingsvcs.github.api.PushHookPayload):
                 The decoded webhook payload.
 
             server_url (str):
@@ -200,31 +207,20 @@ class GitHubHookViews:
         """
         review_request_id_to_commits_map = defaultdict(list)
 
-        ref_name = payload.get('ref')
+        ref_name = payload.ref
 
         if not ref_name:
             return None
-
-        assert isinstance(ref_name, str)
 
         branch_name = get_git_branch_name(ref_name)
         if not branch_name:
             return None
 
-        commits = payload.get('commits', [])
-        assert isinstance(commits, list)
-
-        for commit in commits:
-            assert isinstance(commit, dict)
-
-            commit_hash = commit.get('id')
-            assert isinstance(commit_hash, str)
-
-            commit_message = commit.get('message')
-            assert isinstance(commit_message, str)
+        for commit in payload.commits:
+            commit_hash = commit.id
 
             review_request_id = get_review_request_id(
-                commit_message=commit_message,
+                commit_message=commit.message,
                 server_url=server_url,
                 commit_id=commit_hash,
                 repository=repository)
@@ -242,33 +238,6 @@ class GitHubAppView(View):
     Version Added:
         9.0
     """
-
-    @staticmethod
-    def _get_github_urls(
-        hosting_url: str | None,
-    ) -> Mapping[str, str]:
-        """Return the base URLs to use for a GitHub connection.
-
-        Args:
-            hosting_url (str):
-                The GitHub server URL, or ``None`` for github.com.
-
-        Returns:
-            dict:
-            A dictionary with ``app_base`` and ``api_url`` keys.
-        """
-        if hosting_url:
-            app_base = hosting_url.rstrip('/')
-
-            return {
-                'api_url': f'{app_base}/api/v3',
-                'app_base': app_base,
-            }
-
-        return {
-            'api_url': 'https://api.github.com',
-            'app_base': 'https://github.com',
-        }
 
     def _show_error(
         self,
@@ -372,11 +341,15 @@ class GitHubAppCreateView(GitHubAppView):
             'state': state,
         }
 
-        urls = self._get_github_urls(hosting_url)
+        urls = get_github_urls(hosting_url)
         server_hostname = urlparse(build_server_url()).hostname
         assert server_hostname is not None
 
-        default_events = ['push']
+        # 'installation' and 'installation_repositories' are delivered to
+        # every GitHub App automatically and are not listed here.
+        # 'installation_target' is a subscribable event, so it must be
+        # requested explicitly to receive account rename notifications.
+        default_events = ['push', 'installation_target']
         default_permissions = {
             'contents': 'read',
             'metadata': 'read',
@@ -437,6 +410,7 @@ class GitHubAppCreateView(GitHubAppView):
             'write': _('Read and write'),
         }
         event_labels = {
+            'installation_target': _('Account renames'),
             'pull_request': _('Pull request'),
             'push': _('Push'),
         }
@@ -525,7 +499,7 @@ class GitHubAppCallbackView(GitHubAppView):
 
         hosting_url = session_data.get('hosting_url')
         local_site_id = session_data.get('local_site_id')
-        urls = self._get_github_urls(hosting_url)
+        urls = get_github_urls(hosting_url)
 
         try:
             rsp = self._convert_manifest(urls['api_url'], code)
@@ -654,6 +628,11 @@ class GitHubAppInstallView(GitHubAppView):
     ) -> HttpResponse:
         """Handle HTTP GET requests.
 
+        A ``target_id`` query parameter may be supplied to deep-link to a
+        specific account's install page on GitHub, rather than GitHub's account
+        chooser. This is the numeric ID of the user or organization to install
+        onto.
+
         Args:
             request (django.http.HttpRequest):
                 The HTTP request from the client.
@@ -710,12 +689,27 @@ class GitHubAppInstallView(GitHubAppView):
             'state': install_state,
         }
 
-        urls = self._get_github_urls(app_account.hosting_url or None)
-
-        return HttpResponseRedirect(
-            f'{urls["app_base"]}/apps/{urlquote(app_slug)}/installations/'
-            f'new?state={install_state}'
+        urls = get_github_urls(app_account.hosting_url or None)
+        install_base = (
+            f'{urls["app_base"]}/apps/{urlquote(app_slug)}/installations/new'
         )
+
+        # If a specific target account was requested (for example, reconnecting
+        # an install that was removed from one organization), deep-link to that
+        # account's install page so GitHub pre-selects it, instead of showing
+        # the account chooser. GitHub's target_id is the account's numeric ID.
+        target_id = request.GET.get('target_id')
+
+        if target_id and target_id.isdigit():
+            install_url = (
+                f'{install_base}/permissions?'
+                f'target_id={urlquote(target_id)}&'
+                f'state={urlquote(install_state)}'
+            )
+        else:
+            install_url = f'{install_base}?state={urlquote(install_state)}'
+
+        return HttpResponseRedirect(install_url)
 
 
 @method_decorator(staff_member_required, name='dispatch')
@@ -881,38 +875,20 @@ class GitHubAppInstallCallbackView(GitHubAppView):
             owner_avatar_url=owner_avatar_url,
             repository_selection=cast(Literal['all', 'selected', ''],
                                       repository_selection),
+            status=InstallationStatus.ACTIVE,
         )
 
         # If we already have an installation account for this app, it means
         # that we're re-installing it (perhaps it got removed from the org),
         # and we can just update it with the new date. Otherwise, create a new
         # one.
-        #
-        # Match on the owner the app is installed on, not the installation ID.
-        # GitHub issues a new installation ID on each uninstall/reinstall, so
-        # the ID does not identify the prior account across a reinstall. The
-        # owner's stable numeric ID does, and it survives a user or
-        # organization rename.
-        installation_account = None
-        local_site = app_account.local_site
-
-        candidate_apps = HostingServiceAccount.objects.filter(
-            service_name='github',
-            hosting_url=app_account.hosting_url or '',
-            local_site=local_site)
-
-        for candidate in candidate_apps:
-            candidate_app = get_github_app_data(candidate)
-
-            if (not is_installation_data(candidate_app) or
-                candidate_app.app_account_id != app_account.pk):
-                continue
-
-            if candidate_app.owner_id == owner_id:
-                installation_account = candidate
-                break
+        installation_account = find_installation_account(
+            app_account=app_account,
+            installation_id=installation_id,
+            account=account)
 
         if installation_account is None:
+            local_site = app_account.local_site
             installation_account = HostingServiceAccount.objects.create(
                 service_name='github',
                 username=owner_login,
@@ -1271,6 +1247,109 @@ class GitHubAppInstallCallbackView(GitHubAppView):
         ]
 
 
+@method_decorator(staff_member_required, name='dispatch')
+class GitHubAppReconnectView(GitHubAppView):
+    """Verify and repair a suspended or removed installation.
+
+    The stored installation status comes from webhooks, and webhook
+    deliveries can be missed. Before sending the administrator off to GitHub,
+    this asks GitHub for the installation's current state. If the problem was
+    already resolved on the GitHub side (the app was unsuspended or
+    reinstalled), the stored state is repaired and no GitHub round trip is
+    needed. Otherwise the administrator is forwarded to the page on GitHub
+    that resolves the problem.
+
+    Version Added:
+        9.0
+    """
+
+    def get(
+        self,
+        request: HttpRequest,
+        *args,
+        account_id: int,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP GET requests.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            account_id (int):
+                The ID of the installation account to reconnect.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            django.http.HttpResponse:
+            A redirect to the connected services list if the connection is
+            working again, or onward to GitHub if the problem still exists
+            there.
+        """
+        from reviewboard.hostingsvcs.github.service import (
+            GitHub,
+            GitHubConnectUI,
+        )
+
+        account = self._get_account_or_none(pk=account_id,
+                                            service_name='github')
+
+        if account is None or not is_installation_account(account):
+            return self._show_error(
+                request, _('The GitHub App installation was not found.'))
+
+        service = cast(GitHub, account.service)
+
+        try:
+            status = service.client.refresh_installation_status(account)
+        except Exception as e:
+            logger.exception('Error checking the status of GitHub App '
+                             'installation account %s: %s',
+                             account.pk, e)
+
+            return self._show_error(
+                request,
+                _(
+                    'Could not check the installation with GitHub. Please try '
+                    'again.'
+                ))
+
+        if status == InstallationStatus.ACTIVE:
+            messages.success(
+                request,
+                _(
+                    'The GitHub App installation for "{username}" is '
+                    'connected.'
+                ).format(username=account.username))
+
+            return HttpResponseRedirect(
+                local_site_reverse('connected-services-list',
+                                   request=request))
+
+        # The problem still exists on GitHub. Forward the administrator to
+        # the page there that resolves it: the installation's settings page
+        # for a suspended install, or the install flow for a removed one.
+        connect_ui = service.connect_ui
+        assert isinstance(connect_ui, GitHubConnectUI)
+
+        onward_url = connect_ui.get_reconnect_url(account)
+
+        if onward_url is None:
+            return self._show_error(
+                request,
+                _(
+                    'The GitHub App installation is missing the configuration '
+                    'needed to reconnect it. Please try connecting again.'
+                ))
+
+        return HttpResponseRedirect(onward_url)
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 class GitHubAppWebhookView(View):
     """Receive webhook events from a GitHub App.
@@ -1278,8 +1357,10 @@ class GitHubAppWebhookView(View):
     A GitHub App has a single, app-wide webhook URL that receives events from
     every account the app is installed on.
 
-    This is currently a stub. It acknowledges deliveries so GitHub considers
-    the webhook healthy, but does not yet act on any events.
+    This tracks the lifecycle of installations. When an app is uninstalled,
+    suspended, unsuspended, or reinstalled on the GitHub side, the matching
+    installation account is updated so Review Board reflects the current state
+    instead of failing with opaque errors later.
 
     Version Added:
         9.0
@@ -1305,12 +1386,271 @@ class GitHubAppWebhookView(View):
 
         Returns:
             django.http.HttpResponse:
-            An empty response acknowledging the delivery.
+            An empty response acknowledging the delivery, or a bad-request
+            response if the delivery could not be verified.
         """
         event = request.META.get('HTTP_X_GITHUB_EVENT', '')
 
-        # TODO: Verify the X-Hub-Signature-256 header against the app's stored
-        # webhook secret and dispatch events once handlers exist.
-        logger.debug('Received GitHub App webhook event: %s', event)
+        # Only installation lifecycle events change stored state. Acknowledge
+        # everything else so GitHub keeps considering the webhook healthy.
+        if event not in {'installation',
+                         'installation_repositories',
+                         'installation_target'}:
+            return HttpResponse(status=204)
+
+        try:
+            payload = api.AppWebhookPayload.model_validate_json(request.body)
+        except ValidationError as e:
+            logger.warning('Could not decode GitHub App webhook payload: %s',
+                           e)
+
+            return HttpResponseBadRequest('Invalid payload format')
+
+        # Locate the app this delivery is for and verify its signature in one
+        # step. app_id is not a secret, so it only narrows the candidates; the
+        # HMAC check against the stored webhook secret is what authorizes the
+        # request.
+        app_account = self._find_verified_app_account(
+            request=request,
+            app_id=payload.installation.app_id)
+
+        if app_account is None:
+            # No app matched this delivery, or the signature did not verify.
+            # Reject rather than silently accept a forgeable event.
+            return HttpResponseBadRequest('Signature verification failed.')
+
+        if event == 'installation':
+            self._handle_installation_event(app_account, payload)
+        elif event == 'installation_repositories':
+            self._handle_installation_repositories_event(app_account, payload)
+        else:
+            self._handle_installation_target_event(app_account, payload)
 
         return HttpResponse(status=204)
+
+    @staticmethod
+    def _find_verified_app_account(
+        request: HttpRequest,
+        app_id: int | None,
+    ) -> HostingServiceAccount | None:
+        """Return the app-record account whose secret signs this delivery.
+
+        This verifies the ``X-Hub-Signature-256`` header against the stored
+        webhook secret of each candidate app-record account. Only an account
+        whose secret reproduces the signature is returned.
+
+        When ``app_id`` is given (``installation`` and
+        ``installation_repositories`` deliveries include it) it narrows the
+        candidates first. Some deliveries, such as ``installation_target``,
+        carry only a lightweight installation object with no app ID; for those
+        every app record's secret is tried. The app ID is not a secret either
+        way, so it only narrows the search. The HMAC check is what authorizes
+        the request.
+
+        Args:
+            request (django.http.HttpRequest):
+                The webhook request from GitHub.
+
+            app_id (int):
+                The GitHub App ID from the payload, if any.
+
+        Returns:
+            reviewboard.hostingsvcs.models.HostingServiceAccount:
+            The verified app-record account, or ``None`` if none matched.
+        """
+        header = request.META.get('HTTP_X_HUB_SIGNATURE_256', '')
+        prefix = 'sha256='
+
+        if not header.startswith(prefix):
+            return None
+
+        signature = header[len(prefix):]
+
+        accounts = HostingServiceAccount.objects.filter(
+            service_name='github',
+            local_site=request.local_site)
+
+        for account in accounts:
+            app_data = get_github_app_data(account)
+
+            if not isinstance(app_data, GitHubAppRecordData):
+                continue
+
+            if app_id is not None and app_data.app_id != app_id:
+                continue
+
+            encrypted_secret = app_data.webhook_secret
+
+            if not encrypted_secret:
+                continue
+
+            secret = decrypt_password(encrypted_secret)
+
+            # An app record created without a webhook secret still stores a
+            # non-empty ciphertext, so the emptiness has to be checked after
+            # decrypting. Signing with an empty key would let any caller forge
+            # a valid signature, so skip the account entirely.
+            if not secret:
+                continue
+
+            digest = hmac.new(secret.encode('utf-8'),
+                              request.body,
+                              hashlib.sha256).hexdigest()
+
+            if hmac.compare_digest(digest, signature):
+                return account
+
+        return None
+
+    @classmethod
+    def _handle_installation_event(
+        cls,
+        app_account: HostingServiceAccount,
+        payload: api.AppWebhookPayload,
+    ) -> None:
+        """Handle an ``installation`` lifecycle event.
+
+        This maps the event's action to an installation status and updates the
+        matching installation account. A reinstall (``created``) refreshes the
+        stored installation ID, which lets a reinstall performed directly on
+        GitHub heal the connection without re-running the wizard.
+
+        Args:
+            app_account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The verified app-record account for this delivery.
+
+            payload (reviewboard.hostingsvcs.github.api.AppWebhookPayload):
+                The decoded webhook payload.
+        """
+        action = payload.action
+
+        if action == 'deleted':
+            status = InstallationStatus.REMOVED
+
+            # TODO: trigger email to admins about error
+        elif action == 'suspend':
+            status = InstallationStatus.SUSPENDED
+
+            # TODO: trigger email to admins about error
+        elif action in {'unsuspend', 'created'}:
+            status = InstallationStatus.ACTIVE
+        else:
+            # Other actions (new_permissions_accepted, etc.) don't change the
+            # state we track.
+            return
+
+        installation = payload.installation
+        installation_id = installation.id
+
+        installation_account = find_installation_account(
+            app_account=app_account,
+            installation_id=installation_id,
+            account=installation.account)
+
+        if installation_account is None:
+            # A brand-new install fires 'created' before any installation
+            # account exists. That path is owned by the wizard, which also
+            # runs the repository reassignment step, so there's nothing to
+            # heal here.
+            return
+
+        # A reinstall issues a fresh installation ID. Refresh it so token
+        # minting uses the current one.
+        if action == 'created' and installation_id:
+            new_installation_id = installation_id
+        else:
+            new_installation_id = None
+
+        set_installation_status(installation_account, status,
+                                installation_id=new_installation_id)
+
+    @classmethod
+    def _handle_installation_repositories_event(
+        cls,
+        app_account: HostingServiceAccount,
+        payload: api.AppWebhookPayload,
+    ) -> None:
+        """Handle an ``installation_repositories`` event.
+
+        This keeps the stored ``repository_selection`` in sync when an owner
+        adds or removes repositories from the installation, so reassignment
+        suggestions stay accurate.
+
+        Args:
+            app_account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The verified app-record account for this delivery.
+
+            payload (reviewboard.hostingsvcs.github.api.AppWebhookPayload):
+                The decoded webhook payload.
+        """
+        repository_selection = payload.repository_selection
+
+        if not repository_selection:
+            return
+
+        installation = payload.installation
+        installation_account = find_installation_account(
+            app_account=app_account,
+            installation_id=installation.id,
+            account=installation.account)
+
+        if installation_account is None:
+            return
+
+        app_data = get_github_app_data(installation_account)
+        assert is_installation_data(app_data)
+
+        if (repository_selection in {'all', 'selected'} and
+            repository_selection != app_data.repository_selection):
+            app_data.repository_selection = repository_selection
+
+            installation_account.data['github_app'] = app_data.model_dump()
+            installation_account.save(update_fields=('data',))
+
+    @classmethod
+    def _handle_installation_target_event(
+        cls,
+        app_account: HostingServiceAccount,
+        payload: api.AppWebhookPayload,
+    ) -> None:
+        """Handle an ``installation_target`` event.
+
+        This fires when the user or organization the app is installed on is
+        renamed. The stored owner login is refreshed so the connected account
+        and the repository reassignment suggestions keep showing the current
+        name. Matching still happens on the stable owner ID, which a rename
+        does not change.
+
+        Args:
+            app_account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The verified app-record account for this delivery.
+
+            payload (reviewboard.hostingsvcs.github.api.AppWebhookPayload):
+                The decoded webhook payload.
+        """
+        # On this event the renamed account is at the top level, not nested
+        # under the installation.
+        account = payload.account
+
+        if account is None or not (login := account.login):
+            return
+
+        installation_account = find_installation_account(
+            app_account=app_account,
+            installation_id=payload.installation.id,
+            account=account)
+
+        if installation_account is None:
+            return
+
+        app_data = get_github_app_data(installation_account)
+        assert is_installation_data(app_data)
+        app_data.owner_login = login
+
+        installation_account.data['github_app'] = app_data.model_dump()
+        installation_account.username = login
+        installation_account.save(update_fields=('username', 'data'))
+
+        logger.info(
+            'GitHub App installation (account %s) owner renamed to %s.',
+            installation_account.pk, login)

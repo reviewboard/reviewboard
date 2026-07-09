@@ -56,6 +56,43 @@ class AppManifestResponse(BaseModel):
     owner: (AppManifestOwner | None) = None
 
 
+class AppWebhookPayload(BaseModel):
+    """Payload for a GitHub App webhook delivery.
+
+    This covers the installation lifecycle events Review Board acts on:
+
+    * ``installation``
+    * ``installation_repositories``
+    * ``installation_target``
+
+    Only the fields the webhook handler reads are declared. Any other fields
+    in the delivery are ignored.
+
+    Version Added:
+        9.0
+    """
+
+    #: The event action, sent on ``installation`` events.
+    action: str = ''
+
+    #: The installation the delivery is about.
+    #:
+    #: On ``installation_target`` events this is a lightweight object with only
+    #: an ID, so :py:attr:`WebhookInstallation.app_id` is not present.
+    installation: WebhookInstallation
+
+    #: The repository selection, sent on ``installation_repositories`` events.
+    repository_selection: Literal['all', 'selected', ''] = ''
+
+    #: The renamed account.
+    #:
+    #: This is sent at the top level on ``installation_target`` events.
+    #:
+    #: On ``installation`` and ``installation_repositories`` events the account
+    #: is nested under :py:attr:`installation` instead.
+    account: (InstallationAccount | None) = None
+
+
 class BaseCommit(BaseModel):
     """Data for the base commit in a comparison.
 
@@ -186,6 +223,12 @@ class InstallationResponse(BaseModel):
     account: InstallationAccount
     repository_selection: str = ''
 
+    #: The ID of the installation.
+    id: int = 0
+
+    #: When the installation was suspended, or ``None`` if it is not.
+    suspended_at: (str | None) = None
+
 
 class Issue(BaseModel):
     """API response for issues.
@@ -207,6 +250,37 @@ class IssueResponse(BaseModel):
     """
 
     value: Issue
+
+
+class PushHookCommit(BaseModel):
+    """A commit in a GitHub push webhook payload.
+
+    Version Added:
+        9.0
+    """
+
+    #: The commit's SHA.
+    id: str
+
+    #: The commit message.
+    message: str
+
+
+class PushHookPayload(BaseModel):
+    """Payload for a GitHub push webhook.
+
+    Only the fields the close-submitted hook reads are declared. Any other
+    fields in the payload are ignored.
+
+    Version Added:
+        9.0
+    """
+
+    #: The commits included in the push.
+    commits: list[PushHookCommit] = Field(default_factory=list)
+
+    #: The Git ref that was pushed to.
+    ref: (str | None) = None
 
 
 class Repository(BaseModel):
@@ -255,3 +329,20 @@ class TreeResponse(BaseModel):
 
     tree: list[TreeEntry]
     truncated: bool
+
+
+class WebhookInstallation(BaseModel):
+    """The ``installation`` object in a GitHub App webhook payload.
+
+    Version Added:
+        9.0
+    """
+
+    #: The user or organization the app is installed on.
+    account: (InstallationAccount | None) = None
+
+    #: The ID of the GitHub App the installation belongs to.
+    app_id: (int | None) = None
+
+    #: The installation ID.
+    id: (int | None) = None

@@ -15,7 +15,9 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from django.contrib.messages import Message
 from django.contrib.messages.test import MessagesTestMixin
 
+from reviewboard.hostingsvcs.github.accounts import InstallationStatus
 from reviewboard.hostingsvcs.github.service import GitHub
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
 from reviewboard.scmtools.crypto_utils import encrypt_password
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -25,8 +27,6 @@ if TYPE_CHECKING:
     from typing import ClassVar, Literal
 
     from django.test.client import _MonkeyPatchedWSGIResponse
-
-    from reviewboard.hostingsvcs.models import HostingServiceAccount
 
 
 class GitHubTestCase(MessagesTestMixin, HostingServiceTestCase[GitHub]):
@@ -54,6 +54,9 @@ class GitHubTestCase(MessagesTestMixin, HostingServiceTestCase[GitHub]):
     #: Version Added:
     #:     9.0
     app_id = 12345
+
+    #: The webhook secret stored on the test app-record account.
+    webhook_secret = 'topsecret'
 
     #: The private key to use for signing.
     #:
@@ -118,7 +121,7 @@ class GitHubTestCase(MessagesTestMixin, HostingServiceTestCase[GitHub]):
             base64.b64encode(self._pem).decode('ascii'))
 
         client_secret = encrypt_password('client-secret')
-        webhook_secret = encrypt_password('webhook-secret')
+        webhook_secret = encrypt_password(self.webhook_secret)
 
         return self.create_hosting_account(data={
             'github_app': {
@@ -134,11 +137,13 @@ class GitHubTestCase(MessagesTestMixin, HostingServiceTestCase[GitHub]):
 
     def _create_app_installation_account(
         self,
-        *,
         app_account: (HostingServiceAccount | None) = None,
+        *,
+        owner_id: int = 555,
         owner_login: str = 'myorg',
         owner_type: Literal['user', 'organization'] = 'organization',
         repository_selection: str = 'all',
+        status: (str | None) = None,
     ) -> HostingServiceAccount:
         """Return an installation account referencing a new app record.
 
@@ -150,6 +155,9 @@ class GitHubTestCase(MessagesTestMixin, HostingServiceTestCase[GitHub]):
                          optional):
                 The app record account to link to.
 
+            owner_id (int, optional):
+                The stable owner ID to store.
+
             owner_login (str, optional):
                 The owner login to set.
 
@@ -159,6 +167,9 @@ class GitHubTestCase(MessagesTestMixin, HostingServiceTestCase[GitHub]):
             repository_selection (str, optional):
                 The repository selection to set.
 
+            status (str, optional):
+                An installation status to store, if any.
+
         Returns:
             reviewboard.hostingsvcs.models.HostingServiceAccount:
             The new installation account.
@@ -166,13 +177,22 @@ class GitHubTestCase(MessagesTestMixin, HostingServiceTestCase[GitHub]):
         if app_account is None:
             app_account = self._create_app_record_account()
 
-        return self.create_hosting_account(data={
-            'github_app': {
-                'app_account_id': app_account.pk,
-                'installation_id': self.installation_id,
-                'owner_login': owner_login,
-                'owner_type': owner_type,
-                'repository_selection': repository_selection,
-                'role': 'installation',
-            },
-        })
+        # This must match the shape the install wizard creates: it stores
+        # hosting_url='' and the owner login as the username, and
+        # find_installation_account() matches on that hosting_url.
+        return HostingServiceAccount.objects.create(
+            service_name='github',
+            username=owner_login,
+            hosting_url='',
+            data={
+                'github_app': {
+                    'app_account_id': app_account.pk,
+                    'installation_id': self.installation_id,
+                    'owner_id': owner_id,
+                    'owner_login': owner_login,
+                    'owner_type': owner_type,
+                    'repository_selection': repository_selection,
+                    'role': 'installation',
+                    'status': status or InstallationStatus.ACTIVE,
+                },
+            })

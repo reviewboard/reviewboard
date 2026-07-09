@@ -6,6 +6,42 @@
 
 {% block content %}
 <div id="content-main" class="rb-c-admin-cs-list">
+{%  if attention_items %}
+ <div class="ink-c-alert rb-c-admin-cs-list__attention"
+      role="status" data-type="error">
+  <div class="ink-c-alert__content">
+   <h3 class="ink-c-alert__heading">
+{%   blocktrans count counter=attention_items|length %}
+    {{counter}} connection needs attention
+{%   plural %}
+    {{counter}} connections need attention
+{%   endblocktrans %}
+   </h3>
+   <div class="ink-c-alert__body">
+    <ul class="rb-c-admin-cs-list__attention-items">
+{%   for item in attention_items %}
+     <li class="rb-c-admin-cs-list__attention-item">
+      <span class="rb-c-admin-cs-list__attention-detail">
+{%    blocktrans with service=item.service_name account=item.account_label detail=item.message %}{{service}} — {{account}}: {{detail}}{% endblocktrans %}
+      </span>
+{%    if item.action %}
+      <span class="rb-c-admin-cs-list__attention-fix"
+            data-attention-fix
+            data-account-id="{{item.account_id}}"
+            data-service-id="{{item.service_id}}">
+       <button type="button" class="ink-c-button">
+        <span class="ink-c-button__label">{{item.action.label}}</span>
+       </button>
+       <script type="application/json">{{item.action|json_dumps}}</script>
+      </span>
+{%    endif %}
+     </li>
+{%   endfor %}
+    </ul>
+   </div>
+  </div>
+ </div>
+{%  endif %}
  <div class="rb-c-admin-cs-list__header">
   <div class="ink-c-button-group" role="group" aria-orientation="horizontal">
 {%  comment %}

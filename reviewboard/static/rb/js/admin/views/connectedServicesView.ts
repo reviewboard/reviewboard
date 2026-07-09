@@ -115,6 +115,7 @@ export class ConnectedServicesView extends BaseView<
         });
 
         this.#buildAccountMenus();
+        this.#wireAttentionAlert();
 
         if (this.#options.autoConnectURL) {
             /*
@@ -188,6 +189,41 @@ export class ConnectedServicesView extends BaseView<
             `;
 
             menuLabelView.renderInto(el);
+        }
+    }
+
+    /**
+     * Wire up the fix actions in the "needs attention" alert.
+     *
+     * Each fix control carries the same descriptor as an account menu item, so
+     * clicking it dispatches through the same handler. This resolves the
+     * problem the same way the account's own menu would: opening a dialog,
+     * navigating to a URL, or running a registered handler.
+     */
+    #wireAttentionAlert() {
+        const fixEls = this.el.querySelectorAll<HTMLElement>('[data-attention-fix]')
+
+        for (const el of fixEls) {
+            const dataEl = el.querySelector('script[type="application/json"]');
+            const button = el.querySelector('button');
+
+            if (!dataEl || !button) {
+                continue;
+            }
+
+            let item: AccountMenuItem;
+
+            try {
+                item = JSON.parse(dataEl.textContent);
+            } catch {
+                continue;
+            }
+
+            const accountID = el.dataset.accountId;
+            const serviceID = el.dataset.serviceId;
+
+            button.addEventListener('click', () => this.#onMenuItem(
+                item, accountID, serviceID));
         }
     }
 

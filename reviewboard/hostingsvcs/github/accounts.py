@@ -18,6 +18,7 @@ Version Added:
 from __future__ import annotations
 
 import logging
+from enum import Enum
 from typing import Annotated, Literal, TYPE_CHECKING, cast
 
 from pydantic import (
@@ -29,15 +30,39 @@ from pydantic import (
 )
 from typelets.symbols import UNSET
 
+from reviewboard.hostingsvcs.models import HostingServiceAccount
+
 if TYPE_CHECKING:
     from typing import Final, TypeAlias
 
     from typing_extensions import TypeIs
 
-    from reviewboard.hostingsvcs.models import HostingServiceAccount
+    from reviewboard.hostingsvcs.github import api
 
 
 logger = logging.getLogger(__name__)
+
+
+# TODO: Switch to StrEnum once we're on Python 3.11+
+class InstallationStatus(str, Enum):
+    """Installation states for GitHub app installs.
+
+    Version Added:
+        9.0
+    """
+
+    #: The installation is active and usable
+    ACTIVE = 'active'
+
+    #: The installation was suspended on the GitHub side.
+    #:
+    #: The app can be unsuspended by an owner without reinstalling.
+    SUSPENDED = 'suspended'
+
+    #: The installation was removed (uninstalled) on the GitHub side.
+    #:
+    #: Reinstalling the app restores the connection.
+    REMOVED = 'removed'
 
 
 class GitHubAppRecordData(BaseModel):
@@ -141,6 +166,12 @@ class GitHubAppInstallationData(BaseModel):
 
     #: The account role.
     role: Literal['installation'] = 'installation'
+
+    #: The current status of the app installation.
+    #:
+    #: Accounts recorded before status tracking lack this, and are treated
+    #: as active.
+    status: InstallationStatus = InstallationStatus.ACTIVE
 
     model_config = ConfigDict(extra='allow')
 
@@ -270,6 +301,55 @@ def is_app_record_data(
     return isinstance(app_data, GitHubAppRecordData)
 
 
+def set_installation_status(
+    account: HostingServiceAccount,
+    status: InstallationStatus,
+    *,
+    installation_id: (int | None) = None,
+) -> None:
+    """Set the connection status stored on an installation account.
+
+    This is the single write path for installation status, shared by the
+    webhook handler and by API-error detection, so status transitions are
+    recorded and logged consistently.
+
+    Version Added:
+        9.0
+
+    Args:
+        account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+            The installation account to update.
+
+        status (InstallationStatus):
+            The new installation status.
+
+        installation_id (int, optional):
+            A new installation ID to store. A reinstall on GitHub issues a
+            fresh installation ID, so healing a connection must record it.
+    """
+    app_data = get_github_app_data(account)
+
+    if not isinstance(app_data, GitHubAppInstallationData):
+        return
+
+    if installation_id is None:
+        installation_id = app_data.installation_id
+
+    if (app_data.status == status and
+        app_data.installation_id == installation_id):
+        return
+
+    app_data = app_data.model_copy(update={
+        'status': status,
+        'installation_id': installation_id,
+    })
+    set_github_app_data(account, app_data)
+    account.save(update_fields=('data',))
+
+    logger.info('GitHub App installation %s (account %s) is now %s.',
+                installation_id, account.pk, status)
+
+
 def is_app_record_account(
     account: HostingServiceAccount,
 ) -> bool:
@@ -324,3 +404,64 @@ def is_installation_account(
         ``True`` if the account represents an app installation.
     """
     return is_installation_data(get_github_app_data(account))
+
+
+def find_installation_account(
+    app_account: HostingServiceAccount,
+    installation_id: int | None,
+    account: api.InstallationAccount | None,
+) -> HostingServiceAccount | None:
+    """Return the installation account for an app installation.
+
+    This matches on the owner's stable numeric ID when available, so a
+    reinstall (which issues a new installation ID) still resolves to the
+    existing account.
+
+    This is shared by the install callback and the webhook handler. Both need
+    to resolve an installation to the account representing it, and they must
+    agree, or a reinstall would create a duplicate account alongside the one
+    the webhook keeps updating.
+
+    Version Added:
+        9.0
+
+    Args:
+        app_account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+            The app-record account the installation belongs to.
+
+        installation_id (int):
+            The installation ID from the payload, if any.
+
+        account (reviewboard.hostingsvcs.github.api.InstallationAccount):
+            The ``installation.account`` object from the payload, if any.
+
+    Returns:
+        reviewboard.hostingsvcs.models.HostingServiceAccount:
+        The matching installation account, or ``None`` if not found.
+    """
+    if account:
+        owner_id = account.id
+    else:
+        owner_id = None
+
+    candidate_apps = HostingServiceAccount.objects.filter(
+        service_name='github',
+        hosting_url=app_account.hosting_url or '',
+        local_site=app_account.local_site)
+
+    for candidate in candidate_apps:
+        app_data = get_github_app_data(candidate)
+
+        if (not is_installation_data(app_data) or
+            app_data.app_account_id != app_account.pk):
+            continue
+
+        candidate_owner_id = app_data.owner_id
+
+        if owner_id and candidate_owner_id:
+            if candidate_owner_id == owner_id:
+                return candidate
+        elif installation_id and app_data.installation_id == installation_id:
+            return candidate
+
+    return None

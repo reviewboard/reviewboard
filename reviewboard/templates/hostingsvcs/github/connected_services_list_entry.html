@@ -48,11 +48,18 @@
   <img class="rb-c-admin-cs-accounts__account__icon"
        src="{{entry.avatar_url}}" alt="">
   {{entry.account.username}}
+{%    if entry.app_status_label %}
+  <span class="ink-c-badge" data-type="error">
+   <span class="ink-c-badge__icon ink-i-error" aria-hidden="true"></span>
+   {{entry.app_status_label}}
+  </span>
+{%    endif %}
  </div>
  <div>
 {%    if entry.detail %}
   <span class="rb-c-admin-cs-accounts__account__detail">{{entry.detail}}</span>
 {%    endif %}
+{%    include "admin/connected_services/_parts/account_menu.html" %}
  </div>
 </li>
 {%   endif %}
