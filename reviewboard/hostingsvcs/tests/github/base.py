@@ -7,7 +7,6 @@ Version Added:
 
 from __future__ import annotations
 
-import base64
 from typing import TYPE_CHECKING
 
 from cryptography.hazmat.primitives import serialization
@@ -16,6 +15,7 @@ from django.contrib.messages import Message
 from django.contrib.messages.test import MessagesTestMixin
 
 from reviewboard.hostingsvcs.github.accounts import InstallationStatus
+from reviewboard.hostingsvcs.github.app_auth import encrypt_app_private_key
 from reviewboard.hostingsvcs.github.service import GitHub
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.testing import HostingServiceTestCase
@@ -105,20 +105,26 @@ class GitHubTestCase(MessagesTestMixin, HostingServiceTestCase[GitHub]):
 
         self.assertMessages(response, [Message(40, message)])
 
-    def _create_app_record_account(self) -> HostingServiceAccount:
+    def _create_app_record_account(
+        self,
+        *,
+        private_key: (str | None) = None,
+    ) -> HostingServiceAccount:
         """Return a hidden app-record account holding the app credentials.
 
         Version Added:
             9.0
 
+        Args:
+            private_key (str, optional):
+                The encrypted/encoded private key to store.
+
         Returns:
             reviewboard.hostingsvcs.models.HostingServiceAccount:
             The new app-record account.
         """
-        # The PEM is Base64-encoded before encryption, matching how the
-        # manifest callback stores it.
-        private_key = encrypt_password(
-            base64.b64encode(self._pem).decode('ascii'))
+        private_key = private_key or encrypt_app_private_key(
+            self._pem.decode('utf-8'))
 
         client_secret = encrypt_password('client-secret')
         webhook_secret = encrypt_password(self.webhook_secret)

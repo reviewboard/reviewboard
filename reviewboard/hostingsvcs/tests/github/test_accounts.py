@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from reviewboard.hostingsvcs.github.accounts import (
     GitHubAppInstallationData,
+    get_app_settings_url,
     get_github_app_data,
     set_github_app_data,
 )
@@ -96,3 +97,85 @@ class GetGitHubAppDataTests(GitHubTestCase):
 
         self.assertEqual(account.data['github_app']['installation_id'], 43)
         self.assertIs(get_github_app_data(account), new_app_data)
+
+
+class GetAppSettingsURLTests(GitHubTestCase):
+    """Unit tests for get_app_settings_url.
+
+    Version Added:
+        9.0
+    """
+
+    def test_with_user_owner(self) -> None:
+        """Testing get_app_settings_url with a user-owned app"""
+        account = self._create_account(owner_type='user')
+
+        self.assertEqual(get_app_settings_url(account),
+                         'https://github.com/settings/apps/rb-app')
+
+    def test_with_organization_owner(self) -> None:
+        """Testing get_app_settings_url with an organization-owned app"""
+        account = self._create_account(owner_type='organization')
+
+        self.assertEqual(
+            get_app_settings_url(account),
+            'https://github.com/organizations/myuser/settings/apps/rb-app')
+
+    def test_with_hosting_url(self) -> None:
+        """Testing get_app_settings_url with a self-hosted GitHub server"""
+        account = self._create_account(use_url=True, owner_type='user')
+
+        self.assertEqual(get_app_settings_url(account),
+                         'https://example.com/settings/apps/rb-app')
+
+    def test_with_empty_slug(self) -> None:
+        """Testing get_app_settings_url with an app missing a slug"""
+        account = self._create_account(app_slug='')
+
+        self.assertIsNone(get_app_settings_url(account))
+
+    def test_with_installation_account(self) -> None:
+        """Testing get_app_settings_url with an installation account"""
+        account = self._create_app_installation_account()
+
+        self.assertIsNone(get_app_settings_url(account))
+
+    def test_without_app_data(self) -> None:
+        """Testing get_app_settings_url with an account lacking app data"""
+        account = self.create_hosting_account()
+
+        self.assertIsNone(get_app_settings_url(account))
+
+    def _create_account(
+        self,
+        *,
+        use_url: bool = False,
+        **app_data,
+    ) -> HostingServiceAccount:
+        """Return an app-record account with the given app data.
+
+        Args:
+            use_url (bool, optional):
+                Whether to attach the account to a self-hosted GitHub URL.
+
+            **app_data (dict):
+                Fields to override in the stored ``github_app`` data.
+
+        Returns:
+            reviewboard.hostingsvcs.models.HostingServiceAccount:
+            The new app-record account.
+        """
+        return self.create_hosting_account(
+            use_url=use_url,
+            data={
+                'github_app': {
+                    'app_id': 1,
+                    'app_slug': 'rb-app',
+                    'client_id': 'client-id',
+                    'client_secret': 'client-secret',
+                    'private_key': 'private-key',
+                    'role': 'app',
+                    'webhook_secret': 'webhook-secret',
+                    **app_data,
+                },
+            })

@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 from enum import Enum
 from typing import Annotated, Literal, TYPE_CHECKING, cast
+from urllib.parse import quote as urlquote
 
 from pydantic import (
     BaseModel,
@@ -279,6 +280,40 @@ def get_github_app_role(
         return app_data.role
     else:
         return None
+
+
+def get_app_settings_url(
+    account: HostingServiceAccount,
+) -> str | None:
+    """Return the URL to a GitHub App's management page on GitHub.
+
+    The page lives under the owner's settings. The path differs for apps
+    owned by an organization versus a user.
+
+    Version Added:
+        9.0
+
+    Args:
+        account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+            The app-record account holding the app's credentials.
+
+    Returns:
+        str:
+        The URL to the app's settings page, or ``None`` if the account does
+        not hold app-record data with a slug.
+    """
+    app_data = get_github_app_data(account)
+
+    if not is_app_record_data(app_data) or not app_data.app_slug:
+        return None
+
+    app_base = (account.hosting_url or 'https://github.com').rstrip('/')
+
+    if app_data.owner_type == 'organization':
+        return (f'{app_base}/organizations/{urlquote(account.username)}'
+                f'/settings/apps/{urlquote(app_data.app_slug)}')
+
+    return f'{app_base}/settings/apps/{urlquote(app_data.app_slug)}'
 
 
 def is_app_record_data(

@@ -10,7 +10,7 @@ import base64
 import json
 from typing import TYPE_CHECKING, cast
 
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from django.core.cache import cache
 from django.test.client import RequestFactory
@@ -22,8 +22,13 @@ from reviewboard.hostingsvcs.github.accounts import (
     GitHubAppRecordData,
     InstallationStatus,
     get_github_app_data,
+    is_app_record_data,
 )
-from reviewboard.hostingsvcs.github.app_auth import build_app_jwt_from_data
+from reviewboard.hostingsvcs.github.app_auth import (
+    build_app_jwt_from_data,
+    encrypt_app_private_key,
+    load_app_private_key,
+)
 from reviewboard.hostingsvcs.github.client import GitHubClient
 from reviewboard.hostingsvcs.github.service import GitHub, GitHubConnectUI
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -919,6 +924,46 @@ class GitHubAppTests(GitHubTestCase):
                                    expected_http_calls=0) as ctx,
               self.assertRaises(HostingServiceError, msg=message)):
             ctx.service.client.get_http_credentials(account)
+
+    def test_encrypt_app_private_key_round_trip(self) -> None:
+        """Testing encrypt_app_private_key round-trips a PEM key"""
+        app_account = self._create_app_record_account()
+        app_data = get_github_app_data(app_account)
+        assert is_app_record_data(app_data)
+
+        app_data.private_key = encrypt_app_private_key(
+            self._pem.decode('utf-8'))
+
+        # load_app_private_key reverses the encode-and-encrypt transform.
+        self.assertEqual(
+            load_app_private_key(app_data),
+            self._pem.decode('utf-8'))
+
+    def test_encrypt_app_private_key_rejects_invalid(self) -> None:
+        """Testing encrypt_app_private_key rejects a non-PEM value"""
+        from reviewboard.hostingsvcs.github.app_auth import \
+            encrypt_app_private_key
+
+        with self.assertRaises(ValueError):
+            encrypt_app_private_key('not a private key')
+
+    def test_encrypt_app_private_key_rejects_non_rsa(self) -> None:
+        """Testing encrypt_app_private_key rejects a non-RSA key"""
+        from cryptography.hazmat.primitives.asymmetric import ec
+
+        from reviewboard.hostingsvcs.github.app_auth import \
+            encrypt_app_private_key
+
+        ec_pem = (
+            ec.generate_private_key(ec.SECP256R1())
+            .private_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PrivateFormat.PKCS8,
+                encryption_algorithm=serialization.NoEncryption())
+            .decode('utf-8'))
+
+        with self.assertRaises(ValueError):
+            encrypt_app_private_key(ec_pem)
 
     def _get_reconnect_view_url(
         self,

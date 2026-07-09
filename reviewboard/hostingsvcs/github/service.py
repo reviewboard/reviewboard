@@ -32,8 +32,8 @@ from reviewboard.hostingsvcs.errors import (
 from reviewboard.hostingsvcs.github import views
 from reviewboard.hostingsvcs.github.accounts import (
     GitHubAppInstallationData,
-    GitHubAppRecordData,
     InstallationStatus,
+    get_app_settings_url,
     get_github_app_data,
     get_github_app_role,
     is_app_record_account,
@@ -304,6 +304,7 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
 
         github_app_create_url: (str | None) = None
         github_app_install_url: (str | None) = None
+        github_app_replace_key_url: (str | None) = None
         github_app_settings_url: (str | None) = None
 
         service = self._hosting_service_cls
@@ -320,30 +321,17 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
                 'github-app-install',
                 local_site=app_account.local_site,
                 kwargs={
-                    'hosting_service_id': service.hosting_service_id,
                     'account_id': app_account.pk,
+                    'hosting_service_id': service.hosting_service_id,
                 })
-
-            # Build a link to the app's management page on GitHub. This lives
-            # under the owner's settings, and the path differs for apps owned
-            # by an organization versus a user.
-            app_data = get_github_app_data(app_account)
-            assert isinstance(app_data, GitHubAppRecordData)
-
-            app_slug = app_data.app_slug
-
-            if app_slug:
-                app_base = (app_account.hosting_url or
-                            'https://github.com').rstrip('/')
-
-                if app_data.owner_type == 'organization':
-                    github_app_settings_url = (
-                        f'{app_base}/organizations/'
-                        f'{urlquote(app_account.username)}/settings/apps/'
-                        f'{urlquote(app_slug)}')
-                else:
-                    github_app_settings_url = (
-                        f'{app_base}/settings/apps/{urlquote(app_slug)}')
+            github_app_replace_key_url = local_site_reverse(
+                'github-app-replace-key',
+                local_site=app_account.local_site,
+                kwargs={
+                    'account_id': app_account.pk,
+                    'hosting_service_id': service.hosting_service_id,
+                })
+            github_app_settings_url = get_app_settings_url(app_account)
 
         context = super().make_connected_services_list_entry_context(
             request,
@@ -387,6 +375,7 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
             'github_app_create_url': github_app_create_url,
             'github_app_install_url': github_app_install_url,
             'github_app_installed': app_account is not None,
+            'github_app_replace_key_url': github_app_replace_key_url,
             'github_app_settings_url': github_app_settings_url,
         }
 
@@ -713,6 +702,9 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         path('github-app/<int:account_id>/install/',
              views.GitHubAppInstallView.as_view(),
              name='github-app-install'),
+        path('github-app/<int:account_id>/replace-key/',
+             views.GitHubAppReplaceKeyView.as_view(),
+             name='github-app-replace-key'),
         path('github-app/install-callback/',
              views.GitHubAppInstallCallbackView.as_view(),
              name='github-app-install-callback'),

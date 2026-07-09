@@ -668,6 +668,23 @@
   grid-template-columns: 1fr auto;
   grid-template-areas: "header action";
 
+  a {
+    align-self: center;
+    grid-area: action;
+
+    &:not(.ink-c-button) {
+      align-items: center;
+      display: flex;
+      gap: var(--ink-u-spacing-s);
+    }
+  }
+
+  div {
+    align-items: center;
+    display: flex;
+    gap: var(--ink-u-spacing-l);
+  }
+
   h2 {
     align-items: center;
     display: flex;
@@ -682,17 +699,6 @@
     grid-area: detail;
     margin: 0;
     padding: 0;
-  }
-
-  a {
-    align-self: center;
-    grid-area: action;
-
-    &:not(.ink-c-button) {
-      align-items: center;
-      display: flex;
-      gap: var(--ink-u-spacing-s);
-    }
   }
 
   &.-no-github-app {

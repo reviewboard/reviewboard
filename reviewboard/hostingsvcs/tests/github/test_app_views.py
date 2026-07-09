@@ -12,11 +12,13 @@ from typing import TYPE_CHECKING
 
 import kgb
 from django.contrib.messages import Message
+from django.core.files.uploadedfile import SimpleUploadedFile
 from pydantic import ValidationError
 
 from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.hostingsvcs.github import api, views
 from reviewboard.hostingsvcs.github.client import GitHubClient
+from reviewboard.hostingsvcs.github.forms import GitHubAppReplaceKeyForm
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.testing.paginator import TestPaginator
 from reviewboard.hostingsvcs.tests.github.base import GitHubTestCase
@@ -25,10 +27,8 @@ from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
-    from typing import ClassVar
-
     from django.test.client import _MonkeyPatchedWSGIResponse
-    from typelets.json import JSONDictImmutable
+    from typelets.json import JSONDict
 
 
 class GitHubAppCreateViewTests(GitHubTestCase):
@@ -88,22 +88,32 @@ class GitHubAppCallbackViewTests(GitHubTestCase):
         9.0
     """
 
-    #: A representative GitHub app-manifest conversion response.
-    _MANIFEST_RESPONSE: ClassVar[JSONDictImmutable] = {
-        'id': 12345,
-        'slug': 'rb-app',
-        'client_id': 'Iv1.abc123',
-        'client_secret': 'theclientsecret',
-        'pem': ('-----BEGIN PRIVATE KEY-----\n'
-                'MIIfake\n'
-                '-----END PRIVATE KEY-----\n'),
-        'webhook_secret': 'thewebhooksecret',
-        'html_url': 'https://github.com/apps/rb-app',
-        'owner': {
-            'login': 'myorg',
-            'type': 'Organization',
-        },
-    }
+    def _make_manifest_response(self) -> JSONDict:
+        """Return a representative app-manifest conversion response.
+
+        The ``pem`` field holds the test class's generated RSA key, since
+        the view validates the key before storing it.
+
+        Version Added:
+            9.0
+
+        Returns:
+            dict:
+            The manifest conversion response payload.
+        """
+        return {
+            'id': 12345,
+            'slug': 'rb-app',
+            'client_id': 'Iv1.abc123',
+            'client_secret': 'theclientsecret',
+            'pem': self._pem.decode('utf-8'),
+            'webhook_secret': 'thewebhooksecret',
+            'html_url': 'https://github.com/apps/rb-app',
+            'owner': {
+                'login': 'myorg',
+                'type': 'Organization',
+            },
+        }
 
     def setUp(self) -> None:
         """Set up the test, logging in a staff user."""
@@ -122,7 +132,7 @@ class GitHubAppCallbackViewTests(GitHubTestCase):
             views.GitHubAppCallbackView._convert_manifest,
             op=kgb.SpyOpReturn(
                 api.AppManifestResponse.model_validate(
-                    dict(self._MANIFEST_RESPONSE))))
+                    self._make_manifest_response())))
 
         self._set_create_session('teststate')
 
@@ -160,7 +170,7 @@ class GitHubAppCallbackViewTests(GitHubTestCase):
                 'html_url': 'https://github.com/apps/rb-app',
                 'owner_login': 'myorg',
                 'owner_type': 'organization',
-                'private_key': self._MANIFEST_RESPONSE['pem'],
+                'private_key': self._pem.decode('utf-8'),
                 'role': 'app',
                 'webhook_secret': 'thewebhooksecret',
             })
@@ -233,7 +243,7 @@ class GitHubAppCallbackViewTests(GitHubTestCase):
         # turns the resulting error into a friendly failure (see
         # test_get_with_failed_conversion).
         for field in ('id', 'slug', 'client_id', 'client_secret', 'pem'):
-            incomplete = dict(self._MANIFEST_RESPONSE)
+            incomplete = self._make_manifest_response()
             del incomplete[field]
 
             with self.assertRaises(ValidationError):
@@ -1208,4 +1218,183 @@ class GitHubAppReconnectViewTests(GitHubTestCase):
             kwargs={
                 'hosting_service_id': 'github',
                 'account_id': account.pk,
+            })
+
+
+class GitHubAppReplaceKeyViewTests(GitHubTestCase):
+    """Unit tests for GitHubAppReplaceKeyView.
+
+    Version Added:
+        9.0
+    """
+
+    def setUp(self) -> None:
+        """Set up the test, logging in a staff user."""
+        super().setUp()
+
+        user = self.create_user(username='admin',
+                                is_staff=True,
+                                is_superuser=True)
+        self.client.force_login(user)
+
+    def test_get_renders_form(self) -> None:
+        """Testing GitHubAppReplaceKeyView GET renders the form"""
+        app_account = self._create_app_record_account()
+
+        response = self.client.get(self._url(app_account.pk))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response, 'hostingsvcs/github/app_replace_key.html')
+
+    def test_get_with_non_app_account(self) -> None:
+        """Testing GitHubAppReplaceKeyView GET with a non-app-record account"""
+        pat_account = self.create_hosting_account()
+
+        response = self.client.get(self._url(pat_account.pk))
+
+        self._assert_error_redirect(
+            response,
+            'That GitHub App connection was not found. Please try connecting '
+            'again.')
+
+    def test_post_stores_new_key(self) -> None:
+        """Testing GitHubAppReplaceKeyView POST stores a validated key"""
+        app_account = self._create_app_record_account()
+        pem = self._pem.decode('utf-8')
+
+        response = self.client.post(self._url(app_account.pk), {
+            'private_key': self._make_key_file(self._pem),
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response['Location'],
+                         local_site_reverse('connected-services-list'))
+
+        # The stored key round-trips back to the uploaded PEM. The form strips
+        # surrounding whitespace, so compare against the stripped key.
+        app_account.refresh_from_db()
+        stored = app_account.data['github_app']['private_key']
+        self.assertEqual(
+            base64.b64decode(decrypt_password(stored)).decode('utf-8'),
+            pem.strip())
+
+    def test_post_with_invalid_key_reports_error(self) -> None:
+        """Testing GitHubAppReplaceKeyView POST rejects an invalid key"""
+        app_account = self._create_app_record_account(private_key='original')
+
+        response = self.client.post(self._url(app_account.pk), {
+            'private_key': self._make_key_file(b'not a real key'),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context['form'], 'private_key',
+                             'This file does not contain a valid RSA private '
+                             'key. Make sure you uploaded the .pem file that '
+                             'GitHub downloaded.')
+
+        # The stored key was left untouched.
+        app_account.refresh_from_db()
+        self.assertEqual(app_account.data['github_app']['private_key'],
+                         'original')
+
+    def test_post_with_oversized_file_reports_error(self) -> None:
+        """Testing GitHubAppReplaceKeyView POST rejects an oversized file"""
+        app_account = self._create_app_record_account(private_key='original')
+        content = b'-' * (GitHubAppReplaceKeyForm.MAX_PRIVATE_KEY_SIZE + 1)
+
+        response = self.client.post(self._url(app_account.pk), {
+            'private_key': self._make_key_file(content),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context['form'], 'private_key',
+                             'This file is too large to be a private key. '
+                             'Upload the .pem file that GitHub downloaded.')
+
+        app_account.refresh_from_db()
+        self.assertEqual(app_account.data['github_app']['private_key'],
+                         'original')
+
+    def test_post_with_binary_file_reports_error(self) -> None:
+        """Testing GitHubAppReplaceKeyView POST rejects a non-text file"""
+        app_account = self._create_app_record_account(private_key='original')
+
+        response = self.client.post(self._url(app_account.pk), {
+            'private_key': self._make_key_file(b'\xff\xfe\x00binary'),
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context['form'], 'private_key',
+                             'This file is not a PEM-encoded private key. '
+                             'Upload the .pem file that GitHub downloaded.')
+
+        app_account.refresh_from_db()
+        self.assertEqual(app_account.data['github_app']['private_key'],
+                         'original')
+
+    def test_post_without_file_reports_error(self) -> None:
+        """Testing GitHubAppReplaceKeyView POST with no file uploaded"""
+        app_account = self._create_app_record_account(private_key='original')
+
+        response = self.client.post(self._url(app_account.pk), {})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFormError(response.context['form'], 'private_key',
+                             'This field is required.')
+
+        app_account.refresh_from_db()
+        self.assertEqual(app_account.data['github_app']['private_key'],
+                         'original')
+
+    def test_post_with_non_app_account(self) -> None:
+        """Testing GitHubAppReplaceKeyView POST with a non-app-record account
+        """
+        pat_account = self.create_hosting_account()
+
+        response = self.client.post(self._url(pat_account.pk), {
+            'private_key': self._make_key_file(self._pem),
+        })
+
+        self._assert_error_redirect(
+            response,
+            'That GitHub App connection was not found. Please try connecting '
+            'again.')
+
+    def _make_key_file(
+        self,
+        content: bytes,
+    ) -> SimpleUploadedFile:
+        """Return an uploaded .pem file containing the given content.
+
+        Args:
+            content (bytes):
+                The contents of the file.
+
+        Returns:
+            django.core.files.uploadedfile.SimpleUploadedFile:
+            The file to post.
+        """
+        return SimpleUploadedFile('private-key.pem', content,
+                                  content_type='application/x-pem-file')
+
+    def _url(
+        self,
+        account_id: int,
+    ) -> str:
+        """Return the replace-key URL for an account.
+
+        Args:
+            account_id (int):
+                The account ID to include in the URL.
+
+        Returns:
+            str:
+            The URL.
+        """
+        return local_site_reverse(
+            'github-app-replace-key',
+            kwargs={
+                'hosting_service_id': 'github',
+                'account_id': account_id,
             })

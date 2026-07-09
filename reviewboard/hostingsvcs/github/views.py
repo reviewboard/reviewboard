@@ -7,7 +7,6 @@ Version Added:
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import hmac
 import json
@@ -47,14 +46,18 @@ from reviewboard.hostingsvcs.github.accounts import (
     GitHubAppRecordData,
     InstallationStatus,
     find_installation_account,
+    get_app_settings_url,
     get_github_app_data,
+    is_app_record_account,
     is_app_record_data,
     is_installation_account,
     is_installation_data,
     set_github_app_data,
     set_installation_status,
 )
+from reviewboard.hostingsvcs.github.app_auth import encrypt_app_private_key
 from reviewboard.hostingsvcs.github.client import get_github_urls
+from reviewboard.hostingsvcs.github.forms import GitHubAppReplaceKeyForm
 from reviewboard.hostingsvcs.hook_utils import (
     close_all_review_requests,
     get_git_branch_name,
@@ -521,13 +524,18 @@ class GitHubAppCallbackView(GitHubAppView):
         if owner_type not in {'user', 'organization'}:
             owner_type = ''
 
-        # The PEM private key is multi-line. decrypt_password() rejects
-        # non-printable content, so Base64-encode the key first to keep it
-        # on a single printable line. Decode with
-        # base64.b64decode(decrypt_password(...)) when reading it back.
-        private_key = encrypt_password(
-            base64.b64encode(
-                rsp.pem.encode('utf-8')).decode('ascii'))
+        try:
+            private_key = encrypt_app_private_key(rsp.pem)
+        except ValueError as e:
+            logger.error('GitHub returned an unusable App private key: %s', e)
+
+            return self._show_error(
+                request,
+                _(
+                    'GitHub did not provide a usable private key for the '
+                    'App. Please try connecting again.'
+                ))
+
         webhook_secret = encrypt_password(rsp.webhook_secret)
 
         # This is the hidden app-record account. It holds the app credentials
@@ -1348,6 +1356,187 @@ class GitHubAppReconnectView(GitHubAppView):
                 ))
 
         return HttpResponseRedirect(onward_url)
+
+
+@method_decorator(staff_member_required, name='dispatch')
+class GitHubAppReplaceKeyView(GitHubAppView):
+    """Replace the private key stored for a GitHub App.
+
+    GitHub lets an administrator regenerate an app's private key and revoke
+    the old one. When that happens the stored key can no longer sign app JWTs,
+    which breaks every installation of the app. This view accepts a
+    freshly-generated PEM key and stores it on the hidden app-record account,
+    restoring the connection without recreating the app.
+
+    Version Added:
+        9.0
+    """
+
+    def get(
+        self,
+        request: HttpRequest,
+        *args,
+        account_id: int,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP GET requests.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            account_id (int):
+                The ID of the hidden app-record account holding the app's
+                credentials.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            django.http.HttpResponse:
+            The rendered key-replacement form.
+        """
+        app_account = self._get_app_record_or_none(account_id)
+
+        if app_account is None:
+            return self._show_error(
+                request,
+                _('That GitHub App connection was not found. Please try '
+                  'connecting again.'))
+
+        return self._render_form(
+            request=request,
+            app_account=app_account,
+            form=GitHubAppReplaceKeyForm())
+
+    def post(
+        self,
+        request: HttpRequest,
+        *args,
+        account_id: int,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP POST requests.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            *args (tuple, unused):
+                Unused positional arguments.
+
+            account_id (int):
+                The ID of the hidden app-record account holding the app's
+                credentials.
+
+            **kwargs (dict, unused):
+                Unused keyword arguments.
+
+        Returns:
+            django.http.HttpResponse:
+            A redirect to the connected services list on success, or the
+            re-rendered form on error.
+        """
+        app_account = self._get_app_record_or_none(account_id)
+
+        if app_account is None:
+            return self._show_error(
+                request,
+                _('That GitHub App connection was not found. Please try '
+                  'connecting again.'))
+
+        form = GitHubAppReplaceKeyForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            try:
+                encrypted_key = encrypt_app_private_key(
+                    form.cleaned_data['private_key'])
+            except ValueError:
+                form.add_error(
+                    'private_key',
+                    _('This file does not contain a valid RSA private key. '
+                      'Make sure you uploaded the .pem file that GitHub '
+                      'downloaded.'))
+            else:
+                app_data = get_github_app_data(app_account)
+                assert is_app_record_data(app_data)
+
+                app_data.private_key = encrypted_key
+                app_account.data['github_app'] = app_data.model_dump()
+                app_account.save(update_fields=('data',))
+
+                messages.success(
+                    request,
+                    _('The GitHub App private key was updated.'))
+
+                return HttpResponseRedirect(
+                    local_site_reverse('connected-services-list',
+                                       request=request))
+
+        return self._render_form(
+            request=request,
+            app_account=app_account,
+            form=form)
+
+    def _get_app_record_or_none(
+        self,
+        account_id: int,
+    ) -> HostingServiceAccount | None:
+        """Return the app-record account for an ID, or ``None``.
+
+        Args:
+            account_id (int):
+                The ID of the account to look up.
+
+        Returns:
+            reviewboard.hostingsvcs.models.HostingServiceAccount:
+            The app-record account, or ``None`` if the ID did not match a
+            GitHub app-record account.
+        """
+        account = self._get_account_or_none(pk=account_id,
+                                            service_name='github')
+
+        if account is None or not is_app_record_account(account):
+            return None
+
+        return account
+
+    def _render_form(
+        self,
+        *,
+        request: HttpRequest,
+        app_account: HostingServiceAccount,
+        form: GitHubAppReplaceKeyForm,
+    ) -> HttpResponse:
+        """Render the key-replacement form.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            app_account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The app-record account being updated.
+
+            form (GitHubAppReplaceKeyForm):
+                The form to render.
+
+        Returns:
+            django.http.HttpResponse:
+            The rendered form.
+        """
+        return render(
+            request=request,
+            template_name='hostingsvcs/github/app_replace_key.html',
+            context={
+                'app_account': app_account,
+                'app_name': app_account.username,
+                'github_app_settings_url': get_app_settings_url(app_account),
+                'has_file_field': True,
+                'form': form,
+            })
 
 
 @method_decorator(csrf_exempt, name='dispatch')

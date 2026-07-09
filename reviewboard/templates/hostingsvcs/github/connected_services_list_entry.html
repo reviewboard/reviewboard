@@ -9,10 +9,17 @@
   <span class="ink-i-check"></span>
   {% trans "GitHub App connected" %}
  </h2>
- <a href="{{github_app_settings_url}}" target="_blank"
-    rel="noopener noreferrer">
-  App Settings <span class="ink-i-external-link"></span>
- </a>
+ <div>
+  <a href="{{github_app_settings_url}}" target="_blank"
+     rel="noopener noreferrer">
+   {% trans "App Settings" %} <span class="ink-i-external-link"></span>
+  </a>
+{%   if github_app_replace_key_url %}
+  <a href="{{github_app_replace_key_url}}">
+   {% trans "Rotate private key" %}
+  </a>
+{%   endif %}
+ </div>
 </div>
 {%  else %}
 <div id="github-cs-entry-controls"
