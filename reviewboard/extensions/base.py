@@ -1,5 +1,9 @@
 """Base support for writing custom extensions."""
 
+from __future__ import annotations
+
+from django.conf import settings
+
 from djblets.extensions.extension import (Extension as DjbletsExtension,
                                           JSExtension as DjbletsJSExtension)
 from djblets.extensions.manager import (ExtensionManager as
@@ -33,8 +37,17 @@ class ExtensionManager(DjbletsExtensionManager):
 
     See the Djblets :py:class:`~djblets.extensions.manager.ExtensionManager`
     documentation for a full class reference.
+
+    Version Changed:
+        8.1:
+        Power Pack and rbintegrations are now always-enabled extensions.
     """
-    pass
+
+    if not settings.RUNNING_TEST:
+        always_enabled_extension_ids = {
+            'rbintegrations.extension.RBIntegrationsExtension',
+            'rbpowerpack.extension.PowerPackExtension',
+        }
 
 
 _extension_manager = None
