@@ -184,6 +184,20 @@ def _get_nodes_by_line(
         end_row = highlight_capture[HIGHLIGHT_CAPTURE_END_ROW]
         end_col = highlight_capture[HIGHLIGHT_CAPTURE_END_COL]
 
+        if start_row >= len(lines):
+            # Error-recovery nodes can start past the last line. There is
+            # nothing to highlight.
+            continue
+
+        if end_row >= len(lines):
+            # A node that consumes the trailing newline of the file ends at
+            # the start of a row past the last line. Clamp it to the end of
+            # the last line.
+            end_row = len(lines) - 1
+            end_line_bytes = lines[end_row].encode()
+            lines_bytes[end_row] = end_line_bytes
+            end_col = len(end_line_bytes)
+
         # Convert byte positions to character positions.
         start_line = lines[start_row]
         start_line_bytes = lines_bytes[start_row]

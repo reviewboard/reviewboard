@@ -202,6 +202,40 @@ def test_get_nodes_by_line_overlapping_nodes() -> None:
     assert nodes[2][0] == 'function.call'
 
 
+def test_get_nodes_by_line_node_past_last_line() -> None:
+    """Test _get_nodes_by_line with a node ending past the last line.
+
+    A node that consumes the trailing newline of a file ends at the start
+    of a row past the last line.
+    """
+    captures = [
+        ('markup.heading', 0, 0, 1, 0, b'# Header\n'),
+    ]
+    lines = ['# Header']
+
+    result = list(_get_nodes_by_line(captures, lines))
+
+    assert len(result) == 1
+    nodes = result[0]
+    assert len(nodes) == 1
+    assert nodes[0][NODE_NAME] == 'markup.heading'
+    assert nodes[0][NODE_START] == 0
+    assert nodes[0][NODE_END] == len(lines[0])
+
+
+def test_get_nodes_by_line_node_starts_past_last_line() -> None:
+    """Test _get_nodes_by_line with a node starting past the last line."""
+    captures = [
+        ('string', 1, 0, 1, 4, b'text'),
+    ]
+    lines = ['# Header']
+
+    result = list(_get_nodes_by_line(captures, lines))
+
+    assert len(result) == 1
+    assert result[0] == []
+
+
 def test_get_events_by_line_single_node() -> None:
     """Test _get_events_by_line with single node."""
     nodes_by_line = [
@@ -425,6 +459,25 @@ def test_highlight_language_files(
         expected = f.read().splitlines()
 
     assert result == expected
+
+
+def test_highlight_trailing_newline() -> None:
+    """Test highlight with a file ending in a newline.
+
+    Nodes that consume the trailing newline end past the last line, and
+    must not break highlighting.
+    """
+    content = '---\ntitle: hello\n---\n'
+    content_bytes = content.encode()
+    lines = content.splitlines()
+
+    parser = get_parser('markdown')
+    tree = parser.parse(content_bytes)
+
+    result = highlight(content_bytes, lines, tree, 'markdown')
+
+    assert result is not None
+    assert '<span class="ts-string">title</span>' in result[1]
 
 
 def test_highlight_unsupported_language() -> None:
