@@ -6,17 +6,25 @@ Version Added:
 
 from __future__ import annotations
 
+import logging
 import os
 import re
+from functools import lru_cache
 from typing import TYPE_CHECKING
+
+import tree_sitter
+
+from reviewboard.treesitter.core import get_language, get_queries
+from reviewboard.treesitter.predicates import create_predicate_handler
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
     from typing import TypeAlias
 
-    import tree_sitter
-
     from reviewboard.treesitter.language import SupportedLanguage
+
+
+logger = logging.getLogger(__name__)
 
 
 # A list of regular expressions for headers in the source code that we can
@@ -123,6 +131,13 @@ HEADER_REGEX_ALIASES = {
 InterestingLine: TypeAlias = tuple[int, str]
 
 
+#: The query capture names used for interesting lines.
+#:
+#: The vendored ``interesting_lines.scm`` files may contain other captures
+#: (such as ``function.inner``), which we ignore.
+_INTERESTING_CAPTURES = ('class.outer', 'function.outer')
+
+
 def _get_interesting_lines_via_regex(
     filename: str,
     file_content: Sequence[str],
@@ -171,6 +186,100 @@ def _get_interesting_lines_via_regex(
     return interesting_lines
 
 
+# TODO: make this configurable the way we do with Pygments lexers.
+@lru_cache
+def _get_interesting_lines_query(
+    language_name: SupportedLanguage,
+) -> tree_sitter.Query | None:
+    """Return the compiled interesting lines query for a language.
+
+    Version Added:
+        9.0
+
+    Args:
+        language_name (str):
+            The tree-sitter language name.
+
+    Returns:
+        tree_sitter.Query:
+        The compiled query, or ``None`` if the language has no interesting
+        lines queries or they failed to compile.
+    """
+    queries = get_queries(language_name, 'interesting_lines.scm')
+
+    if not queries:
+        return None
+
+    try:
+        return tree_sitter.Query(get_language(language_name), queries)
+    except Exception as e:
+        # A broken query file must not break diff rendering. Fall back to
+        # the regex scanner.
+        logger.warning('Failed to compile interesting lines queries for '
+                       'language %s: %s',
+                       language_name, e)
+
+        return None
+
+
+def _get_interesting_lines_via_ts(
+    language_name: SupportedLanguage,
+    file_content: Sequence[str],
+    tree: tree_sitter.Tree,
+) -> Sequence[InterestingLine] | None:
+    """Get interesting lines for a file using tree-sitter queries.
+
+    Version Added:
+        9.0
+
+    Args:
+        language_name (str):
+            The tree-sitter language name for the file.
+
+        file_content (list of str):
+            The content of the file, split into lines.
+
+        tree (tree_sitter.Tree):
+            The parsed tree-sitter tree for the file.
+
+    Returns:
+        list:
+        A list of interesting lines in the file, or ``None`` if there are
+        no queries available for the language or the file could not
+        usefully be parsed.
+    """
+    query = _get_interesting_lines_query(language_name)
+
+    if query is None:
+        return None
+
+    predicate_handler = create_predicate_handler(query=query)
+    cursor = tree_sitter.QueryCursor(query)
+    captures = cursor.captures(tree.root_node, predicate_handler)
+
+    rows: set[int] = set()
+
+    for capture_name in _INTERESTING_CAPTURES:
+        for node in captures.get(capture_name, []):
+            row = node.start_point.row
+
+            # Guard against error-recovery nodes with odd extents.
+            if row < len(file_content):
+                rows.add(row)
+
+    if not rows and tree.root_node.has_error:
+        # Nothing was found and the file did not parse cleanly. The file
+        # may be broken (or not really this language at all), so let the
+        # regex scanner have a shot at it. A clean parse with no matches
+        # stays authoritative: the file simply has no definitions.
+        return None
+
+    return [
+        (row, file_content[row])
+        for row in sorted(rows)
+    ]
+
+
 def get_interesting_lines(
     *,
     filename: str,
@@ -200,4 +309,15 @@ def get_interesting_lines(
         list:
         A list of interesting lines in the file.
     """
+    if language_name and tree:
+        interesting_lines = _get_interesting_lines_via_ts(
+            language_name, file_content, tree)
+
+        if interesting_lines is not None:
+            # If the queries ran, their result is authoritative, even when
+            # empty. Falling back on an empty result would reintroduce the
+            # regex false positives for files that simply have no
+            # definitions.
+            return interesting_lines
+
     return _get_interesting_lines_via_regex(filename, file_content)

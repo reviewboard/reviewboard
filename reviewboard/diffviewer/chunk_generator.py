@@ -548,13 +548,18 @@ class RawDiffChunkGenerator:
             self.old_language_name = old_language_name
             self.new_language_name = new_language_name
 
-            if old_language_name:
-                parser = get_parser(old_language_name)
-                self.old_tree = parser.parse(old_str.encode())
+            # Oversized files (by the same heuristics used for syntax
+            # highlighting, but regardless of the user's highlighting
+            # setting) are never parsed. Interesting lines will fall back
+            # to the regex scanner for them.
+            if self._check_file_size_limits(old, new, old_lines, new_lines):
+                if old_language_name:
+                    parser = get_parser(old_language_name)
+                    self.old_tree = parser.parse(old_str.encode())
 
-            if new_language_name:
-                parser = get_parser(new_language_name)
-                self.new_tree = parser.parse(new_str.encode())
+                if new_language_name:
+                    parser = get_parser(new_language_name)
+                    self.new_tree = parser.parse(new_str.encode())
 
             self.old_interesting_lines = get_interesting_lines(
                 filename=old_filename,
@@ -960,9 +965,42 @@ class RawDiffChunkGenerator:
             bool:
             Whether syntax highlighting should be applied for the file.
         """
-        if not self.enable_syntax_highlighting:
-            return False
+        return (self.enable_syntax_highlighting and
+                self._check_file_size_limits(old, new, old_lines, new_lines))
 
+    def _check_file_size_limits(
+        self,
+        old: bytes,
+        new: bytes,
+        old_lines: Sequence[str],
+        new_lines: Sequence[str],
+    ) -> bool:
+        """Return whether the file is small enough to process as code.
+
+        These heuristics gate both syntax highlighting and tree parsing,
+        taking into account the size of the files in bytes and the number
+        and length of lines.
+
+        Version Added:
+            9.0
+
+        Args:
+            old (bytes):
+                The contents of the old file as a single bytestring.
+
+            new (bytes):
+                The contents of the new file as a single bytestring.
+
+            old_lines (list of str):
+                The list of lines in the old file.
+
+            new_lines (list of str):
+                The list of lines in the new file.
+
+        Returns:
+            bool:
+            Whether the file is within the size limits.
+        """
         threshold = self.diff_settings.syntax_highlighting_threshold
 
         if threshold and (len(old_lines) > threshold or
