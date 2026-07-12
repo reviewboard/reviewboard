@@ -23,6 +23,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "apex/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "arduino/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -47,6 +51,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "astro/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "bash/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -54,6 +62,10 @@
   "bash/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "bash/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "beancount/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -94,6 +106,10 @@
   "c/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "c/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "cairo/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -139,6 +155,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "cmake/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "comment/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -167,6 +187,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "cpp/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "csharp/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -174,6 +198,10 @@
   "csharp/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "csharp/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "css/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -195,6 +223,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "cuda/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "d/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -210,6 +242,10 @@
   "dart/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "dart/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "dockerfile/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -247,6 +283,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "elixir/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "elm/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -254,6 +294,10 @@
   "elm/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "elm/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "embeddedtemplate/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -271,6 +315,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "fennel/interesting_lines.scm": {
+    "commit": "2f6db742cd02c5e44600c8402b6f6a010fb6c396",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "firrtl/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -286,6 +334,10 @@
   "fish/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "fish/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "fortran/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -310,6 +362,10 @@
   "gdscript/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "gdscript/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "gitattributes/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -343,6 +399,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "gleam/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "glsl/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -350,6 +410,10 @@
   "glsl/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "glsl/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "gn/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -366,6 +430,10 @@
   "go/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "go/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "gomod/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -399,6 +467,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "hack/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "hare/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -414,6 +486,10 @@
   "haskell/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "haskell/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "hcl/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -431,6 +507,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "heex/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "hlsl/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -438,6 +518,10 @@
   "hlsl/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "hlsl/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "hyprlang/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -475,6 +559,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "java/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "javascript/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -482,6 +570,10 @@
   "javascript/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "javascript/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "jsdoc/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -507,6 +599,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "julia/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "kconfig/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -531,6 +627,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "kotlin/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "latex/highlights.scm": {
     "commit": "692b051b09935653befdb8f7ba8afdb640adf17b",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -538,6 +638,10 @@
   "latex/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "latex/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "linkerscript/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -562,6 +666,10 @@
   "lua/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "lua/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "luadoc/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -599,6 +707,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "markdown/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "markdown_inline/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -614,6 +726,10 @@
   "matlab/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "matlab/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "mermaid/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -639,6 +755,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "nim/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "ninja/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -650,6 +770,10 @@
   "nix/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "nix/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "nqc/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -675,6 +799,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "ocaml/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "ocaml_interface/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -690,6 +818,10 @@
   "odin/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "odin/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "org/highlights.scm": {
     "commit": "64cfbc213f5a83da17632c95382a5a0a2f3357c1",
@@ -730,6 +862,10 @@
   "php/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "php/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "po/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -815,6 +951,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "python/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "qmldir/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -846,6 +986,10 @@
   "r/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "r/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "racket/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -903,6 +1047,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "rst/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "ruby/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -910,6 +1058,10 @@
   "ruby/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "ruby/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "rust/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -919,6 +1071,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "rust/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "scala/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -926,6 +1082,10 @@
   "scala/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "scala/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "scheme/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -1003,6 +1163,10 @@
     "commit": "60ea1d673a1a3eeeb597e098d9ada9ed0c79ef4b",
     "remote": "https://github.com/Himujjal/tree-sitter-svelte"
   },
+  "svelte/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "swift/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -1010,6 +1174,10 @@
   "swift/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "swift/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "tablegen/highlights.scm": {
     "commit": "3e9c4822ab5cdcccf4f8aa9dcd42117f736d51d9",
@@ -1059,6 +1227,10 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "tsx/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "twig/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -1074,6 +1246,10 @@
   "typescript/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "typescript/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "typst/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -1111,6 +1287,10 @@
     "commit": "fee18d64a51127b32a221a56509f77c942d9923f",
     "remote": "https://github.com/nedpals/tree-sitter-v"
   },
+  "v/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "vim/highlights.scm": {
     "commit": "692b051b09935653befdb8f7ba8afdb640adf17b",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
@@ -1119,9 +1299,17 @@
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
   },
+  "vim/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
+  },
   "vue/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "vue/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "wgsl/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -1130,6 +1318,10 @@
   "wgsl/injections.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
     "source": "https://github.com/nvim-treesitter/nvim-treesitter.git"
+  },
+  "wgsl/interesting_lines.scm": {
+    "commit": "851e865342e5a4cb1ae23d31caf6e991e1c99f1e",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   },
   "xcompose/highlights.scm": {
     "commit": "61ec748ef7624b1962f392191aad61b91c0f9829",
@@ -1170,5 +1362,9 @@
   "zig/injections.scm": {
     "commit": "a80a6e9be81b33b182ce6305ae4ea28e29211bd5",
     "remote": "https://github.com/maxxnino/tree-sitter-zig"
+  },
+  "zig/interesting_lines.scm": {
+    "commit": "ced6375723b20616282f9f6a1018a63ae19b106a",
+    "source": "https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git"
   }
 }
