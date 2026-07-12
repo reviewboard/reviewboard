@@ -211,6 +211,101 @@ def _gsub_directive(
     return True
 
 
+def _make_range_directive(
+    args: PredicateArgs,
+    captures: PredicateCaptures,
+    pattern_index: int,
+    query: tree_sitter.Query,
+) -> bool:
+    """Handle the 'make-range!' directive.
+
+    In nvim, this defines a new named range spanning two captures (for
+    example, a ``function.inner`` range from a ``@_start`` capture to a
+    ``@_end`` capture). Nothing in Review Board consumes these synthetic
+    ranges, so this only ensures the match is not rejected.
+
+    Version Added:
+        9.0
+
+    Args:
+        args (PredicateArgs):
+            The predicate arguments.
+
+        captures (PredicateCaptures):
+            The captured nodes.
+
+        pattern_index (int):
+            The pattern index from the query.
+
+        query (tree_sitter.Query):
+            The query object to store settings in.
+
+    Returns:
+        bool:
+        Always returns ``True`` (directives don't filter matches).
+    """
+    return True
+
+
+def _offset_directive(
+    args: PredicateArgs,
+    captures: PredicateCaptures,
+    pattern_index: int,
+    query: tree_sitter.Query,
+) -> bool:
+    """Handle the 'offset!' directive.
+
+    This stores (row, column) deltas to apply to a capture's range,
+    matching nvim's semantics of adding each delta to the corresponding
+    range component. The deltas are stored in the query's pattern settings
+    under an ``offset.<capture name>`` key, as a space-separated string of
+    ``start_row start_col end_row end_col``. Consumers that build ranges
+    from captured nodes apply them (see the injection handling in
+    :py:mod:`reviewboard.treesitter.highlight`).
+
+    Version Added:
+        9.0
+
+    Args:
+        args (PredicateArgs):
+            The predicate arguments.
+
+        captures (PredicateCaptures):
+            The captured nodes.
+
+        pattern_index (int):
+            The pattern index from the query.
+
+        query (tree_sitter.Query):
+            The query object to store settings in.
+
+    Returns:
+        bool:
+        Always returns ``True`` (directives don't filter matches).
+    """
+    if not args or args[0][1] != 'capture':
+        return True
+
+    capture_id = args[0][0]
+    deltas = ['0'] * 4
+
+    for i, (value, arg_type) in enumerate(args[1:5]):
+        if arg_type != 'string':
+            return True
+
+        try:
+            int(value)
+        except ValueError:
+            return True
+
+        deltas[i] = value
+
+    settings = query.pattern_settings(pattern_index)
+    settings[f'offset.{capture_id}'] = ' '.join(deltas)
+
+    return True
+
+
 def _has_ancestor_predicate(
     args: PredicateArgs,
     captures: PredicateCaptures,
@@ -395,8 +490,10 @@ PREDICATE_HANDLERS: Mapping[
     'gsub!': _gsub_directive,
     'has-ancestor?': _has_ancestor_predicate,
     'has-parent?': _has_parent_predicate,
+    'make-range!': _make_range_directive,
     'not-has-ancestor?': _not_has_ancestor_predicate,
     'not-has-parent?': _not_has_parent_predicate,
+    'offset!': _offset_directive,
 }
 
 

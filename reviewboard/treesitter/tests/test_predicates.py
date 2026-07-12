@@ -575,3 +575,75 @@ def test_not_has_ancestor_predicate_negative() -> None:
     captures = cursor.captures(tree.root_node, predicate_handler)
 
     assert captures == {}
+
+
+def test_offset_directive() -> None:
+    """Test offset! directive stores deltas and keeps the match."""
+    content = 'def main():\n    pass\n'
+    content_bytes = content.encode()
+
+    parser = get_parser('python')
+    tree = parser.parse(content_bytes)
+
+    ts_language = parser.language
+    assert ts_language is not None
+
+    queries = dedent("""
+        ((function_definition) @fn
+         (#offset! @fn 1 0 -1 0))
+    """)
+    query = tree_sitter.Query(ts_language, queries)
+    predicate_handler = create_predicate_handler(query)
+    cursor = tree_sitter.QueryCursor(query)
+    captures = cursor.captures(tree.root_node, predicate_handler)
+
+    assert 'fn' in captures
+    assert query.pattern_settings(0)['offset.fn'] == '1 0 -1 0'
+
+
+def test_offset_directive_partial_args() -> None:
+    """Test offset! directive with fewer than four deltas."""
+    content = 'def main():\n    pass\n'
+    content_bytes = content.encode()
+
+    parser = get_parser('python')
+    tree = parser.parse(content_bytes)
+
+    ts_language = parser.language
+    assert ts_language is not None
+
+    queries = dedent("""
+        ((function_definition) @fn
+         (#offset! @fn 1))
+    """)
+    query = tree_sitter.Query(ts_language, queries)
+    predicate_handler = create_predicate_handler(query)
+    cursor = tree_sitter.QueryCursor(query)
+    captures = cursor.captures(tree.root_node, predicate_handler)
+
+    assert 'fn' in captures
+    assert query.pattern_settings(0)['offset.fn'] == '1 0 0 0'
+
+
+def test_make_range_directive() -> None:
+    """Test make-range! directive keeps the match."""
+    content = 'def main():\n    pass\n'
+    content_bytes = content.encode()
+
+    parser = get_parser('python')
+    tree = parser.parse(content_bytes)
+
+    ts_language = parser.language
+    assert ts_language is not None
+
+    queries = dedent("""
+        ((function_definition
+          body: (block) @_start @_end) @fn
+         (#make-range! "fn.inner" @_start @_end))
+    """)
+    query = tree_sitter.Query(ts_language, queries)
+    predicate_handler = create_predicate_handler(query)
+    cursor = tree_sitter.QueryCursor(query)
+    captures = cursor.captures(tree.root_node, predicate_handler)
+
+    assert 'fn' in captures
