@@ -1173,27 +1173,6 @@ class Site(object):
 
             os.chdir(cwd)
 
-    def setup_integrations(self) -> None:
-        """Set up integrations needed by Review Board.
-
-        At the moment, this enables Power Pack and ensures it's installed
-        with database tables and static media populated.
-
-        Raises:
-            Exception:
-                An error occurred during setup of an extension.
-
-                Callers must catch this and handle it.
-        """
-        from reviewboard.extensions.base import get_extension_manager
-
-        extension_mgr = get_extension_manager()
-        extension_mgr.load()
-
-        extension_mgr.enable_extension(
-            'rbpowerpack.extension.PowerPackExtension',
-        )
-
     def register_support_page(self):
         """Register this installation with the support data tracker."""
         from reviewboard.admin.support import get_register_support_url
@@ -2627,8 +2606,6 @@ class InstallCommand(Command):
                               site.generate_config_files)
         console.progress_step('Creating database',
                               site.update_database)
-        console.progress_step('Setting up integrations',
-                              site.setup_integrations)
         console.progress_step('Creating administrator account',
                               site.create_admin_user)
         console.progress_step('Saving site settings',
@@ -2908,9 +2885,6 @@ class UpgradeCommand(Command):
                 lambda: site.run_manage_command('fixreviewcounts'))
 
         siteconfig.save()
-
-        console.progress_step('Setting up integrations',
-                              site.setup_integrations)
 
         site.harden_passwords()
 

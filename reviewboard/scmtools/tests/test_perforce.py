@@ -148,6 +148,7 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             name='localhost',
             path='localhost:61666',
             username='guest',
+            password='guest12345',
             encoding='none',
             tool_name='Perforce')
         self.tool = cast(PerforceTool, self.repository.get_scmtool())
@@ -410,8 +411,10 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
 
     @unittest.skipIf(not has_p4d,
                      'The p4d command line tool is not installed')
-    def test_changeset_authentication_error(self) -> None:
-        """Testing PerforceTool.get_changeset with an authentication error"""
+    def test_with_auth_error_bad_password(self) -> None:
+        """Testing PerforceTool.get_changeset with an authentication error
+        from a bad password
+        """
         repo = self.create_repository(
             path='localhost:61666',
             tool_name='Perforce',
@@ -420,8 +423,51 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
             encoding='none')
         tool = repo.get_scmtool()
 
-        self.assertRaises(AuthenticationError,
-                          lambda: tool.get_changeset('4'))
+        message = 'Password invalid.'
+
+        with self.assertRaisesMessage(AuthenticationError, message):
+            tool.get_changeset('4')
+
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_with_auth_error_missing_password(self) -> None:
+        """Testing PerforceTool.get_changeset with an authentication error
+        from a missing password
+        """
+        repo = self.create_repository(
+            path='localhost:61666',
+            tool_name='Perforce',
+            username='samwise',
+            encoding='none')
+        tool = repo.get_scmtool()
+
+        message = (
+            'Perforce password (P4PASSWD) invalid or unset.'
+        )
+
+        with self.assertRaisesMessage(AuthenticationError, message):
+            tool.get_changeset('4')
+
+    @unittest.skipIf(not has_p4d,
+                     'The p4d command line tool is not installed')
+    def test_with_auth_error_expired_password(self) -> None:
+        """Testing PerforceTool.get_changeset with an authentication error
+        from an expired password
+        """
+        repo = self.create_repository(
+            path='localhost:61666',
+            tool_name='Perforce',
+            username='pending-user',
+            password='temp12345',
+            encoding='none')
+        tool = repo.get_scmtool()
+
+        message = (
+            'Your password has expired, please change your password.'
+        )
+
+        with self.assertRaisesMessage(AuthenticationError, message):
+            tool.get_changeset('4')
 
     @unittest.skipIf(not has_p4d,
                      'The p4d command line tool is not installed')
@@ -473,8 +519,9 @@ class PerforceTests(DiffParserTestingMixin, BasePerforceTestCase):
         repo = self.create_repository(
             path='localhost:61666',
             username='guest',
+            password='guest12345',
             tool_name='Perforce',
-            encoding='utf8')
+            encoding='none')
         repo.extra_data['p4_host'] = 'my-custom-host'
 
         tool = repo.get_scmtool()
@@ -852,6 +899,7 @@ class PerforceStunnelTests(BasePerforceTestCase):
             name='localhost - secure',
             path=path,
             username='guest',
+            password='guest12345',
             encoding='none',
             tool_name='Perforce')
 
