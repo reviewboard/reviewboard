@@ -20,6 +20,7 @@ from reviewboard.hostingsvcs.errors import (
     RepositoryError,
 )
 from reviewboard.hostingsvcs.github.service import GitHub, _is_fine_grained_pat
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.hostingsvcs.tests.github.base import GitHubTestCase
 from reviewboard.scmtools.core import Branch, Commit
@@ -27,6 +28,7 @@ from reviewboard.scmtools.crypto_utils import (
     decrypt_password,
     encrypt_password,
 )
+from reviewboard.scmtools.models import Repository
 
 if TYPE_CHECKING:
     from typing import Any
@@ -42,6 +44,90 @@ class GitHubTests(GitHubTestCase):
         self.assertTrue(self.service_class.supports_bug_trackers)
         self.assertTrue(self.service_class.supports_repositories)
         self.assertFalse(self.service_class.supports_ssh_key_association)
+
+    def test_get_repository_display_path(self) -> None:
+        """Testing GitHubConnectUI.get_repository_display_path"""
+        for path in ('git://github.com/example/reviewboard.git',
+                     'git@github.com:example/reviewboard.git',
+                     'https://github.com/example/reviewboard.git',
+                     'ssh://git@github.com/example/reviewboard.git',
+                     'git://github.com/example/reviewboard',
+                     'git://github.com/example/reviewboard.git/',
+                     'github.com/example/reviewboard.git',
+                     'HTTPS://github.com/example/reviewboard.git'):
+            repository = Repository(path=path)
+            self.assertEqual(
+                self.service_class.connect_ui.get_repository_display_path(
+                    repository),
+                'example/reviewboard')
+
+    def test_get_repository_display_path_with_port(self) -> None:
+        """Testing GitHubConnectUI.get_repository_display_path with a port in
+        the URL
+        """
+        repository = Repository(
+            path='https://github.example.com:8443/example/reviewboard.git')
+        self.assertEqual(
+            self.service_class.connect_ui.get_repository_display_path(
+                repository),
+            'example/reviewboard')
+
+    def test_get_repository_display_path_with_dots_in_name(self) -> None:
+        """Testing GitHubConnectUI.get_repository_display_path with dots in the
+        repository name
+        """
+        repository = Repository(
+            path='https://github.com/example/my.git.repo.git')
+        self.assertEqual(
+            self.service_class.connect_ui.get_repository_display_path(
+                repository),
+            'example/my.git.repo')
+
+    def test_get_repository_display_path_with_unparsable_path(self) -> None:
+        """Testing GitHubConnectUI.get_repository_display_path falls back to
+        the raw path
+        """
+        for path in ('some-local-path',
+                     '/var/lib/git/myrepo.git',
+                     'https://github.com/',
+                     ''):
+            repository = Repository(path=path)
+            self.assertEqual(
+                self.service_class.connect_ui.get_repository_display_path(
+                    repository),
+                path)
+
+    def test_get_account_filter_label_with_pat(self) -> None:
+        """Testing GitHubConnectUI.get_account_filter_label with a personal
+        access token account
+        """
+        account = HostingServiceAccount(
+            service_name='github',
+            username='example',
+            data={})
+        self.assertEqual(
+            self.service_class.connect_ui.get_account_filter_label(account),
+            'example (PAT)')
+
+    def test_get_account_filter_label_with_app_installation(self) -> None:
+        """Testing GitHubConnectUI.get_account_filter_label with an app
+        installation account
+        """
+        account = HostingServiceAccount(
+            service_name='github',
+            username='example',
+            data={
+                'github_app': {
+                    'app_account_id': 1,
+                    'installation_id': 42,
+                    'owner_login': 'example',
+                    'owner_type': 'organization',
+                    'role': 'installation',
+                },
+            })
+        self.assertEqual(
+            self.service_class.connect_ui.get_account_filter_label(account),
+            'example')
 
     def test_get_repository_fields_with_public_plan(self) -> None:
         """Testing GitHub.get_repository_fields with the public plan"""

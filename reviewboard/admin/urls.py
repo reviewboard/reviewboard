@@ -58,6 +58,9 @@ urlpatterns = [
         path('<str:service_id>/accounts/<int:account_id>/edit-credentials/',
              views.EditServiceCredentialsView.as_view(),
              name='connected-services-account-edit-credentials'),
+        path('<str:service_id>/repositories/',
+             views.ConnectedServiceRepositoriesView.as_view(),
+             name='connected-services-repositories'),
     ])),
 
     path('db/', admin_site.urls),

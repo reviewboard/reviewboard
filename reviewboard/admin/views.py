@@ -11,7 +11,8 @@ from typing import TYPE_CHECKING, cast
 from django.conf import settings
 from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth.models import User
-from django.db.models import Count
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
+from django.db.models import Count, Q
 from django.http import (Http404,
                          HttpResponse,
                          HttpResponseRedirect,
@@ -42,11 +43,14 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.errors import \
     UnverifiedCertificateError as LegacyUnverifiedCertificateError
+from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.utils import humanize_key
 
 if TYPE_CHECKING:
+    from typing import ClassVar
+
     from django.http import HttpRequest
     from django.utils.safestring import SafeString
 
@@ -376,6 +380,8 @@ class ConnectedServicesListView(View):
                 'attention_items': attention_items,
                 'auto_connect_url': auto_connect_url,
                 'available_services': available_services,
+                'repositories_per_page':
+                    ConnectedServiceRepositoriesView.repositories_per_page,
                 'service_entries': [entry[1] for entry in entries],
                 'title': _('Connected Services'),
             },
@@ -410,7 +416,12 @@ class ConnectedServicesListView(View):
             HostingServiceAccount.objects
             .accessible(visible_only=False, local_site=LocalSite.ALL)
             .annotate(repository_count=Count('repositories'))
-            .order_by('service_name')
+
+            # The secondary keys keep the account rows, and the filter
+            # dropdown built from them, in a stable order. A username alone
+            # can be shared, such as by a GitHub PAT and an app installation
+            # for the same user.
+            .order_by('service_name', 'username', 'pk')
         )
 
         # Group accounts by the associated hosting service. If there are any
@@ -477,6 +488,128 @@ class ConnectedServicesListView(View):
             sections.append('issue_tracking')
 
         return sections
+
+
+@method_decorator(staff_member_required, name='dispatch')
+class ConnectedServiceRepositoriesView(View):
+    """View returning a hosting service's repositories as an HTML fragment.
+
+    This backs the expandable repository list under each service on the
+    "Connected Services" page. It returns the repositories for a single hosting
+    service as a rendered HTML fragment, optionally filtered by connected
+    account and by a name search, and paginated.
+
+    The response body is only the repository list. Pagination details are
+    returned in the ``X-Total-Count``, ``X-Page-Number``, and ``X-Num-Pages``
+    response headers so the client can drive its own paginator without the
+    controls being replaced when the list is swapped.
+
+    Version Added:
+        9.0
+    """
+
+    #: The number of repositories to show per page.
+    repositories_per_page: ClassVar[int] = 25
+
+    def get(
+        self,
+        request: HttpRequest,
+        service_id: str,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP GET requests.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            service_id (str):
+                The ID of the hosting service to list repositories for.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            django.http.HttpResponse:
+            The rendered repository list fragment, with pagination details in
+            the response headers.
+
+        Raises:
+            django.http.Http404:
+                The service was not registered, or the account ID was not a
+                valid ID.
+        """
+        # Let the hosting service customize how each repository's path is
+        # displayed (for example, showing "owner/repo" instead of a clone URL).
+        service = hosting_service_registry.get_hosting_service(service_id)
+
+        if service is None:
+            raise Http404
+
+        # This spans all Local Sites, matching the accounts shown on the
+        # Connected Services page, and intentionally includes invisible and
+        # archived repositories so the list agrees with the header count.
+        repositories = (
+            Repository.objects
+            .filter(hosting_account__service_name=service_id)
+            .select_related('hosting_account')
+        )
+
+        account_id = request.GET.get('account')
+
+        if account_id:
+            # An unparsable ID would otherwise reach the database and raise a
+            # ValueError when the page is evaluated.
+            try:
+                account_pk = int(account_id)
+            except ValueError:
+                raise Http404 from None
+
+            repositories = repositories.filter(hosting_account__pk=account_pk)
+
+        search = request.GET.get('q', '').strip()
+
+        if search:
+            repositories = repositories.filter(
+                Q(name__icontains=search) |
+                Q(path__icontains=search) |
+                Q(mirror_path__icontains=search))
+
+        repositories = repositories.order_by('name')
+
+        paginator = Paginator(repositories, self.repositories_per_page)
+
+        try:
+            page = paginator.page(request.GET.get('page', 1))
+        except (EmptyPage, PageNotAnInteger):
+            page = paginator.page(1)
+
+        page_repositories = list(page.object_list)
+
+        for repository in page_repositories:
+            repository.display_path = \
+                service.connect_ui.get_repository_display_path(repository)
+
+        html = render_to_string(
+            template_name=(
+                'admin/connected_services/_parts/repository_list.html'),
+            context={
+                'page': page,
+                'repositories': page_repositories,
+            },
+            request=request)
+
+        return HttpResponse(
+            html,
+            headers={
+                'X-Total-Count': str(paginator.count),
+                'X-Page-Number': str(page.number),
+                'X-Num-Pages': str(paginator.num_pages),
+            })
 
 
 def _save_hosting_auth_form(

@@ -17,26 +17,33 @@
 {%  for entry in accounts_data %}
 {%   if entry.account.visible %}
    <li class="rb-c-admin-cs-accounts__account">
-    <div>
-     <a href="{% url "admin:hostingsvcs_hostingserviceaccount_change" entry.account.pk %}">
-      {{entry.account.username}}
+    <div class="rb-c-admin-cs-accounts__account__main">
+     <div class="rb-c-admin-cs-accounts__account__identity">
+      <span class="rb-c-admin-cs-accounts__account__title">
+       <span class="rb-c-admin-cs-accounts__account__name">
+        {{entry.account.username}}
+       </span>
 {%    if entry.account.hosting_url %}
-      ({{entry.account.hosting_url}})
+       <span class="rb-c-admin-cs-accounts__account__url">
+        ({{entry.account.hosting_url}})
+       </span>
 {%    endif %}
-     </a>
-    </div>
-    <div>
-{%    if entry.detail %}
-     <span class="rb-c-admin-cs-accounts__account__detail">
-      {{entry.detail}}
-     </span>
-{%    endif %}
+      </span>
+     </div>
+     <div class="rb-c-admin-cs-accounts__account__actions">
 {%    include "admin/connected_services/_parts/account_menu.html" %}
+     </div>
     </div>
    </li>
 {%   endif %}
 {%  endfor %}
 {% endblock service_accounts %}
   </ul>
+
+{% block service_items %}
+{%  if total_repository_count %}
+{%   include "admin/connected_services/_parts/service_repositories.html" %}
+{%  endif %}
+{% endblock service_items %}
  </div>
 </li>

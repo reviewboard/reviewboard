@@ -51,22 +51,27 @@
 {%  for entry in accounts_data %}
 {%   if entry.account.visible and entry.is_app_install %}
 <li class="rb-c-admin-cs-accounts__account">
- <div>
-  <img class="rb-c-admin-cs-accounts__account__icon"
-       src="{{entry.avatar_url}}" alt="">
-  {{entry.account.username}}
+ <div class="rb-c-admin-cs-accounts__account__main">
+  <div class="rb-c-admin-cs-accounts__account__identity">
+{%    if entry.avatar_url %}
+   <img class="rb-c-admin-cs-accounts__account__icon"
+        src="{{entry.avatar_url}}" alt="">
+{%    endif %}
+   <span class="rb-c-admin-cs-accounts__account__title">
+    <span class="rb-c-admin-cs-accounts__account__name">
+     {{entry.account.username}}
+    </span>
 {%    if entry.app_status_label %}
-  <span class="ink-c-badge" data-type="error">
-   <span class="ink-c-badge__icon ink-i-error" aria-hidden="true"></span>
-   {{entry.app_status_label}}
-  </span>
+    <span class="ink-c-badge" data-type="error">
+     <span class="ink-c-badge__icon ink-i-error" aria-hidden="true"></span>
+     {{entry.app_status_label}}
+    </span>
 {%    endif %}
- </div>
- <div>
-{%    if entry.detail %}
-  <span class="rb-c-admin-cs-accounts__account__detail">{{entry.detail}}</span>
-{%    endif %}
+   </span>
+  </div>
+  <div class="rb-c-admin-cs-accounts__account__actions">
 {%    include "admin/connected_services/_parts/account_menu.html" %}
+  </div>
  </div>
 </li>
 {%   endif %}
@@ -75,17 +80,18 @@
 {%  for entry in accounts_data %}
 {%   if entry.account.visible and not entry.is_app_install %}
 <li class="rb-c-admin-cs-accounts__account">
- <div>
-  <a href="{% url "admin:hostingsvcs_hostingserviceaccount_change" entry.account.pk %}">
-   {{entry.account.username}}
-   <span class="ink-c-badge">Personal Access Token</span>
-  </a>
- </div>
- <div>
-{%    if entry.detail %}
-  <span class="rb-c-admin-cs-accounts__account__detail">{{entry.detail}}</span>
-{%    endif %}
+ <div class="rb-c-admin-cs-accounts__account__main">
+  <div class="rb-c-admin-cs-accounts__account__identity">
+   <span class="rb-c-admin-cs-accounts__account__title">
+    <span class="rb-c-admin-cs-accounts__account__name">
+     {{entry.account.username}}
+    </span>
+    <span class="ink-c-badge">Personal Access Token</span>
+   </span>
+  </div>
+  <div class="rb-c-admin-cs-accounts__account__actions">
 {%    include "admin/connected_services/_parts/account_menu.html" %}
+  </div>
  </div>
 </li>
 {%   endif %}

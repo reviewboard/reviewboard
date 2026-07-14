@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, TypedDict, cast
 
 from django.template.loader import render_to_string
 from django.urls import reverse
@@ -24,6 +24,7 @@ if TYPE_CHECKING:
     from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
     from reviewboard.hostingsvcs.models import HostingServiceAccount
+    from reviewboard.scmtools.models import Repository
 
 
 class AdminServicesListAccountMenuItem(TypedDict):
@@ -235,23 +236,44 @@ class BaseHostingServiceConnectUI:
         else:
             service_type = None
 
+        accounts_data = [
+            {
+                'account': account,
+                'menu_items':
+                    self.get_connected_services_list_account_menu_items(
+                        request,
+                        account=account),
+                'repository_count':
+                    getattr(account, 'repository_count', 0),
+            }
+            for account in accounts
+        ]
+
+        # The accounts offered in the repository filter dropdown. This covers
+        # every account contributing rows to the list, so any row can be
+        # isolated. Accounts are not filtered by visibility here: the list
+        # itself spans all accounts, so leaving one out would show rows that
+        # no filter option could narrow down to.
+        filter_accounts = [
+            {
+                'id': account.pk,
+                'label': self.get_account_filter_label(account),
+            }
+            for account in accounts
+            if getattr(account, 'repository_count', 0)
+        ]
+
         return {
+            'accounts_data': accounts_data,
+            'filter_accounts': filter_accounts,
+            'service_id': service.hosting_service_id,
             'service_name': service.name,
             'service_logo': service.logo_image,
             'service_type': service_type,
-            'accounts_data': [
-                {
-                    'account': account,
-                    'detail':
-                        self.get_connected_services_list_account_detail(
-                            account=account),
-                    'menu_items':
-                        self.get_connected_services_list_account_menu_items(
-                            request,
-                            account=account),
-                }
-                for account in accounts
-            ],
+            'total_repository_count': sum(
+                cast(int, entry['repository_count'])
+                for entry in accounts_data
+            ),
         }
 
     def get_connected_services_list_account_detail(
@@ -328,6 +350,53 @@ class BaseHostingServiceConnectUI:
                     }),
             },
         ]
+
+    def get_account_filter_label(
+        self,
+        account: HostingServiceAccount,
+    ) -> str:
+        """Return the label for an account in the repository filter dropdown.
+
+        This is shown in the account filter on the connected repositories
+        list on the "Connected Services" page. By default it returns the
+        account's string representation.
+
+        Subclasses can override this to disambiguate accounts. For example, a
+        service with both token-based and app-based accounts can mark which is
+        which when they share a username.
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The account to return a label for.
+
+        Returns:
+            str:
+            The label to show for the account.
+        """
+        return str(account)
+
+    def get_repository_display_path(
+        self,
+        repository: Repository,
+    ) -> str:
+        """Return the path to display for a repository in the admin UI.
+
+        This is shown in the connected repositories list on the "Connected
+        Services" page. By default it returns the repository's raw path.
+
+        Subclasses can override this to show a friendlier identifier. For
+        example, a service backed by GitHub can turn a clone URL into an
+        ``owner/repo`` name.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to return a display path for.
+
+        Returns:
+            str:
+            The path to display for the repository.
+        """
+        return repository.path
 
     def get_auth_form_class(self) -> type[BaseHostingServiceAuthForm]:
         """Return the authentication form class for this service.

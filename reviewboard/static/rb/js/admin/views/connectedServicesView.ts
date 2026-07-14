@@ -22,6 +22,10 @@ import {
     type ConnectServiceInfo,
     ConnectServiceWizardView,
 } from './connectServiceWizardView';
+import {
+    type ServiceItemsViewStrings,
+    ServiceItemsView,
+} from './serviceItemsView';
 
 
 /**
@@ -39,6 +43,17 @@ export interface ConnectedServicesViewOptions {
      */
     autoConnectURL?: string | null;
 
+    /** The number of bug trackers the bug trackers endpoint returns per page. */
+    bugTrackersPerPage: number;
+
+    /**
+     * A URL template for the connected-service bug trackers endpoint.
+     *
+     * This contains the placeholder ``__SERVICE_ID__``, which is replaced
+     * with the ID of the service being listed.
+     */
+    bugTrackersURLTemplate: string;
+
     /**
      * A URL template for the per-service connect endpoint.
      *
@@ -49,6 +64,22 @@ export interface ConnectedServicesViewOptions {
 
     /** The CSRF token to send with form submissions. */
     csrfToken: string;
+
+    /**
+     * The number of repositories the repositories endpoint returns per page.
+     *
+     * This comes from the server so the client's decision to build the search
+     * and paginator controls stays in step with how the endpoint paginates.
+     */
+    repositoriesPerPage: number;
+
+    /**
+     * A URL template for the connected-service repositories endpoint.
+     *
+     * This contains the placeholder ``__SERVICE_ID__``, which is replaced
+     * with the ID of the service being listed.
+     */
+    repositoriesURLTemplate: string;
 
     /** The list of services available for connection. */
     services: ConnectServiceInfo[];
@@ -116,6 +147,7 @@ export class ConnectedServicesView extends BaseView<
 
         this.#buildAccountMenus();
         this.#wireAttentionAlert();
+        this.#buildItemsPanels();
 
         if (this.#options.autoConnectURL) {
             /*
@@ -224,6 +256,58 @@ export class ConnectedServicesView extends BaseView<
 
             button.addEventListener('click', () => this.#onMenuItem(
                 item, accountID, serviceID));
+        }
+    }
+
+    /**
+     * Build the expandable items panel for each service.
+     *
+     * Each ``.rb-c-admin-cs-service-items`` block declares the kind of item
+     * it lists through ``data-item-type``, which selects the endpoint and
+     * display strings for its ServiceItemsView.
+     */
+    #buildItemsPanels() {
+        const itemTypes: Record<string, {
+            itemsURLTemplate: string,
+            perPage: number,
+            strings: ServiceItemsViewStrings,
+        }> = {
+            'bug-trackers': {
+                itemsURLTemplate: this.#options.bugTrackersURLTemplate,
+                perPage: this.#options.bugTrackersPerPage,
+                strings: {
+                    filterLabel: gettext('Filter bug trackers'),
+                    filterPlaceholder: gettext('Filter bug trackers…'),
+                    loadError: gettext('Could not load bug trackers.'),
+                    loading: gettext('Loading bug trackers…'),
+                    paginatorLabel: gettext('Bug tracker pages'),
+                },
+            },
+            'repositories': {
+                itemsURLTemplate: this.#options.repositoriesURLTemplate,
+                perPage: this.#options.repositoriesPerPage,
+                strings: {
+                    filterLabel: gettext('Filter repositories'),
+                    filterPlaceholder: gettext('Filter repositories…'),
+                    loadError: gettext('Could not load repositories.'),
+                    loading: gettext('Loading repositories…'),
+                    paginatorLabel: gettext('Repository pages'),
+                },
+            },
+        };
+
+        for (const el of this.el.querySelectorAll<HTMLElement>(
+                 '.rb-c-admin-cs-service-items[data-item-type]')) {
+            const itemType = itemTypes[el.dataset.itemType];
+
+            if (itemType) {
+                new ServiceItemsView({
+                    el,
+                    itemsURLTemplate: itemType.itemsURLTemplate,
+                    perPage: itemType.perPage,
+                    strings: itemType.strings,
+                }).render();
+            }
         }
     }
 

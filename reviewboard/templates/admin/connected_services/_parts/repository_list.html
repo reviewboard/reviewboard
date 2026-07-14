@@ -1,0 +1,26 @@
+{% load i18n %}
+{% if repositories %}
+<ul class="rb-c-admin-cs-service-items__results">
+{%  for repository in repositories %}
+ <li class="rb-c-admin-cs-service-items__item">
+  <a class="rb-c-admin-cs-service-items__item__name"
+     href="{% url "admin:scmtools_repository_change" repository.id %}">
+   {{repository.name}}
+  </a>
+  <span class="rb-c-admin-cs-service-items__item__path">{{repository.display_path}}</span>
+  <span class="rb-c-admin-cs-service-items__item__extra">
+{%  if not repository.public %}
+   <span class="ink-c-badge" data-type="warning">
+    <span class="ink-c-badge__icon rb-icon-lock" aria-hidden="true"></span>
+    <span class="ink-c-badge__label">{% trans "Private" %}</span>
+   </span>
+{%  endif %}
+  </span>
+ </li>
+{%  endfor %}
+</ul>
+{% else %}
+<p class="rb-c-admin-cs-service-items__results__empty">
+ {% trans "No repositories match your filter." %}
+</p>
+{% endif %}

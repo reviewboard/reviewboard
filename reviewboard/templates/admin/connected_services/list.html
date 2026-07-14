@@ -74,6 +74,9 @@ RB.PageManager.ready(function() {
         connectURLTemplate:
             "{% url 'connected-services-connect' service_id='__SERVICE_ID__' %}",
         csrfToken: "{{csrf_token|escapejs}}",
+        repositoriesPerPage: {{repositories_per_page}},
+        repositoriesURLTemplate:
+            "{% url 'connected-services-repositories' service_id='__SERVICE_ID__' %}",
         services: {{available_services|json_dumps}},
     }).render();
 });

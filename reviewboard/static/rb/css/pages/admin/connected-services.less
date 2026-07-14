@@ -24,7 +24,7 @@
 .rb-c-admin-cs-list {
   display: flex;
   flex-direction: column;
-  gap: var(--ink-u-spacing-std);
+  gap: var(--ink-u-spacing-l);
 
   /**
    * The header at the top of the connected services list.
@@ -111,7 +111,8 @@
  */
 .rb-c-admin-cs-service {
   display: inline-grid;
-  gap: var(--ink-u-spacing-s);
+  column-gap: var(--ink-u-spacing-sm);
+  row-gap: var(--ink-u-spacing-xs);
   grid-template-areas:
     "icon name"
     "icon type";
@@ -182,7 +183,7 @@
 .rb-c-admin-cs-list__entries {
   display: flex;
   flex-direction: column;
-  gap: var(--ink-u-spacing-std);
+  gap: var(--ink-u-spacing-l);
   list-style: none;
   margin: 0;
   padding: 0;
@@ -207,25 +208,29 @@
  *      ...
  *      <div class="rb-c-admin-cs-card__body">...</div>
  *      <ul class="rb-c-admin-cs-accounts">...</ul>
+ *      [<div class="rb-c-admin-cs-service-items">...</div>]
  *     </li>
  */
 .rb-c-admin-cs-card {
   background: var(--ink-p-surface-bright-bg);
   border-radius: var(--ink-u-border-radius-s);
   border: var(--ink-u-border-thin) solid var(--ink-p-container-border-color);
+  box-shadow: var(--ink-g-shadow-std);
 
   /**
    * The body of a card.
    */
   &__body {
-    padding: var(--ink-u-spacing-std);
-
     h1:first-child {
       margin-top: 0;
     }
 
     > p {
       max-width: 50em;
+    }
+
+    > *:last-child {
+      border-radius: 0 0 var(--ink-u-border-radius-s-inner) var(--ink-u-border-radius-s-inner);
     }
   }
 
@@ -291,34 +296,26 @@
 .rb-c-admin-cs-accounts {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: var(--ink-u-spacing-std);
 
   /**
    * A single account linked through the service.
    *
-   * This is a row showing the account name on one end and any account
-   * detail and management controls on the other. A bottom border separates
-   * consecutive accounts. The final account in an entry drops the border
-   * and rounds off the bottom corners of the card.
+   * This holds a single main row with the account's icon and title on one
+   * end and its management controls on the other. A bottom border separates
+   * consecutive accounts. The final account in an entry drops the border and
+   * rounds off the bottom corners of the card.
    *
    * Structure:
-   *     <div class="rb-c-admin-cs-accounts__account">
-   *      <div>
-   *       <a href="...">...</a>
-   *      </div>
-   *      <div>
-   *       [<span class="rb-c-admin-cs-accounts__account__detail">
-   *        ...
-   *       </span>]
-   *      </div>
-   *     </div>
+   *     <li class="rb-c-admin-cs-accounts__account">
+   *      <div class="rb-c-admin-cs-accounts__account__main">...</div>
+   *     </li>
    */
   &__account {
-    align-items: center;
     border-bottom: 1px solid var(--ink-p-container-border-color-weak);
     display: flex;
-    gap: var(--ink-u-spacing-std);
-    justify-content: space-between;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-s);
     padding: var(--ink-u-spacing-std);
 
     &:first-child {
@@ -327,7 +324,6 @@
 
     &:last-child {
       border-bottom: 0;
-      border-radius: 0 0 var(--ink-u-border-radius-s-inner) var(--ink-u-border-radius-s-inner);
       padding-bottom: 0;
     }
 
@@ -345,24 +341,410 @@
     }
 
     /**
-     * Supplementary detail about the account.
+     * The main row of an account.
      *
-     * This is de-emphasized text shown alongside the account, such as a
-     * status or descriptive note.
+     * This pushes the account's identity to the left and its management
+     * controls to the right.
+     *
+     * Structure:
+     *     <div class="rb-c-admin-cs-accounts__account__main">
+     *      <div class="rb-c-admin-cs-accounts__account__identity">...</div>
+     *      <div class="rb-c-admin-cs-accounts__account__actions">...</div>
+     *     </div>
      */
-    &__detail {
-      color: var(--ink-p-fg-weak);
-      font-size: var(--ink-u-font-s);
+    &__main {
+      align-items: center;
+      display: flex;
+      gap: var(--ink-u-spacing-std);
+      justify-content: space-between;
+    }
+
+    /**
+     * The account's icon and title, grouped at the start of the main row.
+     *
+     * Structure:
+     *     <div class="rb-c-admin-cs-accounts__account__identity">
+     *      [<img class="rb-c-admin-cs-accounts__account__icon">]
+     *      <span class="rb-c-admin-cs-accounts__account__title">...</span>
+     *     </div>
+     */
+    &__identity {
+      align-items: center;
+      display: flex;
+      gap: var(--ink-u-spacing-std);
+    }
+
+    /**
+     * The account's title: its name, service URL, and any badges.
+     *
+     * Structure:
+     *     <span class="rb-c-admin-cs-accounts__account__title">
+     *      <span class="rb-c-admin-cs-accounts__account__name">...</span>
+     *      [<span class="rb-c-admin-cs-accounts__account__url">...</span>]
+     *     </span>
+     */
+    &__title {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
+      gap: var(--ink-u-spacing-s);
+    }
+
+    /**
+     * The account's management controls, grouped at the end of the main row.
+     *
+     * Structure:
+     *     <div class="rb-c-admin-cs-accounts__account__actions">...</div>
+     */
+    &__actions {
+      align-items: center;
+      display: flex;
+      gap: var(--ink-u-spacing-std);
+    }
+
+    /**
+     * The name of the account.
+     *
+     * This is the primary label for the account. It's emphasized relative
+     * to the rest of the row.
+     *
+     * Structure:
+     *     <span class="rb-c-admin-cs-accounts__account__name">...</span>
+     */
+    &__name {
+      font-size: var(--ink-u-font-m);
+      font-weight: bold;
+    }
+
+    /**
+     * A service URL shown alongside the account name.
+     *
+     * This is kept at the normal text size and weight, de-emphasizing it
+     * relative to the account name.
+     *
+     * Structure:
+     *     <span class="rb-c-admin-cs-accounts__account__url">...</span>
+     */
+    &__url {
+      font-weight: normal;
     }
 
     /**
      * An icon shown for the account.
      *
-     * This is sized to fit alongside the account's text.
+     * This is optional and only present when the account has one. It's sized
+     * to sit alongside the account's title.
+     *
+     * Structure:
+     *     <img class="rb-c-admin-cs-accounts__account__icon"
+     *          src="..."
+     *          alt="">
      */
     &__icon {
-      width: 20px;
+      flex: 0 0 auto;
       height: 20px;
+      object-fit: contain;
+      width: 20px;
+    }
+  }
+}
+
+
+/**
+ * The section for the list of actual connected items in a service.
+ *
+ * This contains a disclosure row and a list of the connected items
+ * (repositories, bug trackers, etc).
+ *
+ * Structure:
+ *     <div class="rb-c-admin-cs-service-items"
+ *          data-item-type="..."
+ *          data-service-id="..."
+ *          data-item-count="...">
+ *      <button class="rb-c-admin-cs-service-items__header" type="button"
+ *              aria-expanded="true" aria-controls="ID">
+ *       <span class="rb-c-admin-cs-service-items__disclosure -is-open"
+ *             aria-hidden="true"></span>
+ *       N connected repositories
+ *      </button>
+ *      <div class="rb-c-admin-cs-service-items__panel" id="ID">
+ *       [<div class="rb-c-admin-cs-service-items__filter">...</div>]
+ *       <div class="rb-c-admin-cs-service-items__results-container">
+ *        ...
+ *       </div>
+ *       [<div class="rb-c-admin-cs-service-items__paginator">...</div>]
+ *      </div>
+ *      <script class="rb-c-admin-cs-service-items__accounts">...</script>
+ *     </div>
+ */
+.rb-c-admin-cs-service-items {
+  border-top: 1px solid var(--ink-p-container-border-color-weak);
+  display: flex;
+  flex-direction: column;
+  overflow: clip;
+
+  /**
+   * The disclosure triangle.
+   *
+   * Modifiers:
+   *     -is-open:
+   *         Whether the disclosure is open.
+   */
+  &__disclosure {
+    #ink-ns-ui.icons.svg-icon(@icon: var(--rb-i-caret-right);
+                              @size: var(--ink-u-icon-sm));
+
+    &.-is-open {
+      #ink-ns-ui.icons.svg-icon(@icon: var(--rb-i-caret-down);
+                                @size: var(--ink-u-icon-sm));
+    }
+  }
+
+  /**
+   * The filter row shown above a large results list.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-cs-service-items__filter">
+   *      <div class="rb-c-search-field">...</div>
+   *      [<select class="rb-c-admin-cs-service-items__filter__account">...</select>]
+   *     </div>
+   */
+  &__filter {
+    align-items: center;
+    display: flex;
+    gap: var(--ink-u-spacing-std);
+    // Slightly lower margin on the left to better align the search icon.
+    margin: var(--ink-u-spacing-s) var(--ink-u-spacing-std)
+            var(--ink-u-spacing-s) var(--ink-u-spacing-s);
+
+    .rb-c-search-field {
+      flex: 1 1 auto;
+    }
+
+    input.rb-c-search-field__input {
+      border: none;
+    }
+
+    &__account {
+      border: none;
+      flex: 0 0 auto;
+    }
+  }
+
+  &__header {
+    align-items: center;
+    background: var(--ink-p-grey-150);
+    border: 0;
+    color: var(--ink-p-fg);
+    cursor: pointer;
+    display: flex;
+
+    /*
+     * This is a <button>, so it needs the page's font rather than the UA's
+     * default button font. This has to stay ahead of `font-weight`, which
+     * the `font` shorthand would otherwise reset.
+     */
+    font: inherit;
+    font-weight: bold;
+    gap: var(--ink-u-spacing-xs);
+    justify-content: flex-start;
+    padding: var(--ink-u-spacing-std);
+    text-align: left;
+
+    &:hover {
+      background-color: var(--ink-p-grey-200);
+    }
+  }
+
+  /**
+   * The paginator shown below a large repository list.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-cs-service-items__paginator">
+   *      <nav class="ink-c-paginator">...</nav>
+   *     </div>
+   */
+  &__paginator {
+    align-items: center;
+    border-top: 1px solid var(--ink-p-container-border-color-weak);
+    display: flex;
+    justify-content: center;
+    padding: var(--ink-u-spacing-std);
+
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  /**
+   * The expandable panel holding the list.
+   *
+   * This is hidden until the disclosure is opened. It stacks the filter row,
+   * the fetched list, and the paginator.
+   */
+  &__panel {
+    border-top: 1px solid var(--ink-p-container-border-color-weak);
+    display: flex;
+    flex-direction: column;
+
+    /*
+     * An explicit `display` overrides the `hidden` attribute's UA
+     * `display: none`, so restore it while the panel is collapsed.
+     */
+    &[hidden] {
+      display: none;
+    }
+  }
+
+  /**
+   * The container the fetched list is rendered into.
+   *
+   * This holds either the results list or, in its place, a single status
+   * message.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-cs-service-items__results-container">
+   *      <ul class="rb-c-admin-cs-service-items__results">...</ul>
+   *      | <p class="rb-c-admin-cs-service-items__results__loading">...</p>
+   *      | <p class="rb-c-admin-cs-service-items__results__empty">...</p>
+   *      | <p class="rb-c-admin-cs-service-items__results__error">...</p>
+   *     </div>
+   *
+   * Modifiers:
+   *     -is-paginated:
+   *         Whether there are enough results to be paginated.
+   */
+  &__results-container {
+    @_results-height: 25em;
+
+    max-height: @_results-height;
+    margin: 0 var(--ink-u-spacing-std);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+
+    /*
+     * When the list spans multiple pages, pin the height so a short final
+     * page doesn't shrink the container and shift the paginator.
+     */
+    &.-is-paginated {
+      border-top: 1px solid var(--ink-p-container-border-color-weak);
+      height: @_results-height;
+    }
+
+    &[aria-busy="true"] {
+      opacity: 0.5;
+    }
+  }
+
+  /**
+   * The list of items shown under a connected service.
+   *
+   * Structure:
+   *     <ul class="rb-c-admin-cs-service-items__results">
+   *      <li class="rb-c-admin-cs-service-items__item">...</li>
+   *      ...
+   *     </ul>
+   */
+  &__results {
+    column-gap: var(--ink-u-spacing-l);
+    display: grid;
+
+    /* Name, path, and details */
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    /**
+     * The message shown while the list is loading, when empty, or on error.
+     *
+     * These stand in for the list rather than sitting inside it, so they are
+     * nested here for naming only. They must not become descendant selectors
+     * of the list, or they would never match.
+     */
+    &__loading,
+    &__empty,
+    &__error {
+      color: var(--ink-p-fg-weak);
+      margin: 0;
+      padding: var(--ink-u-spacing-s) 0;
+    }
+  }
+
+  /**
+   * A single item in the results list.
+   *
+   * Each row spans all of the list's columns and aligns its cells to them via
+   * subgrid, giving a table-like layout with a shared column grid.
+   *
+   * Structure:
+   *     <li class="rb-c-admin-cs-service-items__item">
+   *      <a class="rb-c-admin-cs-service-items__item__name" href="...">...</a>
+   *      <span class="rb-c-admin-cs-service-items__item__path">...</span>
+   *      <span class="rb-c-admin-cs-service-items__item__extra">...</span>
+   *     </li>
+   */
+  &__item {
+    align-items: center;
+    border-bottom: 1px solid var(--ink-p-container-border-color-weak);
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
+    padding: var(--ink-u-spacing-s) 0;
+
+    /* Positioning context for the name's stretched link (see __name). */
+    position: relative;
+
+    &:hover {
+      background: var(--ink-p-grey-100);
+    }
+
+    &:last-child {
+      border-bottom: 0;
+    }
+
+    /**
+     * The name of the item.
+     *
+     * This is the primary label for the row, and links to the admin form. The link
+     * stretches over the whole row via a pseudo-element, so clicking anywhere on the
+     * row will work.
+     */
+    &__name {
+      color: var(--ink-p-fg);
+      font-weight: bold;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      &::after {
+        content: "";
+        inset: 0;
+        position: absolute;
+      }
+    }
+
+    /**
+     * The items's path (or secondary info), de-emphasized relative to the name.
+     */
+    &__path {
+      color: var(--ink-p-fg-weak);
+      font-size: var(--ink-u-font-s);
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /**
+     * Any extra information about the item.
+     */
+    &__extra {
+      .ink-c-badge__icon {
+        width: var(--ink-u-icon-sm);
+        height: var(--ink-u-icon-sm);
+      }
     }
   }
 }

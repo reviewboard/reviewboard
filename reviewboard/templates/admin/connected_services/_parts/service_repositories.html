@@ -1,0 +1,20 @@
+{% load djblets_js i18n %}
+<div class="rb-c-admin-cs-service-items"
+     data-item-type="repositories"
+     data-service-id="{{service_id}}"
+     data-item-count="{{total_repository_count}}">
+ <button class="rb-c-admin-cs-service-items__header" type="button"
+         aria-expanded="false"
+         aria-controls="cs-{{service_id}}-repositories">
+  <span class="rb-c-admin-cs-service-items__disclosure"
+        aria-hidden="true"></span>
+{% blocktrans trimmed count counter=total_repository_count %}
+  {{counter}} connected repository
+{% plural %}
+  {{counter}} connected repositories
+{% endblocktrans %}
+ </button>
+ <div class="rb-c-admin-cs-service-items__panel"
+      id="cs-{{service_id}}-repositories" hidden></div>
+ <script type="application/json" class="rb-c-admin-cs-service-items__accounts">{{filter_accounts|json_dumps}}</script>
+</div>

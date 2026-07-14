@@ -7,9 +7,10 @@ Version Added:
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
-from urllib.parse import quote as urlquote, urljoin
+from urllib.parse import quote as urlquote, urljoin, urlparse
 
 from django.db.models import ObjectDoesNotExist
 from django.template.loader import render_to_string
@@ -576,6 +577,74 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
 
         return None
 
+    def get_repository_display_path(
+        self,
+        repository: Repository,
+    ) -> str:
+        """Return the ``owner/repo`` identifier for a repository.
+
+        Version Added:
+            9.0
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to return a display path for.
+
+        Returns:
+            str:
+            The ``owner/repo`` identifier, or the raw path if it could not
+            be parsed.
+        """
+        path = repository.path or ''
+        parsed = urlparse(path)
+
+        if parsed.netloc:
+            # A full URL. urlparse has already separated off the host, along
+            # with any credentials and port.
+            name = parsed.path
+        else:
+            # Not a URL, so look for a host to strip off the front.
+            m = GitHub._HOST_PREFIX_RE.match(path)
+
+            if m is None:
+                return path
+
+            name = path[m.end():]
+
+        name = name.strip('/').removesuffix('.git')
+
+        return name or path
+
+    def get_account_filter_label(
+        self,
+        account: HostingServiceAccount,
+    ) -> str:
+        """Return the account label, marking Personal Access Token accounts.
+
+        A GitHub account can be an app installation or a Personal Access
+        Token (PAT). When a PAT and an app installation share a username,
+        their plain names are identical, so PAT accounts are tagged with
+        "(PAT)" to tell them apart.
+
+        Version Added:
+            9.0
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The account to return a label for.
+
+        Returns:
+            str:
+            The label to show for the account.
+        """
+        label = super().get_account_filter_label(account)
+
+        if get_github_app_role(account) is None:
+            # An account with no GitHub App role is a Personal Access Token.
+            label = gettext('{account} (PAT)').format(account=label)
+
+        return label
+
     def _get_installation_settings_url(
         self,
         account: HostingServiceAccount,
@@ -731,6 +800,12 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         'https://beanbag.freshdesk.com/solution/articles/3000045767'
         '-granting-organization-access-on-github'
     )
+
+    #: Matches the host at the front of a non-URL repository path.
+    #:
+    #: This covers the ``user@host:`` and bare ``host/`` forms, which are not
+    #: URLs and so cannot be parsed by :py:func:`~urllib.parse.urlparse`.
+    _HOST_PREFIX_RE = re.compile(r'^(?:[^@/:]+@)?[^/:]+[:/]')
 
     def get_api_url(
         self,

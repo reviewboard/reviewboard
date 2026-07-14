@@ -2,8 +2,12 @@
 
 from __future__ import annotations
 
+import json
+import re
+
 from django.urls import reverse
 
+from reviewboard.admin.views import ConnectedServiceRepositoriesView
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.testing.testcase import TestCase
 
@@ -38,6 +42,22 @@ class ConnectedServicesListViewTests(TestCase):
         }
         self.assertIn('github', available_ids)
 
+    def test_get_renders_repositories_per_page(self) -> None:
+        """Testing ConnectedServicesListView GET passes the repositories page
+        size to the client
+        """
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        # The client sizes its search and paginator controls from this, so it
+        # must be the page size the repositories endpoint actually uses.
+        per_page = ConnectedServiceRepositoriesView.repositories_per_page
+        self.assertEqual(response.context['repositories_per_page'], per_page)
+        self.assertIn(f'repositoriesPerPage: {per_page},'.encode('utf-8'),
+                      response.content)
+
     def test_get_with_accounts(self) -> None:
         """Testing ConnectedServicesListView GET with hosting accounts"""
         HostingServiceAccount.objects.create(
@@ -52,9 +72,9 @@ class ConnectedServicesListViewTests(TestCase):
         self.assertEqual(len(response.context['service_entries']), 1)
         self.assertIn(b'user1', response.content)
 
-        # GitHub supports repositories, so an account with no repositories
-        # shows a "0 repositories" detail.
-        self.assertIn(b'0 repositories', response.content)
+        # An account with no connected repositories does not show the
+        # repositories row.
+        self.assertNotIn(b'connected repositor', response.content)
 
     def test_get_with_repository_count(self) -> None:
         """Testing ConnectedServicesListView GET renders the repository count
@@ -71,7 +91,163 @@ class ConnectedServicesListViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'2 repositories', response.content)
+        self.assertIn(b'2 connected repositories', response.content)
+
+    def test_get_repositories_disclosure_is_an_accessible_button(self) -> None:
+        """Testing ConnectedServicesListView GET renders the repositories
+        disclosure as a button wired to the panel it controls
+        """
+        account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='user1',
+            visible=True)
+        self.create_repository(name='Test Repo',
+                               hosting_account=account)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content.decode('utf-8')
+
+        # The disclosure must be a real button, so it's reachable and
+        # operable by keyboard without any scripted key handling.
+        m = re.search(
+            r'<button class="rb-c-admin-cs-service-items__header"'
+            r'\s+type="button"'
+            r'\s+aria-expanded="false"'
+            r'\s+aria-controls="(?P<panel_id>[^"]+)">',
+            content)
+        self.assertIsNotNone(m)
+        assert m is not None
+
+        # aria-controls has to name the panel that actually gets shown, or
+        # assistive tech is pointed at nothing.
+        panel_m = re.search(
+            r'<div class="rb-c-admin-cs-service-items__panel"\s+'
+            r'id="(?P<panel_id>[^"]+)"',
+            content)
+        self.assertIsNotNone(panel_m)
+        assert panel_m is not None
+
+        self.assertEqual(m.group('panel_id'), panel_m.group('panel_id'))
+
+    def test_get_repository_count_totals_across_accounts(self) -> None:
+        """Testing ConnectedServicesListView GET totals the repository count
+        across all accounts for a service
+        """
+        account1 = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='user1',
+            visible=True)
+        account2 = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='user2',
+            visible=True)
+        self.create_repository(name='Test Repo 1',
+                               hosting_account=account1)
+        self.create_repository(name='Test Repo 2',
+                               hosting_account=account2)
+        self.create_repository(name='Test Repo 3',
+                               hosting_account=account2)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        # The single card shows the service-wide total, not a per-account
+        # count.
+        self.assertIn(b'3 connected repositories', response.content)
+
+    def test_get_filter_accounts_covers_every_listed_repository(self) -> None:
+        """Testing ConnectedServicesListView GET offers a filter option for
+        every account contributing repositories, including invisible ones
+        """
+        visible_account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='visible-user',
+            visible=True)
+        invisible_account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='invisible-user',
+            visible=False)
+        empty_account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='empty-user',
+            visible=True)
+        self.create_repository(name='Visible Repo',
+                               hosting_account=visible_account)
+        self.create_repository(name='Invisible Repo',
+                               hosting_account=invisible_account)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content
+
+        # The repository list spans all accounts, so every account owning
+        # repositories must be filterable. Leaving one out would show rows
+        # that no filter option could narrow down to.
+        for account in (visible_account, invisible_account):
+            self.assertIn(
+                json.dumps({
+                    'id': account.pk,
+                    'label': f'{account.username} (PAT)',
+                }, sort_keys=True).encode('utf-8'),
+                content)
+
+        # An account with no repositories contributes no rows, so it is not
+        # worth offering as a filter.
+        self.assertNotIn(f'"id": {empty_account.pk},'.encode('utf-8'),
+                         content)
+
+    def test_get_marks_pat_account_sharing_username(self) -> None:
+        """Testing ConnectedServicesListView GET marks a PAT account with
+        "(PAT)" in the filter dropdown when it shares a username with an app
+        installation
+        """
+        pat_account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='example',
+            visible=True)
+        install_account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='example',
+            visible=True,
+            data={
+                'github_app': {
+                    'app_account_id': 1,
+                    'installation_id': 42,
+                    'owner_login': 'example',
+                    'owner_type': 'organization',
+                    'role': 'installation',
+                },
+            })
+        self.create_repository(name='Repo A',
+                               hosting_account=pat_account)
+        self.create_repository(name='Repo B',
+                               hosting_account=install_account)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        # The filter dropdown JSON tags the PAT account so it can be told
+        # apart from the app installation with the same username, which is
+        # left untagged.
+        self.assertIn(json.dumps({
+            'id': pat_account.pk,
+            'label': 'example (PAT)',
+        }, sort_keys=True).encode('utf-8'), response.content)
+        self.assertIn(json.dumps({
+            'id': install_account.pk,
+            'label': 'example',
+        }, sort_keys=True).encode('utf-8'), response.content)
 
     def test_get_renders_account_menu(self) -> None:
         """Testing ConnectedServicesListView GET renders the account settings
@@ -142,6 +318,7 @@ class ConnectedServicesListViewTests(TestCase):
         # App installations have no credentials to edit, so they get no menu.
         self.assertIn(b'acme-org', response.content)
         self.assertNotIn(b'data-account-menu', response.content)
+        self.assertNotIn(b'edit-credentials', response.content)
 
     def test_get_without_attention_items(self) -> None:
         """Testing ConnectedServicesListView GET shows no alert when no
