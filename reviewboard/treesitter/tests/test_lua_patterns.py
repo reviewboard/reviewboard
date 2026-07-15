@@ -253,6 +253,38 @@ def test_character_classes_with_lua_escapes(
 
 
 @pytest.mark.parametrize(('lua_pattern', 'expected'), [
+    # A %-escaped ] does not end the class.
+    ('[%]]', r'[\]]'),
+    ('[%]x]', r'[\]x]'),
+    ('[x%]y]z', r'[x\]y]z'),
+
+    # A ] right after [ or [^ is part of the class.
+    ('[]]', r'[\]]'),
+    ('[^]]', r'[^\]]'),
+
+    # %-escaped special characters inside a class.
+    ('[%-]', r'[\-]'),
+    ('[a%-b]', r'[a\-b]'),
+    ('[%.]', r'[\.]'),
+])
+def test_character_class_termination(
+    lua_pattern: str,
+    expected: str,
+) -> None:
+    """Test finding the end of character classes.
+
+    Args:
+        lua_pattern (str):
+            The Lua pattern to test.
+
+        expected (str):
+            The expected value for the converted regex.
+    """
+    result = lua_pattern_to_python(lua_pattern)
+    assert result == expected
+
+
+@pytest.mark.parametrize(('lua_pattern', 'expected'), [
     ('[\\]]', '[\\\\]\\]'),
     ('[\\\\]', '[\\\\\\\\]'),
     ('[a\\]b]', '[a\\\\]b\\]'),
@@ -439,6 +471,9 @@ def test_non_greedy_quantifier(
     '[abc',
     '[',
     '[abc[def',
+    '[]',
+    '[%]',
+    '[abc%]',
 
     # Unsupported balanced-parentheses operator
     'test%b()',

@@ -98,19 +98,13 @@ def _translate_lua_char_class(
                 else:
                     out += mapped
                 i += 2
-            elif token == 'b':
-                logger.error('Balanced paren operator "%%b" is not supported '
-                             'in "%s"',
-                             full_pattern)
-
-                return None
-            elif token in SPECIAL_CHARS:
-                out += '\\' + token
+            elif contents[i + 1] in SPECIAL_CHARS:
+                out += '\\' + contents[i + 1]
                 i += 2
             else:
                 # % was unnecessarily used to escape a non-special character.
                 # Just output the character.
-                out += token
+                out += contents[i + 1]
                 i += 2
         else:
             ch = contents[i]
@@ -200,7 +194,27 @@ def lua_pattern_to_python(
 
         # 3) Character class.
         elif c == '[':
-            end = pattern.find(']', i + 1)
+            # Find the closing ], following Lua's parsing rules: the
+            # class holds at least one item (so a leading ], possibly
+            # after ^, is part of the class), and %-escaped characters
+            # are skipped.
+            j = i + 1
+
+            if j < len(pattern) and pattern[j] == '^':
+                j += 1
+
+            end = -1
+
+            while j < len(pattern):
+                if pattern[j] == '%':
+                    j += 2
+                else:
+                    j += 1
+
+                if j < len(pattern) and pattern[j] == ']':
+                    end = j
+                    break
+
             if end == -1:
                 logger.error('Unterminated class in "%s"',
                              pattern)
