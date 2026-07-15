@@ -465,10 +465,11 @@ def _highlight_tree(
 
     result: list[HighlightCapture] = []
 
-    # We sort these by largest capture name first so that more-specific
-    # captures (eg. constant.builtin) will take precedence over less-specific
-    # ones (constant).
-    for name in sorted(names, key=lambda name: (-len(name), name)):
+    # We sort these by smallest capture name first so that less-specific
+    # captures (eg. constant) are emitted first and become the outermost
+    # spans. More-specific captures (eg. constant.builtin) then nest
+    # inside them, so their CSS takes precedence.
+    for name in sorted(names, key=lambda name: (len(name), name)):
         nodes = captures[name]
 
         for node in nodes:

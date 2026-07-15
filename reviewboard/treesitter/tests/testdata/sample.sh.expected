@@ -1,13 +1,13 @@
-<span class="ts-keyword"><span class="ts-comment">#!/bin/bash</span></span>
+<span class="ts-comment"><span class="ts-keyword">#!/bin/bash</span></span>
 
 <span class="ts-comment"># Sample bash script demonstrating various shell features</span>
 <span class="ts-comment"># Author: ReviewBoard Team</span>
 <span class="ts-comment"># Description: Development environment setup script</span>
 
-<span class="ts-function-builtin"><span class="ts-function-call">set</span></span> <span class="ts-variable">-euo</span> <span class="ts-variable">pipefail</span>  <span class="ts-comment"># Exit on error, undefined vars, pipe failures</span>
+<span class="ts-function-call"><span class="ts-function-builtin">set</span></span> <span class="ts-variable">-euo</span> <span class="ts-variable">pipefail</span>  <span class="ts-comment"># Exit on error, undefined vars, pipe failures</span>
 
 <span class="ts-comment"># Constants and configuration</span>
-<span class="ts-keyword">readonly</span> <span class="ts-constant"><span class="ts-variable">SCRIPT_DIR</span></span><span class="ts-operator">=</span><span class="ts-string">&quot;$(<span class="ts-function-builtin"><span class="ts-function-call">cd</span></span> <span class="ts-string">&quot;$(<span class="ts-function-call">dirname</span> <span class="ts-string">&quot;${<span class="ts-variable-builtin"><span class="ts-constant"><span class="ts-variable">BASH_SOURCE</span></span></span>[<span class="ts-number">0</span>]}&quot;</span>)&quot;</span> <span class="ts-operator">&amp;&amp;</span> <span class="ts-function-builtin"><span class="ts-function-call">pwd</span></span>)&quot;</span>
+<span class="ts-keyword">readonly</span> <span class="ts-constant"><span class="ts-variable">SCRIPT_DIR</span></span><span class="ts-operator">=</span><span class="ts-string">&quot;$(<span class="ts-function-call"><span class="ts-function-builtin">cd</span></span> <span class="ts-string">&quot;$(<span class="ts-function-call">dirname</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable"><span class="ts-variable-builtin">BASH_SOURCE</span></span></span>[<span class="ts-number">0</span>]}&quot;</span>)&quot;</span> <span class="ts-operator">&amp;&amp;</span> <span class="ts-function-call"><span class="ts-function-builtin">pwd</span></span>)&quot;</span>
 <span class="ts-keyword">readonly</span> <span class="ts-constant"><span class="ts-variable">PROJECT_NAME</span></span><span class="ts-operator">=</span><span class="ts-string">&quot;reviewboard&quot;</span>
 <span class="ts-keyword">readonly</span> <span class="ts-constant"><span class="ts-variable">DEFAULT_PYTHON_VERSION</span></span><span class="ts-operator">=</span><span class="ts-string">&quot;3.9&quot;</span>
 <span class="ts-keyword">readonly</span> <span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span><span class="ts-operator">=</span><span class="ts-string">&quot;/tmp/${<span class="ts-constant"><span class="ts-variable">PROJECT_NAME</span></span>}_setup.log&quot;</span>
@@ -21,9 +21,9 @@
 
 <span class="ts-comment"># Global variables</span>
 <span class="ts-constant"><span class="ts-variable">PYTHON_VERSION</span></span><span class="ts-operator">=</span><span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">DEFAULT_PYTHON_VERSION</span></span>}&quot;</span>
-<span class="ts-constant"><span class="ts-variable">VERBOSE</span></span><span class="ts-operator">=</span><span class="ts-boolean"><span class="ts-string">false</span></span>
-<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span><span class="ts-operator">=</span><span class="ts-boolean"><span class="ts-string">false</span></span>
-<span class="ts-constant"><span class="ts-variable">FORCE_REINSTALL</span></span><span class="ts-operator">=</span><span class="ts-boolean"><span class="ts-string">false</span></span>
+<span class="ts-constant"><span class="ts-variable">VERBOSE</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">false</span></span>
+<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">false</span></span>
+<span class="ts-constant"><span class="ts-variable">FORCE_REINSTALL</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">false</span></span>
 
 <span class="ts-comment"># Function definitions</span>
 <span class="ts-function">usage</span>() {
@@ -50,34 +50,34 @@
 <span class="ts-comment"># Logging functions</span>
 <span class="ts-function">log</span>() {
     <span class="ts-keyword">local</span> <span class="ts-variable">level</span><span class="ts-operator">=</span><span class="ts-string">&quot;$<span class="ts-variable">1</span>&quot;</span>
-    <span class="ts-function-builtin"><span class="ts-function-call">shift</span></span>
+    <span class="ts-function-call"><span class="ts-function-builtin">shift</span></span>
     <span class="ts-keyword">local</span> <span class="ts-variable">message</span><span class="ts-operator">=</span><span class="ts-string">&quot;$<span class="ts-constant">*</span>&quot;</span>
     <span class="ts-keyword">local</span> <span class="ts-variable">timestamp</span><span class="ts-operator">=</span>$(<span class="ts-function-call">date</span> <span class="ts-string">&#39;+%Y-%m-%d %H:%M:%S&#39;</span>)
 
     <span class="ts-keyword">case</span> <span class="ts-string">&quot;$<span class="ts-variable">level</span>&quot;</span> <span class="ts-keyword">in</span>
         <span class="ts-string">&quot;INFO&quot;</span>)
-            <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-variable">-e</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">GREEN</span></span>}[INFO]${<span class="ts-constant"><span class="ts-variable">NC</span></span>} $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">|</span> <span class="ts-function-call">tee</span> <span class="ts-variable">-a</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
+            <span class="ts-function-call"><span class="ts-function-builtin">echo</span></span> <span class="ts-variable">-e</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">GREEN</span></span>}[INFO]${<span class="ts-constant"><span class="ts-variable">NC</span></span>} $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">|</span> <span class="ts-function-call">tee</span> <span class="ts-variable">-a</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
             ;;
         <span class="ts-string">&quot;WARN&quot;</span>)
-            <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-variable">-e</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">YELLOW</span></span>}[WARN]${<span class="ts-constant"><span class="ts-variable">NC</span></span>} $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">|</span> <span class="ts-function-call">tee</span> <span class="ts-variable">-a</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
+            <span class="ts-function-call"><span class="ts-function-builtin">echo</span></span> <span class="ts-variable">-e</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">YELLOW</span></span>}[WARN]${<span class="ts-constant"><span class="ts-variable">NC</span></span>} $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">|</span> <span class="ts-function-call">tee</span> <span class="ts-variable">-a</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
             ;;
         <span class="ts-string">&quot;ERROR&quot;</span>)
-            <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-variable">-e</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">RED</span></span>}[ERROR]${<span class="ts-constant"><span class="ts-variable">NC</span></span>} $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">|</span> <span class="ts-function-call">tee</span> <span class="ts-variable">-a</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
+            <span class="ts-function-call"><span class="ts-function-builtin">echo</span></span> <span class="ts-variable">-e</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">RED</span></span>}[ERROR]${<span class="ts-constant"><span class="ts-variable">NC</span></span>} $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">|</span> <span class="ts-function-call">tee</span> <span class="ts-variable">-a</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
             ;;
         <span class="ts-string">&quot;DEBUG&quot;</span>)
             <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">VERBOSE</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">true</span> ]]; <span class="ts-keyword">then</span>
-                <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-variable">-e</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">BLUE</span></span>}[DEBUG]${<span class="ts-constant"><span class="ts-variable">NC</span></span>} $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">|</span> <span class="ts-function-call">tee</span> <span class="ts-variable">-a</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
+                <span class="ts-function-call"><span class="ts-function-builtin">echo</span></span> <span class="ts-variable">-e</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">BLUE</span></span>}[DEBUG]${<span class="ts-constant"><span class="ts-variable">NC</span></span>} $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">|</span> <span class="ts-function-call">tee</span> <span class="ts-variable">-a</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
             <span class="ts-keyword">fi</span>
             ;;
     <span class="ts-keyword">esac</span>
 
-    <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-string">&quot;[$<span class="ts-variable">timestamp</span>] [$<span class="ts-variable">level</span>] $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">&gt;&gt;</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
+    <span class="ts-function-call"><span class="ts-function-builtin">echo</span></span> <span class="ts-string">&quot;[$<span class="ts-variable">timestamp</span>] [$<span class="ts-variable">level</span>] $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">&gt;&gt;</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
 }
 
 <span class="ts-comment"># Error handling</span>
 <span class="ts-function">error_exit</span>() {
     <span class="ts-function-call">log</span> <span class="ts-string">&quot;ERROR&quot;</span> <span class="ts-string">&quot;$<span class="ts-variable">1</span>&quot;</span>
-    <span class="ts-function-builtin"><span class="ts-function-call">exit</span></span> <span class="ts-string">&quot;${<span class="ts-variable">2</span>:-<span class="ts-number">1</span>}&quot;</span>
+    <span class="ts-function-call"><span class="ts-function-builtin">exit</span></span> <span class="ts-string">&quot;${<span class="ts-variable">2</span>:-<span class="ts-number">1</span>}&quot;</span>
 }
 
 <span class="ts-comment"># Cleanup function for trap</span>
@@ -94,37 +94,37 @@
         <span class="ts-function-call">log</span> <span class="ts-string">&quot;ERROR&quot;</span> <span class="ts-string">&quot;Setup failed with exit code $<span class="ts-variable">exit_code</span>&quot;</span>
     <span class="ts-keyword">fi</span>
 
-    <span class="ts-function-builtin"><span class="ts-function-call">exit</span></span> $<span class="ts-variable">exit_code</span>
+    <span class="ts-function-call"><span class="ts-function-builtin">exit</span></span> $<span class="ts-variable">exit_code</span>
 }
 
 <span class="ts-comment"># Set up signal handlers</span>
-<span class="ts-function-builtin"><span class="ts-function-call">trap</span></span> <span class="ts-variable">cleanup</span> <span class="ts-variable">EXIT</span>
-<span class="ts-function-builtin"><span class="ts-function-call">trap</span></span> <span class="ts-string">&#39;error_exit &quot;Script interrupted&quot; 130&#39;</span> <span class="ts-variable">INT</span> <span class="ts-variable">TERM</span>
+<span class="ts-function-call"><span class="ts-function-builtin">trap</span></span> <span class="ts-variable">cleanup</span> <span class="ts-variable">EXIT</span>
+<span class="ts-function-call"><span class="ts-function-builtin">trap</span></span> <span class="ts-string">&#39;error_exit &quot;Script interrupted&quot; 130&#39;</span> <span class="ts-variable">INT</span> <span class="ts-variable">TERM</span>
 
 <span class="ts-comment"># System detection</span>
 <span class="ts-function">detect_system</span>() {
     <span class="ts-keyword">local</span> <span class="ts-variable">os_name</span>
     <span class="ts-keyword">local</span> <span class="ts-variable">arch</span>
 
-    <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-variable-builtin"><span class="ts-constant"><span class="ts-variable">OSTYPE</span></span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;linux-gnu&quot;</span><span class="ts-string">*</span> ]]; <span class="ts-keyword">then</span>
+    <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable"><span class="ts-variable-builtin">OSTYPE</span></span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;linux-gnu&quot;</span><span class="ts-string">*</span> ]]; <span class="ts-keyword">then</span>
         <span class="ts-variable">os_name</span><span class="ts-operator">=</span><span class="ts-string">&quot;linux&quot;</span>
-    <span class="ts-keyword">elif</span> [[ <span class="ts-string">&quot;$<span class="ts-variable-builtin"><span class="ts-constant"><span class="ts-variable">OSTYPE</span></span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;darwin&quot;</span><span class="ts-string">*</span> ]]; <span class="ts-keyword">then</span>
+    <span class="ts-keyword">elif</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable"><span class="ts-variable-builtin">OSTYPE</span></span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;darwin&quot;</span><span class="ts-string">*</span> ]]; <span class="ts-keyword">then</span>
         <span class="ts-variable">os_name</span><span class="ts-operator">=</span><span class="ts-string">&quot;macos&quot;</span>
-    <span class="ts-keyword">elif</span> [[ <span class="ts-string">&quot;$<span class="ts-variable-builtin"><span class="ts-constant"><span class="ts-variable">OSTYPE</span></span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;msys&quot;</span> ]] <span class="ts-operator">||</span> [[ <span class="ts-string">&quot;$<span class="ts-variable-builtin"><span class="ts-constant"><span class="ts-variable">OSTYPE</span></span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;cygwin&quot;</span> ]]; <span class="ts-keyword">then</span>
+    <span class="ts-keyword">elif</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable"><span class="ts-variable-builtin">OSTYPE</span></span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;msys&quot;</span> ]] <span class="ts-operator">||</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable"><span class="ts-variable-builtin">OSTYPE</span></span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;cygwin&quot;</span> ]]; <span class="ts-keyword">then</span>
         <span class="ts-variable">os_name</span><span class="ts-operator">=</span><span class="ts-string">&quot;windows&quot;</span>
     <span class="ts-keyword">else</span>
-        <span class="ts-function-call">error_exit</span> <span class="ts-string">&quot;Unsupported operating system: $<span class="ts-variable-builtin"><span class="ts-constant"><span class="ts-variable">OSTYPE</span></span></span>&quot;</span>
+        <span class="ts-function-call">error_exit</span> <span class="ts-string">&quot;Unsupported operating system: $<span class="ts-constant"><span class="ts-variable"><span class="ts-variable-builtin">OSTYPE</span></span></span>&quot;</span>
     <span class="ts-keyword">fi</span>
 
     <span class="ts-variable">arch</span><span class="ts-operator">=</span>$(<span class="ts-function-call">uname</span> <span class="ts-variable">-m</span>)
 
     <span class="ts-function-call">log</span> <span class="ts-string">&quot;INFO&quot;</span> <span class="ts-string">&quot;Detected system: $<span class="ts-variable">os_name</span> ($<span class="ts-variable">arch</span>)&quot;</span>
-    <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-string">&quot;${<span class="ts-variable">os_name</span>}_${<span class="ts-variable">arch</span>}&quot;</span>
+    <span class="ts-function-call"><span class="ts-function-builtin">echo</span></span> <span class="ts-string">&quot;${<span class="ts-variable">os_name</span>}_${<span class="ts-variable">arch</span>}&quot;</span>
 }
 
 <span class="ts-comment"># Check if command exists</span>
 <span class="ts-function">command_exists</span>() {
-    <span class="ts-function-builtin"><span class="ts-function-call">command</span></span> <span class="ts-variable">-v</span> <span class="ts-string">&quot;$<span class="ts-variable">1</span>&quot;</span> <span class="ts-operator">&gt;</span><span class="ts-string">/dev/null</span> <span class="ts-operator">2</span><span class="ts-operator">&gt;&amp;</span><span class="ts-number">1</span>
+    <span class="ts-function-call"><span class="ts-function-builtin">command</span></span> <span class="ts-variable">-v</span> <span class="ts-string">&quot;$<span class="ts-variable">1</span>&quot;</span> <span class="ts-operator">&gt;</span><span class="ts-string">/dev/null</span> <span class="ts-operator">2</span><span class="ts-operator">&gt;&amp;</span><span class="ts-number">1</span>
 }
 
 <span class="ts-comment"># Version comparison function</span>
@@ -133,10 +133,10 @@
     <span class="ts-keyword">local</span> <span class="ts-variable">version2</span><span class="ts-operator">=</span><span class="ts-string">&quot;$<span class="ts-variable">2</span>&quot;</span>
 
     <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-variable">version1</span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;$<span class="ts-variable">version2</span>&quot;</span> ]]; <span class="ts-keyword">then</span>
-        <span class="ts-function-builtin"><span class="ts-function-call">return</span></span> <span class="ts-number">0</span>
+        <span class="ts-function-call"><span class="ts-function-builtin">return</span></span> <span class="ts-number">0</span>
     <span class="ts-keyword">fi</span>
 
-    <span class="ts-keyword">local</span> <span class="ts-variable-builtin"><span class="ts-constant"><span class="ts-variable">IFS</span></span></span><span class="ts-operator">=</span><span class="ts-string">.</span>
+    <span class="ts-keyword">local</span> <span class="ts-constant"><span class="ts-variable"><span class="ts-variable-builtin">IFS</span></span></span><span class="ts-operator">=</span><span class="ts-string">.</span>
     <span class="ts-keyword">local</span> <span class="ts-variable">i</span> <span class="ts-variable">ver1</span><span class="ts-operator">=</span>($<span class="ts-variable">version1</span>) <span class="ts-variable">ver2</span><span class="ts-operator">=</span>($<span class="ts-variable">version2</span>)
 
     <span class="ts-comment"># Fill empty fields in ver1 with zeros</span>
@@ -149,13 +149,13 @@
             <span class="ts-variable">ver2</span>[i]<span class="ts-operator">=</span><span class="ts-number">0</span>
         <span class="ts-keyword">fi</span>
         <span class="ts-keyword">if</span> ((<span class="ts-number">10#${<span class="ts-variable">ver1</span>[i]}</span> <span class="ts-operator">&gt;</span> <span class="ts-number">10#${<span class="ts-variable">ver2</span>[i]}</span>)); <span class="ts-keyword">then</span>
-            <span class="ts-function-builtin"><span class="ts-function-call">return</span></span> <span class="ts-number">1</span>
+            <span class="ts-function-call"><span class="ts-function-builtin">return</span></span> <span class="ts-number">1</span>
         <span class="ts-keyword">fi</span>
         <span class="ts-keyword">if</span> ((<span class="ts-number">10#${<span class="ts-variable">ver1</span>[i]}</span> <span class="ts-operator">&lt;</span> <span class="ts-number">10#${<span class="ts-variable">ver2</span>[i]}</span>)); <span class="ts-keyword">then</span>
-            <span class="ts-function-builtin"><span class="ts-function-call">return</span></span> <span class="ts-number">2</span>
+            <span class="ts-function-call"><span class="ts-function-builtin">return</span></span> <span class="ts-number">2</span>
         <span class="ts-keyword">fi</span>
     <span class="ts-keyword">done</span>
-    <span class="ts-function-builtin"><span class="ts-function-call">return</span></span> <span class="ts-number">0</span>
+    <span class="ts-function-call"><span class="ts-function-builtin">return</span></span> <span class="ts-number">0</span>
 }
 
 <span class="ts-comment"># Check Python installation</span>
@@ -185,7 +185,7 @@
     <span class="ts-keyword">fi</span>
 
     <span class="ts-function-call">log</span> <span class="ts-string">&quot;INFO&quot;</span> <span class="ts-string">&quot;Python $<span class="ts-variable">installed_version</span> found at $(<span class="ts-function-call">which</span> $<span class="ts-variable">python_cmd</span>)&quot;</span>
-    <span class="ts-function-builtin"><span class="ts-function-call">echo</span></span> <span class="ts-string">&quot;$<span class="ts-variable">python_cmd</span>&quot;</span>
+    <span class="ts-function-call"><span class="ts-function-builtin">echo</span></span> <span class="ts-string">&quot;$<span class="ts-variable">python_cmd</span>&quot;</span>
 }
 
 <span class="ts-comment"># Install dependencies based on system</span>
@@ -250,7 +250,7 @@
 
     <span class="ts-keyword">if</span> [[ <span class="ts-operator">-d</span> <span class="ts-string">&quot;$<span class="ts-variable">venv_dir</span>&quot;</span> ]] <span class="ts-operator">&amp;&amp;</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">FORCE_REINSTALL</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">false</span> ]]; <span class="ts-keyword">then</span>
         <span class="ts-function-call">log</span> <span class="ts-string">&quot;INFO&quot;</span> <span class="ts-string">&quot;Virtual environment already exists&quot;</span>
-        <span class="ts-function-builtin"><span class="ts-function-call">return</span></span> <span class="ts-number">0</span>
+        <span class="ts-function-call"><span class="ts-function-builtin">return</span></span> <span class="ts-number">0</span>
     <span class="ts-keyword">fi</span>
 
     <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">false</span> ]]; <span class="ts-keyword">then</span>
@@ -264,7 +264,7 @@
 
         <span class="ts-comment"># Activate virtual environment</span>
         <span class="ts-comment"># shellcheck source=/dev/null</span>
-        <span class="ts-function-builtin"><span class="ts-function-call">source</span></span> <span class="ts-string">&quot;${<span class="ts-variable">venv_dir</span>}/bin/activate&quot;</span>
+        <span class="ts-function-call"><span class="ts-function-builtin">source</span></span> <span class="ts-string">&quot;${<span class="ts-variable">venv_dir</span>}/bin/activate&quot;</span>
 
         <span class="ts-comment"># Upgrade pip</span>
         <span class="ts-function-call">pip</span> <span class="ts-variable">install</span> <span class="ts-variable">--upgrade</span> <span class="ts-variable">pip</span> <span class="ts-variable">setuptools</span> <span class="ts-variable">wheel</span>
@@ -335,23 +335,23 @@
         <span class="ts-keyword">case</span> $<span class="ts-variable">1</span> <span class="ts-keyword">in</span>
             <span class="ts-string-regexp">-h</span><span class="ts-operator">|</span><span class="ts-string-regexp">--help</span>)
                 <span class="ts-function-call">usage</span>
-                <span class="ts-function-builtin"><span class="ts-function-call">exit</span></span> <span class="ts-number">0</span>
+                <span class="ts-function-call"><span class="ts-function-builtin">exit</span></span> <span class="ts-number">0</span>
                 ;;
             <span class="ts-variable">-v</span><span class="ts-operator">|</span><span class="ts-string-regexp">--verbose</span>)
-                <span class="ts-constant"><span class="ts-variable">VERBOSE</span></span><span class="ts-operator">=</span><span class="ts-boolean"><span class="ts-string">true</span></span>
-                <span class="ts-function-builtin"><span class="ts-function-call">shift</span></span>
+                <span class="ts-constant"><span class="ts-variable">VERBOSE</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">true</span></span>
+                <span class="ts-function-call"><span class="ts-function-builtin">shift</span></span>
                 ;;
             <span class="ts-variable">-n</span><span class="ts-operator">|</span><span class="ts-string-regexp">--dry-run</span>)
-                <span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span><span class="ts-operator">=</span><span class="ts-boolean"><span class="ts-string">true</span></span>
-                <span class="ts-function-builtin"><span class="ts-function-call">shift</span></span>
+                <span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">true</span></span>
+                <span class="ts-function-call"><span class="ts-function-builtin">shift</span></span>
                 ;;
             <span class="ts-variable">-f</span><span class="ts-operator">|</span><span class="ts-string-regexp">--force</span>)
-                <span class="ts-constant"><span class="ts-variable">FORCE_REINSTALL</span></span><span class="ts-operator">=</span><span class="ts-boolean"><span class="ts-string">true</span></span>
-                <span class="ts-function-builtin"><span class="ts-function-call">shift</span></span>
+                <span class="ts-constant"><span class="ts-variable">FORCE_REINSTALL</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">true</span></span>
+                <span class="ts-function-call"><span class="ts-function-builtin">shift</span></span>
                 ;;
             <span class="ts-variable">-p</span><span class="ts-operator">|</span><span class="ts-string-regexp">--python</span>)
                 <span class="ts-constant"><span class="ts-variable">PYTHON_VERSION</span></span><span class="ts-operator">=</span><span class="ts-string">&quot;$<span class="ts-variable">2</span>&quot;</span>
-                <span class="ts-function-builtin"><span class="ts-function-call">shift</span></span> <span class="ts-number">2</span>
+                <span class="ts-function-call"><span class="ts-function-builtin">shift</span></span> <span class="ts-number">2</span>
                 ;;
             <span class="ts-string-regexp">-*</span>)
                 <span class="ts-function-call">error_exit</span> <span class="ts-string">&quot;Unknown option: $<span class="ts-variable">1</span>&quot;</span>
@@ -412,7 +412,7 @@
 }
 
 <span class="ts-comment"># Script entry point</span>
-<span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;${<span class="ts-variable-builtin"><span class="ts-constant"><span class="ts-variable">BASH_SOURCE</span></span></span>[<span class="ts-number">0</span>]}&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;${<span class="ts-constant">0</span>}&quot;</span> ]]; <span class="ts-keyword">then</span>
+<span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable"><span class="ts-variable-builtin">BASH_SOURCE</span></span></span>[<span class="ts-number">0</span>]}&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;${<span class="ts-constant">0</span>}&quot;</span> ]]; <span class="ts-keyword">then</span>
     <span class="ts-function-call">parse_arguments</span> <span class="ts-string">&quot;$<span class="ts-constant">@</span>&quot;</span>
     <span class="ts-function-call">main</span>
 <span class="ts-keyword">fi</span>

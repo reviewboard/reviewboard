@@ -557,10 +557,10 @@ def test_highlight_with_injections() -> None:
             '</span></span>() {'
         ),
         (
-            '    <span class="ts-variable-builtin">'
-            '<span class="ts-variable">console</span></span>.'
-            '<span class="ts-function-method-call">'
-            '<span class="ts-variable">log</span></span>('
+            '    <span class="ts-variable">'
+            '<span class="ts-variable-builtin">console</span></span>.'
+            '<span class="ts-variable">'
+            '<span class="ts-function-method-call">log</span></span>('
             '<span class="ts-string">&quot;Hello&quot;</span>);'
         ),
         (
@@ -570,6 +570,27 @@ def test_highlight_with_injections() -> None:
             '&lt;/<span class="ts-tag">script</span>&gt;'
         ),
     ]
+
+
+def test_highlight_specific_capture_is_innermost() -> None:
+    """Test that more-specific captures nest inside less-specific ones.
+
+    When one node matches both a generic capture (variable) and a
+    more-specific one (constant.builtin), the specific capture must be
+    the innermost span so that its CSS takes precedence.
+    """
+    content = b'print(__name__)\n'
+    lines = ['print(__name__)']
+    parser = get_parser('python')
+    tree = parser.parse(content)
+
+    result = highlight(content, lines, tree, 'python')
+    assert result is not None
+
+    assert (
+        '<span class="ts-variable">'
+        '<span class="ts-constant-builtin">__name__</span></span>'
+    ) in result[0]
 
 
 def test_highlight_with_multibyte_unicode_character() -> None:
