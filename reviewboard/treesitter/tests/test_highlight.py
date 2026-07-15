@@ -598,6 +598,61 @@ def test_highlight_markdown_fence_info_string_alias(
     assert '<span class="ts-keyword">return</span>' in result[1]
 
 
+def test_highlight_injection_with_gsub_language() -> None:
+    """Test highlight with a gsub!-transformed injection language.
+
+    The astro injection queries capture <script type="text/python"> as
+    @injection.language and transform it to "python" with #gsub!. The
+    transformed value is stored in the pattern settings and must be
+    used for highlighting.
+    """
+    content = (
+        '<script type="text/python">\n'
+        'x = None\n'
+        '</script>\n'
+    )
+    content_bytes = content.encode()
+    lines = content.splitlines()
+
+    parser = get_parser('astro')
+    tree = parser.parse(content_bytes)
+
+    result = highlight(content_bytes, lines, tree, 'astro')
+    assert result is not None
+
+    # None is only a builtin constant when highlighted as Python.
+    assert 'ts-constant-builtin' in result[1]
+
+
+def test_highlight_injection_with_gsub_language_multiple_matches() -> None:
+    """Test gsub!-transformed injection languages with repeated matches.
+
+    One injection pattern can match several times with different
+    languages. Each match must use its own transformed language, not
+    the value from the last match.
+    """
+    content = (
+        '<script type="text/python">\n'
+        'x = None\n'
+        '</script>\n'
+        '<script type="text/javascript">\n'
+        'var y = 1;\n'
+        '</script>\n'
+    )
+    content_bytes = content.encode()
+    lines = content.splitlines()
+
+    parser = get_parser('astro')
+    tree = parser.parse(content_bytes)
+
+    result = highlight(content_bytes, lines, tree, 'astro')
+    assert result is not None
+
+    # The first block must still be highlighted as Python, even though
+    # a later match of the same pattern stored "javascript".
+    assert 'ts-constant-builtin' in result[1]
+
+
 def test_highlight_specific_capture_is_innermost() -> None:
     """Test that more-specific captures nest inside less-specific ones.
 

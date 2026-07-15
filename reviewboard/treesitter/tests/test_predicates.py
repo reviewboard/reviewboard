@@ -303,20 +303,22 @@ def test_gsub_directive() -> None:
     query = tree_sitter.Query(ts_language, queries)
 
     # The gsub! directive should have stored the transformed language in
-    # pattern_settings.
+    # the directive settings, keyed by the captured node.
     predicate_handler = create_predicate_handler(query)
     cursor = tree_sitter.QueryCursor(query)
     matches = cursor.matches(tree.root_node, predicate_handler)
 
-    for pattern_index, _match in matches:
-        settings = query.pattern_settings(pattern_index)
+    for _pattern_index, query_match in matches:
+        if 'injection.language' in query_match:
+            node = query_match['injection.language'][0]
+            settings = predicate_handler.directive_settings
 
-        if 'injection.language' in settings:
-            assert settings['injection.language'] == 'javascript'
+            assert (settings[f'injection.language:{node.id}'] ==
+                    'javascript')
             break
     else:
         pytest.fail(
-            '"injection.language" was not found in pattern settings')
+            '"injection.language" was not found in the directive settings')
 
 
 def test_gsub_directive_invalid_regex() -> None:
@@ -345,11 +347,13 @@ def test_gsub_directive_invalid_regex() -> None:
     cursor = tree_sitter.QueryCursor(query)
     matches = cursor.matches(tree.root_node, predicate_handler)
 
-    for pattern_index, _match in matches:
-        settings = query.pattern_settings(pattern_index)
+    for _pattern_index, query_match in matches:
         # Should contain original text since regex failed
-        if 'lang' in settings:
-            assert settings['lang'] == 'text/javascript'
+        if 'lang' in query_match:
+            node = query_match['lang'][0]
+            settings = predicate_handler.directive_settings
+
+            assert settings[f'lang:{node.id}'] == 'text/javascript'
             break
     else:
         pytest.fail('gsub match was not found')
@@ -598,7 +602,11 @@ def test_offset_directive() -> None:
     captures = cursor.captures(tree.root_node, predicate_handler)
 
     assert 'fn' in captures
-    assert query.pattern_settings(0)['offset.fn'] == '1 0 -1 0'
+
+    node = captures['fn'][0]
+    settings = predicate_handler.directive_settings
+
+    assert settings[f'offset.fn:{node.id}'] == '1 0 -1 0'
 
 
 def test_offset_directive_partial_args() -> None:
@@ -622,7 +630,11 @@ def test_offset_directive_partial_args() -> None:
     captures = cursor.captures(tree.root_node, predicate_handler)
 
     assert 'fn' in captures
-    assert query.pattern_settings(0)['offset.fn'] == '1 0 0 0'
+
+    node = captures['fn'][0]
+    settings = predicate_handler.directive_settings
+
+    assert settings[f'offset.fn:{node.id}'] == '1 0 0 0'
 
 
 def test_make_range_directive() -> None:

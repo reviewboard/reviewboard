@@ -703,6 +703,7 @@ def highlight(
         predicate_handler = create_predicate_handler(query=injections_query)
         cursor = tree_sitter.QueryCursor(injections_query)
         matches = cursor.matches(tree.root_node, predicate_handler)
+        directive_settings = predicate_handler.directive_settings
 
         injection_ranges: defaultdict[
             SupportedLanguage,
@@ -726,17 +727,30 @@ def highlight(
 
                 matched_lang = language = language_text.decode()
             else:
+                language_node = None
                 matched_lang = None
-
-            offsets = settings.get('offset.injection.content')
 
             for node in nodes:
                 injection_lang = matched_lang
 
-                # Other queries may use set! or gsub! to store the language in
-                # the pattern settings.
-                if not injection_lang:
-                    injection_lang = settings.get('injection.language')
+                # Queries may use set! to store the language in the pattern
+                # settings, or gsub! to transform the captured language (for
+                # example, "text/javascript" into "javascript"). Prefer the
+                # stored value whenever the captured one is missing or
+                # unsupported.
+                if (not injection_lang or
+                    injection_lang not in SUPPORTED_LANGUAGES):
+                    stored_lang = None
+
+                    if language_node is not None:
+                        # gsub! stores per-node results, since one pattern
+                        # can match several times with different languages.
+                        stored_lang = directive_settings.get(
+                            f'injection.language:{language_node.id}')
+
+                    injection_lang = (stored_lang or
+                                      settings.get('injection.language') or
+                                      injection_lang)
 
                 if (injection_lang is not None and
                     injection_lang not in SUPPORTED_LANGUAGES):
@@ -750,6 +764,11 @@ def highlight(
                     continue
 
                 node_range = node.range
+
+                # offset! stores per-node deltas, since one pattern can
+                # match several times.
+                offsets = directive_settings.get(
+                    f'offset.injection.content:{node.id}')
 
                 if offsets:
                     if line_start_offsets is None:
