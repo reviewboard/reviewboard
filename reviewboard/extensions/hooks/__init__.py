@@ -50,7 +50,8 @@ from reviewboard.extensions.hooks.review_request_approval import \
 from reviewboard.extensions.hooks.review_ui import ReviewUIHook
 from reviewboard.extensions.hooks.scmtool import SCMToolHook
 from reviewboard.extensions.hooks.user_infobox import UserInfoboxHook
-from reviewboard.extensions.hooks.users import UserDetailsProviderHook
+from reviewboard.extensions.hooks.users import (ServiceAccountHook,
+                                                UserDetailsProviderHook)
 from reviewboard.extensions.hooks.webapi_capabilities import \
     WebAPICapabilitiesHook
 
@@ -93,6 +94,7 @@ __all__ = [
     'ReviewRequestPublishedEmailHook',
     'ReviewUIHook',
     'SCMToolHook',
+    'ServiceAccountHook',
     'SignalHook',
     'TemplateHook',
     'URLHook',

@@ -38,3 +38,11 @@ class UserQueryError(Exception):
         super().__init__(
             _('Error while populating users from the auth backend: {}')
             .format(msg))
+
+
+class ServiceAccountUserError(Exception):
+    """An error claiming, finding, or setting up a service account user.
+
+    Version Added:
+        8.1
+    """

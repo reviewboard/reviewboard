@@ -51,6 +51,7 @@ User Accounts
    reviewboard.accounts.models
    reviewboard.accounts.pages
    reviewboard.accounts.privacy
+   reviewboard.accounts.service_accounts
    reviewboard.accounts.templatetags.accounts
    reviewboard.accounts.testing
    reviewboard.accounts.testing.queries
