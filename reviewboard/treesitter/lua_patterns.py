@@ -134,6 +134,11 @@ def lua_pattern_to_python(
     out = ''
     has_dot = False
 
+    # Whether the last emitted token is an item a quantifier can apply
+    # to (a single character, escape, or class). Lua's "-" is only a
+    # quantifier directly after such an item.
+    last_was_item = False
+
     while i < len(pattern):
         c = pattern[i]
 
@@ -158,6 +163,8 @@ def lua_pattern_to_python(
                 out += pattern[i + 1]
                 i += 2
 
+            last_was_item = True
+
         # 2) Handle backslash escapes (already escaped patterns).
         elif c == '\\' and i + 1 < len(pattern):
             next_char = pattern[i + 1]
@@ -170,6 +177,8 @@ def lua_pattern_to_python(
                 # Unknown escape, treat backslash as literal.
                 out += '\\\\'
                 i += 1
+
+            last_was_item = True
 
         # 3) Character class.
         elif c == '[':
@@ -188,12 +197,13 @@ def lua_pattern_to_python(
 
             out += f'[{translated}]'
             i = end + 1
+            last_was_item = True
 
-        # 4) Unsupported non-greedy.
-        elif c == '-' and i > 0 and pattern[i - 1] in '*+?':
-            logger.error('Lua non-greedy "*-" not supported in "%s"',
-                         pattern)
-            return None
+        # 4) Non-greedy quantifier (Lua "X-" is Python "X*?").
+        elif c == '-' and last_was_item:
+            out += '*?'
+            i += 1
+            last_was_item = False
 
         # 5) Pass-through anchors and quantifiers.
         elif c in '^$.*+?':
@@ -203,21 +213,28 @@ def lua_pattern_to_python(
 
             out += c
             i += 1
+            last_was_item = (c == '.')
 
         # 6) Handle escapes not previously handled above.
         elif c == '\\':
             out += '\\\\'
             i += 1
+            last_was_item = True
 
         # 7) Escape other regex specials.
         elif c in r'{}[]|':
             out += '\\' + c
             i += 1
+            last_was_item = True
 
         # 8) Literal.
         else:
             out += c
             i += 1
+
+            # Lua's "(" and ")" delimit captures, which cannot be
+            # quantified, and a lone "-" cannot be quantified either.
+            last_was_item = c not in '()-'
 
     # If the pattern contains a '.', add DOTALL flag to match Lua behavior
     # where '.' matches any character including newlines.

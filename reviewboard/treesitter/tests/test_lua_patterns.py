@@ -142,7 +142,6 @@ def test_escaped_special_chars(
     ('test123', 'test123'),
     ('hello_world', 'hello_world'),
     ('file.txt', '(?s)file.txt'),
-    ('test-file', 'test-file'),
     ('test@example.com', '(?s)test@example.com'),
 ])
 def test_literal_characters(
@@ -400,12 +399,42 @@ def test_real_patterns_from_queries(
     assert result == expected
 
 
-@pytest.mark.parametrize('lua_pattern', [
-    # Unsupported non-greedy quantifier
-    'test*-',
-    'test+-',
-    'test?-',
+@pytest.mark.parametrize(('lua_pattern', 'expected'), [
+    # Non-greedy quantifier after single characters and classes.
+    ('a-b', 'a*?b'),
+    ('test-file', 'test*?file'),
+    ('.-', '(?s).*?'),
+    ('%s-', r'\s*?'),
+    ('%d-x', r'\d*?x'),
+    ('[abc]-x', '[abc]*?x'),
 
+    # "-" with no item to quantify is a literal in Lua.
+    ('-abc', '-abc'),
+    ('^-', '^-'),
+    ('a*-', 'a*-'),
+    ('a+-', 'a+-'),
+    ('a?-', 'a?-'),
+    ('a--', 'a*?-'),
+    ('(a)-', '(a)-'),
+])
+def test_non_greedy_quantifier(
+    lua_pattern: str,
+    expected: str,
+) -> None:
+    """Test Lua non-greedy "-" quantifier translation.
+
+    Args:
+        lua_pattern (str):
+            The Lua pattern to test.
+
+        expected (str):
+            The expected value for the converted regex.
+    """
+    result = lua_pattern_to_python(lua_pattern)
+    assert result == expected
+
+
+@pytest.mark.parametrize('lua_pattern', [
     # Unterminated character class
     '[abc',
     '[',
