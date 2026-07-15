@@ -56,6 +56,18 @@ def _django_db_helper() -> None:  # pyright:ignore[reportUnusedFunction]
     ('test.scm', 'scheme'),
     ('README.md', 'markdown'),
     ('setup.sh', 'bash'),
+    ('image.svg', 'xml'),
+    ('schema.xsd', 'xml'),
+    ('transform.xsl', 'xml'),
+    ('transform.xslt', 'xml'),
+    ('schema.rng', 'xml'),
+    ('module.mli', 'ocaml_interface'),
+    ('module.ml', 'ocaml'),
+    ('data.csv', 'csv'),
+    ('data.tsv', 'tsv'),
+    ('data.psv', 'psv'),
+    ('main.tf', 'terraform'),
+    ('vars.tfvars', 'terraform'),
 ])
 def test_get_language_name_for_file_extensions(
     filename: str,
@@ -126,14 +138,20 @@ def test_get_language_name_for_file_edge_cases(
 
 
 @pytest.mark.parametrize(('filename', 'expected_lang'), [
-    ('header.h', 'c'),      # First in ['c', 'cpp', 'objc']
-    ('file.m', 'matlab'),   # First in ['matlab', 'objc']
+    ('header.h', 'c'),   # Overridden in LANGUAGE_OVERRIDES.
+    ('file.m', None),    # MATLAB or Objective-C.
+    ('file.pp', None),   # Pascal or Puppet.
+    ('file.cls', None),  # Apex or LaTeX.
 ])
 def test_get_language_name_for_file_ambiguous_extensions(
     filename: str,
-    expected_lang: str,
+    expected_lang: str | None,
 ) -> None:
     """Test get_language_name_for_file with ambiguous extensions.
+
+    Suffixes with multiple candidate languages and no override must
+    return None, so that content-based detection (Pygments) can decide
+    instead of tree-sitter guessing wrong.
 
     Args:
         filename (str):
