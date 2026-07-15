@@ -37,7 +37,7 @@ LUA_TO_PYTHON_CLASSES = {
     '%X': '[^A-Fa-f0-9]',
     '%x': '[A-Fa-f0-9]',
     '%Z': r'[^\x00]',
-    '%z': r'\x00]',
+    '%z': r'\x00',
 }
 
 
