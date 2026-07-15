@@ -445,6 +445,10 @@ def test_non_greedy_quantifier(
     'test%b[]',
     'test%b<>',
     'test%b%{%}',
+
+    # Unsupported frontier pattern
+    '%f[%w]word',
+    'test%f[%s]',
 ])
 def test_error_cases(
     lua_pattern: str,

@@ -157,6 +157,12 @@ def lua_pattern_to_python(
                              pattern)
 
                 return None
+            elif pattern[i + 1] == 'f':
+                logger.error('Frontier pattern "%%f" is not supported '
+                             'in "%s"',
+                             pattern)
+
+                return None
             else:
                 # % was unnecessarily used to escape a non-special character.
                 # Just output the character.
