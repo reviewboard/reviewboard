@@ -19,7 +19,10 @@ from reviewboard.treesitter.core import (
     get_queries,
 )
 from reviewboard.treesitter.debug import DEBUG_TREESITTER
-from reviewboard.treesitter.language import SUPPORTED_LANGUAGES
+from reviewboard.treesitter.language import (
+    SUPPORTED_LANGUAGES,
+    get_language_name_for_info_string,
+)
 from reviewboard.treesitter.predicates import create_predicate_handler
 
 if TYPE_CHECKING:
@@ -686,9 +689,10 @@ def highlight(
 
     captures = _highlight_tree(tree, tree.root_node, language_name)
 
-    if not captures:
-        return None
-
+    # Note that we can't bail out yet if there are no captures. The
+    # capture list depends on HIGHLIGHT_IGNORE, which grows as unmapped
+    # capture names are discovered, so it can be empty for files whose
+    # injections would still produce highlighting.
     chained_captures = [captures]
 
     injections_queries = get_queries(language_name, 'injections.scm')
@@ -734,6 +738,13 @@ def highlight(
                 if not injection_lang:
                     injection_lang = settings.get('injection.language')
 
+                if (injection_lang is not None and
+                    injection_lang not in SUPPORTED_LANGUAGES):
+                    # Resolve aliases such as Markdown fence info strings
+                    # (```js, ```py, ```Python) to supported language names.
+                    injection_lang = get_language_name_for_info_string(
+                        injection_lang)
+
                 if (injection_lang is None or
                     injection_lang not in SUPPORTED_LANGUAGES):
                     continue
@@ -765,5 +776,11 @@ def highlight(
     nodes_by_line = _get_nodes_by_line(itertools.chain(*chained_captures),
                                        lines)
     events_by_line = _get_events_by_line(nodes_by_line)
+
+    if not any(events_by_line):
+        # No captures mapped to a highlight class, so nothing was
+        # highlighted. Return None so callers can fall back to another
+        # highlighter.
+        return None
 
     return _apply_events(lines, events_by_line)

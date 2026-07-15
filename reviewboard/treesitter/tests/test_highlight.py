@@ -572,6 +572,32 @@ def test_highlight_with_injections() -> None:
     ]
 
 
+@pytest.mark.parametrize('info_string', ['js', 'py', 'Python'])
+def test_highlight_markdown_fence_info_string_alias(
+    info_string: str,
+) -> None:
+    """Test highlight with aliased Markdown fence info strings.
+
+    Info strings such as ``js`` or ``py`` (and any-case variants) must
+    be resolved to their supported language names for injection.
+
+    Args:
+        info_string (str):
+            The fence info string to test.
+    """
+    content = f'```{info_string}\nreturn None\n```\n'
+    content_bytes = content.encode()
+    lines = content.splitlines()
+
+    parser = get_parser('markdown')
+    tree = parser.parse(content_bytes)
+
+    result = highlight(content_bytes, lines, tree, 'markdown')
+    assert result is not None
+
+    assert '<span class="ts-keyword">return</span>' in result[1]
+
+
 def test_highlight_specific_capture_is_innermost() -> None:
     """Test that more-specific captures nest inside less-specific ones.
 
