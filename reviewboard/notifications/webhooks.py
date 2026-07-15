@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 from urllib.error import HTTPError
 from urllib.parse import urlencode, urlsplit, urlunsplit
-from urllib.request import Request, urlopen
+from urllib.request import Request
 
 from django.contrib.sites.models import Site
 from django.db.models import Model
@@ -30,7 +30,7 @@ from djblets.webapi.encoders import (BasicAPIEncoder, JSONEncoderAdapter,
                                      ResourceAPIEncoder, XMLEncoderAdapter)
 
 from reviewboard import get_package_version
-from reviewboard.certs.manager import cert_manager
+from reviewboard.certs.http import urlopen
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.reviews.models import Review, ReviewRequest
 from reviewboard.reviews.signals import (review_request_closed,
@@ -431,10 +431,7 @@ def dispatch_webhook_event(
 
                 urlopen(
                     Request(url, body, headers),
-                    **cert_manager.build_urlopen_kwargs(
-                        url=url,
-                        local_site=webhook_target.local_site,
-                    ),
+                    local_site=webhook_target.local_site,
                 )
             except Exception as e:
                 logger.exception('[%s] Could not dispatch WebHook to %s: %s',

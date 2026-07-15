@@ -33,6 +33,7 @@ from reviewboard.certs.tests.testcases import (CaptureSSLContext,
                                                TEST_SHA256,
                                                TEST_SHA256_2,
                                                TEST_TRUST_CERT_PEM)
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 
 
 class MyCertificateStorageBackend(FileCertificateStorageBackend):
@@ -1704,7 +1705,10 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         cert_manager.add_certificate(
             self.create_certificate(cert_data=TEST_TRUST_CERT_PEM))
 
-        kwargs = cert_manager.build_urlopen_kwargs(url='https://example.com')
+        with self.assertWarns(RemovedInReviewBoard10_0Warning):
+            kwargs = cert_manager.build_urlopen_kwargs(
+                url='https://example.com',
+            )
 
         self.assertAttrsEqual(
             kwargs.get('context'),
@@ -1737,7 +1741,10 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
                                     cert_data=TEST_CLIENT_CERT_PEM,
                                     key_data=TEST_CLIENT_KEY_PEM))
 
-        kwargs = cert_manager.build_urlopen_kwargs(url='https://example.com')
+        with self.assertWarns(RemovedInReviewBoard10_0Warning):
+            kwargs = cert_manager.build_urlopen_kwargs(
+                url='https://example.com',
+            )
 
         self.assertAttrsEqual(
             kwargs.get('context'),
@@ -1772,8 +1779,10 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
             self.create_certificate(cert_data=TEST_TRUST_CERT_PEM,
                                     port=8443))
 
-        kwargs = cert_manager.build_urlopen_kwargs(
-            url='https://example.com:8443')
+        with self.assertWarns(RemovedInReviewBoard10_0Warning):
+            kwargs = cert_manager.build_urlopen_kwargs(
+                url='https://example.com:8443',
+            )
 
         self.assertAttrsEqual(
             kwargs.get('context'),
@@ -1798,5 +1807,9 @@ class CertificateManagerTests(kgb.SpyAgency, CertificateTestCase):
         self.spy_on(ssl.create_default_context,
                     op=kgb.SpyOpReturn(CaptureSSLContext()))
 
-        kwargs = cert_manager.build_urlopen_kwargs(url='http://example.com')
+        with self.assertWarns(RemovedInReviewBoard10_0Warning):
+            kwargs = cert_manager.build_urlopen_kwargs(
+                url='http://example.com',
+            )
+
         self.assertEqual(kwargs, {})

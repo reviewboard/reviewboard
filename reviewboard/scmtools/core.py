@@ -10,7 +10,7 @@ from typing import (Any, ClassVar, Dict, List, Mapping, Optional, Sequence,
                     TYPE_CHECKING, Type, Tuple, Union, cast)
 from urllib.error import HTTPError
 from urllib.parse import urlparse
-from urllib.request import Request as URLRequest, urlopen
+from urllib.request import Request as URLRequest
 
 import importlib_metadata
 from django.utils.encoding import force_bytes, force_str
@@ -20,7 +20,7 @@ from djblets.log import log_timed
 from djblets.util.properties import TypedProperty
 from typing_extensions import TypeAlias
 
-from reviewboard.certs.manager import cert_manager
+from reviewboard.certs.http import urlopen
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          FileNotFoundError,
                                          SCMError)
@@ -1823,10 +1823,7 @@ class SCMClient:
 
                 response = urlopen(
                     request,
-                    **cert_manager.build_urlopen_kwargs(
-                        url=url,
-                        local_site=self.local_site,
-                    ),
+                    local_site=self.local_site,
                 )
 
                 if (mime_type is None or

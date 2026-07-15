@@ -1177,11 +1177,9 @@ class Site(object):
         url = get_register_support_url(force_is_admin=True)
 
         try:
-            from reviewboard.certs import cert_manager
             urlopen(
                 url,
                 timeout=5,
-                **cert_manager.build_urlopen_kwargs(url=url),
             ).read()
         except Exception:
             # There may be a number of issues preventing this from working,

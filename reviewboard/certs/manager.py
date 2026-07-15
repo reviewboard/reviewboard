@@ -11,7 +11,6 @@ Version Added:
 from __future__ import annotations
 
 import logging
-import os
 import ssl
 from typing import TYPE_CHECKING, cast
 from urllib.parse import urlparse
@@ -23,22 +22,24 @@ from django.utils.translation import gettext as _
 from djblets.cache.backend import cache_memoize, make_cache_key
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import safe_join
-from typing_extensions import TypedDict
+from housekeeping import func_deprecated
+from typing_extensions import Final, TypedDict
 
 from reviewboard.admin.server import get_data_dir
-from reviewboard.certs.cert import CertPurpose, CertificateFingerprints
+from reviewboard.certs.cert import (Certificate,
+                                    CertPurpose,
+                                    CertificateFingerprints)
 from reviewboard.certs.errors import (CertificateNotFoundError,
                                       InvalidCertificateError)
 from reviewboard.certs.storage import cert_storage_backend_registry
+from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 
 if TYPE_CHECKING:
-    from typing import Final
-
     from typelets.funcs import KwargsDict
     from typelets.django.json import SerializableDjangoJSONDictImmutable
     from typing_extensions import NotRequired, TypeAlias
 
-    from reviewboard.certs.cert import Certificate, CertificateBundle
+    from reviewboard.certs.cert import CertificateBundle
     from reviewboard.certs.storage.base import (
         BaseCertificateStorageBackend,
         BaseStoredCertificate,
@@ -782,6 +783,7 @@ class CertificateManager:
 
         return context
 
+    @func_deprecated(RemovedInReviewBoard10_0Warning)
     def build_urlopen_kwargs(
         self,
         *,
@@ -799,6 +801,13 @@ class CertificateManager:
 
         If not connecting to a HTTPS-based site, this will be an empty
         dictionary.
+
+        Deprecated:
+            8.1:
+            This is deprecated and will be removed in Review Board 10. Use
+            :py:func:`reviewboard.certs.http.urlopen` or
+            :py:class:`reviewboard.certs.http.
+            CertificateVerificationHTTPSHandler` instead.
 
         Args:
             url (str):

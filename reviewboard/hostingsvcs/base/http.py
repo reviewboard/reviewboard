@@ -20,7 +20,6 @@ from urllib.request import (
     HTTPBasicAuthHandler,
     HTTPDigestAuthHandler,
     HTTPPasswordMgrWithDefaultRealm,
-    HTTPSHandler,
     build_opener)
 
 from django.utils.encoding import force_str
@@ -28,6 +27,7 @@ from djblets.log import log_timed
 from djblets.util.decorators import cached_property
 
 from reviewboard.certs.cert import Certificate
+from reviewboard.certs.http import CertificateVerificationHTTPSHandler
 from reviewboard.certs.manager import cert_manager
 from reviewboard.deprecation import RemovedInReviewBoard90Warning
 
@@ -559,8 +559,8 @@ class HostingServiceHTTPRequest:
                                  data=self.body,
                                  headers=self.headers,
                                  method=method)
-
         hosting_service = self.hosting_service
+        urlopen_handlers = self._urlopen_handlers
 
         if hosting_service:
             context: (ssl.SSLContext | None)
@@ -576,23 +576,15 @@ class HostingServiceHTTPRequest:
                     hosting_account=hosting_account,
                 )
             else:
-                # This is the modern code path. Build an SSL context.
-                #
-                # We use build_urlopen_kwargs() as a convenience. It will
-                # sanity-check the URL for HTTPS and build a context with the
-                # right parameters.
-                context = (
-                    cert_manager.build_urlopen_kwargs(
-                        url=self.url,
-                        local_site=hosting_service.account.local_site,
-                    )
-                    .get('context')
-                )
+                context = None
 
-            if context is not None:
-                # An SSL context was successfully built, so we can now set up
-                # an HTTPS handler using it.
-                self._urlopen_handlers.append(HTTPSHandler(context=context))
+            parsed_url = urlparse(url)
+            urlopen_handlers.append(CertificateVerificationHTTPSHandler(
+                hostname=parsed_url.hostname,
+                port=parsed_url.port,
+                context=context,
+                local_site=hosting_account.local_site,
+            ))
 
             timer_msg = (
                 f'Performing HTTP {method} request for '
@@ -603,7 +595,7 @@ class HostingServiceHTTPRequest:
                 f'Performing HTTP {method} request at {url}'
             )
 
-        opener = build_opener(*self._urlopen_handlers)
+        opener = build_opener(*urlopen_handlers)
 
         with log_timed(timer_msg,
                        logger=logger):
