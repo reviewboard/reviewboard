@@ -213,6 +213,46 @@ def test_apply_edits_insertion_edit() -> None:
     assert result == b'hello beautiful world'
 
 
+def test_apply_edits_nested_edit_dropped() -> None:
+    """Test that an edit nested inside another edit is dropped.
+
+    A whole-pattern deletion can contain a replacement edit for a
+    predicate in the same pattern. The outer edit must win; applying
+    both corrupts the surrounding content once the inner replacement
+    changes the length.
+    """
+    content = b'0123456789'
+    edits = [
+        (4, 6, b'longer replacement'),
+        (2, 8, b''),
+    ]
+    result = apply_edits(content, edits)
+    assert result == b'0189'
+
+
+def test_apply_edits_duplicate_edits() -> None:
+    """Test that duplicate edits are applied once."""
+    content = b'0123456789'
+    edits = [
+        (2, 8, b'x'),
+        (2, 8, b'x'),
+    ]
+    result = apply_edits(content, edits)
+    assert result == b'01x89'
+
+
+def test_apply_edits_partial_overlap_rejected() -> None:
+    """Test that partially-overlapping edits raise an error."""
+    content = b'0123456789'
+    edits = [
+        (2, 6, b'A'),
+        (4, 8, b'B'),
+    ]
+
+    with pytest.raises(ValueError):
+        apply_edits(content, edits)
+
+
 def test_set3_edits_no_match() -> None:
     """Test with query containing no set! directives with 3 args."""
     content = '((identifier) @name)'

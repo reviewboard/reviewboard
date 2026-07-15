@@ -72,12 +72,39 @@ def apply_edits(
     Returns:
         bytes:
         The edited queries.
+
+    Raises:
+        ValueError:
+            Two edits partially overlap. There is no order in which
+            such edits can be applied correctly.
     """
+    sorted_edits = sorted(edits, key=lambda edit: (edit[0], -edit[1]))
+
+    # Drop edits nested inside an earlier edit (the outer edit wins).
+    # This happens when a whole-pattern deletion contains a replacement
+    # for a predicate in the same pattern.
+    kept: list[QueryEdit] = []
+    last_end = -1
+
+    for edit in sorted_edits:
+        start = edit[0]
+        end = edit[1]
+
+        if start < last_end:
+            if end <= last_end:
+                continue
+
+            raise ValueError(
+                f'Cannot apply partially-overlapping query edits: '
+                f'{kept[-1][:2]} and {(start, end)}'
+            )
+
+        kept.append(edit)
+        last_end = max(last_end, end)
+
     new_content = bytearray(content)
 
-    sorted_edits = sorted(edits, key=lambda edit: edit[0], reverse=True)
-
-    for (start, end, replacement) in sorted_edits:
+    for (start, end, replacement) in reversed(kept):
         new_content[start:end] = replacement
 
     return bytes(new_content)
