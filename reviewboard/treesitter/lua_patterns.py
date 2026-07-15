@@ -80,8 +80,20 @@ def _translate_lua_char_class(
             if token in LUA_TO_PYTHON_CLASSES:
                 mapped = LUA_TO_PYTHON_CLASSES[token]
 
-                # Strip the outer [ ] if present.
-                if mapped.startswith('[') and mapped.endswith(']'):
+                if mapped.startswith('[^'):
+                    # A complement class cannot be merged into a positive
+                    # class. Only allow it when it's the entire class.
+                    if contents != token:
+                        logger.error('Complement class "%s" cannot be '
+                                     'combined with other items in a class '
+                                     'in "%s"',
+                                     token, full_pattern)
+
+                        return None
+
+                    out += mapped[1:-1]
+                elif mapped.startswith('[') and mapped.endswith(']'):
+                    # Strip the outer [ ].
                     out += mapped[1:-1]
                 else:
                     out += mapped

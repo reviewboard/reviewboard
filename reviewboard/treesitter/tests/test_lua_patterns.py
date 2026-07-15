@@ -449,6 +449,12 @@ def test_non_greedy_quantifier(
     # Unsupported frontier pattern
     '%f[%w]word',
     'test%f[%s]',
+
+    # Complement classes cannot be merged into a [...] class.
+    '[x%A]',
+    '[%A%L]',
+    '[^%A]',
+    '[%Px]',
 ])
 def test_error_cases(
     lua_pattern: str,
