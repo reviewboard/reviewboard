@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from djblets.extensions.hooks import BaseRegistryHook, ExtensionHookPoint
 
+from reviewboard.accounts.service_accounts import (ServiceAccount,
+                                                   service_account_registry)
 from reviewboard.accounts.user_details import (BaseUserDetailsProvider,
                                                user_details_provider_registry)
 
@@ -23,3 +25,16 @@ class UserDetailsProviderHook(BaseRegistryHook[BaseUserDetailsProvider],
     """
 
     registry = user_details_provider_registry
+
+
+class ServiceAccountHook(BaseRegistryHook[ServiceAccount],
+                         metaclass=ExtensionHookPoint):
+    """Hook to register custom service accounts.
+
+    See :ref:`service-account-hook` for instructions.
+
+    Version Added:
+        8.1
+    """
+
+    registry = service_account_registry

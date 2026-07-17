@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 from datetime import datetime, timedelta
+from ssl import VerifyMode
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
@@ -310,6 +311,7 @@ class CaptureSSLContext:
         self.keyfiles = []
         self.passwords = []
         self.check_hostname = True
+        self.verify_mode = VerifyMode.CERT_REQUIRED
 
     def load_verify_locations(
         self,

@@ -5,7 +5,6 @@ import os
 import zlib
 from collections import OrderedDict
 from urllib.error import HTTPError
-from urllib.request import urlopen
 
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -15,7 +14,7 @@ from django.utils.translation import gettext_lazy as _
 from djblets.log import log_timed
 
 from reviewboard.admin.server import build_server_url
-from reviewboard.certs.manager import cert_manager
+from reviewboard.certs.http import urlopen
 
 
 _security_checks = OrderedDict()
@@ -255,10 +254,7 @@ class ServerExecutableFileCheck(BaseExecutableFileCheck):
                            f'executable file at {url}',
                            default_level=logging.INFO,
                            logger=logger):
-                data = urlopen(
-                    url,
-                    **cert_manager.build_urlopen_kwargs(url=url),
-                ).read()
+                data = urlopen(url).read()
         except HTTPError as e:
             # An HTTP 403 is also an acceptable response
             if e.code == 403:
@@ -347,10 +343,7 @@ class BrowserExecutableFileCheck(BaseExecutableFileCheck):
                        f'attachment at {url}',
                        default_level=logging.INFO,
                        logger=logger):
-            headers = urlopen(
-                url,
-                **cert_manager.build_urlopen_kwargs(url=url),
-            ).info()
+            headers = urlopen(url).info()
 
         return headers.get('Content-Disposition', '').startswith('attachment')
 

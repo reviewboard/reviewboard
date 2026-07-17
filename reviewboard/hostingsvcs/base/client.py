@@ -8,26 +8,18 @@ Version Added:
 
 from __future__ import annotations
 
-import hashlib
 import json
 import logging
-import ssl
 from email.generator import _make_boundary as generate_boundary
 from typing import Any, Generic, TYPE_CHECKING
 from urllib.error import URLError
-from urllib.parse import urlparse
 
-from cryptography import x509
-from cryptography.x509.oid import NameOID
-from cryptography.hazmat.backends import default_backend
-from django.utils.encoding import force_bytes, force_str
+from django.utils.encoding import force_bytes
 from typing_extensions import TypeVar
 
 from reviewboard.hostingsvcs.base.http import (HostingServiceHTTPRequest,
                                                HostingServiceHTTPResponse)
-from reviewboard.scmtools.certs import Certificate
 from reviewboard.scmtools.crypto_utils import decrypt_password
-from reviewboard.scmtools.errors import UnverifiedCertificateError
 
 if TYPE_CHECKING:
     from reviewboard.hostingsvcs.base.hosting_service import (
@@ -710,9 +702,7 @@ class HostingServiceClient(Generic[THostingService]):
     ) -> None:
         """Process an HTTP error, possibly raising a result.
 
-        This will look at the error, possibly raising a more suitable exception
-        in its place. By default, it supports handling SSL signature
-        verification failures.
+        By default, this doesn't do anything.
 
         Subclasses can override this to provide more specific errors as needed
         by the hosting service implementation. They should always call the
@@ -728,38 +718,8 @@ class HostingServiceClient(Generic[THostingService]):
 
             e (urllib.error.URLError):
                 The error to process.
-
-        Raises:
-            reviewboard.scmtools.errors.UnverifiedCertificateError:
-                The SSL certificate was not able to be verified.
         """
-        if ('CERTIFICATE_VERIFY_FAILED' not in str(e) or
-            not hasattr(ssl, 'create_default_context')):
-            return
-
-        parts = urlparse(request.url)
-        port = parts.port or 443
-
-        assert parts.hostname
-
-        cert_pem = ssl.get_server_certificate((parts.hostname, port))
-        cert_der = ssl.PEM_cert_to_DER_cert(cert_pem)
-
-        cert = x509.load_pem_x509_certificate(cert_pem.encode('ascii'),
-                                              default_backend())
-        issuer = cert.issuer.get_attributes_for_oid(
-            NameOID.COMMON_NAME)[0].value
-        subject = cert.subject.get_attributes_for_oid(
-            NameOID.COMMON_NAME)[0].value
-
-        raise UnverifiedCertificateError(
-            Certificate(
-                pem_data=cert_pem,
-                valid_from=cert.not_valid_before.isoformat(),
-                valid_until=cert.not_valid_after.isoformat(),
-                issuer=force_str(issuer),
-                hostname=force_str(subject),
-                fingerprint=hashlib.sha256(cert_der).hexdigest()))
+        pass
 
     def _build_put_post_request(
         self,
