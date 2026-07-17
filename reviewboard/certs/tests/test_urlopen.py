@@ -66,7 +66,28 @@ class URLOpenTests(kgb.SpyAgency, CertificateTestCase):
     """
 
     cert_manager: CertificateManager
-    ssl_contexts: list[CaptureSSLContext]
+
+    #: All SSL contexts created during the test.
+    #:
+    #: This includes the throwaway default context that
+    #: :py:class:`urllib.request.HTTPSHandler` builds in its constructor. Use
+    #: :py:attr:`ssl_contexts` to get just the contexts Review Board built.
+    _created_ssl_contexts: list[CaptureSSLContext]
+
+    @property
+    def ssl_contexts(self) -> list[CaptureSSLContext]:
+        """The SSL contexts built by Review Board's certificate manager.
+
+        On Python 3.14, :py:meth:`urllib.request.HTTPSHandler.__init__` builds
+        its own default context, which the standard library configures with
+        ALPN protocols. Review Board's contexts never set those, so we filter
+        the standard-library contexts out here.
+        """
+        return [
+            ssl_context
+            for ssl_context in self._created_ssl_contexts
+            if ssl_context.alpn_protocols is None
+        ]
 
     def setUp(self) -> None:
         """Set up state for the test.
@@ -98,12 +119,12 @@ class URLOpenTests(kgb.SpyAgency, CertificateTestCase):
         self.spy_on(HTTPSHandler.https_open,
                     owner=HTTPSHandler)
 
-        self.ssl_contexts = []
+        self._created_ssl_contexts = []
 
         @self.spy_for(ssl.create_default_context)
         def _create_default_context(*args, **kwargs):
             ssl_context = CaptureSSLContext()
-            self.ssl_contexts.append(ssl_context)
+            self._created_ssl_contexts.append(ssl_context)
 
             return ssl_context
 

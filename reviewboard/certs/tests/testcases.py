@@ -9,15 +9,19 @@ from __future__ import annotations
 import os
 from datetime import datetime, timedelta
 from ssl import VerifyMode
+from typing import TYPE_CHECKING
 
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
-from typing_extensions import Final
 
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from typing import Final
 
 
 TEST_TRUST_CERT_PEM = b"""
@@ -281,6 +285,17 @@ class CaptureSSLContext:
     # Instance variables #
     ######################
 
+    #: ALPN protocols advertised on this context.
+    #:
+    #: This is set by the standard library when it builds a default context
+    #: (for example in :py:meth:`urllib.request.HTTPSHandler.__init__`). Review
+    #: Board's own contexts never set this, so it can be used to tell the two
+    #: apart.
+    #:
+    #: Version Added:
+    #:     9.0
+    alpn_protocols: Sequence[str] | None
+
     #: Loaded CA bundle strings.
     cadatas: list[bytes | str | None]
 
@@ -302,8 +317,18 @@ class CaptureSSLContext:
     #: Loaded mTLS key passwords.
     passwords: list[str | None]
 
+    #: Whether TLS 1.3 post-handshake client authentication is enabled.
+    #:
+    #: Version Added:
+    #:     9.0
+    post_handshake_auth: bool
+
+    #: The verification mode for SSL certificates.
+    verify_mode: VerifyMode
+
     def __init__(self) -> None:
         """Initialize the context."""
+        self.alpn_protocols = None
         self.cadatas = []
         self.cafiles = []
         self.capaths = []
@@ -311,13 +336,14 @@ class CaptureSSLContext:
         self.keyfiles = []
         self.passwords = []
         self.check_hostname = True
+        self.post_handshake_auth = False
         self.verify_mode = VerifyMode.CERT_REQUIRED
 
     def load_verify_locations(
         self,
         cafile: (str | None) = None,
         capath: (str | None) = None,
-        cadata: (bytes | str | None) = None
+        cadata: (bytes | str | None) = None,
     ) -> None:
         """Load CA data for verification.
 
@@ -361,6 +387,26 @@ class CaptureSSLContext:
         self.certfiles.append(certfile)
         self.keyfiles.append(keyfile)
         self.passwords.append(password)
+
+    def set_alpn_protocols(
+        self,
+        protocols: Sequence[str],
+    ) -> None:
+        """Record the ALPN protocols for the context.
+
+        Python 3.14 calls this internally when building a default context, so
+        we need to have it present. We record the protocols so that these
+        standard-library contexts can be told apart from Review Board's own.
+
+        Version Added:
+            9.0
+
+        Args:
+            protocols (list of str):
+                The list of protocols to advertise during the SSL/TLS
+                handshake.
+        """
+        self.alpn_protocols = protocols
 
 
 class CertificateTestCase(TestCase):
