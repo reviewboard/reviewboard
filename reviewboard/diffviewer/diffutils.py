@@ -1110,6 +1110,65 @@ def get_filediffs_match(filediff1, filediff2):
               filediff1.patched_sha1 == filediff2.patched_sha1)))
 
 
+def get_is_new_file(
+    *,
+    filediff: FileDiff,
+    interfilediff: Optional[FileDiff] = None,
+    base_filediff: Optional[FileDiff] = None,
+    newfile: Optional[bool] = None,
+) -> bool:
+    """Return whether a file should be rendered as a newly-added file.
+
+    Newly-added files are rendered with only the modified side of the diff,
+    since there's no original side to show.
+
+    A file is only considered new when it's being shown on its own. When
+    shown as part of an interdiff, or relative to a base commit, both sides
+    of the diff exist and must be rendered.
+
+    Version Added:
+        8.1
+
+    Args:
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+            The FileDiff being rendered.
+
+        interfilediff (reviewboard.diffviewer.models.filediff.FileDiff,
+                       optional):
+            The FileDiff on the other side of an interdiff, if any.
+
+        base_filediff (reviewboard.diffviewer.models.filediff.FileDiff,
+                       optional):
+            The base FileDiff in a commit range, if any.
+
+        newfile (bool, optional):
+            Whether the FileDiff itself adds the file.
+
+            This defaults to :py:attr:`FileDiff.is_new
+            <reviewboard.diffviewer.models.filediff.FileDiff.is_new>`.
+            Callers can override it when the state is propagated from an
+            ancestor FileDiff.
+
+    Returns:
+        bool:
+        ``True`` if the file should be rendered as a newly-added file.
+    """
+    if newfile is None:
+        newfile = filediff.is_new
+
+    return (newfile and
+            base_filediff is None and
+            interfilediff is None and
+            # "new file" diffs with parent diffs are allowed in the case where
+            # we have the parent_source_revision. Prior to 3.0.19,
+            # source_revision was overloaded between the diff and the parent,
+            # making this unreliable. If we have a new file with a parent diff,
+            # it means the parent diff deleted the file and the diff added a
+            # new one, in which case we do actually want to show it as added.
+            (not filediff.parent_diff or
+             'parent_source_revision' in filediff.extra_data))
+
+
 @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
 def get_diff_files(
     *,
@@ -1470,20 +1529,11 @@ def get_diff_files(
                 'force_interdiff': force_interdiff,
                 'index': len(files),
                 'interfilediff': interfilediff,
-                'is_new_file': (
-                    newfile and
-                    base_filediff is None and
-                    interfilediff is None and
-                    # "new file" diffs with parent diffs are allowed in the
-                    # case where we have the parent_source_revision. Prior to
-                    # 3.0.19, source_revision was overloaded between the diff
-                    # and the parent, making this unreliable. If we have a new
-                    # file with a parent diff, it means the parent diff deleted
-                    # the file and the diff added a new one, in which case we
-                    # do actually want to show it as added.
-                    (not filediff.parent_diff or
-                     'parent_source_revision' in orig_extra_data)
-                ),
+                'is_new_file': get_is_new_file(
+                    filediff=filediff,
+                    interfilediff=interfilediff,
+                    base_filediff=base_filediff,
+                    newfile=newfile),
                 'is_symlink': filediff.extra_data.get('is_symlink', False),
                 'modified_filename': modified_filename or orig_filename,
                 'modified_revision': modified_revision,

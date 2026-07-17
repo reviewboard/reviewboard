@@ -2,12 +2,12 @@
 
 <table{% attr "class" %}
  sidebyside
-{%  if comment.filediff.is_new %}newfile{% endif %}
+{%  if is_new_file %}newfile{% endif %}
 {%  if expandable_above or header.left or header.right %}has-diff-header-above{% endif %}
 {%  if expandable_below %}has-diff-header-below{% endif %}
 {% endattr %}>
  <colgroup>
-{% if not comment.filediff.is_new %}
+{% if not is_new_file %}
   <col class="line" />
   <col class="left" />
 {% endif %}
@@ -16,7 +16,7 @@
  </colgroup>
  <thead>
   <tr class="filename-row">
-   <th colspan="{% if comment.filediff.is_new %}2{% else %}4{% endif %}" class="filename">
+   <th colspan="{{is_new_file|yesno:'2,4'}}" class="filename">
     <a href="{{comment.get_absolute_url}}">{{comment.filediff.dest_file_display}}</a>
     <span class="diffrevision">
 {% if comment.interfilediff %}
@@ -35,7 +35,7 @@
    <td><div>
     {% expand_fragment_link 'below' _('Show 20 more lines above') 20 0 %}
    </div></td>
-   <td colspan="{% if comment.filediff.is_new %}1{% else %}3{% endif %}"><div>
+   <td colspan="{{is_new_file|yesno:'1,3'}}"><div>
     {% definevar 'link_text' %}{{lines_above}} lines{% enddefinevar %}
     {% expand_fragment_link 'all'  _('Show all lines') lines_above 0 link_text %}
    </div></td>
@@ -45,11 +45,11 @@
   <tr>
    <td colspan="1"></td>
 {%   if header.left.text == header.right.text and header.left.line == header.right.line %}
-   <td colspan="3"><div>
+   <td colspan="{{is_new_file|yesno:'1,3'}}"><div>
     {% expand_fragment_header_link header.left %}
    </div></td>
 {%   else %}
-{%    if not comment.filediff.is_new %}
+{%    if not is_new_file %}
    <td><div>
 {%     if header.left %}
        {% expand_fragment_header_link header.left %}
@@ -80,7 +80,7 @@
 {%   endif %}
 {%  endattr %}>
 
-{%  if not comment.filediff.is_new %}
+{%  if not is_new_file %}
     <th>{{line.1}}</th>
     <td>
 {%   if collapsible and forloop.parentloop.first and forloop.first %}
@@ -95,12 +95,12 @@
 {%  endif %}
     <th>{{line.4}}</td>
     <td>
-{%  if collapsible and comment.filediff.is_new and forloop.parentloop.first and forloop.first %}
+{%  if collapsible and is_new_file and forloop.parentloop.first and forloop.first %}
      <div class="collapse-floater">
 {%    include "diffviewer/_collapse_button.html" with comment=comment %}
 {%  endif %}
      <pre>{{line.5|highlightregion:line.6|showextrawhitespace}}</pre>
-{% if collapsible and comment.filediff.is_new and forloop.parentloop.first and forloop.first %}
+{% if collapsible and is_new_file and forloop.parentloop.first and forloop.first %}
      </div>
 {%  endif %}
     </td>
@@ -114,7 +114,7 @@
    <td><div>
     {% expand_fragment_link 'above' _('Show 20 more lines below') 0 20 %}
    </div></td>
-   <td colspan="3"><div>
+   <td colspan="{{is_new_file|yesno:'1,3'}}"><div>
     {% definevar 'link_text' %}{{lines_below}} lines{% enddefinevar %}
     {% expand_fragment_link 'all' _('Show all lines') 0 lines_below link_text %}
    </div></td>

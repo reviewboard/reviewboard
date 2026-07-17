@@ -28,10 +28,13 @@ from typing_extensions import TypedDict
 from reviewboard.attachments.mimetypes import guess_mimetype
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
-from reviewboard.diffviewer.diffutils import (get_file_chunks_in_range,
-                                              get_last_header_before_line,
-                                              get_last_line_number_in_diff,
-                                              get_sha256)
+from reviewboard.diffviewer.diffutils import (
+    get_file_chunks_in_range,
+    get_is_new_file,
+    get_last_header_before_line,
+    get_last_line_number_in_diff,
+    get_sha256,
+)
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.diffviewer.views import (DiffFragmentView,
@@ -191,6 +194,10 @@ def build_diff_comment_fragments(
                 'lines_of_context': lines_of_context,
                 'expandable_above': show_controls and first_line != 1,
                 'expandable_below': show_controls and last_line != max_line,
+                'is_new_file': get_is_new_file(
+                    filediff=comment.filediff,
+                    interfilediff=comment.interfilediff,
+                    base_filediff=base_filediff),
                 'collapsible': lines_of_context != [0, 0],
                 'lines_above': first_line - 1,
                 'lines_below': max_line - last_line,
