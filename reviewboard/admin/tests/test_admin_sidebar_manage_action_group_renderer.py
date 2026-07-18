@@ -16,6 +16,7 @@ from django.template import Context
 from django_assert_queries import assert_queries
 from djblets.cache.backend import make_cache_key
 
+from reviewboard.actions import actions_registry
 from reviewboard.actions.base import ActionPlacement, BaseGroupAction
 from reviewboard.actions.tests.base import TestActionsRegistry
 from reviewboard.admin.actions import (AdminManageNavGroupAction,
@@ -33,6 +34,19 @@ class BaseAdminSidebarManageItemActionTests(kgb.SpyAgency, TestCase):
     Version Added:
         8.0
     """
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
+
+        # Rendering any admin page stamps the managed-models set onto the
+        # registered manage group action, and that survives across tests.
+        # Clear it so these tests fully control the state.
+        action = actions_registry.get_action(
+            AdminManageNavGroupAction.action_id)
+
+        if action is not None:
+            action.__dict__.pop('_managed_models', None)
 
     def test_get_extra_context(self) -> None:
         """Testing AdminSidebarManageActionGroupRenderer.get_extra_context"""
@@ -351,6 +365,13 @@ class BaseAdminSidebarManageItemActionTests(kgb.SpyAgency, TestCase):
             models (set of type):
                 The models to patch in as managed models.
         """
-        setattr(AdminManageNavGroupAction, '_managed_models', models)
-        self.addCleanup(lambda: delattr(AdminManageNavGroupAction,
-                                        '_managed_models'))
+        # Patch the registered action instance, since that's what the cache
+        # invalidation signal handlers consult. An instance attribute would
+        # shadow anything set on the class.
+        action = actions_registry.get_action(
+            AdminManageNavGroupAction.action_id)
+        assert action is not None
+
+        setattr(action, '_managed_models', models)
+        self.addCleanup(
+            lambda: action.__dict__.pop('_managed_models', None))
