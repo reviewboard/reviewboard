@@ -41,7 +41,9 @@ class Splat(BaseHostingService, BaseBugTracker):
     hosting_service_id = 'splat'
     name = 'Splat'
 
+    bug_tracker_label = _('Splat Tickets')
     form = SplatForm
+    supports_bug_info = True
     supports_bug_trackers = True
     _logo_image = 'rb/images/services/splat.svg'
 

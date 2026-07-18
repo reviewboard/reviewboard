@@ -143,7 +143,9 @@ class BaseHostingService(Generic[THostingServiceClient]):
 
     Version Changed:
         9.0:
-        Made this class generic for the hosting service client.
+        * Made this class generic for the hosting service client.
+        * Added :py:attr:`supports_bug_info` and
+          :py:attr:`supports_bug_search`.
 
     Version Changed:
         6.0:
@@ -189,6 +191,23 @@ class BaseHostingService(Generic[THostingServiceClient]):
     #: Type:
     #:     list
     plans: ClassVar[Sequence[tuple[str, HostingServicePlan]] | None] = None
+
+    #: Whether :py:meth:`get_bug_info` returns real metadata.
+    #:
+    #: This enables infobox support, replacing older
+    #: ``isinstance(service, BaseBugTracker)`` checks.
+    #:
+    #: Version Added:
+    #:     9.0
+    supports_bug_info: ClassVar[bool] = False
+
+    #: Whether :py:meth:`search_bugs` is implemented.
+    #:
+    #: This enables typeahead search in bug fields.
+    #:
+    #: Version Added:
+    #:     9.0
+    supports_bug_search: ClassVar[bool] = False
 
     #: Whether this service supports bug trackers.
     #:

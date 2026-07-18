@@ -836,6 +836,9 @@ class Bitbucket(BaseHostingService[BitbucketClient]):
     name = 'Bitbucket'
 
     auth_form = BitbucketAuthForm
+    # TODO: This service currently doesn't implement BaseBugTracker, but once
+    # it does, uncomment this:
+    # bugs_in_repo = True
     client_class = BitbucketClient
     has_repository_hook_instructions = True
     needs_authorization = True

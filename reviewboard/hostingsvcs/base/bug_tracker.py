@@ -9,12 +9,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict
 
+from django.utils.translation import gettext_lazy as _
 from djblets.cache.backend import cache_memoize
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import ClassVar, Literal
 
+    from typelets.django.strings import StrOrPromise
     from typing_extensions import NotRequired
 
     from reviewboard.scmtools.models import Repository
@@ -47,6 +49,10 @@ class BaseBugTracker:
     bug trackers.
 
     Version Changed:
+        9.0:
+        Added :py:attr:`bug_tracker_label` and :py:attr:`bugs_in_repo`.
+
+    Version Changed:
         8.0:
         Moved and renamed from
         ``reviewboard.hostingsvcs.bugtracker.BugTracker``.
@@ -54,6 +60,26 @@ class BaseBugTracker:
 
     #: The name of the bug tracker
     name: ClassVar[str | None] = None
+
+    #: The default label for review request fields and UI.
+    #:
+    #: This can be overridden per-configuration through
+    #: :py:attr:`ConfiguredBugTracker.name
+    #: <reviewboard.hostingsvcs.models.ConfiguredBugTracker.name>`.
+    #:
+    #: Version Added:
+    #:     9.0
+    bug_tracker_label: ClassVar[StrOrPromise] = _('Bugs')
+
+    #: Whether the bug tracker operates in-repo.
+    #:
+    #: In-repo bug trackers (such as GitHub or Forgejo issues) are tied
+    #: to a repository on the hosting service. They are configured inside
+    #: the repository configuration, not through Connected Services.
+    #:
+    #: Version Added:
+    #:     9.0
+    bugs_in_repo: ClassVar[bool] = False
 
     def get_bug_info(
         self,

@@ -45,7 +45,9 @@ class JIRA(BaseHostingService, BaseBugTracker):
     hosting_service_id = 'jira'
     name = 'JIRA'
 
+    bug_tracker_label = _('JIRA Issues')
     form = JIRAForm
+    supports_bug_info = True
     supports_bug_trackers = True
     _logo_image = 'rb/images/services/jira.svg'
 

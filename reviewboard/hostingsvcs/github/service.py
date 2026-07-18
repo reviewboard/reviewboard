@@ -685,11 +685,14 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
     name = _('GitHub')
 
     auth_form = GitHubAuthForm
+    bug_tracker_label = _('GitHub Issues')
+    bugs_in_repo = True
     client_class = GitHubClient
     connect_ui_cls = GitHubConnectUI
     has_repository_hook_instructions = True
     needs_authorization = True
     supported_scmtools: ClassVar[Sequence[str]] = ['Git']
+    supports_bug_info = True
     supports_bug_trackers = True
     supports_list_remote_repositories = True
     supports_post_commit = True

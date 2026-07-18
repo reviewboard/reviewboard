@@ -61,6 +61,9 @@ class Unfuddle(BaseHostingService):
     hosting_service_id = 'unfuddle'
     name = 'Unfuddle'
 
+    # TODO: This service currently doesn't implement BaseBugTracker, but once
+    # it does, uncomment this:
+    # bugs_in_repo = True
     form = UnfuddleForm
     needs_authorization = True
     supported_scmtools = ['Git', 'Subversion']

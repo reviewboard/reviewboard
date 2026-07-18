@@ -348,6 +348,9 @@ class CodebaseHQ(BaseHostingService[CodebaseHQClient]):
     name = 'Codebase HQ'
 
     auth_form = CodebaseHQAuthForm
+    # TODO: This service currently doesn't implement BaseBugTracker, but once
+    # it does, uncomment this:
+    # bugs_in_repo = True
     form = CodebaseHQForm
     needs_authorization = True
     supported_scmtools = ['Git', 'Subversion', 'Mercurial']

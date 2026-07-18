@@ -260,6 +260,9 @@ class GitLab(BaseHostingService):
     name = 'GitLab'
 
     auth_form = GitLabAuthForm
+    # TODO: This service currently doesn't implement BaseBugTracker, but once
+    # it does, uncomment this:
+    # bugs_in_repo = True
     needs_authorization = True
     self_hosted = True
     supported_scmtools = ['Git']

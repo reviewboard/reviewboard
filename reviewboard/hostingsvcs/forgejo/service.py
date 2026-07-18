@@ -50,12 +50,15 @@ class Forgejo(BaseHostingService[ForgejoClient], BaseBugTracker):
     hosting_service_id = 'forgejo'
     name = _('Forgejo')
 
+    bug_tracker_label = _('Forgejo Issues')
+    bugs_in_repo = True
     client_class = ForgejoClient
     form = ForgejoForm
     has_repository_hook_instructions = True
     needs_authorization = True
     self_hosted = True
     supported_scmtools = ['Git']
+    supports_bug_info = True
     supports_bug_trackers = True
     supports_post_commit = True
     supports_repositories = True

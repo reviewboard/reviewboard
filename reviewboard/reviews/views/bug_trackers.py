@@ -81,7 +81,7 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
             return HttpResponseNotFound(
                 _('Unable to find bug tracker service'))
 
-        if not isinstance(bug_tracker, BaseBugTracker):
+        if not bug_tracker.supports_bug_info:
             return HttpResponseNotFound(
                 _('Bug tracker %s does not support metadata')
                 % bug_tracker.name)
