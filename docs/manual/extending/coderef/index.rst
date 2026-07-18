@@ -40,6 +40,7 @@ User Accounts
    reviewboard.accounts.backends.registry
    reviewboard.accounts.backends.standard
    reviewboard.accounts.backends.x509
+   reviewboard.accounts.conditions
    reviewboard.accounts.decorators
    reviewboard.accounts.errors
    reviewboard.accounts.forms.auth
