@@ -6,7 +6,7 @@ import logging
 from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
-from django.forms.widgets import MultiWidget, Select, TextInput
+from django.forms.widgets import HiddenInput, MultiWidget, Select, TextInput
 from django.template.loader import render_to_string
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
@@ -20,8 +20,10 @@ from reviewboard.reviews.models import Group
 from reviewboard.scmtools.models import Repository
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
     from typing import Any
+
+    from typelets.json import JSONDict
 
     from django.forms.renderers import BaseRenderer
     from django.utils.safestring import SafeString
@@ -524,6 +526,146 @@ class RelatedGroupWidget(RelatedObjectWidget):
                 return None
         elif value:
             return value
+        else:
+            return None
+
+
+class BugTrackersWidget(HiddenInput):
+    """A form widget managing the bug trackers attached to a repository.
+
+    This renders the repository form's bug tracker widget: the trackers
+    attached to the repository, with controls for attaching and removing
+    configurations and for picking the default tracker for bare bug IDs.
+
+    The attached configurations are submitted through a single hidden
+    input holding comma-separated IDs, driven by
+    :js:class:`RB.Admin.RepositoryBugTrackersView`. The widget also
+    drives the form's hidden legacy ``bug_tracker_use_hosting`` and
+    ``default_bug_tracker`` fields.
+
+    Version Added:
+        9.0
+    """
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Data for the JavaScript view rendering the widget.
+    #:
+    #: This is assigned by the form after it assembles the repository's
+    #: tracker state.
+    js_view_data: JSONDict
+
+    def __init__(self, **kwargs) -> None:
+        """Initialize the widget.
+
+        Args:
+            **kwargs (dict):
+                Keyword arguments to pass to the parent widget.
+        """
+        super().__init__(**kwargs)
+
+        self.js_view_data = {}
+
+    def format_value(
+        self,
+        value: Any,
+    ) -> str | None:
+        """Format the value for the hidden input.
+
+        Args:
+            value (object):
+                The current value of the field. This may be a list of IDs
+                or a single ID.
+
+        Returns:
+            str:
+            The comma-separated list of IDs, or ``None`` if there are none.
+        """
+        if not value:
+            return None
+
+        if not isinstance(value, list):
+            value = [value]
+
+        return ','.join(
+            force_str(v)
+            for v in value
+            if v
+        ) or None
+
+    def render(
+        self,
+        name: str,
+        value: Any,
+        attrs: (dict[str, Any] | None) = None,
+        renderer: (BaseRenderer | None) = None,
+    ) -> SafeString:
+        """Render the widget.
+
+        Args:
+            name (str):
+                The name of the field.
+
+            value (list):
+                The current value of the field.
+
+            attrs (dict, optional):
+                Attributes for the HTML element.
+
+            renderer (django.forms.renderers.BaseRenderer, optional):
+                The form renderer.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered HTML.
+        """
+        if attrs:
+            final_attrs = dict(self.attrs, **attrs)
+        else:
+            final_attrs = self.attrs.copy()
+
+        input_html = super().render(name, value, attrs, renderer)
+
+        return render_to_string(
+            template_name='admin/bug_trackers_widget.html',
+            context={
+                'input_html': mark_safe(input_html),
+                'input_id': final_attrs['id'],
+                'js_view_data': self.js_view_data,
+            })
+
+    def value_from_datadict(
+        self,
+        data: Mapping[str, Any],
+        files: Mapping[str, Any],
+        name: str,
+    ) -> list[str] | None:
+        """Unpack the field's value from a datadict.
+
+        Args:
+            data (dict):
+                The form's data.
+
+            files (dict):
+                The form's files.
+
+            name (str):
+                The name of the field.
+
+        Returns:
+            list of str:
+            The list of IDs of
+            :py:class:`~reviewboard.hostingsvcs.models.ConfiguredBugTracker`
+            objects, or ``None`` if the field was not submitted.
+        """
+        value = data.get(name)
+
+        if isinstance(value, list):
+            return value
+        elif isinstance(value, str):
+            return [v for v in value.split(',') if v]
         else:
             return None
 

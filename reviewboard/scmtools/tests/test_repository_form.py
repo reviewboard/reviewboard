@@ -1977,6 +1977,188 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertIsNotNone(config)
         self.assertEqual(config.service_name, 'custom-bug-tracker')
 
+    def test_bug_tracker_configs_attach(self) -> None:
+        """Testing RepositoryForm attaches submitted bug tracker configs
+        and accepts one as the default
+        """
+        config = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat',
+            apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS,
+            settings={'splat_org_name': 'my-org'})
+
+        form = self._build_form({
+            'name': 'test',
+            'hosting_type': 'custom',
+            'tool': 'git',
+            'path': '/path/to/repo.git',
+            'bug_tracker_configs': str(config.pk),
+            'default_bug_tracker': config.pk,
+        })
+
+        self.assertTrue(form.is_valid())
+        repository = form.save()
+
+        self.assertEqual(list(config.repositories.all()), [repository])
+
+        repository.refresh_from_db()
+        self.assertEqual(repository.default_bug_tracker_id, config.pk)
+
+    def test_bug_tracker_configs_detach(self) -> None:
+        """Testing RepositoryForm detaches bug tracker configs missing
+        from the submitted value
+        """
+        config = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat',
+            apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS,
+            settings={'splat_org_name': 'my-org'})
+        repository = self.create_repository(tool_name='Git')
+        config.repositories.add(repository)
+
+        form = self._build_form(
+            {
+                'name': repository.name,
+                'hosting_type': 'custom',
+                'tool': 'git',
+                'path': repository.path,
+                'bug_tracker_configs': '',
+            },
+            instance=repository)
+
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertFalse(config.repositories.exists())
+
+    def test_bug_tracker_configs_untouched_without_data(self) -> None:
+        """Testing RepositoryForm leaves attached bug tracker configs
+        alone when the widget did not submit data
+        """
+        config = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat',
+            apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS,
+            settings={'splat_org_name': 'my-org'})
+        repository = self.create_repository(tool_name='Git')
+        config.repositories.add(repository)
+
+        form = self._build_form(
+            {
+                'name': repository.name,
+                'hosting_type': 'custom',
+                'tool': 'git',
+                'path': repository.path,
+            },
+            instance=repository)
+
+        self.assertTrue(form.is_valid())
+        form.save()
+
+        self.assertEqual(list(config.repositories.all()), [repository])
+
+    def test_bug_tracker_configs_default_must_be_attached(self) -> None:
+        """Testing RepositoryForm rejects a default bug tracker that is
+        not attached to the repository
+        """
+        config = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat',
+            apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS,
+            settings={'splat_org_name': 'my-org'})
+
+        form = self._build_form({
+            'name': 'test',
+            'hosting_type': 'custom',
+            'tool': 'git',
+            'path': '/path/to/repo.git',
+            'bug_tracker_configs': '',
+            'default_bug_tracker': config.pk,
+        })
+
+        self.assertFalse(form.is_valid())
+
+        self.assertIn('default_bug_tracker', form.errors)
+
+    def test_bug_tracker_configs_default_apply_to_all_allowed(self) -> None:
+        """Testing RepositoryForm accepts a default bug tracker applying
+        to all review requests
+        """
+        config = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat',
+            apply_to=ConfiguredBugTracker.APPLY_TO_ALL,
+            settings={'splat_org_name': 'my-org'})
+
+        form = self._build_form({
+            'name': 'test',
+            'hosting_type': 'custom',
+            'tool': 'git',
+            'path': '/path/to/repo.git',
+            'bug_tracker_configs': '',
+            'default_bug_tracker': config.pk,
+        })
+
+        self.assertTrue(form.is_valid())
+        repository = form.save()
+
+        repository.refresh_from_db()
+        self.assertEqual(repository.default_bug_tracker_id, config.pk)
+
+    def test_bug_tracker_configs_builtin_detach(self) -> None:
+        """Testing RepositoryForm detaches the built-in hosting bug
+        tracker config when its use is turned off
+        """
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='github')
+        account.data['authorization'] = {
+            'token': 'abc123',
+        }
+        account.save()
+
+        create_data = {
+            'name': 'test',
+            'hosting_type': 'github',
+            'hosting_account': account.pk,
+            'repository_plan': 'public',
+            'tool': 'git',
+            'github_public_repo_name': 'testrepo',
+            'bug_tracker_use_hosting': True,
+            'bug_tracker_type': 'github',
+            'bug_tracker_plan': 'public',
+        }
+
+        form = self._build_form(create_data)
+        self.assertTrue(form.is_valid())
+        repository = form.save()
+
+        config = ConfiguredBugTracker.objects.get(service_name='github')
+        self.assertEqual(list(config.repositories.all()), [repository])
+
+        # Now turn the built-in tracker off through the widget.
+        form = self._build_form(
+            dict(create_data,
+                 bug_tracker_use_hosting=False,
+                 bug_tracker_configs='',
+                 default_bug_tracker=''),
+            instance=repository)
+
+        self.assertTrue(form.is_valid(),
+                        form.errors.as_data())
+        form.save()
+
+        self.assertFalse(config.repositories.exists())
+
+        repository.refresh_from_db()
+        self.assertIsNone(repository.default_bug_tracker_id)
+        self.assertFalse(
+            repository.extra_data.get('bug_tracker_use_hosting'))
+
+        # Saving again must not re-materialize the configuration.
+        repository.save()
+
+        self.assertFalse(config.repositories.exists())
+
     def test_with_hosting_service_with_hosting_bug_tracker_and_self_hosted(
             self):
         """Testing RepositoryForm with self-hosted hosting service's bug

@@ -12,6 +12,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.forms import Select, model_to_dict
+from django.templatetags.static import static
 from django.utils.datastructures import MultiValueDict
 from django.utils.html import format_html
 from django.utils.safestring import mark_safe
@@ -19,11 +20,22 @@ from django.utils.translation import gettext, gettext_lazy as _
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import is_exe_in_path
 
-from reviewboard.admin.form_widgets import (RelatedGroupWidget,
-                                            RelatedUserWidget)
+from reviewboard.admin.form_widgets import (
+    BugTrackersWidget,
+    RelatedGroupWidget,
+    RelatedUserWidget,
+)
 from reviewboard.admin.import_utils import has_module
 from reviewboard.admin.validation import validate_bug_tracker
 from reviewboard.certs.errors import CertificateVerificationError
+from reviewboard.hostingsvcs.bug_tracker_forms import (
+    is_bug_tracker_configurable,
+)
+from reviewboard.hostingsvcs.bug_tracker_migration import (
+    BugTrackerCase,
+    FINGERPRINT_KEY,
+    make_fingerprint,
+)
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             HostingServiceError,
                                             MissingHostingServiceError,
@@ -54,6 +66,10 @@ from reviewboard.ssh.errors import (BadHostKeyError,
                                     UnknownHostKeyError)
 
 if TYPE_CHECKING:
+    from typing import Any
+
+    from typelets.json import JSONDict, JSONList
+
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
@@ -621,8 +637,19 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
     REPOSITORY_HOSTING_FIELDSET = _('Repository Hosting')
     REPOSITORY_INFO_FIELDSET = _('Repository Information')
-    BUG_TRACKER_FIELDSET = _('Bug Tracker')
     SSH_KEY_FIELDSET = _('Review Board Server SSH Key')
+
+    #: The fieldset title for bug trackers.
+    #:
+    #: When the form is being used from the admin UI, this will get replaced
+    #: with :py:attr:`ISSUE_TRACKING_FIELDSET`.
+    BUG_TRACKER_FIELDSET = _('Bug Tracker')
+
+    #: The bug tracker fieldset's title with the bug tracker widget.
+    #:
+    #: Version Added:
+    #:     9.0
+    ISSUE_TRACKING_FIELDSET = _('Issue Tracking')
 
     NO_HOSTING_SERVICE_ID = 'custom'
     NO_HOSTING_SERVICE_NAME = _('(None - Custom Repository)')
@@ -742,6 +769,19 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     # extract the message catalog.
         validators=[validate_bug_tracker])
 
+    #: The bug tracker configurations attached to this repository.
+    #:
+    #: This backs the bug tracker widget on the administration form. It is
+    #: configured by :py:meth:`_init_bug_tracker_configs`.
+    #:
+    #: Version Added:
+    #:     9.0
+    bug_tracker_configs = forms.ModelMultipleChoiceField(
+        label=_('Bug trackers'),
+        required=False,
+        queryset=ConfiguredBugTracker.objects.none(),
+        widget=BugTrackersWidget())
+
     # Access control fields
     users = forms.ModelMultipleChoiceField(
         queryset=User.objects.filter(is_active=True),
@@ -851,6 +891,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             default_bug_tracker_field.help_text = \
                 _('The bug tracker that bare bug IDs on review requests '
                   'belong to.')
+
+        self._init_bug_tracker_configs()
 
         # Grab the entire list of HostingServiceAccounts that can be
         # used by this form. When the form is actually being used by the
@@ -1415,7 +1457,12 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             # We only want to load repository data into the form if it's meant
             # for this form. Check the hosting service ID and plan against
             # what's in the submitted form data.
+            #
+            # When the bug tracker widget submitted data, the legacy bug
+            # tracker fields are inert (possibly holding stale values), and
+            # must not bind the service's subform.
             if (self.data and
+                not self._bug_tracker_widget_bound and
                 self.data.get('bug_tracker_type') == hosting_service_id and
                 not self.data.get('bug_tracker_use_hosting', False) and
                 (not hosting_service.plans or
@@ -1528,6 +1575,238 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             # URLs, so just show it raw. Admins can migrate it if they want.
             self.fields['bug_tracker_type'].initial = \
                 self.CUSTOM_BUG_TRACKER_ID
+
+    def _init_bug_tracker_configs(self) -> None:
+        """Set up the bug tracker widget field and its view data.
+
+        This adds the ``bug_tracker_configs`` field backing the bug tracker
+        widget on the administration form, and assembles the tracker state the
+        widget's JavaScript view renders.
+
+        Version Added:
+            9.0
+        """
+        instance = self.instance
+        configs = list(ConfiguredBugTracker.objects.accessible(
+            local_site=self.local_site))
+
+        attached_pks: set[int] = set()
+        builtin_config: (ConfiguredBugTracker | None) = None
+
+        if instance is not None and instance.pk is not None:
+            attached_pks = set(
+                instance.bug_trackers.values_list('pk', flat=True))
+            builtin_fingerprint = make_fingerprint(
+                instance, BugTrackerCase.IN_REPO)
+
+            for config in configs:
+                if (config.pk in attached_pks and
+                    (config.extra_data or {}).get(FINGERPRINT_KEY) ==
+                        builtin_fingerprint):
+                    builtin_config = config
+                    break
+
+        def _serialize_config(
+            config: ConfiguredBugTracker,
+        ) -> dict[str, Any]:
+            service_cls = hosting_service_registry.get_hosting_service(
+                config.service_name)
+            user_conditions = config.user_conditions or {}
+
+            if service_cls is not None and service_cls.logo_image:
+                logo_url = static(service_cls.logo_image)
+            else:
+                logo_url = None
+
+            return {
+                'enabled': config.enabled,
+                'id': config.pk,
+                'limitedAccess': bool(user_conditions.get('conditions')),
+                'logoURL': logo_url,
+                'name': config.name,
+                'serviceLabel': ((service_cls is not None and
+                                  service_cls.name) or
+                                 config.service_name),
+            }
+
+        all_configs: JSONList = []
+        attached_configs: JSONList = []
+        available_configs: JSONList = []
+        initial_pks: list[int] = []
+
+        for config in configs:
+            if config is builtin_config:
+                continue
+
+            if config.apply_to == ConfiguredBugTracker.APPLY_TO_ALL:
+                if config.enabled:
+                    all_configs.append(_serialize_config(config))
+            elif (config.apply_to ==
+                  ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS):
+                if config.pk in attached_pks:
+                    attached_configs.append(_serialize_config(config))
+                    initial_pks.append(config.pk)
+                else:
+                    service_cls = \
+                        hosting_service_registry.get_hosting_service(
+                            config.service_name)
+
+                    if (config.enabled and
+                        service_cls is not None and
+                        is_bug_tracker_configurable(service_cls)):
+                        available_configs.append(_serialize_config(config))
+
+        builtin_data: (dict[str, Any] | None) = None
+
+        if builtin_config is not None:
+            builtin_data = _serialize_config(builtin_config)
+
+        # Names and logos for the built-in tracker row, keyed by hosting
+        # service, so the row displays before a configuration is
+        # materialized.
+        services_data: JSONDict = {}
+
+        for service_cls in hosting_service_registry:
+            service_id = service_cls.hosting_service_id
+
+            if service_id is None or not service_cls.supports_bug_trackers:
+                continue
+
+            if service_cls.logo_image:
+                service_logo_url = static(service_cls.logo_image)
+            else:
+                service_logo_url = None
+
+            services_data[service_id] = {
+                'bugTrackerName': str(service_cls.get_bug_tracker_name()),
+                'logoURL': service_logo_url,
+            }
+
+        field = self.fields['bug_tracker_configs']
+        field.queryset = (
+            ConfiguredBugTracker.objects.accessible(local_site=self.local_site)
+            .filter(apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
+        )
+        field.initial = initial_pks
+
+        widget = field.widget
+        assert isinstance(widget, BugTrackersWidget)
+        widget.js_view_data = {
+            'allConfigs': all_configs,
+            'attachedConfigs': attached_configs,
+            'availableConfigs': available_configs,
+            'builtinConfig': builtin_data,
+            'defaultFieldID': self['default_bug_tracker'].auto_id,
+            'defaultID': (instance and instance.default_bug_tracker_id),
+            'hostingTypeFieldID': self['hosting_type'].auto_id,
+            'services': services_data,
+            'useHosting': bool(
+                instance is not None and
+                instance.pk is not None and
+                instance.extra_data.get('bug_tracker_use_hosting')),
+            'useHostingFieldID': self['bug_tracker_use_hosting'].auto_id,
+        }
+
+        self._bug_tracker_configs_initial = set(initial_pks)
+        self._bug_tracker_builtin_config = builtin_config
+        self._bug_tracker_all_pks = {
+            config['id']
+            for config in all_configs
+        }
+
+    @property
+    def _bug_tracker_widget_bound(self) -> bool:
+        """Whether the bug tracker widget submitted data.
+
+        The widget always submits its field (possibly as an empty string). API
+        and legacy consumers never do, and their bug tracker state must be
+        left untouched.
+
+        Version Added:
+            9.0
+
+        Type:
+            bool
+        """
+        return ('bug_tracker_configs' in self.fields and
+                self.data.get('bug_tracker_configs') is not None)
+
+    def _clean_default_bug_tracker_choice(self) -> None:
+        """Validate the default tracker against the attached trackers.
+
+        The default bug tracker must be attached to this repository, apply to
+        all review requests, or be the built-in hosting service tracker. This
+        only applies when the bug tracker widget submitted data.
+
+        Version Added:
+            9.0
+        """
+        if not self._bug_tracker_widget_bound:
+            return
+
+        default = self.cleaned_data.get('default_bug_tracker')
+
+        if default is None:
+            return
+
+        allowed_pks = self._bug_tracker_all_pks | {
+            config.pk
+            for config in (self.cleaned_data.get('bug_tracker_configs') or
+                           [])
+        }
+
+        builtin_config = self._bug_tracker_builtin_config
+
+        if (builtin_config is not None and
+            self.cleaned_data.get('bug_tracker_use_hosting')):
+            allowed_pks.add(builtin_config.pk)
+
+        if default.pk not in allowed_pks:
+            self.add_error(
+                'default_bug_tracker',
+                _(
+                    'The default bug tracker must be attached to this '
+                    'repository.'
+                ))
+
+    def _save_bug_tracker_configs(self) -> None:
+        """Apply the widget's attach/detach changes to the configurations.
+
+        This adds the repository to newly-attached configurations and
+        removes it from detached ones, including the built-in hosting
+        service tracker's configuration when its use was turned off.
+        This only applies when the bug tracker widget submitted data.
+
+        Version Added:
+            9.0
+        """
+        if not self._bug_tracker_widget_bound:
+            return
+
+        repository = self.instance
+        new_configs = self.cleaned_data.get('bug_tracker_configs') or []
+        new_pks = {
+            config.pk
+            for config in new_configs
+        }
+        old_pks = self._bug_tracker_configs_initial
+
+        for config in new_configs:
+            if config.pk not in old_pks:
+                config.repositories.add(repository)
+
+        removed_pks = old_pks - new_pks
+
+        if removed_pks:
+            for config in ConfiguredBugTracker.objects.filter(
+                    pk__in=removed_pks):
+                config.repositories.remove(repository)
+
+        builtin_config = self._bug_tracker_builtin_config
+
+        if (builtin_config is not None and
+            not self.cleaned_data.get('bug_tracker_use_hosting')):
+            builtin_config.repositories.remove(repository)
 
     def _clean_hosting_info(self):
         """Clean the hosting service information.
@@ -1691,6 +1970,15 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         based on the stored bug tracker settings.
         """
         use_hosting = self.cleaned_data['bug_tracker_use_hosting']
+
+        if self._bug_tracker_widget_bound and not use_hosting:
+            # The bug tracker widget owns this repository's trackers.
+            # The legacy service and custom URL selections are inert
+            # here, so stale values can't re-materialize configurations
+            # the widget detached.
+            self.cleaned_data['bug_tracker_type'] = self.NO_BUG_TRACKER_ID
+            self.cleaned_data['bug_tracker'] = ''
+
         plan = self.cleaned_data['bug_tracker_plan'] or self.DEFAULT_PLAN_ID
         bug_tracker_type = self.cleaned_data['bug_tracker_type']
         bug_tracker_url = ''
@@ -1911,6 +2199,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
                 self._clean_hosting_info()
                 self._clean_bug_tracker_info()
+                self._clean_default_bug_tracker_choice()
 
                 # The clean/validation functions could create new errors, so
                 # skip validating the repository path if everything else isn't
@@ -2297,6 +2586,19 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             self.save_m2m()
 
         return repository
+
+    def _save_m2m(self) -> None:
+        """Save the form's many-to-many data.
+
+        This also saves any bug tracker configurations chosen in the
+        form, once the repository and its relations have been saved.
+
+        Version Added:
+            9.0
+        """
+        super()._save_m2m()
+
+        self._save_bug_tracker_configs()
 
     def _verify_repository_path(self):
         """Verify the repository path to check if it's valid.
