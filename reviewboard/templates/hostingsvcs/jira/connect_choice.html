@@ -1,0 +1,26 @@
+{% load i18n %}
+
+<h1>{% trans "How do you want to connect to JIRA?" %}</h1>
+
+<ul class="rb-c-connect-wizard__options">
+ <li class="rb-c-connect-wizard__option">
+  <a href="{{jira_cloud_connect_url}}" data-connect-page>
+   <h2>{% trans "JIRA Cloud" %}</h2>
+   <p>
+{% blocktrans %}
+    Hosted by Atlassian, at a yourteam.atlassian.net address.
+{% endblocktrans %}
+   </p>
+  </a>
+ </li>
+ <li class="rb-c-connect-wizard__option">
+  <a href="{{jira_dc_connect_url}}" data-connect-page>
+   <h2>{% trans "JIRA Data Center" %}</h2>
+   <p>
+{% blocktrans %}
+    A self-hosted JIRA server, run by your organization.
+{% endblocktrans %}
+   </p>
+  </a>
+ </li>
+</ul>

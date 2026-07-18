@@ -412,6 +412,34 @@ class MaterializeConfigsTests(TestCase):
             .filter(name='JIRA Issues (jira2.example.com)')
             .exists())
 
+    def test_jira_configs(self) -> None:
+        """Testing materialize_configs with legacy JIRA settings"""
+        repository = self.create_repository(extra_data={
+            'bug_tracker_plan': 'default',
+            'bug_tracker_type': 'jira',
+            'bug_tracker_use_hosting': False,
+            'bug_tracker-jira_url': 'https://jira.example.com',
+        })
+
+        materialize_configs()
+
+        repository.refresh_from_db()
+        config = repository.default_bug_tracker
+        assert config is not None
+
+        self.assertEqual(config.service_name, 'jira')
+        self.assertEqual(config.settings['jira_url'],
+                         'https://jira.example.com')
+
+        # Legacy JIRA servers were used anonymously. The configuration
+        # keeps working without a linked account.
+        self.assertIsNone(config.hosting_account)
+        self.assertFalse(config.service.is_bug_tracker_account_required(
+            config.settings))
+        self.assertEqual(
+            config.service.get_bug_url(config=config, bug_id='ENG-1'),
+            'https://jira.example.com/browse/ENG-1')
+
     def test_creates_sentinel(self) -> None:
         """Testing materialize_configs creates the sentinel tracker"""
         materialize_configs()

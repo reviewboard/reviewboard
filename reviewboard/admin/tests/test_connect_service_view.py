@@ -201,6 +201,53 @@ class ConnectServiceViewTests(TestCase):
         self.assertFalse(
             HostingServiceAccount.objects.filter(username='myuser').exists())
 
+    def test_get_with_authenticated_bug_tracker_service(self) -> None:
+        """Testing ConnectServiceView GET with a bug tracker service that
+        connects accounts
+        """
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get(self._get_url('jira'))
+
+        # The deployment choice is offered first. JIRA configurations
+        # require an account, so there is no link to configure one
+        # without linking.
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'?deployment=cloud', response.content)
+        self.assertIn(b'?deployment=dc', response.content)
+        self.assertNotIn(b'/jira/bug-trackers/add/', response.content)
+
+    def test_get_jira_cloud_form(self) -> None:
+        """Testing ConnectServiceView GET with the JIRA Cloud deployment"""
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get(self._get_url('jira'),
+                                   {'deployment': 'cloud'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'jira_cloud_site', response.content)
+        self.assertIn(b'hosting_account_username', response.content)
+        self.assertIn(b'API token', response.content)
+
+        # The server URL field belongs to the Data Center flow.
+        self.assertNotIn(b'name="jira_server_url"', response.content)
+
+    def test_get_jira_dc_form(self) -> None:
+        """Testing ConnectServiceView GET with the JIRA Data Center
+        deployment
+        """
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get(self._get_url('jira'),
+                                   {'deployment': 'dc'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'name="jira_server_url"', response.content)
+        self.assertIn(b'hosting_account_username', response.content)
+
+        # The site name field belongs to the Cloud flow.
+        self.assertNotIn(b'name="jira_cloud_site"', response.content)
+
     def _get_url(
         self,
         service_id: str,
