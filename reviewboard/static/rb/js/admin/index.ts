@@ -28,6 +28,12 @@ export {
     ConnectedServicesView,
 } from './views/connectedServicesView';
 export { LicenseView } from './views/licenseView';
+export {
+    type BugTrackerConfigInfo,
+    type RepositoryBugTrackersViewOptions,
+    type ServiceBugTrackerInfo,
+    RepositoryBugTrackersView,
+} from './views/repositoryBugTrackersView';
 
 
 /* Legacy namespace for RB.Admin. */
@@ -40,11 +46,15 @@ import {
 import {
     ConnectedServicesView,
 } from './views/connectedServicesView';
+import {
+    RepositoryBugTrackersView,
+} from './views/repositoryBugTrackersView';
 
 export const Admin = {
     BugTrackerFormView,
     ConnectServiceWizardView,
     ConnectedServicesView,
     PageView: BaseAdminPageView,
+    RepositoryBugTrackersView,
     connectedServiceMenuActions,
 };
