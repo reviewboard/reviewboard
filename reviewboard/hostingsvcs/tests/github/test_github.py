@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import kgb
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.test.client import RequestFactory
@@ -21,7 +22,10 @@ from reviewboard.hostingsvcs.errors import (
     RepositoryError,
 )
 from reviewboard.hostingsvcs.github.service import GitHub, _is_fine_grained_pat
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+)
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.hostingsvcs.tests.github.base import GitHubTestCase
 from reviewboard.scmtools.core import Branch, Commit
@@ -34,6 +38,11 @@ from reviewboard.scmtools.models import Repository
 if TYPE_CHECKING:
     from typing import Any
 
+    from reviewboard.hostingsvcs.base.client import HostingServiceClient
+    from reviewboard.hostingsvcs.base.http import (
+        HostingServiceHTTPRequest,
+        HostingServiceHTTPResponse,
+    )
     from reviewboard.hostingsvcs.testing.testcases import HttpTestPath
 
 
@@ -321,6 +330,114 @@ class GitHubTests(GitHubTestCase):
                 'github_private_org_repo_name': 'myrepo',
             }),
             'http://github.com/myorg/myrepo/issues#issue/%s')
+
+    def test_search_bugs(self) -> None:
+        """Testing GitHub.search_bugs"""
+        account = self.create_hosting_account()
+        service = account.service
+        assert isinstance(service, GitHub)
+
+        repository = self.create_repository(
+            hosting_account=account,
+            extra_data=dict(self.default_repository_extra_data))
+
+        config = ConfiguredBugTracker.objects.create(
+            name='GitHub Issues',
+            service_name='github',
+            hosting_account=account,
+            apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
+        config.repositories.add(repository)
+
+        payload = self.dump_json({
+            'total_count': 1,
+            'items': [
+                {
+                    'number': 42,
+                    'state': 'open',
+                    'title': 'Crash on startup',
+                },
+            ],
+        })
+
+        requested_urls: list[str] = []
+        paths_handler = self.make_handler_for_paths({
+            '/search/issues': {
+                'payload': payload,
+                'headers': {'Content-Type': 'application/json'},
+            },
+        })
+
+        def handler(
+            client: HostingServiceClient,
+            request: HostingServiceHTTPRequest,
+        ) -> HostingServiceHTTPResponse:
+            requested_urls.append(request.url)
+
+            return paths_handler(client, request)
+
+        with self.setup_http_test(http_request_func=handler,
+                                  expected_http_calls=1):
+            results = service.search_bugs(config=config, query='crash')
+
+        self.assertEqual(results, [
+            {
+                'bug_id': '42',
+                'closed': False,
+                'status': 'open',
+                'summary': 'Crash on startup',
+            },
+        ])
+
+        self.assertEqual(len(requested_urls), 1)
+        self.assertIn('repo%3A', requested_urls[0])
+        self.assertIn('myrepo', requested_urls[0])
+
+    def test_search_bugs_without_repository(self) -> None:
+        """Testing GitHub.search_bugs without a scoped repository"""
+        account = self.create_hosting_account()
+        service = account.service
+        assert isinstance(service, GitHub)
+
+        config = ConfiguredBugTracker.objects.create(
+            name='GitHub Issues',
+            service_name='github',
+            hosting_account=account,
+            apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
+
+        self.assertEqual(service.search_bugs(config=config, query='crash'),
+                         [])
+
+    def test_search_bugs_with_error(self) -> None:
+        """Testing GitHub.search_bugs with an error from the GitHub API"""
+        account = self.create_hosting_account()
+        service = account.service
+        assert isinstance(service, GitHub)
+
+        repository = self.create_repository(
+            hosting_account=account,
+            extra_data=dict(self.default_repository_extra_data))
+
+        config = ConfiguredBugTracker.objects.create(
+            name='GitHub Issues',
+            service_name='github',
+            hosting_account=account,
+            apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
+        config.repositories.add(repository)
+
+        self.spy_on(
+            service.client.search_issues,
+            op=kgb.SpyOpRaise(HostingServiceError('API rate limit exceeded')))
+
+        # Errors are logged, and the search returns no results instead of
+        # failing.
+        with self.assertLogs('reviewboard.hostingsvcs.github.service',
+                             level='WARNING') as logs:
+            results = service.search_bugs(config=config, query='crash')
+
+        self.assertEqual(results, [])
+        self.assertSpyCalledOnce(service.client.search_issues)
+        self.assertEqual(len(logs.output), 1)
+        self.assertIn('API rate limit exceeded', logs.output[0])
 
     def test_get_repository_hook_instructions(self) -> None:
         """Testing GitHub.get_repository_hook_instructions"""

@@ -283,6 +283,28 @@ class PushHookPayload(BaseModel):
     ref: (str | None) = None
 
 
+class SearchedIssue(BaseModel):
+    """Data for an issue in search results.
+
+    Version Added:
+        9.0
+    """
+
+    number: int
+    state: Literal['open', 'closed']
+    title: str
+
+
+class SearchIssuesResponse(BaseModel):
+    """API response for an issue search.
+
+    Version Added:
+        9.0
+    """
+
+    items: list[SearchedIssue]
+
+
 class Repository(BaseModel):
     """API response for a repository.
 
