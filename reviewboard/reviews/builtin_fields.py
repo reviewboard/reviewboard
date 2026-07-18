@@ -31,7 +31,7 @@ from reviewboard.reviews.fields import (BaseCommaEditableField,
 from reviewboard.reviews.models import (Group, ReviewRequest,
                                         ReviewRequestDraft,
                                         Screenshot)
-from reviewboard.reviews.models.bug import sort_bug_ids
+from reviewboard.reviews.models.bug import Bug, sort_bug_ids
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -48,6 +48,7 @@ if TYPE_CHECKING:
     from reviewboard.reviews.fields import ReviewRequestFieldChangeEntrySection
     from reviewboard.reviews.models.base_review_request_details import \
         BaseReviewRequestDetails
+    from reviewboard.reviews.models.bug import BugMetadata
 
     FieldMixinParent = BaseReviewRequestField
 else:
@@ -847,9 +848,8 @@ class TrackedBugsField(BaseCommaEditableField[str]):
     tracker also covers unattributed bugs and unmigrated legacy
     ``bugs_closed`` data.
 
-    Instances are built dynamically by
-    :py:meth:`InformationFieldSet.build_fields` and are not registered
-    field classes.
+    Instances are built dynamically by :py:func:`build_tracked_bugs_fields`
+    and are not registered field classes.
 
     Version Added:
         9.0
@@ -1082,6 +1082,193 @@ class TrackedBugsField(BaseCommaEditableField[str]):
                 'bug_tracker_bug_url',
                 local_site_name=local_site_name,
                 args=[review_request.display_id, tracker.pk, bug_id])
+        except NoReverseMatch:
+            return None
+
+
+class TrackedBugsTableField(TrackedBugsField):
+    """A per-tracker Bugs field rendering a table of bugs.
+
+    This is the detailed display mode for a bug tracker. Instead of a list of
+    links, the bugs render as a table of IDs, summaries, and statuses in the
+    main fields, after Testing Done.
+
+    Summaries and statuses come from the locally-cached metadata on the
+    :py:class:`~reviewboard.reviews.models.bug.Bug` rows. Rendering never
+    contacts the bug tracker. Stale or missing metadata is refreshed by the
+    JavaScript view after the page loads.
+
+    Users failing the tracker's conditions and trackers without metadata
+    support get a table containing only the bug IDs.
+
+    Version Added:
+        9.0
+    """
+
+    js_view_class = 'RB.ReviewRequestFields.TrackedBugsTableFieldView'
+
+    def get_data_attributes(self) -> dict[str, Any]:
+        """Return any data attributes to include in the element.
+
+        Along with the attributes common to bug fields, this provides the URL
+        for fetching bug metadata, and whether any metadata needs to be
+        fetched.
+
+        Returns:
+            dict:
+            The data attributes to include in the element.
+        """
+        attrs = super().get_data_attributes()
+
+        if self._supports_metadata():
+            bug_info_url = self._get_bug_info_url()
+
+            if bug_info_url:
+                attrs['bug-info-url'] = bug_info_url
+
+                if self._stale_bug_ids:
+                    attrs['bug-info-stale'] = '1'
+
+        return attrs
+
+    def render_value(
+        self,
+        value: Sequence[str] | None,
+    ) -> SafeString:
+        """Render the field for the given value.
+
+        Args:
+            value (list of str):
+                The bug IDs to render.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered table.
+        """
+        bug_ids = list(value or [])
+        usable = self.usable and self.tracker is not None
+        show_metadata = self._supports_metadata()
+
+        if show_metadata:
+            metadata = self._bug_metadata
+        else:
+            metadata = {}
+
+        rows: list[dict[str, Any]] = []
+
+        for bug_id in bug_ids:
+            bug_metadata = metadata.get(bug_id, {})
+            bug_url: (str | None) = None
+
+            if usable:
+                bug_url = self._get_local_bug_url(bug_id)
+
+            rows.append({
+                'bug_id': bug_id,
+                'status': bug_metadata.get('status', ''),
+                'summary': bug_metadata.get('summary', ''),
+                'url': bug_url,
+            })
+
+        return render_to_string(
+            template_name='reviews/tracked_bugs_table_field.html',
+            request=self.request,
+            context={
+                'rows': rows,
+                'show_metadata': show_metadata,
+            })
+
+    @cached_property
+    def _cached_bug_info(
+        self,
+    ) -> tuple[Mapping[str, BugMetadata], Sequence[str]]:
+        """The cached bug metadata, and the IDs needing a refresh.
+
+        Only bugs linked to this tracker are looked up. Unattributed and legacy
+        bugs in the default tracker's field are shown by ID alone.
+
+        Type:
+            tuple
+        """
+        tracker = self.tracker
+
+        if tracker is None:
+            return {}, []
+
+        bug_ids = list(self.value or [])
+
+        if self.is_default and bug_ids:
+            # Unattributed and legacy bugs have no row on this tracker,
+            # so their metadata can never be cached. Looking them up
+            # would mark them stale on every page load.
+            bug_ids = list(
+                self.review_request_details.bugs
+                .filter(bug_tracker=tracker,
+                        bug_id__in=bug_ids)
+                .values_list('bug_id', flat=True)
+            )
+
+        return Bug.objects.get_cached_bug_info(
+            bug_tracker=tracker,
+            bug_ids=bug_ids)
+
+    @property
+    def _bug_metadata(self) -> Mapping[str, BugMetadata]:
+        """The locally-cached metadata for the field's bugs.
+
+        Type:
+            dict
+        """
+        return self._cached_bug_info[0]
+
+    @property
+    def _stale_bug_ids(self) -> Sequence[str]:
+        """The IDs of the bugs with missing or stale metadata.
+
+        Type:
+            list of str
+        """
+        return self._cached_bug_info[1]
+
+    def _supports_metadata(self) -> bool:
+        """Return whether summaries and statuses can be shown.
+
+        Returns:
+            bool:
+            ``True`` if the user may use the tracker and the tracker's service
+            can provide metadata.
+        """
+        tracker = self.tracker
+
+        if not self.usable or tracker is None:
+            return False
+
+        service = tracker.service
+        assert isinstance(service, BaseHostingService)
+
+        return service.supports_bug_info
+
+    def _get_bug_info_url(self) -> str | None:
+        """Return the URL for fetching bug metadata on this tracker.
+
+        Returns:
+            str:
+            The URL, or ``None`` if one could not be generated.
+        """
+        tracker = self.tracker
+        assert tracker is not None
+
+        review_request = self.review_request_details.get_review_request()
+        local_site_name: (str | None) = None
+
+        if review_request.local_site:
+            local_site_name = review_request.local_site.name
+
+        try:
+            return local_site_reverse(
+                'bug_tracker_bug_info',
+                local_site_name=local_site_name,
+                args=[review_request.display_id, tracker.pk])
         except NoReverseMatch:
             return None
 
@@ -2160,14 +2347,17 @@ def build_tracked_bugs_fields(
     request:
 
     * One editable field per tracker available to the acting user.
-    * The repository's default bug tracker, even when not otherwise
-      available (read-only if the user fails its conditions).
-    * A read-only field for any tracker with bugs linked to this review
-      request that is not otherwise available, so linked data always
-      renders.
+    * The repository's default bug tracker, even when not otherwise available
+      (read-only if the user fails its conditions).
+    * A read-only field for any tracker with bugs linked to this review request
+      that is not otherwise available, so linked data always renders.
 
-    The fields are returned in display order, with the default tracker
-    first.
+    The class of each field depends on the tracker's display mode. The fields
+    are returned in display order, with the default tracker first.
+
+    Several fieldsets need these fields while rendering one page. The result
+    is cached on ``request`` when one is provided, so the bug trackers are
+    only looked up once.
 
     Version Added:
         9.0
@@ -2180,6 +2370,71 @@ def build_tracked_bugs_fields(
 
         request (django.http.HttpRequest, optional):
             The HTTP request from the client.
+
+    Returns:
+        tuple:
+        A 2-tuple of:
+
+        Tuple:
+            0 (list of TrackedBugsField):
+                The fields, in display order.
+
+            1 (bool):
+                Whether the review request's repository has a default
+                bug tracker. Without one, unattributed bugs have no
+                field of their own.
+    """
+    cache: (
+        dict[BaseReviewRequestDetails,
+             tuple[Sequence[TrackedBugsField], bool]] | None
+    ) = None
+
+    # Model instances compare by class and primary key, so a review
+    # request and its draft are cached separately.
+    if request is not None and review_request_details.pk is not None:
+        try:
+            cache = request._tracked_bugs_fields_cache  # type:ignore
+        except AttributeError:
+            cache = {}
+            request._tracked_bugs_fields_cache = cache  # type:ignore
+
+        assert cache is not None
+
+        try:
+            return cache[review_request_details]
+        except KeyError:
+            pass
+
+    result = _build_tracked_bugs_fields(review_request_details,
+                                        request=request)
+
+    if cache is not None:
+        cache[review_request_details] = result
+
+    return result
+
+
+def _build_tracked_bugs_fields(
+    review_request_details: BaseReviewRequestDetails,
+    *,
+    request: HttpRequest | None,
+) -> tuple[Sequence[TrackedBugsField], bool]:
+    """Build the per-tracker bug fields for a review request or draft.
+
+    This is the base implementation for :py:func:`build_tracked_bugs_fields`,
+    without any caching.
+
+    Version Added:
+        9.0
+
+    Args:
+        review_request_details (reviewboard.reviews.models.
+                                base_review_request_details.
+                                BaseReviewRequestDetails):
+            The review request or draft.
+
+        request (django.http.HttpRequest):
+            The HTTP request from the client, if any.
 
     Returns:
         tuple:
@@ -2255,7 +2510,12 @@ def build_tracked_bugs_fields(
         editable = (usable and
                     (tracker.pk in available_pks or is_default))
 
-        fields.append(TrackedBugsField(
+        if tracker.display_mode == ConfiguredBugTracker.DISPLAY_MODE_DETAILED:
+            field_cls: type[TrackedBugsField] = TrackedBugsTableField
+        else:
+            field_cls = TrackedBugsField
+
+        fields.append(field_cls(
             review_request_details,
             request=request,
             tracker=tracker,
@@ -2273,6 +2533,33 @@ class MainFieldSet(BaseReviewRequestFieldSet):
         DescriptionField,
         TestingDoneField,
     ]
+
+    def build_fields(self) -> Sequence[BaseReviewRequestField]:
+        """Return new fields for use in this fieldset instance.
+
+        Bug trackers shown in detailed mode render their bugs as a table
+        after the main fields, rather than in the Information fieldset.
+
+        Version Added:
+            9.0
+
+        Returns:
+            list of BaseReviewRequestField:
+            The list of new field instances.
+        """
+        fields = super().build_fields()
+
+        tracker_fields, _has_default_tracker = build_tracked_bugs_fields(
+            self.review_request_details,
+            request=self.request)
+
+        detailed_fields = [
+            field
+            for field in tracker_fields
+            if isinstance(field, TrackedBugsTableField)
+        ]
+
+        return [*fields, *detailed_fields]
 
 
 class ExtraFieldSet(BaseReviewRequestFieldSet):
@@ -2301,12 +2588,13 @@ class InformationFieldSet(BaseReviewRequestFieldSet):
     def build_fields(self) -> Sequence[BaseReviewRequestField]:
         """Return new fields for use in this fieldset instance.
 
-        When bug trackers apply to the review request, the static Bugs
-        field is replaced with one :py:class:`TrackedBugsField` per
-        tracker, as built by :py:func:`build_tracked_bugs_fields`.
+        When bug trackers apply to the review request, the static Bugs field
+        is replaced with one :py:class:`TrackedBugsField` per tracker shown in
+        compact mode. Trackers shown in detailed mode are built by
+        :py:meth:`MainFieldSet.build_fields` instead.
 
-        Unattributed bugs render in the default tracker's field. Without
-        a default tracker, the legacy Bugs field is kept for them.
+        Unattributed bugs render in the default tracker's field. Without a
+        default tracker, the legacy Bugs field is kept for them.
 
         Version Added:
             9.0
@@ -2324,6 +2612,12 @@ class InformationFieldSet(BaseReviewRequestFieldSet):
         if not tracker_fields:
             return fields
 
+        compact_fields = [
+            field
+            for field in tracker_fields
+            if not isinstance(field, TrackedBugsTableField)
+        ]
+
         result: list[BaseReviewRequestField] = []
         replaced = False
 
@@ -2334,13 +2628,13 @@ class InformationFieldSet(BaseReviewRequestFieldSet):
                     # legacy bugs.
                     result.append(field)
 
-                result += tracker_fields
+                result += compact_fields
                 replaced = True
             else:
                 result.append(field)
 
         if not replaced:
-            result += tracker_fields
+            result += compact_fields
 
         return result
 

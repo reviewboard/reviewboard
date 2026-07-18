@@ -1,0 +1,199 @@
+@import (reference) "rb/css/defs.less";
+
+
+/**
+ * A table of bugs on a bug tracker.
+ *
+ * This is the detailed display mode for a bug tracker, showing each bug's
+ * ID, summary, and status. It's also used within the field's editor, where
+ * each row can be removed.
+ *
+ * This is meant to be mixed in with ``.rb-c-review-request-field-tabular``.
+ *
+ * Version Added:
+ *     9.0
+ *
+ * Structure:
+ *     <div class="rb-c-review-request-field-tabular rb-c-bug-list">
+ *      <table class="rb-c-review-request-field-tabular__data">
+ *       <thead>
+ *        <tr>
+ *         <th class="rb-c-bug-list__column-id">Bug</th>
+ *         <th class="rb-c-bug-list__column-summary">Summary</th>
+ *         <th class="rb-c-bug-list__column-status">Status</th>
+ *        </tr>
+ *       </thead>
+ *       <tbody>
+ *        <tr class="rb-c-bug-list__bug">...</tr>
+ *        ...
+ *       </tbody>
+ *      </table>
+ *     </div>
+ */
+.rb-c-bug-list {
+  /*
+   * Stand in for the border below the editor's search field. The editor's
+   * table has no header, so this only applies to the displayed table.
+   */
+  thead th {
+    border-bottom: var(--ink-u-border-thin) transparent solid;
+  }
+
+  /**
+   * The remove button shown for a bug while editing.
+   *
+   * This is nested so that it overrides the tabular field's cell padding
+   * and alignment.
+   *
+   * Structure:
+   *     <td class="rb-c-bug-list__actions">...</td>
+   */
+  .rb-c-bug-list &__actions {
+    text-align: right;
+    padding: 0 var(--ink-u-spacing-s);
+    vertical-align: middle;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  /**
+   * A bug in the list.
+   *
+   * Rows containing a link open the bug when clicked anywhere.
+   *
+   * Structure:
+   *     <tr class="rb-c-bug-list__bug" data-bug-id="...">...</tr>
+   */
+  &__bug:has(a.bug) {
+    cursor: pointer;
+
+    &:hover {
+      background: var(--ink-p-container-hover-bg);
+    }
+  }
+
+  /**
+   * The message shown when no bugs have been added.
+   *
+   * Structure:
+   *     <tr class="rb-c-bug-list__empty"><td>...</td></tr>
+   */
+  &__empty {
+    color: var(--ink-p-fg-weak);
+    font-style: italic;
+  }
+
+  /**
+   * The ID of a bug.
+   *
+   * Structure:
+   *     <td class="rb-c-bug-list__id">...</td>
+   */
+  &__id,
+  &__column-id {
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  /**
+   * The button removing a bug while editing.
+   *
+   * Structure:
+   *     <button class="rb-c-bug-list__remove">...</button>
+   */
+  &__remove {
+    background: transparent;
+    border: 0;
+    border-radius: var(--ink-u-border-radius-std);
+    color: var(--ink-p-fg-weak);
+    cursor: pointer;
+    display: grid;
+    padding: var(--ink-u-spacing-xs);
+    place-items: center;
+
+    &:hover {
+      background: var(--ink-p-container-hover-bg);
+      color: var(--ink-p-fg);
+    }
+
+    .ink-i-close {
+      height: var(--ink-u-icon-sm);
+      width: var(--ink-u-icon-sm);
+    }
+  }
+
+  /**
+   * The status of a bug.
+   *
+   * Structure:
+   *     <td class="rb-c-bug-list__status">...</td>
+   */
+  &__status,
+  &__column-status {
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  /**
+   * The summary of a bug.
+   *
+   * Structure:
+   *     <td class="rb-c-bug-list__summary">...</td>
+   */
+  &__summary {
+    /* Long words, like URLs, wrap rather than widening the table. */
+    overflow-wrap: anywhere;
+  }
+}
+
+
+/**
+ * The editor for a table of bugs.
+ *
+ * This joins the bug search field to the table of selected bugs below it.
+ *
+ * Version Added:
+ *     9.0
+ *
+ * Structure:
+ *     <div class="rb-c-bug-list-editor">
+ *      <div class="ink-c-combo-box">...</div>
+ *      <div class="rb-c-review-request-field-tabular rb-c-bug-list">...</div>
+ *     </div>
+ */
+.rb-c-bug-list-editor {
+  background: var(--ink-c-data-table-body-bg);
+  border: var(--ink-c-data-table-border);
+  border-radius: var(--ink-u-border-radius-s);
+  color: var(--ink-c-data-table-body-fg);
+  margin: var(--rb-c-textarea-margin);
+
+  .ink-c-text-field {
+    border-bottom: var(--ink-u-border-thin) var(--ink-c-data-table-border-color) solid;
+    border-radius: var(--ink-u-border-radius-s-inner) var(--ink-u-border-radius-s-inner) 0 0;
+  }
+
+  /*
+   * With no bugs selected, the table is empty and the search field sits on
+   * the editor's own bottom border. Drop the separator so the border isn't
+   * doubled.
+   */
+  &:has(tbody:empty) .ink-c-text-field {
+    border-bottom: 0;
+    border-radius: var(--ink-u-border-radius-s-inner);
+  }
+
+  .ink-c-text-field__icon {
+    height: var(--ink-u-icon-sm);
+    width: var(--ink-u-icon-sm);
+  }
+
+  .rb-c-review-request-field-tabular {
+    margin: 0;
+
+    &__data {
+      border: 0;
+      border-radius: 0 0 var(--ink-u-border-radius-s-inner) var(--ink-u-border-radius-s-inner);
+    }
+  }
+}
