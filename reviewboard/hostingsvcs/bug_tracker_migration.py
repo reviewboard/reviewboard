@@ -279,7 +279,8 @@ def _generate_name(
 
     Returns:
         str:
-        The generated name, unique within the Local Site.
+        The generated name. This is unique within the Local Site, except
+        for in-repo trackers.
     """
     service_cls = hosting_service_registry.get_hosting_service(service_name)
 
@@ -289,7 +290,15 @@ def _generate_name(
         base_name = service_name
 
     if tracker_case == BugTrackerCase.IN_REPO:
-        base_name = f'{base_name} ({repository.name})'
+        # In-repo trackers are named after the service's product (for
+        # example, "GitHub Issues"), since the name is the field label on
+        # review requests. Each repository has its own configuration, so
+        # these names repeat. That's fine, since they're managed from the
+        # repository and aren't listed in Connected Services.
+        if service_cls is not None:
+            return str(service_cls.get_bug_tracker_name())
+
+        return base_name
     else:
         tracker_settings = get_settings_for_repository(repository,
                                                        tracker_case)

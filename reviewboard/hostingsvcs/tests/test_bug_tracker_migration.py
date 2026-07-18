@@ -212,6 +212,9 @@ class MaterializeConfigsTests(TestCase):
             self.assertEqual(config.hosting_account_id, account.pk)
             self.assertEqual(config.repositories.count(), 1)
 
+            # In-repo trackers share the product name, with no suffix.
+            self.assertEqual(config.name, 'GitHub Issues')
+
     @ignore_legacy_url_deprecation
     def test_custom_url_configs(self) -> None:
         """Testing materialize_configs with custom URLs"""

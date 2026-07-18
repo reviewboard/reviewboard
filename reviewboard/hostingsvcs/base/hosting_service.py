@@ -19,6 +19,7 @@ from housekeeping import deprecate_non_keyword_only_args
 from typing_extensions import TypedDict, TypeVar
 
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.connect_ui import BaseHostingServiceConnectUI
 
@@ -1206,6 +1207,29 @@ class BaseHostingService(Generic[THostingServiceClient]):
                     'field': bug_tracker_field,
                     'key': e,
                 })
+
+    @classmethod
+    def get_bug_tracker_name(cls) -> StrOrPromise:
+        """Return the display name of the service's own bug tracker.
+
+        This is the service's ``bug_tracker_label`` (for example,
+        "GitHub Issues") when it sets its own. Otherwise, it's a generic
+        name based on the service.
+
+        Version Added:
+            9.0
+
+        Returns:
+            str:
+            The bug tracker's display name.
+        """
+        label = getattr(cls, 'bug_tracker_label', None)
+
+        # The inherited default label ("Bugs") doesn't name the tracker.
+        if label is not None and label is not BaseBugTracker.bug_tracker_label:
+            return label
+
+        return (_('%s bug tracker') % cls.name)
 
     @classmethod
     def get_field(

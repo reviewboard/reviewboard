@@ -260,6 +260,7 @@ class GitLab(BaseHostingService):
     name = 'GitLab'
 
     auth_form = GitLabAuthForm
+    bug_tracker_label = _('GitLab Issues')
     # TODO: This service currently doesn't implement BaseBugTracker, but once
     # it does, uncomment this:
     # bugs_in_repo = True
