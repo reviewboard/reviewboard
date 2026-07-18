@@ -578,10 +578,7 @@ class HostingServiceHTTPRequest:
             else:
                 context = None
 
-            parsed_url = urlparse(url)
             urlopen_handlers.append(CertificateVerificationHTTPSHandler(
-                hostname=parsed_url.hostname,
-                port=parsed_url.port,
                 context=context,
                 local_site=hosting_account.local_site,
             ))
