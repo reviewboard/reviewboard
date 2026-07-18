@@ -1,6 +1,9 @@
+"""Models for review requests and reviews."""
+
 from __future__ import annotations
 
 from reviewboard.reviews.models.base_comment import BaseComment
+from reviewboard.reviews.models.bug import Bug
 from reviewboard.reviews.models.default_reviewer import DefaultReviewer
 from reviewboard.reviews.models.diff_comment import Comment
 from reviewboard.reviews.models.file_attachment_comment import \
@@ -17,6 +20,7 @@ from reviewboard.reviews.models.status_update import StatusUpdate
 
 __all__ = [
     'BaseComment',
+    'Bug',
     'Comment',
     'DefaultReviewer',
     'FileAttachmentComment',

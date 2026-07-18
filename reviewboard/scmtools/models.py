@@ -6,7 +6,7 @@ import logging
 import uuid
 from importlib import import_module
 from time import time
-from typing import Any, ClassVar, Final, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 from urllib.parse import quote
 
 from django.contrib.auth.models import User
@@ -25,7 +25,10 @@ from housekeeping import deprecate_non_keyword_only_args
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+)
 from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -38,6 +41,7 @@ from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+    from typing import Any, ClassVar, Final
 
     from django.contrib.auth.models import AnonymousUser
     from django.http import HttpRequest
@@ -228,6 +232,23 @@ class Repository(models.Model):
         blank=True,
         help_text=_("This should be the full path to a bug in the bug tracker "
                     "for this repository, using '%s' in place of the bug ID."))
+
+    #: The bug tracker that bare bug IDs on this repository belong to.
+    #:
+    #: This is used by the legacy ``bugs_closed`` field and by bug
+    #: references in text fields. It does not control which bug trackers
+    #: are available. That is determined by each tracker's scoping.
+    #:
+    #: Version Added:
+    #:     9.0
+    default_bug_tracker = models.ForeignKey(
+        ConfiguredBugTracker,
+        on_delete=models.PROTECT,
+        related_name='+',
+        verbose_name=_('Default bug tracker'),
+        blank=True,
+        null=True)
+
     encoding = models.CharField(
         max_length=32,
         blank=True,

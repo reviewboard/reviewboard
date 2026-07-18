@@ -121,6 +121,11 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                                         verbose_name=_('Dependencies'),
                                         related_name='draft_blocks')
 
+    bugs = models.ManyToManyField('reviews.Bug',
+                                  blank=True,
+                                  verbose_name=_('Bugs'),
+                                  related_name='drafts')
+
     screenshots_count = RelationCounterField(
         'screenshots',
         verbose_name=_('screenshots count'))
