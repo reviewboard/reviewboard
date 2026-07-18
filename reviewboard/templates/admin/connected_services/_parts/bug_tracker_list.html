@@ -1,0 +1,30 @@
+{% load i18n %}
+{% if bug_trackers %}
+<ul class="rb-c-admin-cs-service-items__results">
+{%  for bug_tracker in bug_trackers %}
+ <li class="rb-c-admin-cs-service-items__item">
+  <a class="rb-c-admin-cs-service-items__item__name"
+     href="{% url "admin:hostingsvcs_configuredbugtracker_change" bug_tracker.id %}">
+   {{bug_tracker.name}}
+  </a>
+{%  if not bug_tracker.enabled %}
+  <span class="rb-c-admin-cs-service-items__item__path">
+   {% trans "(disabled)" %}
+  </span>
+{%  endif %}
+  <span class="rb-c-admin-cs-service-items__item__extra">
+{%  if bug_tracker.user_conditions.conditions %}
+   <span class="ink-c-badge" data-type="warning">
+    <span class="ink-c-badge__icon rb-icon-lock" aria-hidden="true"></span>
+    <span class="ink-c-badge__label">{% trans "Private" %}</span>
+   </span>
+{%  endif %}
+  </span>
+ </li>
+{%  endfor %}
+</ul>
+{% else %}
+<p class="rb-c-admin-cs-service-items__results__empty">
+ {% trans "No bug trackers match your filter." %}
+</p>
+{% endif %}

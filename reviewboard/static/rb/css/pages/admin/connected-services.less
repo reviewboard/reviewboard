@@ -483,6 +483,14 @@
   flex-direction: column;
   overflow: clip;
 
+  /*
+   * When this leads the card body (such as a service with no visible
+   * accounts), the card header's bottom border already separates it.
+   */
+  &:first-child {
+    border-top: 0;
+  }
+
   /**
    * The disclosure triangle.
    *

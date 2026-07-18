@@ -61,6 +61,9 @@ urlpatterns = [
         path('<str:service_id>/repositories/',
              views.ConnectedServiceRepositoriesView.as_view(),
              name='connected-services-repositories'),
+        path('<str:service_id>/bug-trackers/',
+             views.ConnectedServiceBugTrackersView.as_view(),
+             name='connected-services-bug-trackers'),
     ])),
 
     path('db/', admin_site.urls),

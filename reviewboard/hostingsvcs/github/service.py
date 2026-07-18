@@ -282,6 +282,7 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
         request: HttpRequest,
         *,
         accounts: Sequence[HostingServiceAccount],
+        bug_tracker_count: int = 0,
     ) -> dict[str, Any]:
         """Return template context for rendering the accounts list entry.
 
@@ -292,6 +293,10 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
             accounts (list of
                       reviewboard.hostingsvcs.models.HostingServiceAccount):
                 The connected hosting service accounts.
+
+            bug_tracker_count (int, optional):
+                The number of bug tracker configurations for this hosting
+                service.
 
         Returns:
             dict:
@@ -337,7 +342,8 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
 
         context = super().make_connected_services_list_entry_context(
             request,
-            accounts=accounts)
+            accounts=accounts,
+            bug_tracker_count=bug_tracker_count)
 
         # Flag each account entry as either a GitHub App installation or a
         # Personal Access Token, so the template can group them, and build a
