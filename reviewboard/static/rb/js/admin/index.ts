@@ -17,6 +17,7 @@ export {
     connectedServiceMenuActions,
 } from './connectedServiceMenuActions';
 export { BaseAdminPageView } from './views/baseAdminPageView';
+export { BugTrackerFormView } from './views/bugTrackerFormView';
 export {
     type ConnectServiceInfo,
     type ConnectServiceWizardViewOptions,
@@ -32,6 +33,7 @@ export { LicenseView } from './views/licenseView';
 /* Legacy namespace for RB.Admin. */
 import { connectedServiceMenuActions } from './connectedServiceMenuActions';
 import { BaseAdminPageView } from './views/baseAdminPageView';
+import { BugTrackerFormView } from './views/bugTrackerFormView';
 import {
     ConnectServiceWizardView,
 } from './views/connectServiceWizardView';
@@ -40,6 +42,7 @@ import {
 } from './views/connectedServicesView';
 
 export const Admin = {
+    BugTrackerFormView,
     ConnectServiceWizardView,
     ConnectedServicesView,
     PageView: BaseAdminPageView,

@@ -404,6 +404,23 @@ class BaseHostingService(Generic[THostingServiceClient]):
         type[BaseBugTrackerConfigForm] | None
     ] = None
 
+    #: Whether bug tracker configurations require a linked account.
+    #:
+    #: When set, a configuration cannot be saved without a hosting
+    #: service account, and the connect flow does not offer creating a
+    #: configuration without one.
+    #:
+    #: When checking if a configuration requires an account, use
+    #: :py:meth:`is_bug_tracker_account_required` instead of accessing this
+    #: property directly.
+    #:
+    #: Version Added:
+    #:     9.0
+    #:
+    #: Type:
+    #:     bool
+    bug_tracker_requires_account: ClassVar[bool] = False
+
     #: Templated values to set for model repository fields.
     #:
     #: Each key corresponds to a SCMTool ID or name, and each value to a
@@ -522,6 +539,31 @@ class BaseHostingService(Generic[THostingServiceClient]):
             9.0
         """
         return cls._logo_image
+
+    @classmethod
+    def is_bug_tracker_account_required(
+        cls,
+        settings: dict[str, Any],
+    ) -> bool:
+        """Return whether a bug tracker configuration needs an account.
+
+        By default this returns
+        :py:attr:`bug_tracker_requires_account`. Services can override
+        this to exempt configurations that carry their own connection
+        settings, such as migrated legacy configurations.
+
+        Version Added:
+            9.0
+
+        Args:
+            settings (dict):
+                The configuration's settings.
+
+        Returns:
+            bool:
+            ``True`` if the configuration requires a linked account.
+        """
+        return cls.bug_tracker_requires_account
 
     def is_authorized(self) -> bool:
         """Return whether or not the account is currently authorized.

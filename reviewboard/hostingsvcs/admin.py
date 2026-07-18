@@ -5,9 +5,16 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
+from django.utils.translation import gettext_lazy as _
+
 from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.hostingsvcs.base import hosting_service_registry
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.bug_tracker_forms import BugTrackerForm
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+    SENTINEL_BUG_TRACKER_SERVICE_NAME,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -101,4 +108,67 @@ class HostingServiceAccountAdmin(ModelAdmin):
         )
 
 
+class ConfiguredBugTrackerAdmin(ModelAdmin):
+    """Administration for bug tracker configurations.
+
+    Version Added:
+        9.0
+    """
+
+    form = BugTrackerForm
+    list_display = ('name', 'service_name', 'enabled', 'local_site')
+    raw_id_fields = ('hosting_account', 'local_site')
+    fieldset_template_name = \
+        'admin/hostingsvcs/configuredbugtracker/_fieldset.html'
+    fieldsets = (
+        (None, {
+            'fields': (
+                'name',
+                'service_name',
+                'hosting_account',
+                'enabled',
+                'display_mode',
+                'apply_to',
+                'repositories',
+            ),
+            'classes': ('wide',),
+        }),
+        (_('Access control'), {
+            'fields': (
+                'accessible_to_everyone',
+                'user_conditions',
+            ),
+            'classes': ('wide',),
+        }),
+        (_('Internal State'), {
+            'description': _('<p>This is advanced state that should not be '
+                             'modified unless something is wrong.</p>'),
+            'fields': ('local_site', 'extra_data'),
+            'classes': ('collapse',),
+        }),
+    )
+
+    def get_queryset(
+        self,
+        request: HttpRequest,
+    ) -> QuerySet[ConfiguredBugTracker]:
+        """Return the queryset for the change list.
+
+        The sentinel bug tracker for unattributed bugs is never listed.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The queryset of bug trackers.
+        """
+        return (
+            super().get_queryset(request)
+            .exclude(service_name=SENTINEL_BUG_TRACKER_SERVICE_NAME)
+        )
+
+
+admin_site.register(ConfiguredBugTracker, ConfiguredBugTrackerAdmin)
 admin_site.register(HostingServiceAccount, HostingServiceAccountAdmin)

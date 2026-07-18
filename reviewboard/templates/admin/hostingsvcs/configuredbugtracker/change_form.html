@@ -1,0 +1,21 @@
+{% extends "admin/change_form.html" %}
+{% load pipeline %}
+
+{# The user conditions field needs the conditions widget's media. #}
+{% block scripts-post %}
+{{block.super}}
+{%  javascript 'djblets-forms' %}
+
+<script>
+$(document).ready(function() {
+    new RB.Admin.BugTrackerFormView({
+        el: document.getElementById('configuredbugtracker_form'),
+    }).render();
+});
+</script>
+{% endblock %}
+
+{% block extrastyle %}
+{{block.super}}
+{%  stylesheet 'djblets-forms' %}
+{% endblock %}
