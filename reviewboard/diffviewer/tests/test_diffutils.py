@@ -2958,6 +2958,75 @@ class GetDisplayedDiffLineRangesTests(TestCase):
                 'chunk_range': (chunks[0], chunks[0]),
             }, None))
 
+    def test_with_filtered_equal_ending_without_patched(self) -> None:
+        """Testing get_displayed_diff_line_ranges with filtered equal chunk
+        ending without patched line numbers
+        """
+        # Interdiffs can filter out opcodes, merging them into equal chunks
+        # where one side has fewer lines than the other. Here, the patched
+        # side runs out before the end of the chunk.
+        chunks = [
+            {
+                'change': 'equal',
+                'lines': [
+                    (10, 20, 'equal line', [], 30, 'equal line', [], False),
+                    (11, 21, 'equal line', [], 31, 'equal line', [], False),
+                    (12, 22, 'equal line', [], 32, 'equal line', [], False),
+                    (13, 23, 'equal line', [], 33, 'equal line', [], False),
+                    (14, 24, 'equal line', [], 34, 'equal line', [], False),
+                    (15, 25, 'equal line', [], '', '', [], False),
+                    (16, 26, 'equal line', [], '', '', [], False),
+                    (17, 27, 'equal line', [], '', '', [], False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 11, 20),
+            ({
+                'display_range': (21, 27),
+                'virtual_range': (11, 17),
+                'chunk_range': (chunks[0], chunks[0]),
+            }, {
+                'display_range': (31, 34),
+                'virtual_range': (11, 17),
+                'chunk_range': (chunks[0], chunks[0]),
+            }))
+
+    def test_with_filtered_equal_ending_without_orig(self) -> None:
+        """Testing get_displayed_diff_line_ranges with filtered equal chunk
+        ending without original line numbers
+        """
+        # This is the same as the above, but with the original side running
+        # out before the end of the chunk.
+        chunks = [
+            {
+                'change': 'equal',
+                'lines': [
+                    (10, 20, 'equal line', [], 30, 'equal line', [], False),
+                    (11, 21, 'equal line', [], 31, 'equal line', [], False),
+                    (12, 22, 'equal line', [], 32, 'equal line', [], False),
+                    (13, 23, 'equal line', [], 33, 'equal line', [], False),
+                    (14, 24, 'equal line', [], 34, 'equal line', [], False),
+                    (15, '', '', [], 35, 'equal line', [], False),
+                    (16, '', '', [], 36, 'equal line', [], False),
+                    (17, '', '', [], 37, 'equal line', [], False),
+                ],
+            },
+        ]
+
+        self.assertEqual(
+            get_displayed_diff_line_ranges(chunks, 11, 20),
+            ({
+                'display_range': (21, 24),
+                'virtual_range': (11, 17),
+                'chunk_range': (chunks[0], chunks[0]),
+            }, {
+                'display_range': (31, 37),
+                'virtual_range': (11, 17),
+                'chunk_range': (chunks[0], chunks[0]),
+            }))
+
     def test_with_spanning_insert_delete(self):
         """Testing get_displayed_diff_line_ranges with spanning delete and
         insert

@@ -184,3 +184,75 @@ class DiffRendererTests(SpyAgency, TestCase):
 
         chunk = diff_file['chunks'][0]
         self.assertEqual(chunk['change'], 'replace')
+
+    def test_make_context_with_filtered_interdiff_lines(self) -> None:
+        """Testing DiffRenderer.make_context with lines_of_context and
+        filtered interdiff lines
+        """
+        # Interdiffs can filter out opcodes, resulting in equal chunks where
+        # the two sides have different numbers of lines. The lines at the end
+        # of such a chunk have an empty line number on one side.
+        meta = {
+            'left_headers': [
+                (1, 'def foo():'),
+                (20, 'def bar():'),
+            ],
+            'right_headers': [
+                (1, 'def foo():'),
+                (5, 'def bar():'),
+                (15, 'def baz():'),
+            ],
+        }
+
+        lines = [
+            [i, i, '', [], i, '', [], False]
+            for i in range(1, 9)
+        ]
+        lines += [
+            [i, i, '', [], '', '', [], False]
+            for i in range(9, 11)
+        ]
+
+        diff_file = {
+            'newfile': False,
+            'interfilediff': None,
+            'filediff': FileDiff(),
+            'force_interdiff': True,
+            'chunks': [
+                {
+                    'lines': [],
+                    'meta': {},
+                    'change': 'replace',
+                },
+                {
+                    'lines': lines,
+                    'meta': meta,
+                    'change': 'equal',
+                },
+                {
+                    'lines': [],
+                    'meta': {},
+                    'change': 'replace',
+                },
+            ],
+        }
+
+        renderer = DiffRenderer(diff_file,
+                                chunk_index=1,
+                                lines_of_context=[2, 0],
+                                diff_settings=DiffSettings.create())
+
+        # This is normally set in render_to_string_uncached().
+        renderer.num_chunks = len(diff_file['chunks'])
+
+        renderer.make_context()
+
+        # The last line with a right-hand line number is line 8, so only the
+        # header at line 15 must be filtered out.
+        self.assertEqual(meta['left_headers'], [(1, 'def foo():')])
+        self.assertEqual(
+            meta['right_headers'],
+            [
+                (1, 'def foo():'),
+                (5, 'def bar():'),
+            ])

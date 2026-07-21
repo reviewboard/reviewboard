@@ -1866,33 +1866,58 @@ def get_last_line_number_in_diff(
     return last_line[0]
 
 
+def find_last_line_numbers(
+    lines: Sequence[Sequence[Any]],
+) -> tuple[int | None, int | None]:
+    """Return the last line numbers on each side of a list of diff lines.
+
+    The last line numbers are not always contained in the last element of the
+    ``lines`` list. Interdiffs can filter out opcodes, which merges lines into
+    equal chunks where one side has fewer lines than the other. The lines at
+    the end of such a chunk have an empty line number on the shorter side.
+
+    See :py:func:`get_chunks_in_range` for a description of what is contained
+    in each element of ``lines``.
+
+    Version Added:
+        8.1:
+        Moved from being an inner function in
+        :py:func:`_get_last_header_in_chunks_before_line` to its own top-level
+        function.
+
+    Args:
+        lines (list of list):
+            The list of diff lines to search.
+
+    Returns:
+        tuple:
+        A 2-tuple of:
+
+        Tuple:
+            0 (int or None):
+                The last line number on the original side.
+
+            1 (int or None):
+                The last line number on the modified side.
+    """
+    last_left: (int | None) = None
+    last_right: (int | None) = None
+
+    for line in reversed(lines):
+        if not last_right and line[4]:
+            last_right = line[4]
+
+        if not last_left and line[1]:
+            last_left = line[1]
+
+        if last_left and last_right:
+            break
+
+    return last_left, last_right
+
+
 def _get_last_header_in_chunks_before_line(chunks, target_line):
     """Find the last header in the list of chunks before the target line."""
-    def find_last_line_numbers(lines):
-        """Return a tuple of the last line numbers in the given list of lines.
-
-        The last line numbers are not always contained in the last element of
-        the ``lines`` list. This is the case when dealing with interdiffs that
-        have filtered out opcodes.
-
-        See :py:func:`get_chunks_in_range` for a description of what is
-        contained in each element of ``lines``.
-        """
-        last_left = None
-        last_right = None
-
-        for line in reversed(lines):
-            if not last_right and line[4]:
-                last_right = line[4]
-
-            if not last_left and line[1]:
-                last_left = line[1]
-
-            if last_left and last_right:
-                break
-
-        return last_left, last_right
-
     def find_header(headers, offset, last_line):
         """Return the last header that occurs before a line.
 
@@ -2481,7 +2506,13 @@ def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):
         last_line = lines[-1]
         offset = last_vlinenum - first_line[0]
 
-        orig_end_linenum = min(last_line[1], first_line[1] + offset)
+        # Interdiffs that have filtered out opcodes can leave the last line
+        # of the chunk without a line number on this side, so find the last
+        # line that has one.
+        last_orig_linenum = find_last_line_numbers(lines)[0]
+        assert last_orig_linenum is not None
+
+        orig_end_linenum = min(last_orig_linenum, first_line[1] + offset)
         orig_end_vlinenum = min(last_line[0], first_line[0] + offset)
 
         assert orig_end_linenum >= orig_start_linenum
@@ -2501,7 +2532,14 @@ def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):
         last_line = lines[-1]
         offset = last_vlinenum - first_line[0]
 
-        patched_end_linenum = min(last_line[4], first_line[4] + offset)
+        # Interdiffs that have filtered out opcodes can leave the last line
+        # of the chunk without a line number on this side, so find the last
+        # line that has one.
+        last_patched_linenum = find_last_line_numbers(lines)[1]
+        assert last_patched_linenum is not None
+
+        patched_end_linenum = min(last_patched_linenum,
+                                  first_line[4] + offset)
         patched_end_vlinenum = min(last_line[0], first_line[0] + offset)
 
         assert patched_end_linenum >= patched_start_linenum
