@@ -183,7 +183,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @webapi_test_template
     def test_post_with_invalid_group(self):
         """Testing the POST <URL> API with invalid group"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         repository = self.create_repository()
 
@@ -197,7 +197,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @webapi_test_template
     def test_post_with_non_invite_only_group(self):
         """Testing the POST <URL> API with a group that is not invite only"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         repository = self.create_repository()
         group = self.create_review_group(invite_only=False)
@@ -213,7 +213,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @webapi_test_template
     def test_post_with_site(self):
         """Testing the POST <URL> API with a local site"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         repository = self.create_repository(with_local_site=True)
         group = self.create_review_group(with_local_site=True,
@@ -235,7 +235,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the POST <URL> API with a local site and a group that is not
         in that site
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         repository = self.create_repository(with_local_site=True)
         group = self.create_review_group(with_local_site=False,
@@ -388,7 +388,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @webapi_test_template
     def test_get_delete_link(self):
         """Testing the GET <URL> API contains the correct DELETE link"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         repository = self.create_repository()
         group = self.create_review_group(invite_only=True)
@@ -412,7 +412,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the GET <URL> API contains the correct DELETE link with a
         local site
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         repository = self.create_repository(with_local_site=True)
         group = self.create_review_group(with_local_site=True,

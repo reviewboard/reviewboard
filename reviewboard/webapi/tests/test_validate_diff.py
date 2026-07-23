@@ -57,7 +57,7 @@ class ResourceTests(kgb.SpyAgency, SSLTestsMixin, BaseWebAPITestCase,
     @add_fixtures(['test_site'])
     def test_get_with_site(self):
         """Testing the GET validation/diffs/ API with access to local site"""
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
 
         self.api_get(get_validate_diff_url(self.local_site_name),
                      expected_mimetype=validate_diff_mimetype)
@@ -99,7 +99,7 @@ class ResourceTests(kgb.SpyAgency, SSLTestsMixin, BaseWebAPITestCase,
         repository = self.create_repository(with_local_site=True,
                                             tool_name='Test')
 
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
 
         diff = SimpleUploadedFile('readme.diff', self.DEFAULT_GIT_README_DIFF,
                                   content_type='text/x-patch')

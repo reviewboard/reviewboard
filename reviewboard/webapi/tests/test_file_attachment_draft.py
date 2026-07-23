@@ -67,7 +67,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                                                     publish=True)
         attachment = self.create_file_attachment(review_request, draft=True)
 
-        user = self._login_user(admin=True)
+        user = self.login_user(admin=True)
         self.assertNotEqual(user, review_request.submitter)
 
         rsp = self.api_get(
@@ -89,7 +89,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                                                     publish=True)
         attachment = self.create_file_attachment(review_request, draft=True)
 
-        user = self._login_user(local_site=True, admin=True)
+        user = self.login_user(local_site=True, admin=True)
         self.assertNotEqual(user, review_request.submitter)
         self.assertFalse(user.is_superuser)
 
@@ -216,7 +216,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         file_attachment = self.create_file_attachment(review_request,
                                                       draft=True)
 
-        user = self._login_user(admin=True)
+        user = self.login_user(admin=True)
         self.api_delete(get_draft_file_attachment_item_url(review_request,
                                                            file_attachment.pk))
 
@@ -233,7 +233,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         file_attachment = self.create_file_attachment(review_request,
                                                       draft=True)
 
-        user = self._login_user(local_site=True, admin=True)
+        user = self.login_user(local_site=True, admin=True)
         self.assertNotEqual(user, self.user)
 
         self.api_delete(get_draft_file_attachment_item_url(
@@ -387,7 +387,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         review_request = self.create_review_request(submitter=self.user)
         file_attachment = self.create_file_attachment(review_request)
 
-        user = self._login_user(admin=True)
+        user = self.login_user(admin=True)
         self.assertNotEqual(user, self.user)
 
         rsp = self.api_put(
@@ -413,7 +413,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         file_attachment = self.create_file_attachment(review_request,
                                                       draft=True)
 
-        user = self._login_user(local_site=True, admin=True)
+        user = self.login_user(local_site=True, admin=True)
         self.assertNotEqual(user, self.user)
 
         rsp = self.api_put(

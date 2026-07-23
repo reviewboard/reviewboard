@@ -178,7 +178,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @webapi_test_template
     def test_post_with_invalid_user(self):
         """Testing the POST <URL> API with invalid user"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         repository = self.create_repository()
 
@@ -193,7 +193,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @webapi_test_template
     def test_post_with_site(self):
         """Testing the POST <URL> API with a local site"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         user = User.objects.get(username='doc')
 
@@ -218,7 +218,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the POST <URL> API with a local site and a user who is not a
         member
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         repository = self.create_repository(with_local_site=True)
 
@@ -368,7 +368,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @webapi_test_template
     def test_get_delete_link(self):
         """Testing the GET <URL> API contains the correct DELETE link"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         doc = User.objects.get(username='doc')
         repository = self.create_repository()
@@ -393,7 +393,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the GET <URL> API contains the correct DELETE link with a local
         site
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         doc = User.objects.get(username='doc')
 

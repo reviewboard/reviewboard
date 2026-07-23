@@ -315,7 +315,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertTrue(getattr(resource.create, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_post_fixtures)
-        self._login_user(admin=self.basic_post_use_admin)
+        self.login_user(admin=self.basic_post_use_admin)
 
         setup_state = cast(
             BasicPostTestSetupState,
@@ -348,7 +348,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertTrue(getattr(resource.create, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_post_fixtures)
-        self._login_user(admin=self.basic_post_use_admin)
+        self.login_user(admin=self.basic_post_use_admin)
 
         setup_state = cast(
             BasicPostTestSetupState,
@@ -382,7 +382,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertTrue(getattr(resource.create, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_post_fixtures)
-        self._login_user(admin=self.basic_post_use_admin)
+        self.login_user(admin=self.basic_post_use_admin)
 
         setup_state = cast(
             BasicPostTestSetupState,
@@ -415,7 +415,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertTrue(getattr(resource.create, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_post_fixtures)
-        self._login_user(admin=self.basic_post_use_admin)
+        self.login_user(admin=self.basic_post_use_admin)
 
         setup_state = cast(
             BasicPostTestSetupState,

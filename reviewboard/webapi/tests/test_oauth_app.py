@@ -131,7 +131,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
     @webapi_test_template
     def test_superuser_get(self):
         """Testing the GET <URL> API as a superuser"""
-        self.user = self._login_user(local_site=False, admin=True)
+        self.user = self.login_user(local_site=False, admin=True)
 
         local_site = LocalSite.objects.get(pk=1)
         doc = User.objects.get(username='doc')
@@ -155,7 +155,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
     @webapi_test_template
     def test_superuser_get_local_site(self):
         """Testing the GET <URL> API with a LocalSite as a superuser"""
-        self.user = self._login_user(local_site=False, admin=True)
+        self.user = self.login_user(local_site=False, admin=True)
 
         local_site = LocalSite.objects.get(pk=1)
         doc = User.objects.get(username='doc')
@@ -351,7 +351,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
     @webapi_test_template
     def test_post_set_user_as_superuser(self):
         """Testing the POST <URL> API as a superuser with user set"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
         rsp = self.api_post(
             get_oauth_app_list_url(),
             {
@@ -377,7 +377,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         """Testing the POST <URL> API as a superuser with user set as a
         non-existent user
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
         rsp = self.api_post(
             get_oauth_app_list_url(),
             {
@@ -403,7 +403,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
     @webapi_test_template
     def test_post_set_user_as_local_site_admin(self):
         """Testing the POST <URL> API as a LocalSite admin with user set"""
-        self._login_user(admin=True, local_site=True)
+        self.login_user(admin=True, local_site=True)
         local_site = LocalSite.objects.get(name=self.local_site_name)
         local_site.users.add(User.objects.get(username='dopey'))
 
@@ -433,7 +433,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         """Testing the POST <URL> API as a LocalSite admin with user set to a
         non-LocalSite user
         """
-        self._login_user(admin=True, local_site=True)
+        self.login_user(admin=True, local_site=True)
 
         rsp = self.api_post(
             get_oauth_app_list_url(self.local_site_name),
@@ -485,7 +485,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
     @webapi_test_template
     def test_post_set_skip_authorization_as_superuser(self):
         """Testing the POST <URL> API as a superuser with skip_authorization"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_post(
             get_oauth_app_list_url(),
@@ -513,7 +513,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         """Testing the POST <URL> API as a LocalSite admin with
         skip_authorization set
         """
-        self._login_user(admin=True, local_site=True)
+        self.login_user(admin=True, local_site=True)
 
         rsp = self.api_post(
             get_oauth_app_list_url(self.local_site_name),
@@ -617,7 +617,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     @webapi_test_template
     def test_get_without_owner_as_superuser(self):
         """Testing the GET <URL> API without owner as superuser"""
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         app = self.create_oauth_application(User.objects.get(username='doc'))
 
         rsp = self.api_get(get_oauth_app_item_url(app.pk),
@@ -669,7 +669,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         local_site = LocalSite.objects.get(pk=1)
         local_site.users.add(self.user)
         app = self.create_oauth_application(self.user, local_site=local_site)
-        self.user = self._login_user(admin=True, local_site=True)
+        self.user = self.login_user(admin=True, local_site=True)
 
         rsp = self.api_get(get_oauth_app_item_url(app.pk, local_site.name),
                            expected_mimetype=oauth_app_item_mimetype)
@@ -713,7 +713,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         """Testing the PUT <URL> API with enabled=1 for an application disabled
         due to security
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         doc = User.objects.get(username='doc')
         local_site = LocalSite.objects.get(pk=1)
         app = self.create_oauth_application(user=doc, local_site=local_site)
@@ -765,7 +765,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     def test_put_regenerate_secret_key_enable(self):
         """Testing the PUT <URL> API with regenerate_secret_key=1 and enabled=1
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         doc = User.objects.get(username='doc')
         local_site = LocalSite.objects.get(pk=1)
         app = self.create_oauth_application(user=doc, local_site=local_site)

@@ -89,7 +89,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the POST users/<username>/watched/review-groups/ API
         with a local site and Does Not Exist error
         """
-        user = self._login_user(local_site=True)
+        user = self.login_user(local_site=True)
         rsp = self.api_post(
             get_watched_review_group_list_url(user.username,
                                               self.local_site_name),
@@ -160,7 +160,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the GET users/<username>/watched/review-groups/<id>/ API
         with access to a local site
         """
-        user = self._login_user(local_site=True)
+        user = self.login_user(local_site=True)
 
         group = self.create_review_group(with_local_site=True)
         profile = user.get_profile()

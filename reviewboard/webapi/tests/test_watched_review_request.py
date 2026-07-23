@@ -54,7 +54,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the GET users/<username>/watched/review-requests/ API
         with a local site and Does Not Exist error
         """
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
         rsp = self.api_get(
             get_watched_review_request_list_url(self.user.username,
                                                 self.local_site_name),
@@ -106,7 +106,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the POST users/<username>/watched/review-requests/ API
         with a local site and Does Not Exist error
         """
-        user = self._login_user(local_site=True)
+        user = self.login_user(local_site=True)
 
         rsp = self.api_post(
             get_watched_review_request_list_url(user.username,
@@ -184,7 +184,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the GET users/<username>/watched/review-requests/<id>/ API
         with access to a local site
         """
-        user = self._login_user(local_site=True)
+        user = self.login_user(local_site=True)
 
         review_request = self.create_review_request(with_local_site=True,
                                                     publish=True)

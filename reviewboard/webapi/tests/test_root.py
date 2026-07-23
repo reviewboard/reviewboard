@@ -39,7 +39,7 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @add_fixtures(['test_users', 'test_site'])
     def test_get_with_site(self):
         """Testing the GET / API with local sites"""
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
         rsp = self.api_get(get_root_url('local-site-1'),
                            expected_mimetype=root_item_mimetype)
         self.assertEqual(rsp['stat'], 'ok')

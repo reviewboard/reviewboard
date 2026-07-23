@@ -126,7 +126,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @webapi_test_template
     def test_post_with_invalid_user(self):
         """Testing the POST <URL> API with invalid user"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         group = self.create_review_group()
 

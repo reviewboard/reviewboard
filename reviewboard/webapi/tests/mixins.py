@@ -542,8 +542,8 @@ class BasicTestsMixin(_MixinsParentClass):
             The authenticated user.
         """
         if user is None:
-            user = self._login_user(local_site=with_local_site,
-                                    admin=with_admin)
+            user = self.login_user(local_site=with_local_site,
+                                   admin=with_admin)
         elif user != self.user:
             self.assertTrue(self.client.login(username=user.username,
                                               password=user.username))
@@ -789,7 +789,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         self.assertTrue(getattr(resource.delete, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_delete_fixtures)
-        self._login_user(admin=self.basic_delete_use_admin)
+        self.login_user(admin=self.basic_delete_use_admin)
 
         setup_state = self.setup_delete_test_state(
             with_admin=self.basic_delete_use_admin)
@@ -929,7 +929,7 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
         assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        auth_user = self._login_user()
+        auth_user = self.login_user()
 
         equeries = get_webapi_request_start_equeries(
             user=auth_user,
@@ -1357,7 +1357,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         self.assertTrue(getattr(resource.get, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_get_fixtures)
-        self._login_user(admin=self.basic_get_use_admin)
+        self.login_user(admin=self.basic_get_use_admin)
 
         setup_state = self.setup_get_item_test_state(
             with_admin=self.basic_get_use_admin)
@@ -1495,7 +1495,7 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
         assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        auth_user = self._login_user()
+        auth_user = self.login_user()
 
         equeries = get_webapi_request_start_equeries(
             user=auth_user,
@@ -1910,7 +1910,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         self.assertTrue(getattr(resource.get, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_get_fixtures)
-        self._login_user(admin=self.basic_get_use_admin)
+        self.login_user(admin=self.basic_get_use_admin)
 
         setup_state = self.setup_get_list_test_state(
             with_admin=self.basic_get_use_admin)
@@ -2049,7 +2049,7 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
         assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        auth_user = self._login_user()
+        auth_user = self.login_user()
 
         equeries = get_webapi_request_start_equeries(
             user=auth_user,
@@ -2484,7 +2484,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
         self.assertTrue(getattr(resource.create, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_post_fixtures)
-        self._login_user(admin=self.basic_post_use_admin)
+        self.login_user(admin=self.basic_post_use_admin)
 
         setup_state = self.setup_post_test_state(
             with_admin=self.basic_post_use_admin)
@@ -2637,7 +2637,7 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
         assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        auth_user = self._login_user()
+        auth_user = self.login_user()
 
         equeries = get_webapi_request_start_equeries(
             user=auth_user,
@@ -3158,7 +3158,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
         self.assertTrue(getattr(resource.update, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_put_fixtures)
-        self._login_user(admin=self.basic_put_use_admin)
+        self.login_user(admin=self.basic_put_use_admin)
 
         setup_state = self.setup_put_test_state(
             with_admin=self.basic_put_use_admin)
@@ -3340,7 +3340,7 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
         assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        auth_user = self._login_user()
+        auth_user = self.login_user()
 
         equeries = get_webapi_request_start_equeries(
             user=auth_user,

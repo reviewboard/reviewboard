@@ -6,11 +6,9 @@ import os
 from typing import TYPE_CHECKING
 
 from django.conf import settings
-from django.contrib.auth.models import User
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.webapi.testing.testcases import WebAPITestCaseMixin
 
-from reviewboard.accounts.backends.standard import StandardAuthBackend
 from reviewboard.notifications.tests.mixins import EmailTestHelper
 from reviewboard.testing import TestCase
 from reviewboard.webapi.tests.mimetypes import error_mimetype
@@ -19,9 +17,7 @@ if TYPE_CHECKING:
     from typelets.funcs import KwargsDict
     from typelets.json import JSONDict
 
-
-_auth_backend_path = '%s.%s' % (StandardAuthBackend.__module__,
-                                StandardAuthBackend.__name__)
+    from django.contrib.auth.models import User
 
 
 class BaseWebAPITestCase(WebAPITestCaseMixin, EmailTestHelper, TestCase):
@@ -88,7 +84,7 @@ class BaseWebAPITestCase(WebAPITestCaseMixin, EmailTestHelper, TestCase):
         self.siteconfig = siteconfig
 
         if 'test_users' in (getattr(self, 'fixtures', None) or []):
-            self.user = self._login_user()
+            self.user = self.login_user()
         else:
             self.user = None
 
@@ -156,63 +152,6 @@ class BaseWebAPITestCase(WebAPITestCaseMixin, EmailTestHelper, TestCase):
     #
     # Some utility functions shared across test suites.
     #
-    def _login_user(
-        self,
-        *,
-        admin: bool = False,
-        local_site: bool = False,
-    ) -> User:
-        """Log in a user and return it for the test.
-
-        The proper user will be created based on whether a valid LocalSite
-        user is needed, and/or an admin user is needed.
-
-        Args:
-            admin (bool, optional):
-                Whether to log in as an administrator.
-
-                If ``local_site=True`` is also passed, then this will log in
-                as a standard user set to be the Local Site's administrator.
-
-            local_site (bool, optional):
-                Whether to log in to the default test Local Site.
-
-        Returns:
-            django.contrib.auth.models.User:
-            The logged-in user.
-        """
-        user: (User | None) = None
-        username: str
-
-        if local_site:
-            # We'll use "doc" unconditionally, and just add to the list of
-            # admins if we need doc to be an admin user.
-            #
-            # In the future, we may want to create a new fixture user that
-            # is guaranteed an admin, but this will require updating a number
-            # of tests and may be performance implications for the full test
-            # suite.
-            username = 'doc'
-
-            if admin:
-                user = User.objects.get(username=username)
-                cur_local_site = self.get_local_site(name=self.local_site_name)
-                cur_local_site.admins.add(user)
-        else:
-            if admin:
-                username = 'admin'
-            else:
-                # Pick a user that's not part of the default LocalSite.
-                username = 'grumpy'
-
-        if user is None:
-            user = User.objects.get(username=username)
-
-        self.client.force_login(user=user,
-                                backend=_auth_backend_path)
-
-        return user
-
     def get_sample_image_filename(self) -> str:
         """Return the path to a local image file that can be used for tests.
 

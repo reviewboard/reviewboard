@@ -70,7 +70,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the GET <URL> API as a superuser"""
         url, mimetype, tokens = self.setup_basic_get_test(self.user, False,
                                                           None, True)
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         with override_feature_check(oauth2_service_feature.feature_id, True):
             rsp = self.api_get(url, expected_mimetype=mimetype)
@@ -86,7 +86,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """
         url, mimetype, tokens = self.setup_basic_get_test(
             self.user, True, self.local_site_name, True)
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         with override_feature_check(oauth2_service_feature.feature_id, True):
             rsp = self.api_get(url, expected_mimetype=mimetype)
@@ -137,7 +137,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the GET <URL> API as a superuser"""
         url, mimetype, token = self.setup_basic_get_test(self.user, False,
                                                          None)
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         with override_feature_check(oauth2_service_feature.feature_id, True):
             rsp = self.api_get(url, expected_mimetype=mimetype)
@@ -152,7 +152,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """
         url, mimetype, token = self.setup_basic_get_test(self.user, True,
                                                          self.local_site_name)
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         with override_feature_check(oauth2_service_feature.feature_id, True):
             rsp = self.api_get(url, expected_mimetype=mimetype)
@@ -198,7 +198,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the PUT <URL> API as a superuser"""
         url, mimetype, request_data, token = self.setup_basic_put_test(
             self.user, False, None, True)[:-1]
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         with override_feature_check(oauth2_service_feature.feature_id, True):
             rsp = self.api_get(url, request_data, expected_mimetype=mimetype)
@@ -213,7 +213,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """
         url, mimetype, request_data, token = self.setup_basic_put_test(
             self.user, True, self.local_site_name, True)[:-1]
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         with override_feature_check(oauth2_service_feature.feature_id, True):
             rsp = self.api_get(url, request_data, expected_mimetype=mimetype)
@@ -242,7 +242,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     def test_delete_superuser(self):
         """Testing the DELETE <URL> API as a superuser"""
         url, (pk,) = self.setup_basic_delete_test(self.user, False, None)
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         with override_feature_check(oauth2_service_feature.feature_id, True):
             self.api_delete(url, expected_status=204)
@@ -257,7 +257,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """
         url, (pk,) = self.setup_basic_delete_test(self.user, True,
                                                   self.local_site_name)
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         with override_feature_check(oauth2_service_feature.feature_id, True):
             self.api_delete(url, expected_status=204)

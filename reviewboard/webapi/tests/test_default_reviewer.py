@@ -85,7 +85,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self.assertEqual(default_reviewers[0]['file_regex'], '/foo')
 
         # Now test for the ones in the LocalSite.
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
         rsp = self.api_get(get_default_reviewer_list_url(self.local_site_name),
                            expected_mimetype=default_reviewer_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -273,7 +273,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @add_fixtures(['test_users'])
     def test_post_with_defaults(self):
         """Testing the POST default-reviewers/ API with field defaults"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         name = 'default1'
         file_regex = '.*'
@@ -299,7 +299,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the POST default-reviewers/ API
         with Permission Denied error
         """
-        self._login_user()
+        self.login_user()
 
         self.api_post(
             get_default_reviewer_list_url(),
@@ -312,7 +312,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @add_fixtures(['test_users', 'test_site'])
     def test_post_with_invalid_regex(self):
         """Testing the POST default-reviewers/ API with an invalid regex"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_post(
             get_default_reviewer_list_url(),
@@ -329,7 +329,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @add_fixtures(['test_users'])
     def test_post_with_invalid_username(self):
         """Testing the POST default-reviewers/ API with invalid username"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_post(
             get_default_reviewer_list_url(),
@@ -348,7 +348,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the POST default-reviewers/ API
         with user and invalid site
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         local_site = self.get_local_site(name=self.local_site_name)
 
@@ -367,7 +367,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @add_fixtures(['test_users'])
     def test_post_with_invalid_group(self):
         """Testing the POST default-reviewers/ API with invalid group"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_post(
             get_default_reviewer_list_url(),
@@ -386,7 +386,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the POST default-reviewers/ API
         with group and invalid site
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         local_site = self.get_local_site(name=self.local_site_name)
         Group.objects.create(name='group1', local_site=local_site)
@@ -406,7 +406,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @add_fixtures(['test_users'])
     def test_post_with_invalid_repository(self):
         """Testing the POST default-reviewers/ API with invalid repository"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_post(
             get_default_reviewer_list_url(),
@@ -427,7 +427,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """
         repository = self.create_repository(with_local_site=True)
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_post(
             get_default_reviewer_list_url(),
@@ -620,7 +620,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @add_fixtures(['test_users'])
     def test_put_with_invalid_username(self):
         """Testing the PUT default-reviewers/<id>/ API with invalid username"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
@@ -638,7 +638,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the PUT default-reviewers/<id>/ API
         with user and invalid site
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         local_site = self.get_local_site(name=self.local_site_name)
         default_reviewer = DefaultReviewer.objects.create(
@@ -656,7 +656,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @add_fixtures(['test_users'])
     def test_put_with_invalid_group(self):
         """Testing the PUT default-reviewers/<id>/ API with invalid group"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
@@ -674,7 +674,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the PUT default-reviewers/<id>/ API
         with group and invalid site
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         local_site = self.get_local_site(name=self.local_site_name)
         default_reviewer = DefaultReviewer.objects.create(
@@ -694,7 +694,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the PUT default-reviewers/<id>/ API
         with invalid repository
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
@@ -717,7 +717,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         default_reviewer = DefaultReviewer.objects.create(
             name='default1', file_regex='.*')
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
@@ -736,7 +736,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                                                           file_regex='.*')
         default_reviewer.groups.add(group)
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
@@ -765,7 +765,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                                                           file_regex='.*')
         default_reviewer.groups.add(group)
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
@@ -794,7 +794,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                                                           file_regex='.*')
         default_reviewer.people.add(doc)
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
@@ -823,7 +823,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                                                           file_regex='.*')
         default_reviewer.people.add(doc)
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
@@ -852,7 +852,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                                                           file_regex='.*')
         default_reviewer.repository.add(repository)
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),
@@ -883,7 +883,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
                                                           file_regex='.*')
         default_reviewer.repository.add(repository)
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_put(
             get_default_reviewer_item_url(default_reviewer.pk),

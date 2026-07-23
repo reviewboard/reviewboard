@@ -1123,8 +1123,8 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
 
         # Make the request to the API.
         if use_admin:
-            self._login_user(local_site=use_local_site,
-                             admin=True)
+            self.login_user(local_site=use_local_site,
+                            admin=True)
 
         return self.api_post(
             get_repository_list_url(local_site_name),
@@ -1648,8 +1648,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
 
         # Make the request to the API.
         if use_admin:
-            self._login_user(local_site=use_local_site,
-                             admin=True)
+            self.login_user(local_site=use_local_site,
+                            admin=True)
 
         if data is None:
             data = {}
@@ -1709,8 +1709,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
 
         # Make the request to the API.
         if use_admin:
-            self._login_user(local_site=use_local_site,
-                             admin=True)
+            self.login_user(local_site=use_local_site,
+                            admin=True)
 
         self.api_delete(get_repository_item_url(repo, local_site_name),
                         expected_status=expected_status)

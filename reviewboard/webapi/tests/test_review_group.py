@@ -96,7 +96,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
 
     def test_get_with_invite_only_false_as_admin(self) -> None:
         """Testing the GET groups/?invite-only=0 API as admin"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         # This will match, due to being visible and public.
         group1 = self.create_review_group(name='group1')
@@ -181,7 +181,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
 
     def test_get_with_invite_only_true_as_admin(self) -> None:
         """Testing the GET groups/?invite-only=1 API as admin"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         # This will match, due to the admin status.
         group = self.create_review_group(name='group1',
@@ -347,7 +347,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         """Testing the GET groups/?show-invisible=1&invite-only=1 API as
         admin
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         # These will match.
         group1 = self.create_review_group(name='group1',
@@ -467,7 +467,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
         name = 'my-group'
         display_name = 'My Group'
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_post(
             get_review_group_list_url(),
@@ -487,7 +487,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
     @add_fixtures(['test_site'])
     def test_post_with_site_admin(self):
         """Testing the POST groups/ API with a local site admin"""
-        self._login_user(local_site=True, admin=True)
+        self.login_user(local_site=True, admin=True)
         local_site = self.get_local_site(name=self.local_site_name)
 
         rsp = self.api_post(
@@ -503,7 +503,7 @@ class ResourceListTests(ExtraDataListMixin, BaseWebAPITestCase,
 
     def test_post_with_conflict(self):
         """Testing the POST groups/ API with Group Already Exists error"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
         group = self.create_review_group()
 
         rsp = self.api_post(
@@ -565,7 +565,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     @add_fixtures(['test_scmtools'])
     def test_delete_with_review_requests(self):
         """Testing the DELETE groups/<id>/ API with existing review requests"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         group = Group.objects.create(name='test-group', invite_only=True)
         group.users.add(self.user)
@@ -664,7 +664,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
         group = self.create_review_group(name='group1')
         group2 = self.create_review_group(name='group2')
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
         rsp = self.api_put(
             get_review_group_item_url(group.name),
             {'name': group2.name},

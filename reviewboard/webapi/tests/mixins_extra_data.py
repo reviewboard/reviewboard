@@ -26,7 +26,7 @@ class ExtraDataListMixin(object):
         self.load_fixtures(self.basic_post_fixtures)
 
         if self.basic_post_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         extra_fields = {
             'extra_data.foo': 123,
@@ -60,7 +60,7 @@ class ExtraDataListMixin(object):
         self.load_fixtures(self.basic_post_fixtures)
 
         if self.basic_post_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         url, mimetype, data, objs = \
             self.setup_basic_post_test(self.user, False, None, True)
@@ -102,7 +102,7 @@ class ExtraDataListMixin(object):
         self.load_fixtures(self.basic_post_fixtures)
 
         if self.basic_post_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         url, mimetype, data, objs = \
             self.setup_basic_post_test(self.user, False, None, True)
@@ -148,7 +148,7 @@ class ExtraDataListMixin(object):
         self.load_fixtures(self.basic_post_fixtures)
 
         if self.basic_post_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         extra_fields = {
             'extra_data.__private_key': 'private_data',
@@ -190,7 +190,7 @@ class ExtraDataItemMixin(object):
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
 
         if self.basic_put_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         extra_fields = {
             'extra_data.foo': 123,
@@ -225,7 +225,7 @@ class ExtraDataItemMixin(object):
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
 
         if self.basic_put_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         extra_fields = {
             'extra_data.__private_key': 'private_data',
@@ -252,7 +252,7 @@ class ExtraDataItemMixin(object):
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
 
         if self.basic_put_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         url, mimetype, data, obj, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
@@ -300,7 +300,7 @@ class ExtraDataItemMixin(object):
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
 
         if self.basic_put_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         url, mimetype, data, obj, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
@@ -345,7 +345,7 @@ class ExtraDataItemMixin(object):
         default_extra_data = self.default_extra_data or {}
 
         if self.basic_put_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         url, mimetype, data, obj, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
@@ -393,7 +393,7 @@ class ExtraDataItemMixin(object):
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
 
         if self.basic_put_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         url, mimetype, data, obj, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
@@ -443,7 +443,7 @@ class ExtraDataItemMixin(object):
         default_extra_data = self.default_extra_data or {}
 
         if self.basic_put_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         url, mimetype, data, obj, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
@@ -500,7 +500,7 @@ class ExtraDataItemMixin(object):
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
 
         if self.basic_put_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         url, mimetype, data, obj, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
@@ -566,7 +566,7 @@ class ExtraDataItemMixin(object):
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
 
         if self.basic_put_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         url, mimetype, data, obj, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
@@ -636,7 +636,7 @@ class ExtraDataItemMixin(object):
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
 
         if self.basic_put_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         url, mimetype, data, obj, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
@@ -705,7 +705,7 @@ class ExtraDataItemMixin(object):
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
 
         if self.basic_put_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         url, mimetype, data, obj, objs = \
             self.setup_basic_put_test(self.user, False, None, True)
@@ -762,7 +762,7 @@ class ExtraDataItemMixin(object):
         self.load_fixtures(getattr(self, 'basic_put_fixtures', []))
 
         if self.basic_get_use_admin:
-            self._login_user(admin=True)
+            self.login_user(admin=True)
 
         extra_fields = {
             '__private_key': 'private_data',

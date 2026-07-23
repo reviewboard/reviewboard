@@ -32,9 +32,11 @@ from djblets.testing.testcases import (FixturesCompilerMixin,
 from djblets.util.symbols import UNSET, Unsettable
 from oauthlib.common import generate_token
 from oauth2_provider.models import AccessToken
+from typing_extensions import assert_type
 
 import reviewboard.scmtools
 from reviewboard import initialize
+from reviewboard.accounts.backends.standard import StandardAuthBackend
 from reviewboard.accounts.models import LocalSiteProfile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.attachments.models import (FileAttachment,
@@ -42,7 +44,10 @@ from reviewboard.attachments.models import (FileAttachment,
 from reviewboard.certs.cert import (Certificate,
                                     CertificateBundle,
                                     CertificateFingerprints)
-from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
+from reviewboard.deprecation import (
+    RemovedInReviewBoard10_0Warning,
+    RemovedInReviewBoard11_0Warning,
+)
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import (DiffCommit, DiffSet, DiffSetHistory,
                                            FileDiff)
@@ -105,6 +110,10 @@ FileDiffDetails: TypeAlias = tuple[int, str, str, str, str]
 
 _static_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..',
                                             'static'))
+
+
+_auth_backend_path = \
+    f'{StandardAuthBackend.__module__}.{StandardAuthBackend.__name__}'
 
 
 class TestCase(FixturesCompilerMixin, DjbletsTestCase):
@@ -3196,6 +3205,109 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         finally:
             if reload_settings:
                 load_site_config()
+
+    def login_user(
+        self,
+        *,
+        admin: bool = False,
+        local_site: (LocalSite | bool) = False,
+        user_or_username: (User | str | None) = None,
+    ) -> User:
+        """Log in a user and return it for the test.
+
+        The proper user will be created based on whether a valid LocalSite
+        user is needed, and/or an admin user is needed.
+
+        Version Added:
+            9.0:
+            Moved here from
+            :py:class:`reviewboard.webapi.tests.base.BaseWebAPITestCase`.
+
+        Args:
+            admin (bool, optional):
+                Whether to log in as an administrator.
+
+                If ``local_site=True`` is also passed, then this will log in
+                as a standard user set to be the Local Site's administrator.
+
+            local_site (reviewboard.site.models.LocalSite or bool, optional):
+                Whether to log in to the default test Local Site.
+
+            user_or_username (django.contrib.auth.models.User or str,
+                              optional):
+                A user object or username to log in as.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The logged-in user.
+        """
+        if isinstance(user_or_username, User):
+            user = user_or_username
+        else:
+            if isinstance(user_or_username, str):
+                username = user_or_username
+            elif local_site:
+                # We'll use "doc" unconditionally, and just add to the list of
+                # admins if we need doc to be an admin user.
+                #
+                # In the future, we may want to create a new fixture user that
+                # is guaranteed an admin, but this will require updating a
+                # number of tests and may be performance implications for the
+                # full test suite.
+                username = 'doc'
+            elif admin:
+                username = 'admin'
+            else:
+                username = 'grumpy'
+
+            user = User.objects.get(username=username)
+
+        self.client.force_login(user=user, backend=_auth_backend_path)
+
+        if local_site:
+            if isinstance(local_site, bool):
+                local_site = self.get_local_site(name=self.local_site_name)
+
+            assert_type(local_site, LocalSite)
+
+            local_site.users.add(user)
+
+            if admin:
+                local_site.admins.add(user)
+
+        return user
+
+    def _login_user(
+        self,
+        *,
+        admin: bool = False,
+        local_site: bool = False,
+    ) -> User:
+        """Login in a user and return it for the test.
+
+        Deprecated:
+            9.0:
+            This method has been renamed ``login_user``.
+
+        Args:
+            admin (bool, optional):
+                Whether to log in as an administrator.
+
+                If ``local_site=True`` is also passed, then this will log in
+                as a standard user set to be the Local Site's administrator.
+
+            local_site (bool, optional):
+                Whether to log in to the default test Local Site.
+
+        Returns:
+            django.contrib.auth.models.User:
+            The logged-in user.
+        """
+        RemovedInReviewBoard11_0Warning.warn(
+            'TestCase._login_user has been renamed to login_user. The old '
+            'name will be removed in Review Board 11.'
+        )
+        return self.login_user(admin=admin, local_site=local_site)
 
 
 class BaseFileDiffAncestorTests(kgb.SpyAgency, TestCase):

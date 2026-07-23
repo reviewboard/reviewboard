@@ -511,7 +511,7 @@ class ResourceItemTests(AvatarServicesTestMixin, SpyAgency,
         """Testing the GET users/<username>/ API with a local site and private
         profile as a LocalSite admin
         """
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
 
         username = 'admin'
         user = User.objects.get(username=username)
@@ -532,7 +532,7 @@ class ResourceItemTests(AvatarServicesTestMixin, SpyAgency,
     @add_fixtures(['test_site'])
     def test_get_missing_user_with_site(self):
         """Testing the GET users/<username>/ API with a local site"""
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
         self.api_get(get_user_item_url('dopey', self.local_site_name),
                      expected_status=404)
 
@@ -621,7 +621,7 @@ class ResourceItemTests(AvatarServicesTestMixin, SpyAgency,
     @webapi_test_template
     def test_put_with_user_not_found(self):
         """Testing the PUT <URL> API with username not found"""
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_put(
             get_user_item_url('bad-username'),
@@ -697,7 +697,7 @@ class ResourceItemTests(AvatarServicesTestMixin, SpyAgency,
 
         user = self.create_user(username='test-user',
                                 password='test-user')
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_put(
             get_user_item_url(user.username),
@@ -946,7 +946,7 @@ class ResourceItemTests(AvatarServicesTestMixin, SpyAgency,
         """Testing the PUT <URL> API with is_active field as superuser"""
         user = self.create_user(username='test-user',
                                 password='test-user')
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         rsp = self.api_put(
             get_user_item_url(user.username),
