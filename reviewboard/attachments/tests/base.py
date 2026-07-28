@@ -14,6 +14,7 @@ from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 
+from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.testing import TestCase
@@ -32,6 +33,8 @@ class BaseFileAttachmentTestCase(TestCase):
     """
 
     fixtures = ['test_users', 'test_scmtools', 'test_site']
+
+    DEFINED_LOCAL_SITE_KEY = FileAttachment.DEFINED_LOCAL_SITE_KEY
 
     def make_uploaded_file(self) -> SimpleUploadedFile:
         """Create a return a file to use for mocking in forms."""
