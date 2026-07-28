@@ -56,7 +56,9 @@ class ResourceListTests(ReviewRequestChildListMixin,
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['is_review_ui_accessible_by'],
                          attachment.is_review_ui_accessible_by(self.user))
-        self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
+        self.assertEqual(
+            item_rsp['extra_data'],
+            self.resource.serialize_extra_data_field(attachment))
         self.assertEqual(item_rsp['filename'], attachment.filename)
         self.assertEqual(item_rsp['revision'], attachment.attachment_revision)
         self.assertEqual(item_rsp['sha256_checksum'],
@@ -242,6 +244,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
     resource = resources.file_attachment
 
     default_extra_data = {
+        FileAttachment.DEFINED_LOCAL_SITE_KEY: True,
         'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
                             '2225de7c47550dd1cc49085077e49')
     }
@@ -256,7 +259,9 @@ class ResourceItemTests(ReviewRequestChildItemMixin,
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['is_review_ui_accessible_by'],
                          attachment.is_review_ui_accessible_by(self.user))
-        self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
+        self.assertEqual(
+            item_rsp['extra_data'],
+            self.resource.serialize_extra_data_field(attachment))
         self.assertEqual(item_rsp['filename'], attachment.filename)
         self.assertEqual(item_rsp['revision'], attachment.attachment_revision)
         self.assertEqual(item_rsp['absolute_url'],

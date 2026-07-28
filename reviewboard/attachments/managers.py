@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from reviewboard.attachments.models import FileAttachment
 
 
-class FileAttachmentManager(Manager):
+class FileAttachmentManager(Manager['FileAttachment']):
     """Manages FileAttachment objects.
 
     Adds utility functions for looking up FileAttachments based on other
@@ -62,18 +62,25 @@ class FileAttachmentManager(Manager):
         review_request = filediff.get_review_request()
         assert review_request is not None
 
-        local_site = review_request.local_site
+        if 'local_site' not in kwargs:
+            kwargs['local_site'] = review_request.local_site
+
+        if 'extra_data' not in kwargs:
+            extra_data = {}
+        else:
+            extra_data = kwargs['extra_data'].copy()
+
+        extra_data[self.model.DEFINED_LOCAL_SITE_KEY] = True
+        kwargs['extra_data'] = extra_data
 
         if filediff.is_new or from_modified:
             assert from_modified
 
             attachment = self.model(
-                local_site=local_site,
                 added_in_filediff=filediff,
                 **kwargs)
         else:
             attachment = self.model(
-                local_site=local_site,
                 repo_path=filediff.source_file,
                 repo_revision=filediff.source_revision,
                 repository=filediff.get_repository(),

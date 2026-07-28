@@ -26,7 +26,9 @@ class ResourceListTests(BaseWebAPITestCase,
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['filename'], attachment.filename)
-        self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
+        self.assertEqual(
+            item_rsp['extra_data'],
+            self.resource.serialize_extra_data_field(attachment))
 
     def setup_http_not_allowed_item_test(self, user):
         return get_user_file_attachment_list_url(user)
@@ -119,11 +121,16 @@ class ResourceItemTests(BaseWebAPITestCase,
     fixtures = ['test_users']
     sample_api_url = 'users/<username>/file-attachments/<id>/'
     resource = resources.user_file_attachment
+    default_extra_data = {
+        FileAttachment.DEFINED_LOCAL_SITE_KEY: True,
+    }
 
     def compare_item(self, item_rsp, attachment):
         self.assertEqual(item_rsp['id'], attachment.pk)
         self.assertEqual(item_rsp['filename'], attachment.filename)
-        self.assertEqual(item_rsp['extra_data'], attachment.extra_data)
+        self.assertEqual(
+            item_rsp['extra_data'],
+            self.resource.serialize_extra_data_field(attachment))
 
     def setup_http_not_allowed_list_test(self, user):
         file_attachment = self.create_user_file_attachment(user)

@@ -23,6 +23,7 @@ from reviewboard.reviews.models import ReviewRequestDraft
 
 if TYPE_CHECKING:
     from reviewboard.diffviewer.models import FileDiff
+    from reviewboard.reviews.models import ReviewRequest
 
 
 class UploadFileForm(forms.Form):
@@ -117,6 +118,7 @@ class UploadFileForm(forms.Form):
                 The file is too big for configured limits.
         """
         file_obj = cast(File, self.files['path'])
+        review_request: ReviewRequest = self.review_request
 
         if filediff is not None:
             siteconfig = SiteConfiguration.objects.get_current()
@@ -135,6 +137,7 @@ class UploadFileForm(forms.Form):
             extra_data = {}
 
         extra_data['sha256_checksum'] = get_sha256(file_obj)
+        extra_data[FileAttachment.DEFINED_LOCAL_SITE_KEY] = True
 
         mimetype = get_uploaded_file_mimetype(file_obj)
         filename = get_unique_filename(file_obj.name)
@@ -143,6 +146,7 @@ class UploadFileForm(forms.Form):
             'caption': '',
             'draft_caption': caption,
             'extra_data': extra_data,
+            'local_site': review_request.local_site,
             'orig_filename': os.path.basename(file_obj.name),
             'mimetype': mimetype,
         }
@@ -161,9 +165,9 @@ class UploadFileForm(forms.Form):
 
                 attachment_history.display_position = \
                     FileAttachmentHistory.compute_next_display_position(
-                        self.review_request)
+                        review_request)
                 attachment_history.save()
-                self.review_request.file_attachment_histories.add(
+                review_request.file_attachment_histories.add(
                     attachment_history)
 
                 attachment_kwargs['attachment_history'] = attachment_history
@@ -194,7 +198,7 @@ class UploadFileForm(forms.Form):
         file_attachment.file.save(filename, file_obj, save=True)
 
         if not filediff:
-            draft = ReviewRequestDraft.create(self.review_request)
+            draft = ReviewRequestDraft.create(review_request)
             draft.file_attachments.add(file_attachment)
             draft.save()
 
@@ -229,22 +233,28 @@ class UploadUserFileForm(forms.Form):
         """
         file_obj = self.files.get('path')
 
+        extra_data = self.cleaned_data['extra_data']
+
+        if not extra_data:
+            extra_data = {}
+
+        extra_data[FileAttachment.DEFINED_LOCAL_SITE_KEY] = True
+
         attachment_kwargs = {
+            'extra_data': extra_data,
+            'local_site': local_site,
             'uuid': uuid4(),
             'user': user,
-            'local_site': local_site,
         }
 
         if file_obj:
             mimetype = get_uploaded_file_mimetype(file_obj)
             filename = get_unique_filename(file_obj.name)
-            extra_data = self.cleaned_data['extra_data']
 
             attachment_kwargs.update({
                 'caption': self.cleaned_data['caption'] or file_obj.name,
                 'orig_filename': os.path.basename(file_obj.name),
                 'mimetype': mimetype,
-                'extra_data': extra_data,
             })
 
             file_attachment = FileAttachment(**attachment_kwargs)
@@ -282,7 +292,7 @@ class UploadUserFileForm(forms.Form):
                                       file_obj, save=True)
 
         if extra_data:
-            file_attachment.extra_data = extra_data
+            file_attachment.extra_data.update(extra_data)
 
         file_attachment.save()
 

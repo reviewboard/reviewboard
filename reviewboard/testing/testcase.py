@@ -1166,6 +1166,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             attachment_history = self.create_file_attachment_history(
                 review_request)
 
+        if 'local_site' not in kwargs:
+            kwargs['local_site'] = review_request.local_site
+
         file_attachment = self.create_file_attachment_base(
             attachment_history=attachment_history,
             has_file=has_file,
@@ -2527,7 +2530,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             reviewboard.attachments.models.FileAttachment:
             The new file attachment instance.
         """
-        if with_local_site:
+        if with_local_site and local_site_name:
             local_site = self.get_local_site(name=local_site_name)
 
         if not uuid:
@@ -2536,6 +2539,14 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         attachment_revision = kwargs.pop('attachment_revision', 1)
         draft_caption = kwargs.pop('draft_caption', caption)
         filename = kwargs.get('filename', f'{uuid}-{orig_filename}')
+
+        if 'extra_data' not in kwargs:
+            extra_data = {}
+        else:
+            extra_data = kwargs['extra_data'].copy()
+
+        extra_data[FileAttachment.DEFINED_LOCAL_SITE_KEY] = True
+        kwargs['extra_data'] = extra_data
 
         file_attachment = FileAttachment(
             attachment_revision=attachment_revision,

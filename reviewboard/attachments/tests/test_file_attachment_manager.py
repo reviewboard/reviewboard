@@ -21,8 +21,6 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
         This was split off from :py:mod:`reviewboard.attachments.tests`.
     """
 
-    fixtures = ['test_users', 'test_scmtools', 'test_site']
-
     def test_create_from_filediff_sets_relation_counter(self):
         """Testing FileAttachmentManager.create_from_filediff sets
         ReviewRequest.file_attachment_count counter
@@ -109,6 +107,59 @@ class FileAttachmentManagerTests(BaseFileAttachmentTestCase):
         self.assertEqual(file_attachment.repo_revision,
                          filediff.source_revision)
         self.assertEqual(file_attachment.added_in_filediff_id, None)
+
+    def test_create_from_filediff_sets_local_site(self):
+        """Testing FileAttachmentManager.create_from_filediff sets no local
+        site when the filediff's review request has no local site
+        """
+        uploaded_file = self.make_uploaded_file()
+
+        # Review request with no local site.
+        filediff = self.make_filediff()
+
+        file_attachment = FileAttachment.objects.create_from_filediff(
+            filediff,
+            file=uploaded_file,
+            mimetype='image/png')
+
+        self.assertIsNone(file_attachment.local_site)
+        self.assertTrue(
+            file_attachment.extra_data[self.DEFINED_LOCAL_SITE_KEY])
+
+    def test_create_from_filediff_sets_local_site_with_site(self):
+        """Testing FileAttachmentManager.create_from_filediff sets the local
+        site from the filediff's review request's local site
+        """
+        uploaded_file = self.make_uploaded_file()
+
+        # Review request with local site.
+        filediff = self.make_filediff(with_local_site=True)
+        file_attachment = FileAttachment.objects.create_from_filediff(
+            filediff,
+            file=uploaded_file,
+            mimetype='image/png')
+
+        self.assertEqual(file_attachment.local_site,
+                         self.get_local_site(self.local_site_name))
+        self.assertTrue(
+            file_attachment.extra_data[self.DEFINED_LOCAL_SITE_KEY])
+
+    def test_create_from_filediff_with_local_site(self):
+        """Testing FileAttachmentManager.create_from_filediff uses an
+        explicitly provided local site
+        """
+        local_site = self.create_local_site(name='blah')
+        filediff = self.make_filediff()
+
+        file_attachment = FileAttachment.objects.create_from_filediff(
+            filediff,
+            file=self.make_uploaded_file(),
+            mimetype='image/png',
+            local_site=local_site)
+
+        self.assertEqual(file_attachment.local_site, local_site)
+        self.assertTrue(
+            file_attachment.extra_data[self.DEFINED_LOCAL_SITE_KEY])
 
     def test_get_for_filediff_with_new_and_modified_true(self):
         """Testing FileAttachmentManager.get_for_filediff
