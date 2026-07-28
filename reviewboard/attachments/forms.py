@@ -195,6 +195,7 @@ class UploadFileForm(forms.Form):
 
             file_attachment = FileAttachment(**attachment_kwargs)
 
+        file_attachment._review_request = review_request
         file_attachment.file.save(filename, file_obj, save=True)
 
         if not filediff:

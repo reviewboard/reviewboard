@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from inspect import signature
-from typing import ClassVar, List, Optional, Sequence
+from typing import ClassVar, List, Optional, Sequence, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -25,6 +25,9 @@ from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from reviewboard.reviews.models import ReviewRequest
 
 
 logger = logging.getLogger(__name__)
@@ -289,16 +292,21 @@ class FileAttachment(models.Model):
         """Return a string representation of this file for the admin list."""
         return self.caption
 
-    def get_review_request(self):
-        """Return the ReviewRequest that this file is attached to."""
+    def get_review_request(self) -> ReviewRequest:
+        """Return the ReviewRequest that this file is attached to.
+
+        Raises:
+            django.core.exceptions.ObjectDoesNotExist:
+                The review request does not exist or hasn't been linked yet.
+        """
         if hasattr(self, '_review_request'):
             return self._review_request
 
         try:
-            return self.review_request.all()[0]
+            self._review_request = self.review_request.all()[0]
         except IndexError:
             try:
-                return self.inactive_review_request.all()[0]
+                self._review_request = self.inactive_review_request.all()[0]
             except IndexError:
                 # Maybe it's on a draft.
                 try:
@@ -306,7 +314,9 @@ class FileAttachment(models.Model):
                 except ObjectDoesNotExist:
                     draft = self.inactive_drafts.get()
 
-                return draft.review_request
+                self._review_request = draft.review_request
+
+        return self._review_request
 
     def get_local_site(self) -> LocalSite | None:
         """Return the local site for this attachment.

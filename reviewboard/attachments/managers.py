@@ -86,6 +86,8 @@ class FileAttachmentManager(Manager['FileAttachment']):
                 repository=filediff.get_repository(),
                 **kwargs)
 
+        attachment._review_request = review_request
+
         if save:
             attachment.save()
 

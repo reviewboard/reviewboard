@@ -530,6 +530,11 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
             review_request=review_request)
         attachment_pk = file_attachment.pk
 
+        try:
+            delattr(file_attachment, '_review_request')
+        except AttributeError:
+            pass
+
         file_attachment.local_site = None
         file_attachment.extra_data.pop(self.DEFINED_LOCAL_SITE_KEY, None)
         file_attachment.save(update_fields=['local_site', 'extra_data'])
@@ -592,6 +597,11 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         file_attachment = self.create_file_attachment(
             review_request=review_request)
         attachment_pk = file_attachment.pk
+
+        try:
+            delattr(file_attachment, '_review_request')
+        except AttributeError:
+            pass
 
         file_attachment.local_site = None
         file_attachment.extra_data.pop(self.DEFINED_LOCAL_SITE_KEY, None)

@@ -1172,6 +1172,7 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         file_attachment = self.create_file_attachment_base(
             attachment_history=attachment_history,
             has_file=has_file,
+            review_request=review_request,
             **kwargs)
 
         # This will set the checksum in extra_data, which mirrors our real
@@ -2530,6 +2531,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             reviewboard.attachments.models.FileAttachment:
             The new file attachment instance.
         """
+        review_request: (ReviewRequest | None) = kwargs.pop('review_request',
+                                                            None)
+
         if with_local_site and local_site_name:
             local_site = self.get_local_site(name=local_site_name)
 
@@ -2558,6 +2562,9 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             local_site=local_site,
             orig_filename=orig_filename,
             **kwargs)
+
+        if review_request:
+            file_attachment._review_request = review_request
 
         if has_file:
             if file_content is None:
