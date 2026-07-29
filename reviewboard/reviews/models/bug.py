@@ -6,13 +6,17 @@ Version Added:
 
 from __future__ import annotations
 
+import logging
 import re
-from typing import TYPE_CHECKING
+from datetime import timedelta
+from typing import TYPE_CHECKING, TypedDict
 
 from django.db import IntegrityError, models
+from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 
+from reviewboard.hostingsvcs.base import BaseHostingService
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.models import (
@@ -21,11 +25,35 @@ from reviewboard.hostingsvcs.models import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Sequence
+    from collections.abc import Iterable, Mapping, Sequence
     from typing import ClassVar
 
     from reviewboard.reviews.models.base_review_request_details import \
         BaseReviewRequestDetails
+
+
+logger = logging.getLogger(__name__)
+
+
+#: How long cached bug metadata is considered fresh.
+#:
+#: Version Added:
+#:     9.0
+BUG_METADATA_MAX_AGE = timedelta(hours=1)
+
+
+class BugMetadata(TypedDict):
+    """Cached display metadata for a bug.
+
+    Version Added:
+        9.0
+    """
+
+    #: A one-line summary of the bug.
+    summary: str
+
+    #: The bug's status.
+    status: str
 
 
 #: The extra_data key marking a review request's bugs as migrated.
@@ -139,6 +167,218 @@ class BugManager(models.Manager['Bug']):
             bug = self.get(bug_tracker=bug_tracker, bug_id=bug_id)
 
         return bug
+
+    def get_cached_bug_info(
+        self,
+        *,
+        bug_tracker: ConfiguredBugTracker,
+        bug_ids: Sequence[str],
+        max_age: timedelta = BUG_METADATA_MAX_AGE,
+    ) -> tuple[Mapping[str, BugMetadata], Sequence[str]]:
+        """Return locally-cached metadata for bugs on a tracker.
+
+        This never contacts the bug tracker, making it safe to call while
+        rendering a page.
+
+        Version Added:
+            9.0
+
+        Args:
+            bug_tracker (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker the bugs belong to.
+
+            bug_ids (list of str):
+                The IDs of the bugs to look up.
+
+            max_age (datetime.timedelta, optional):
+                How old cached metadata may be before it's considered
+                stale.
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (dict):
+                    A mapping of bug ID to :py:class:`BugMetadata`, for
+                    every bug with cached metadata. Stale metadata is
+                    included.
+
+                1 (list of str):
+                    The IDs of the bugs with missing or stale metadata.
+        """
+        bugs = self._get_bugs_by_id(bug_tracker=bug_tracker,
+                                    bug_ids=bug_ids)
+
+        return self._split_cached_bug_info(bugs=bugs,
+                                           bug_ids=bug_ids,
+                                           max_age=max_age)
+
+    def fetch_bug_info(
+        self,
+        *,
+        bug_tracker: ConfiguredBugTracker,
+        bug_ids: Sequence[str],
+        max_age: timedelta = BUG_METADATA_MAX_AGE,
+    ) -> Mapping[str, BugMetadata]:
+        """Return metadata for bugs, refreshing it when stale.
+
+        Bugs with fresh cached metadata are served from the database.
+        The rest are fetched from the bug tracker in as few requests as
+        the service supports, and the results are cached.
+
+        Only existing rows are updated. A bug with no row is fetched and
+        returned, but not stored, so that callers cannot create rows for
+        arbitrary bug IDs.
+
+        Version Added:
+            9.0
+
+        Args:
+            bug_tracker (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker the bugs belong to.
+
+            bug_ids (list of str):
+                The IDs of the bugs to look up.
+
+            max_age (datetime.timedelta, optional):
+                How old cached metadata may be before it's refreshed.
+
+        Returns:
+            dict:
+            A mapping of bug ID to :py:class:`BugMetadata`, for every bug
+            metadata could be provided for.
+        """
+        bugs = self._get_bugs_by_id(bug_tracker=bug_tracker,
+                                    bug_ids=bug_ids)
+        metadata, stale_bug_ids = self._split_cached_bug_info(
+            bugs=bugs,
+            bug_ids=bug_ids,
+            max_age=max_age)
+
+        if not stale_bug_ids:
+            return metadata
+
+        try:
+            service = bug_tracker.service
+            assert isinstance(service, BaseHostingService)
+
+            if not service.supports_bug_info:
+                return metadata
+
+            fetched = service.get_bugs_info(config=bug_tracker,
+                                            bug_ids=stale_bug_ids)
+        except Exception as e:
+            logger.exception('Error fetching bug information from bug '
+                             'tracker %s: %s',
+                             bug_tracker.pk, e)
+
+            return metadata
+
+        timestamp = timezone.now()
+        updated_bugs: list[Bug] = []
+
+        for bug_id, bug_info in fetched.items():
+            summary = str(bug_info.get('summary') or '')[:500]
+            status = str(bug_info.get('status') or '')[:64]
+
+            metadata[bug_id] = {
+                'status': status,
+                'summary': summary,
+            }
+
+            bug = bugs.get(bug_id)
+
+            if bug is not None:
+                bug.summary = summary
+                bug.status = status
+                bug.metadata_timestamp = timestamp
+                updated_bugs.append(bug)
+
+        if updated_bugs:
+            self.bulk_update(
+                updated_bugs,
+                fields=('summary', 'status', 'metadata_timestamp'))
+
+        return metadata
+
+    def _get_bugs_by_id(
+        self,
+        *,
+        bug_tracker: ConfiguredBugTracker,
+        bug_ids: Sequence[str],
+    ) -> Mapping[str, Bug]:
+        """Return the bug rows for IDs on a tracker, keyed off the ID.
+
+        Version Added:
+            9.0
+
+        Args:
+            bug_tracker (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker the bugs belong to.
+
+            bug_ids (list of str):
+                The IDs of the bugs to look up.
+
+        Returns:
+            dict:
+            A mapping of bug ID to :py:class:`Bug`, for the bugs that
+            have rows.
+        """
+        return {
+            bug.bug_id: bug
+            for bug in self.filter(bug_tracker=bug_tracker,
+                                   bug_id__in=list(bug_ids))
+        }
+
+    def _split_cached_bug_info(
+        self,
+        *,
+        bugs: Mapping[str, Bug],
+        bug_ids: Sequence[str],
+        max_age: timedelta,
+    ) -> tuple[dict[str, BugMetadata], Sequence[str]]:
+        """Return cached metadata and the IDs needing a refresh.
+
+        Version Added:
+            9.0
+
+        Args:
+            bugs (dict):
+                A mapping of bug ID to :py:class:`Bug`.
+
+            bug_ids (list of str):
+                The IDs of the bugs to look up.
+
+            max_age (datetime.timedelta):
+                How old cached metadata may be before it's considered
+                stale.
+
+        Returns:
+            tuple:
+            A 2-tuple of the cached metadata and the stale bug IDs. See
+            :py:meth:`get_cached_bug_info` for details.
+        """
+        metadata: dict[str, BugMetadata] = {}
+        stale_bug_ids: list[str] = []
+        oldest = timezone.now() - max_age
+
+        for bug_id in bug_ids:
+            bug = bugs.get(bug_id)
+
+            if bug is None or bug.metadata_timestamp is None:
+                stale_bug_ids.append(bug_id)
+                continue
+
+            metadata[bug_id] = {
+                'status': bug.status,
+                'summary': bug.summary,
+            }
+
+            if bug.metadata_timestamp < oldest:
+                stale_bug_ids.append(bug_id)
+
+        return metadata, stale_bug_ids
 
     def sync_legacy_bug_list(
         self,
@@ -265,8 +505,9 @@ class Bug(models.Model):
         max_length=255,
         db_index=True)
 
-    # These are reserved for future metadata caching. They are nullable
-    # or blank and unpopulated for now.
+    # Cached metadata from the bug tracker, populated by
+    # BugManager.fetch_bug_info(). The timestamp is null until metadata
+    # has been fetched at least once.
     summary = models.CharField(max_length=500, blank=True)
     status = models.CharField(max_length=64, blank=True)
     metadata_timestamp = models.DateTimeField(null=True, blank=True)
