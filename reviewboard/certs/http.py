@@ -105,7 +105,11 @@ class CertificateVerificationHTTPSHandler(HTTPSHandler):
         self._extra_cert_data = extra_cert_data
         self._rb_check_hostname = check_hostname
 
-        super().__init__()
+        # On Python 3.12+, the parent builds a default SSL context if one
+        # isn't provided, loading the system certificates in the process.
+        # We build our own context per-request in https_open(), so pass a
+        # placeholder to avoid that wasted work.
+        super().__init__(context=ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT))
 
     def https_open(
         self,
