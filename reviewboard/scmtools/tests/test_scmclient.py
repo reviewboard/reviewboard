@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from urllib.error import HTTPError
-from urllib.request import urlopen
 
 import kgb
 
+from reviewboard.certs.http import urlopen
 from reviewboard.scmtools.core import SCMClient
 from reviewboard.scmtools.errors import FileNotFoundError, SCMError
 from reviewboard.testing.testcase import TestCase

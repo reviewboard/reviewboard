@@ -336,7 +336,7 @@ export class JoinedGroupsView extends BaseView<
     static template = dedent`
         <div class="djblets-l-config-forms-container">
          <div class="rb-c-search-field">
-          <span class="fa fa-search"></span>
+          <span class="ink-i-search"></span>
           <input class="rb-c-search-field__input" type="search">
          </div>
         </div>

@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod, abstractproperty
 from contextlib import contextmanager
 from collections.abc import Mapping
-from typing import Any, Callable, Iterator, Optional, TYPE_CHECKING
+from typing import Any, Callable, Iterator, TYPE_CHECKING
 from urllib.parse import quote
 
 from django.utils.translation import gettext as _
@@ -115,7 +115,7 @@ class Client(ABC):
     LOG_DEFAULT_END: Final[str] = '1'
 
     #: An optional Python module required for Subversion support.
-    required_module: Optional[str] = None
+    required_module: (str | None) = None
 
     ######################
     # Instance variables #
@@ -137,8 +137,8 @@ class Client(ABC):
         self,
         config_dir: str,
         repopath: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
     ) -> None:
         """Initialize the client.
 
@@ -314,9 +314,9 @@ class Client(ABC):
         self,
         path: str,
         *,
-        start: Optional[str] = None,
-        end: Optional[str] = None,
-        limit: Optional[int] = None,
+        start: (str | None) = None,
+        end: (str | None) = None,
+        limit: (int | None) = None,
         discover_changed_paths: bool = False,
         limit_to_path: bool = False,
     ) -> Sequence[SVNLogEntry]:
@@ -388,7 +388,7 @@ class Client(ABC):
         self,
         revision1: str,
         revision2: str,
-        path: Optional[str] = None,
+        path: (str | None) = None,
     ) -> bytes:
         """Return a diff between two revisions.
 
@@ -517,7 +517,7 @@ class Client(ABC):
     def accept_ssl_certificate(
         self,
         path: str,
-        on_failure: Optional[AcceptCertificateFunc] = None,
+        on_failure: (AcceptCertificateFunc | None) = None,
     ) -> Mapping[str, Any]:
         """Attempt to accept a SSL certificate.
 

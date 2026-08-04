@@ -8,6 +8,7 @@ import struct
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import BaseFileDiffAncestorTests
 
@@ -16,6 +17,24 @@ class CommentDiffFragmentsViewTests(BaseFileDiffAncestorTests):
     """Unit tests for reviewboard.reviews.views.CommentDiffFragmentsView."""
 
     fixtures = ['test_users', 'test_scmtools']
+
+    #: A diff that adds a new file.
+    _NEW_FILE_DIFF = (
+        b'--- /test-file\trevision 0\n'
+        b'+++ /test-file\trevision 123\n'
+        b'@@ -0,0 +1,2 @@\n'
+        b'+Hello, world!\n'
+        b'+How are you?\n'
+    )
+
+    #: A later revision of :py:attr:`_NEW_FILE_DIFF`.
+    _NEW_FILE_INTERDIFF = (
+        b'--- /test-file\trevision 0\n'
+        b'+++ /test-file\trevision 123\n'
+        b'@@ -0,0 +1,2 @@\n'
+        b'+Hello, everybody!\n'
+        b'+How are you?\n'
+    )
 
     def setUp(self):
         super(CommentDiffFragmentsViewTests, self).setUp()
@@ -351,6 +370,65 @@ class CommentDiffFragmentsViewTests(BaseFileDiffAncestorTests):
         self._get_fragments(review_request,
                             [comment.pk],
                             expect_cacheable=False)
+
+    def test_get_with_new_file(self) -> None:
+        """Testing CommentDiffFragmentsView with a comment on a newly-added
+        file renders only the modified side
+        """
+        user = User.objects.create_user(username='reviewer',
+                                        email='reviewer@example.com')
+
+        review_request = self.create_review_request(
+            repository=self.repository,
+            publish=True)
+        diffset = self.create_diffset(review_request, revision=1)
+        filediff = self.create_filediff(diffset,
+                                        source_revision=PRE_CREATION,
+                                        diff=self._NEW_FILE_DIFF)
+
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff)
+        review.publish()
+
+        fragments = self._get_fragments(review_request, [comment.pk])
+        html = fragments[0][1]
+
+        self.assertIn('newfile', html)
+        self.assertNotIn('<col class="left" />', html)
+
+    def test_get_with_new_file_interdiff(self) -> None:
+        """Testing CommentDiffFragmentsView with a comment on an interdiff of
+        a newly-added file renders both sides
+        """
+        user = User.objects.create_user(username='reviewer',
+                                        email='reviewer@example.com')
+
+        review_request = self.create_review_request(
+            repository=self.repository,
+            publish=True)
+
+        diffset = self.create_diffset(review_request, revision=1)
+        filediff = self.create_filediff(diffset,
+                                        source_revision=PRE_CREATION,
+                                        diff=self._NEW_FILE_DIFF)
+
+        interdiffset = self.create_diffset(review_request, revision=2)
+        interfilediff = self.create_filediff(interdiffset,
+                                             source_revision=PRE_CREATION,
+                                             diff=self._NEW_FILE_INTERDIFF)
+
+        review = self.create_review(review_request, user=user)
+        comment = self.create_diff_comment(review, filediff,
+                                           interfilediff=interfilediff)
+        review.publish()
+
+        fragments = self._get_fragments(review_request, [comment.pk])
+        html = fragments[0][1]
+
+        # Both sides of an interdiff exist, so this must not be treated as a
+        # newly-added file.
+        self.assertNotIn('newfile', html)
+        self.assertIn('<col class="left" />', html)
 
     def _get_fragments(self, review_request, comment_ids,
                        local_site_name=None, expected_status=200,

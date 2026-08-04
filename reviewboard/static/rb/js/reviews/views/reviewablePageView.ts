@@ -25,7 +25,7 @@ import { type PageViewOptions } from 'reviewboard/common/views/pageView';
 import {
     type ReviewRequestAttrs,
 } from 'reviewboard/common/resources/models/reviewRequestModel';
-import { DnDUploader } from 'reviewboard/ui';
+import { ConfettiView, DnDUploader } from 'reviewboard/ui';
 
 import {
     type ReviewRequestEditor,
@@ -352,6 +352,28 @@ export class ReviewablePageView<
                       this._onViewingUserDraftChanged);
 
         this.reviewRequestEditorView.render();
+
+        const _confettiSelectors = dedent`
+            .rb-c-review-request__header > .rb-c-actions,
+            .rb-c-review-request__header > .rb-c-review-request-tabs,
+            .rb-c-review-request__fields
+        `;
+
+        $('.rb-c-trophies__trophy-image').each((i, el) => {
+            const confettiView = craft<ConfettiView>`
+                <${ConfettiView}
+                  count=30
+                  floorEnabled=false
+                  gravity=1400
+                  origin=${el}
+                  platformSelectors='${_confettiSelectors}'
+                  startSpeed=700
+                  zIndex=20/>
+            `;
+            confettiView.renderInto(document.body);
+
+            setTimeout(() => confettiView.run(), 500);
+        });
     }
 
     /**

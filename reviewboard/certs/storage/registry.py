@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Iterator, Optional
+from typing import Iterator
 
 from django.utils.translation import gettext_lazy as _
 from djblets.registries.registry import (ALREADY_REGISTERED,
@@ -43,7 +43,7 @@ class CertificateStorageBackendRegistry(
     def get_backend(
         self,
         backend_id: str,
-    ) -> Optional[type[BaseCertificateStorageBackend]]:
+    ) -> type[BaseCertificateStorageBackend] | None:
         """Return a storage backend class with the given ID.
 
         Args:

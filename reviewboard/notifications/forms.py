@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional
+from typing import Any
 
 from django import forms
 from django.core.validators import URLValidator
@@ -35,7 +35,7 @@ class WebHookTargetForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         queryset=Repository.objects.filter(visible=True).order_by('name'),
         widget=RelatedRepositoryWidget())
 
-    def clean_extra_data(self) -> Optional[str]:
+    def clean_extra_data(self) -> str | None:
         """Ensure that extra_data is a valid value.
 
         Returns:

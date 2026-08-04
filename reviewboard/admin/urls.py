@@ -48,6 +48,15 @@ urlpatterns = [
 
     path('cache/', views.cache_stats, name='admin-server-cache'),
 
+    path('connected-services/', include([
+        path('',
+             views.ConnectedServicesListView.as_view(),
+             name='connected-services-list'),
+        path('<str:service_id>/connect/',
+             views.ConnectServiceView.as_view(),
+             name='connected-services-connect'),
+    ])),
+
     path('db/', admin_site.urls),
 
     path('integrations/', include('reviewboard.integrations.urls')),

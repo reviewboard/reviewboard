@@ -1,0 +1,559 @@
+/***************************************************************************
+ * Connected services
+ ***************************************************************************/
+
+/**
+ * The connected services list.
+ *
+ * This is the top-level container for the Connected Services administration
+ * page. It stacks a header above the list of connected services. The header
+ * holds the filtering controls and the button for connecting a new service,
+ * and the list holds one entry per connected service.
+ *
+ * Version Added:
+ *     9.0
+ *
+ * Structure:
+ *     <div class="rb-c-admin-cs-list">
+ *      <div class="rb-c-admin-cs-list__header">...</div>
+ *      <ul class="rb-c-admin-cs-list__entries">
+ *       <li class="rb-c-admin-cs-card">...</li>  [0+]
+ *      </ul>
+ *     </div>
+ */
+.rb-c-admin-cs-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ink-u-spacing-std);
+
+  /**
+   * The header at the top of the connected services list.
+   *
+   * This holds the controls for filtering the list and the button for
+   * connecting a new service. The two are pushed to opposite ends of the
+   * row, with the filtering controls on the left and the button on the
+   * right.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-cs-list__header">
+   *      <div class="ink-c-button-group">...</div>
+   *      <button class="ink-c-button -is-primary">...</button>
+   *     </div>
+   */
+  &__header {
+    display: flex;
+    gap: var(--ink-u-spacing-std);
+    justify-content: space-between;
+  }
+}
+
+
+/**
+ * A block for describing a service, with a logo, name, and service type.
+ *
+ * This identifies a service within an entry's header. The logo sits to the
+ * left of a stacked name and service type. The logo is optional and is only
+ * present when the service provides one.
+ *
+ * Version Added:
+ *     9.0
+ *
+ * Structure:
+ *     <div class="rb-c-admin-cs-service">
+ *      [<img class="rb-c-admin-cs-service__icon" src="...">]
+ *      <div>
+ *       <div class="rb-c-admin-cs-service__name">...</div>
+ *       <div class="rb-c-admin-cs-service__type">...</div>
+ *      </div>
+ *     </div>
+ */
+.rb-c-admin-cs-service {
+  display: inline-grid;
+  gap: var(--ink-u-spacing-s);
+  grid-template-areas:
+    "icon name"
+    "icon type";
+
+  /**
+   * The logo for the service.
+   *
+   * This is shown to the left of the service name and type. It's scaled to
+   * fit a fixed square box while preserving its aspect ratio.
+   *
+   * Structure:
+   *     <img class="rb-c-admin-cs-service__icon" src="...">
+   */
+  &__icon {
+    grid-area: icon;
+    height: 2rem;
+    object-fit: contain;
+    width: 2rem;
+  }
+
+  /**
+   * The name of the service.
+   *
+   * This is the prominent label identifying the connected service.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-cs-service__name">...</div>
+   */
+  &__name {
+    font-size: var(--ink-u-font-ml);
+    font-weight: 700;
+    grid-area: name;
+    line-height: 1.15;
+  }
+
+  /**
+   * The type of the service.
+   *
+   * This is a secondary label shown beneath the name, describing the kind
+   * of service. It's de-emphasized relative to the name.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-cs-service__type">...</div>
+   */
+  &__type {
+    color: var(--ink-p-fg-weak);
+    font-size: var(--ink-u-font-s);
+    font-weight: 700;
+    grid-area: type;
+  }
+}
+
+
+/**
+ * The list of connected services.
+ *
+ * This contains the entries for each connected service, stacked vertically
+ * with consistent spacing between them.
+ *
+ * Version Added:
+ *     9.0
+ *
+ * Structure:
+ *     <ul class="rb-c-admin-cs-list__entries">
+ *      [<li class="rb-c-admin-cs-card">...</li> ...]
+ *     </ul>
+ */
+.rb-c-admin-cs-list__entries {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ink-u-spacing-std);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+
+/**
+ * A card for a connected service.
+ *
+ * This is used for entries in the connected services list as well as steps in
+ * the process of connecting a new service. It's shown as a bordered card
+ * containing a header that identifies the service and a body that lists the
+ * linked accounts. An optional block of service-level controls may sit between
+ * the header and the accounts.
+ *
+ * Version Added:
+ *     9.0
+ *
+ * Structure:
+ *     <li class="rb-c-admin-cs-card">
+ *      <div class="rb-c-admin-cs-card__header">...</div>
+ *      ...
+ *      <div class="rb-c-admin-cs-card__body">...</div>
+ *      <ul class="rb-c-admin-cs-accounts">...</ul>
+ *     </li>
+ */
+.rb-c-admin-cs-card {
+  background: var(--ink-p-surface-bright-bg);
+  border-radius: var(--ink-u-border-radius-s);
+  border: var(--ink-u-border-thin) solid var(--ink-p-container-border-color);
+
+  /**
+   * The body of a card.
+   */
+  &__body {
+    padding: var(--ink-u-spacing-std);
+
+    h1:first-child {
+      margin-top: 0;
+    }
+
+    > p {
+      max-width: 50em;
+    }
+  }
+
+  /**
+   * The header for a connected service card.
+   *
+   * This sits at the top of the entry's card. It identifies the service and
+   * can hold service-level controls. The first child fills the available
+   * width, pushing any following controls to the right.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-cs-card__header">
+   *      <div class="rb-c-admin-cs-service">...</div>
+   *      ...
+   *     </div>
+   */
+  &__header {
+    background: linear-gradient(
+      to bottom,
+      var(--ink-p-surface-bright-bg),
+      var(--ink-p-grey-100));
+    border-bottom: 1px solid var(--ink-p-container-border-color-weak);
+    border-radius: var(--ink-u-border-radius-s-inner) var(--ink-u-border-radius-s-inner) 0 0;
+    display: flex;
+    align-items: center;
+    padding: var(--ink-u-spacing-std);
+
+    >:first-child {
+      flex: 1;
+    }
+  }
+}
+
+
+/**
+ * The list of linked accounts for a service.
+ *
+ * Structure:
+ *     <ul class="rb-c-admin-cs-accounts">
+ *      [<li class="rb-c-admin-cs-accounts__account">...</li>]
+ *     </ul>
+ */
+.rb-c-admin-cs-accounts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  /**
+   * A single account linked through the service.
+   *
+   * This is a row showing the account name on one end and any account
+   * detail and management controls on the other. A bottom border separates
+   * consecutive accounts. The final account in an entry drops the border
+   * and rounds off the bottom corners of the card.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-cs-accounts__account">
+   *      <div>
+   *       <a href="...">...</a>
+   *      </div>
+   *      <div>
+   *       [<span class="rb-c-admin-cs-accounts__account__detail">
+   *        ...
+   *       </span>]
+   *      </div>
+   *     </div>
+   */
+  &__account {
+    align-items: center;
+    border-bottom: 1px solid var(--ink-p-container-border-color-weak);
+    display: flex;
+    gap: var(--ink-u-spacing-std);
+    justify-content: space-between;
+    padding: var(--ink-u-spacing-std);
+
+    &:first-child {
+      padding-top: 0;
+    }
+
+    &:last-child {
+      border-bottom: 0;
+      border-radius: 0 0 var(--ink-u-border-radius-s-inner) var(--ink-u-border-radius-s-inner);
+      padding-bottom: 0;
+    }
+
+    > div {
+      align-items: center;
+      display: flex;
+      gap: var(--ink-u-spacing-std);
+    }
+
+    /**
+     * Supplementary detail about the account.
+     *
+     * This is de-emphasized text shown alongside the account, such as a
+     * status or descriptive note.
+     */
+    &__detail {
+      color: var(--ink-p-fg-weak);
+      font-size: var(--ink-u-font-s);
+    }
+
+    /**
+     * An icon shown for the account.
+     *
+     * This is sized to fit alongside the account's text.
+     */
+    &__icon {
+      width: 20px;
+      height: 20px;
+    }
+  }
+}
+
+
+/**
+ * The "Connect a service" wizard.
+ *
+ * This is the body of the dialog shown when connecting a new service. It first
+ * shows a search field and a grouped list of services to pick from, and then
+ * the service-specific connect UI once a service is chosen.
+ *
+ * Version Added:
+ *     9.0
+ *
+ * Structure:
+ *     <div class="ink-c-dialog rb-c-connect-wizard">
+ *      <div class="ink-c-dialog__title">
+ *       <span class="rb-c-connect-wizard__title">
+ *        [<span class="rb-c-connect-wizard__title-icon"></span>]
+ *        <span>...</span>
+ *       </span>
+ *      </div>
+ *      <div class="ink-c-dialog__body">
+ *       <div class="rb-c-connect-wizard__body">
+ *        <div class="rb-c-search-field rb-c-connect-wizard__search-field">
+ *         <span class="ink-i-search"></span>
+ *         <input class="rb-c-search-field__input rb-c-connect-wizard__search">
+ *        </div>
+ *        <div class="rb-c-connect-wizard__sections">...</div>
+ *       </div>
+ *      </div>
+ *     </div>
+ */
+.rb-c-connect-wizard {
+  max-width: inherit;
+  max-height: inherit;
+  min-width: inherit;
+  width: 50em !important;
+  height: 40em !important;
+
+  #rb-ns-pages.base.on-shell-mobile-mode({
+    width: calc(100vw - 1em) !important;
+    height: calc(100vh - 1em) !important;
+  });
+
+  .ink-c-dialog__title {
+    padding: var(--ink-u-spacing-sm);
+  }
+
+  .ink-c-dialog__body {
+    border-bottom: var(--ink-u-border-thin) var(--ink-c-dialog-title-border-color) solid;
+    overflow: auto;
+  }
+
+  .rb-c-form-row:is(:first-child) {
+    margin-top: 0;
+  }
+
+  h1 {
+    font-size: var(--ink-u-font-l);
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+  }
+
+  /**
+   * The service identity shown in the dialog title.
+   *
+   * This pairs the service's icon with the "Connect to <X>" label once a
+   * service has been chosen.
+   */
+  &__title {
+    align-items: center;
+    display: flex;
+    height: 1.5rem;
+    font-size: var(--ink-u-font-ml);
+    gap: var(--ink-u-spacing-s);
+  }
+
+  &__title-icon {
+    height: 1.5rem;
+    object-fit: contain;
+    width: 1.5rem;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-std);
+
+    /*
+     * Fill the dialog body so the search field can stay pinned at the top
+     * while the scrollable region below it does the scrolling.
+     */
+    height: 100%;
+  }
+
+  /**
+   * The search field for filtering services.
+   *
+   * This builds on the shared ``rb-c-search-field`` component, which provides
+   * the leading search icon and the input styling. The only wizard-specific
+   * behavior is keeping the field pinned at the top while the list scrolls.
+   */
+  &__search-field {
+    flex: 0 0 auto;
+  }
+
+  /**
+   * The container for the service sections.
+   *
+   * This fills the remaining space below the search field and scrolls, so
+   * filtering the list does not change the size of the dialog and the search
+   * field never scrolls away.
+   */
+  &__sections {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-l);
+    min-height: 0;
+    overflow-y: auto;
+    margin: calc(-1 * var(--ink-u-spacing-std));
+    padding: var(--ink-u-spacing-std);
+  }
+
+  /**
+   * The service-specific connect step.
+   *
+   * Like the service list, this fills the remaining space and scrolls on its
+   * own.
+   */
+  &__connect {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-std);
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  /**
+   * The title for a section of services.
+   */
+  &__section-title {
+    color: var(--ink-p-fg-weak);
+    font-size: var(--ink-u-font-s);
+    font-weight: 700;
+    margin: 0 0 var(--ink-u-spacing-std) 0;
+    text-transform: uppercase;
+  }
+
+  /**
+   * A list of options to choose from.
+   *
+   * Structure:
+   *     <ul class="rb-c-connect-wizard__options">
+   *      [
+   *       <li>
+   *        <a href="#">
+   *         <img src="...">
+   *         ...
+   *        </a>
+   *       </li>
+   *      ]
+   *     </ul>
+   */
+  &__options {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-std);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    a {
+      color: var(--ink-p-fg);
+      align-items: center;
+      cursor: pointer;
+      display: grid;
+      flex: 1;
+      grid-template-areas:
+        "icon title       chevron"
+        ".    description chevron";
+      grid-template-columns: auto 1fr auto;
+      padding: var(--ink-u-spacing-std);
+
+      &:hover, &:link, &:visited {
+        color: var(--ink-p-fg);
+        text-decoration: none;
+      }
+
+      /* The chevron at the right edge. */
+      &::after {
+        color: var(--ink-p-fg-weak);
+        content: '›';
+        grid-area: chevron;
+        line-height: 1;
+        margin-left: var(--ink-u-spacing-std);
+        font-size: var(--ink-u-font-m);
+      }
+    }
+
+    h2 {
+      font-size: var(--ink-u-font-m);
+      grid-area: title;
+      margin: 0;
+      padding: 0;
+
+      span[class*="ink-i-"] {
+        vertical-align: bottom;
+      }
+
+      .ink-c-badge {
+        font-weight: normal;
+        font-size: var(--ink-u-font-s);
+      }
+    }
+
+    p {
+      color: var(--ink-p-fg-weak);
+      font-size: var(--ink-u-font-s);
+      grid-area: description;
+      margin: var(--ink-u-spacing-s) 0 0 0;
+    }
+
+    img {
+      grid-area: icon;
+      height: 1.5rem;
+      object-fit: contain;
+      margin-right: var(--ink-u-spacing-s);
+      width: 1.5rem;
+    }
+
+    li {
+      align-items: center;
+      background: var(--ink-p-surface-bright-bg);
+      border-radius: var(--ink-u-border-radius-s);
+      border: var(--ink-u-border-thin) solid var(--ink-p-container-border-color);
+      display: flex;
+
+      &:hover {
+        background: var(--ink-p-accent-info-bg);
+        border-color: var(--ink-p-accent-primary-bg);
+      }
+    }
+  }
+
+  /**
+   * The "Back" button shown above the connect UI.
+   */
+  &__back {
+    align-self: flex-start;
+    background: transparent;
+    border: 0;
+    color: var(--ink-p-link-fg);
+    cursor: pointer;
+    padding: 0;
+  }
+}

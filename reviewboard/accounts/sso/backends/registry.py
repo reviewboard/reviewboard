@@ -11,8 +11,7 @@ from importlib import import_module
 
 from django.urls import include, path, re_path
 from django.utils.translation import gettext_lazy as _
-from djblets.registries.registry import (ALREADY_REGISTERED,
-                                         NOT_REGISTERED)
+from djblets.registries.registry import ALREADY_REGISTERED, NOT_REGISTERED
 
 from reviewboard.registries.registry import Registry
 

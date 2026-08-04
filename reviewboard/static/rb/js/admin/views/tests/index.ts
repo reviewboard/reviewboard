@@ -1,1 +1,2 @@
+import './connectServiceWizardViewTests';
 import './licenseViewTests';

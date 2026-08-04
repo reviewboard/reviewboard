@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
@@ -63,7 +63,7 @@ def _is_datagrid_gridonly(
 def all_review_requests(
     request: HttpRequest,
     *,
-    local_site: Optional[LocalSite] = None,
+    local_site: (LocalSite | None) = None,
 ) -> HttpResponse:
     """Display a list of all review requests.
 
@@ -97,7 +97,7 @@ def all_review_requests(
 @valid_prefs_required(disable_consent_checks=_is_datagrid_gridonly)
 def dashboard(
     request: HttpRequest,
-    local_site: Optional[LocalSite] = None,
+    local_site: (LocalSite | None) = None,
 ) -> HttpResponse:
     """Display the dashboard.
 
@@ -137,7 +137,7 @@ def group(
     request: HttpRequest,
     *,
     name: str,
-    local_site: Optional[LocalSite] = None,
+    local_site: (LocalSite | None) = None,
 ) -> HttpResponse:
     """Display a list of review requests belonging to a particular group.
 
@@ -182,7 +182,7 @@ def group(
 def group_list(
     request: HttpRequest,
     *,
-    local_site: Optional[LocalSite] = None,
+    local_site: (LocalSite | None) = None,
 ) -> HttpResponse:
     """Display a list of all review groups.
 
@@ -210,7 +210,7 @@ def group_members(
     request: HttpRequest,
     *,
     name: str,
-    local_site: Optional[LocalSite] = None,
+    local_site: (LocalSite | None) = None,
 ) -> HttpResponse:
     """Display a list of users registered for a particular group.
 
@@ -252,8 +252,8 @@ def submitter(
     request: HttpRequest,
     *,
     username: str,
-    local_site: Optional[LocalSite] = None,
-    grid: Optional[str] = None,
+    local_site: (LocalSite | None) = None,
+    grid: (str | None) = None,
 ) -> HttpResponse:
     """Display a user's profile, showing their review requests and reviews.
 
@@ -315,7 +315,7 @@ def submitter(
 def users_list(
     request: HttpRequest,
     *,
-    local_site: Optional[LocalSite] = None,
+    local_site: (LocalSite | None) = None,
 ) -> HttpResponse:
     """Display a list of all users.
 

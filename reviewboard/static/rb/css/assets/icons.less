@@ -76,41 +76,38 @@
 /*
  * Define SVG icons based on Tabler.
  */
-.rb-icon-brand-bluesky {
-  #ink-ns-ui.icons.svg-icon(
-    data-uri("@{tabler-path}/icons/outline/brand-bluesky.svg"));
+#rb-ns-assets() {
+  @icon-svg-paths: {
+    brand-bluesky: data-uri("@{tabler-path}/icons/outline/brand-bluesky.svg");
+    brand-facebook: data-uri("@{tabler-path}/icons/outline/brand-facebook.svg");
+    brand-linkedin: data-uri("@{tabler-path}/icons/outline/brand-linkedin.svg");
+    brand-mastodon: data-uri("@{tabler-path}/icons/outline/brand-mastodon.svg");
+    brand-reddit: data-uri("@{tabler-path}/icons/outline/brand-reddit.svg");
+    brand-twitter: data-uri("@{tabler-path}/icons/outline/brand-twitter.svg");
+    brand-youtube: data-uri("@{tabler-path}/icons/outline/brand-youtube.svg");
+    rss: data-uri("@{tabler-path}/icons/outline/rss.svg");
+  }
+
+  .icons() {
+    #ink-ns-theme.add-css-vars(
+      @prefix: rb-i;
+      @vars: #rb-ns-assets[@icon-svg-paths]);
+  }
 }
 
-.rb-icon-brand-facebook {
-  #ink-ns-ui.icons.svg-icon(
-    data-uri("@{tabler-path}/icons/outline/brand-facebook.svg"));
-}
 
-.rb-icon-brand-linkedin {
-  #ink-ns-ui.icons.svg-icon(
-    data-uri("@{tabler-path}/icons/outline/brand-linkedin.svg"));
-}
+#ink-ns-theme.init(
+  @root-var-rules: {
+    @_icons: #rb-ns-assets[@icon-svg-paths];
 
-.rb-icon-brand-mastodon {
-  #ink-ns-ui.icons.svg-icon(
-    data-uri("@{tabler-path}/icons/outline/brand-mastodon.svg"));
-}
+    each(@_icons, {
+      .rb-icon-@{key} {
+        #ink-ns-ui.icons.svg-icon(~"var(--rb-i-@{key})");
+      }
+    });
+  };
 
-.rb-icon-brand-reddit {
-  #ink-ns-ui.icons.svg-icon(
-    data-uri("@{tabler-path}/icons/outline/brand-reddit.svg"));
-}
-
-.rb-icon-brand-twitter {
-  #ink-ns-ui.icons.svg-icon(
-    data-uri("@{tabler-path}/icons/outline/brand-twitter.svg"));
-}
-
-.rb-icon-brand-youtube {
-  #ink-ns-ui.icons.svg-icon(
-    data-uri("@{tabler-path}/icons/outline/brand-youtube.svg"));
-}
-
-.rb-icon-rss {
-  #ink-ns-ui.icons.svg-icon(data-uri("@{tabler-path}/icons/outline/rss.svg"));
-}
+  @theme-var-rules: {
+    #rb-ns-assets.icons();
+  };
+);

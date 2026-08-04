@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Iterator, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 from django import template
@@ -22,6 +22,8 @@ from reviewboard.avatars import avatar_services
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from django.template.context import Context
 
     from reviewboard.accounts.models import Profile

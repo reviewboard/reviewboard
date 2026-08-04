@@ -9,7 +9,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from django.conf import settings
-from django.template import Context
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
@@ -22,6 +21,8 @@ from reviewboard.actions.renderers import MenuActionGroupRenderer
 
 
 if TYPE_CHECKING:
+    from django.template import Context
+
     MixinParent = BaseAction
 else:
     MixinParent = object

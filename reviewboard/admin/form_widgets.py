@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Iterable, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
+from django.forms.widgets import MultiWidget, Select, TextInput
 from django.template.loader import render_to_string
 from django.utils.encoding import force_str
 from django.utils.safestring import mark_safe
-from django.forms.widgets import MultiWidget, Select, TextInput
 from djblets.forms.widgets import (
-    RelatedObjectWidget as DjbletsRelatedObjectWidget)
+    RelatedObjectWidget as DjbletsRelatedObjectWidget,
+)
 from pygments.lexers import get_all_lexers
 
 from reviewboard.avatars import avatar_services
@@ -19,6 +20,9 @@ from reviewboard.reviews.models import Group
 from reviewboard.scmtools.models import Repository
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
+    from typing import Any
+
     from django.forms.renderers import BaseRenderer
     from django.utils.safestring import SafeString
 
@@ -41,11 +45,11 @@ class RelatedObjectWidget(DjbletsRelatedObjectWidget):
     ######################
 
     #: The optional Local Site to bound the API requests to.
-    local_site_name: Optional[str]
+    local_site_name: str | None
 
     def __init__(
         self,
-        local_site_name: Optional[str] = None,
+        local_site_name: (str | None) = None,
         multivalued: bool = True,
         **kwargs,
     ) -> None:
@@ -240,8 +244,8 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
         self,
         name: str,
         value: Any,
-        attrs: Optional[dict[str, Any]] = None,
-        renderer: Optional[BaseRenderer] = None,
+        attrs: (dict[str, Any] | None) = None,
+        renderer: (BaseRenderer | None) = None,
     ) -> SafeString:
         """Render the widget.
 
@@ -263,7 +267,7 @@ class RelatedRepositoryWidget(RelatedObjectWidget):
             The rendered HTML.
         """
         existing_repos: Iterable[Repository]
-        input_value: Optional[str]
+        input_value: str | None
 
         if value:
             if not self.multivalued:
@@ -414,8 +418,8 @@ class RelatedGroupWidget(RelatedObjectWidget):
         self,
         name: str,
         value: Any,
-        attrs: Optional[dict[str, Any]] = None,
-        renderer: Optional[BaseRenderer] = None,
+        attrs: (dict[str, Any] | None) = None,
+        renderer: (BaseRenderer | None) = None,
     ) -> SafeString:
         """Render the widget.
 
@@ -437,7 +441,7 @@ class RelatedGroupWidget(RelatedObjectWidget):
             The rendered HTML.
         """
         existing_groups: Iterable[Group]
-        input_value: Optional[str]
+        input_value: str | None
 
         if value:
             if not self.multivalued:

@@ -5,9 +5,9 @@ from __future__ import annotations
 import logging
 import os
 import re
-from typing import Optional, cast
+from typing import cast
 
-from django.conf import settings, global_settings
+from django.conf import global_settings, settings
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.storage import default_storage, storages
 from django.utils.functional import empty
@@ -25,8 +25,8 @@ from reviewboard.accounts.privacy import recompute_privacy_consents
 from reviewboard.accounts.sso.backends import sso_backends
 from reviewboard.avatars import avatar_services
 from reviewboard.diffviewer.settings import DiffSettings
-from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.notifications.email.message import EmailMessage
+from reviewboard.oauth.features import oauth2_service_feature
 from reviewboard.search.search_backends.whoosh import WhooshBackend
 from reviewboard.signals import site_settings_loaded
 
@@ -212,7 +212,7 @@ logger = logging.getLogger(__name__)
 
 def load_site_config(
     full_reload: bool = False,
-) -> Optional[SiteConfiguration]:
+) -> SiteConfiguration | None:
     """Load stored site configuration settings.
 
     This populates the Django settings object with any keys that need to be

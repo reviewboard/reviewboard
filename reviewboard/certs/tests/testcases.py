@@ -7,16 +7,31 @@ Version Added:
 from __future__ import annotations
 
 import os
+import shutil
+import ssl
 from datetime import datetime, timedelta
+from http.client import HTTPConnection
+from ssl import VerifyMode
+from typing import TYPE_CHECKING
+from urllib.request import HTTPHandler, HTTPSHandler
 
+import kgb
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.serialization import Encoding
 from cryptography.x509.oid import NameOID
-from typing_extensions import Final
 
+from reviewboard.certs.manager import CertificateManager, cert_manager
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+    from typing import Final
+
+    TestCaseMixinBase = TestCase
+else:
+    TestCaseMixinBase = object
 
 
 TEST_TRUST_CERT_PEM = b"""
@@ -269,6 +284,116 @@ TEST_SHA256_2 = (
 )
 
 
+class MockHTTPResponse:
+    """A mock HTTP response for certificate testing.
+
+    This allows control over HTTP response codes, headers, and payload data.
+
+    Version Added:
+        8.1
+    """
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The data in the response body.
+    data: bytes
+
+    #: The HTTP status code.
+    code: int
+
+    #: The HTTP status reason.
+    reason: str
+
+    #: The normalized headers in the response.
+    headers: Mapping[str, str]
+
+    #: The URL returning the response.
+    url: str
+
+    def __init__(
+        self,
+        *,
+        data: bytes = b'test',
+        code: int = 200,
+        reason: str = 'OK',
+        headers: (Mapping[str, str] | None) = None,
+        url: str = 'https://example.com',
+    ) -> None:
+        """Initialize the mock HTTP response.
+
+        Args:
+            data (bytes, optional):
+                The data in the response body.
+
+            code (int, optional):
+                The HTTP status code.
+
+                This defaults to 200.
+
+            reason (str, optional):
+                The HTTP status reason.
+
+                This defaults to "OK".
+
+            headers (dict, optional):
+                The normalized headers in the response.
+
+                This defaults to a :mailheader:`content-type` of
+                ``text/plain``.
+
+            url (str, optional):
+                The URL returning the response.
+        """
+        self.data = data
+        self.code = code
+        self.reason = reason
+        self.headers = headers or {
+            'content-type': 'text/plain',
+        }
+        self.url = url
+
+    def getcode(self) -> int:
+        """Return the HTTP status code for the response.
+
+        Returns:
+            int:
+            The HTTP status code.
+        """
+        return self.code
+
+    def geturl(self) -> str:
+        """Return the URL returning the response.
+
+        Returns:
+            str:
+            The URL.
+        """
+        return self.url
+
+    def info(self) -> Mapping[str, str]:
+        """Return the normalized headers for the response.
+
+        Returns:
+            dict:
+            The normalized headers.
+        """
+        return self.headers
+
+    def read(self) -> bytes:
+        """Return the response body.
+
+        Returns:
+            bytes:
+            The response body.
+        """
+        return self.data
+
+    def close(self) -> None:
+        """Close the response."""
+
+
 class CaptureSSLContext:
     """SSL context that captures loaded state.
 
@@ -279,6 +404,17 @@ class CaptureSSLContext:
     ######################
     # Instance variables #
     ######################
+
+    #: ALPN protocols advertised on this context.
+    #:
+    #: This is set by the standard library when it builds a default context
+    #: (for example in :py:meth:`urllib.request.HTTPSHandler.__init__`). Review
+    #: Board's own contexts never set this, so it can be used to tell the two
+    #: apart.
+    #:
+    #: Version Added:
+    #:     9.0
+    alpn_protocols: Sequence[str] | None
 
     #: Loaded CA bundle strings.
     cadatas: list[bytes | str | None]
@@ -301,8 +437,18 @@ class CaptureSSLContext:
     #: Loaded mTLS key passwords.
     passwords: list[str | None]
 
+    #: Whether TLS 1.3 post-handshake client authentication is enabled.
+    #:
+    #: Version Added:
+    #:     9.0
+    post_handshake_auth: bool
+
+    #: The verification mode for SSL certificates.
+    verify_mode: VerifyMode
+
     def __init__(self) -> None:
         """Initialize the context."""
+        self.alpn_protocols = None
         self.cadatas = []
         self.cafiles = []
         self.capaths = []
@@ -310,12 +456,14 @@ class CaptureSSLContext:
         self.keyfiles = []
         self.passwords = []
         self.check_hostname = True
+        self.post_handshake_auth = False
+        self.verify_mode = VerifyMode.CERT_REQUIRED
 
     def load_verify_locations(
         self,
         cafile: (str | None) = None,
         capath: (str | None) = None,
-        cadata: (bytes | str | None) = None
+        cadata: (bytes | str | None) = None,
     ) -> None:
         """Load CA data for verification.
 
@@ -359,6 +507,117 @@ class CaptureSSLContext:
         self.certfiles.append(certfile)
         self.keyfiles.append(keyfile)
         self.passwords.append(password)
+
+    def set_alpn_protocols(
+        self,
+        protocols: Sequence[str],
+    ) -> None:
+        """Record the ALPN protocols for the context.
+
+        Python 3.14 calls this internally when building a default context, so
+        we need to have it present. We record the protocols so that these
+        standard-library contexts can be told apart from Review Board's own.
+
+        Version Added:
+            9.0
+
+        Args:
+            protocols (list of str):
+                The list of protocols to advertise during the SSL/TLS
+                handshake.
+        """
+        self.alpn_protocols = protocols
+
+
+class CaptureSSLMixin(TestCaseMixinBase):
+    """A mixin for unit tests that need to capture HTTP SSL contexts.
+
+    This takes care of setting up the state needed to capture all SSL
+    contexts set up for HTTP requests. It will clear out the stored
+    certificates before and after tests, set up a mock HTTP response that
+    tests can customize, and serve it up for responses.
+
+    Any SSL contexts set up during the test run will be stored in
+    :py:attr:`ssl_contexts` for introspection.
+
+    Subclasses must mix in :py:class:`kgb.SpyAgency`.
+
+    Version Added:
+        8.1
+    """
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The certificate manager used for the test and storage.
+    cert_manager: CertificateManager
+
+    #: The list of captured SSL contexts.
+    ssl_contexts: list[CaptureSSLContext]
+
+    #: The mock HTTP response to serve.
+    #:
+    #: Tests can customize this (but cannot replace the instance) If they
+    #: need to return more than one response in order of request, they will
+    #: need to unspy :py:meth:`http.client.HTTPConnection.getresponse` and
+    #: re-spy on it with the results returned in order.
+    mock_http_response: MockHTTPResponse
+
+    def setUp(self) -> None:
+        """Set up state for the test.
+
+        This will clear out any existing certificate state and begin spying
+        on all HTTP(S) operations needed to control communication and test
+        results.
+        """
+        super().setUp()
+
+        storage_path = cert_manager.storage_backend.storage_path
+        self.cert_manager = cert_manager
+
+        # Clear out any stored SSL certificate state before the test.
+        if os.path.exists(storage_path):
+            shutil.rmtree(storage_path)
+
+        self.mock_http_response = MockHTTPResponse()
+
+        # We only need to spy on HTTPConnection. HTTPSConnection inherits
+        # these from that.
+        self.spy_on(HTTPConnection.request,
+                    owner=HTTPConnection,
+                    call_original=False)
+        self.spy_on(HTTPConnection.getresponse,
+                    owner=HTTPConnection,
+                    op=kgb.SpyOpReturn(self.mock_http_response))
+
+        self.spy_on(HTTPHandler.http_open,
+                    owner=HTTPHandler)
+        self.spy_on(HTTPSHandler.https_open,
+                    owner=HTTPSHandler)
+
+        # Watch for any created SSL contexts and store them in the list.
+        self.ssl_contexts = []
+
+        @self.spy_for(ssl.create_default_context)
+        def _create_default_context(*args, **kwargs):
+            ssl_context = CaptureSSLContext()
+            self.ssl_contexts.append(ssl_context)
+
+            return ssl_context
+
+    def tearDown(self) -> None:
+        """Tear down state for the test.
+
+        This will clear out any existing certificate state after the test and
+        clear all stored responses and SSL contexts.
+        """
+        storage_path = self.cert_manager.storage_backend.storage_path
+
+        if os.path.exists(storage_path):
+            shutil.rmtree(storage_path)
+
+        super().tearDown()
 
 
 class CertificateTestCase(TestCase):

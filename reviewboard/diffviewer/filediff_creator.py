@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 from copy import deepcopy
-from typing import Iterator, Optional, Protocol, TYPE_CHECKING, Union
+from typing import Iterator, Protocol, TYPE_CHECKING
 
 from django.utils.encoding import force_bytes, force_str
 from django.utils.translation import gettext as _
@@ -64,7 +64,7 @@ class _PreparedDiffInfo(TypedDict):
     parsed_diff: ParsedDiff
 
     #: The parsed diff file for the parent diff.
-    parsed_parent_diff: Optional[ParsedDiff]
+    parsed_parent_diff: ParsedDiff | None
 
     #: The parent diff file.
     parser: BaseDiffParser
@@ -74,15 +74,15 @@ class _PreparedDiffInfo(TypedDict):
 def create_filediffs(
     *,
     diff_file_contents: bytes,
-    parent_diff_file_contents: Optional[bytes],
+    parent_diff_file_contents: bytes | None,
     repository: Repository,
-    basedir: Optional[Union[bytes, str]],
-    base_commit_id: Optional[str],
+    basedir: bytes | str | None,
+    base_commit_id: str | None,
     diffset: DiffSet,
-    request: Optional[HttpRequest] = None,
+    request: (HttpRequest | None) = None,
     check_existence: bool = True,
-    get_file_exists: Optional[_GetFileExistsFunc] = None,
-    diffcommit: Optional[DiffCommit] = None,
+    get_file_exists: (_GetFileExistsFunc | None) = None,
+    diffcommit: (DiffCommit | None) = None,
     validate_only: bool = False,
 ) -> Sequence[FileDiff]:
     """Create FileDiffs from the given data.
@@ -202,7 +202,7 @@ def create_filediffs(
     filediffs: list[FileDiff] = []
 
     for f in diff_info['files']:
-        parent_file: Optional[ParsedDiffFile] = None
+        parent_file: (ParsedDiffFile | None) = None
         parent_content: bytes = b''
 
         extra_data = f.extra_data.copy()
@@ -342,13 +342,13 @@ def create_filediffs(
 def _prepare_diff_info(
     *,
     diff_file_contents: bytes,
-    parent_diff_file_contents: Optional[bytes],
+    parent_diff_file_contents: bytes | None,
     repository: Repository,
-    request: Optional[HttpRequest],
+    request: HttpRequest | None,
     basedir: bytes,
     check_existence: bool,
-    get_file_exists: Optional[_GetFileExistsFunc] = None,
-    base_commit_id: Optional[str] = None,
+    get_file_exists: (_GetFileExistsFunc | None) = None,
+    base_commit_id: (str | None) = None,
 ) -> _PreparedDiffInfo:
     """Extract information and files from a diff.
 
@@ -498,11 +498,11 @@ def _process_files(
     parsed_diff: ParsedDiff,
     basedir: bytes,
     repository: Repository,
-    base_commit_id: Optional[str],
-    request: Optional[HttpRequest],
-    get_file_exists: Optional[_GetFileExistsFunc] = None,
+    base_commit_id: str | None,
+    request: HttpRequest | None,
+    get_file_exists: (_GetFileExistsFunc | None) = None,
     check_existence: bool = False,
-    limit_to: Optional[set[bytes]] = None,
+    limit_to: (set[bytes] | None) = None,
 ) -> Iterator[ParsedDiffFile]:
     """Collect metadata about files in the parser.
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.utils.html import escape
@@ -131,7 +131,7 @@ class ImageReviewUI(ReviewUI[
     def get_comment_thumbnail(
         self,
         comment: FileAttachmentComment,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate and return a thumbnail representing this comment.
 
         This will find the appropriate lines the comment applies to and

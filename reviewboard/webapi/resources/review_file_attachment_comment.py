@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from djblets.util.decorators import augment_method_from
@@ -44,7 +42,7 @@ class ReviewFileAttachmentCommentResource(BaseFileAttachmentCommentResource):
         file_attachment_id: int,
         review_request: ReviewRequest,
         user: User,
-    ) -> Optional[FileAttachment]:
+    ) -> FileAttachment | None:
         """Return the file attachment matching the given ID.
 
         Args:

@@ -4,7 +4,7 @@ import logging
 import uuid
 from collections.abc import Sequence
 from itertools import chain
-from typing import Any, Generic, Iterable, Optional, TYPE_CHECKING, cast
+from typing import Any, Generic, Iterable, TYPE_CHECKING, cast
 
 from django.db import models
 from django.template.loader import get_template, render_to_string
@@ -93,7 +93,7 @@ class BuiltinFieldMixin(FieldMixinParent[TFieldValue]):
     def load_value(
         self,
         review_request_details: BaseReviewRequestDetails,
-    ) -> Optional[TFieldValue]:
+    ) -> TFieldValue | None:
         """Load a value from the review request or draft.
 
         Args:
@@ -114,11 +114,11 @@ class BuiltinFieldMixin(FieldMixinParent[TFieldValue]):
         if isinstance(value, models.Manager):
             value = list(value.all())
 
-        return cast(Optional[TFieldValue], value)
+        return cast(TFieldValue | None, value)
 
     def save_value(
         self,
-        value: Optional[TFieldValue],
+        value: TFieldValue | None,
     ) -> None:
         """Save the value in the review request or draft.
 
@@ -187,12 +187,12 @@ class ReviewRequestPageDataMixin(FieldMixinParent[TFieldValue]):
     ######################
 
     #: The data already queried for the review request page.
-    data: Optional[ReviewRequestPageData]
+    data: ReviewRequestPageData | None
 
     def __init__(
         self,
         review_request_details: BaseReviewRequestDetails,
-        data: Optional[ReviewRequestPageData] = None,
+        data: (ReviewRequestPageData | None) = None,
         *args,
         **kwargs,
     ) -> None:
@@ -223,7 +223,7 @@ class ReviewRequestPageDataMixin(FieldMixinParent[TFieldValue]):
     def load_value(
         self,
         review_request_details: BaseReviewRequestDetails,
-    ) -> Optional[TFieldValue]:
+    ) -> TFieldValue | None:
         """Load a value from the review request or draft.
 
         Args:
@@ -268,8 +268,8 @@ class BaseCaptionsField(ReviewRequestPageDataMixin[str],
     for caption changes on file attachments or screenshots.
     """
 
-    obj_map_attr: Optional[str] = None
-    caption_object_field: Optional[str] = None
+    obj_map_attr: (str | None) = None
+    caption_object_field: (str | None) = None
 
     change_entry_renders_inline = False
 
@@ -362,7 +362,7 @@ class BaseModelListEditableField(BaseCommaEditableField[TModel]):
     This is used for built-in classes that work with ManyToManyFields.
     """
 
-    model_name_attr: Optional[str] = None
+    model_name_attr: (str | None) = None
 
     def has_value_changed(
         self,
@@ -439,7 +439,7 @@ class BaseModelListEditableField(BaseCommaEditableField[TModel]):
 
     def save_value(
         self,
-        value: Optional[Sequence[TModel]],
+        value: Sequence[TModel] | None,
     ) -> None:
         """Save the value in the review request or draft.
 
@@ -507,7 +507,7 @@ class DescriptionField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
 
     def is_text_markdown(
         self,
-        value: Optional[str],
+        value: str | None,
     ) -> bool:
         """Return whether the description uses Markdown.
 
@@ -533,7 +533,7 @@ class TestingDoneField(BuiltinTextAreaFieldMixin, BaseTextAreaField):
 
     def is_text_markdown(
         self,
-        value: Optional[str],
+        value: str | None,
     ) -> bool:
         """Return whether the description uses Markdown.
 
@@ -563,7 +563,7 @@ class OwnerField(BuiltinFieldMixin[User],
 
     def render_value(
         self,
-        value: Optional[User],
+        value: User | None,
     ) -> SafeString:
         """Render the value in the field.
 
@@ -737,7 +737,7 @@ class BugsField(BuiltinFieldMixin[Sequence[str]],
 
     def save_value(
         self,
-        value: Optional[Sequence[str]],
+        value: Sequence[str] | None,
     ) -> None:
         """Save the value in the review request or draft.
 
@@ -799,7 +799,7 @@ class BugsField(BuiltinFieldMixin[Sequence[str]],
     def _get_bug_url(
         self,
         bug_id: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return the URL to link to a specific bug.
 
         Args:
@@ -813,8 +813,8 @@ class BugsField(BuiltinFieldMixin[Sequence[str]],
         review_request_details = self.review_request_details
         review_request = review_request_details.get_review_request()
         repository = review_request_details.repository
-        local_site_name: Optional[str] = None
-        bug_url: Optional[str] = None
+        local_site_name: (str | None) = None
+        bug_url: (str | None) = None
 
         if review_request.local_site:
             local_site_name = review_request.local_site.name
@@ -915,7 +915,7 @@ class BlocksField(BuiltinFieldMixin[Sequence[ReviewRequest]],
     def load_value(
         self,
         review_request_details: BaseReviewRequestDetails,
-    ) -> Optional[Sequence[ReviewRequest]]:
+    ) -> Sequence[ReviewRequest] | None:
         """Load a value from the review request or draft.
 
         Args:
@@ -937,7 +937,7 @@ class BlocksField(BuiltinFieldMixin[Sequence[ReviewRequest]],
 
     def render_value(
         self,
-        value: Optional[Sequence[ReviewRequest]],
+        value: Sequence[ReviewRequest] | None,
     ) -> SafeString:
         """Render the value in the field.
 
@@ -999,7 +999,7 @@ class ChangeField(BuiltinFieldMixin[str],
 
     def render_value(
         self,
-        value: Optional[str],
+        value: str | None,
     ) -> SafeString:
         """Render the value in the field.
 
@@ -1047,7 +1047,7 @@ class CommitField(BuiltinFieldMixin[str],
 
     def render_value(
         self,
-        value: Optional[str],
+        value: str | None,
     ) -> SafeString:
         """Render the value in the field.
 
@@ -1241,8 +1241,8 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
 
     def has_value_changed(
         self,
-        old_value: Optional[DiffSet],
-        new_value: Optional[DiffSet],
+        old_value: DiffSet | None,
+        new_value: DiffSet | None,
     ) -> bool:
         """Return whether the value has changed.
 
@@ -1264,7 +1264,7 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
     def load_value(
         self,
         review_request_details: BaseReviewRequestDetails,
-    ) -> Optional[DiffSet]:
+    ) -> DiffSet | None:
         """Load a value from the review request or draft.
 
         Args:
@@ -1283,7 +1283,7 @@ class DiffField(ReviewRequestPageDataMixin[DiffSet],
 
     def save_value(
         self,
-        value: Optional[DiffSet],
+        value: DiffSet | None,
     ) -> None:
         """Save the value in the review request or draft.
 
@@ -1707,7 +1707,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
 
     def save_value(
         self,
-        value: Optional[DiffSet],
+        value: DiffSet | None,
     ) -> None:
         """Save a value to the review request.
 
@@ -1721,7 +1721,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
 
     def render_value(
         self,
-        value: Optional[DiffSet],
+        value: DiffSet | None,
     ) -> SafeString:
         """Render the field for the given value.
 
@@ -1747,8 +1747,8 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
 
     def has_value_changed(
         self,
-        old_value: Optional[DiffSet],
-        new_value: Optional[DiffSet],
+        old_value: DiffSet | None,
+        new_value: DiffSet | None,
     ) -> bool:
         """Return whether or not the value has changed.
 
@@ -1770,7 +1770,7 @@ class CommitListField(ReviewRequestPageDataMixin[DiffSet],
     def record_change_entry(
         self,
         changedesc: ChangeDescription,
-        old_value: Optional[DiffSet],
+        old_value: DiffSet | None,
         new_value: DiffSet,
     ) -> None:
         """Record the old and new values for this field into the changedesc.

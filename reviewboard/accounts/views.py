@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 from urllib.parse import quote, urlparse
 
 from django.conf import settings
@@ -13,7 +12,7 @@ from django.contrib.auth.views import (
     LoginView as DjangoLoginView,
     LogoutView,
     logout_then_login as auth_logout_then_login)
-from django.forms.forms import ErrorDict
+from django.forms.utils import ErrorDict
 from django.http import (Http404,
                          HttpRequest,
                          HttpResponse,
@@ -109,7 +108,7 @@ class LoginView(DjangoLoginView):
     #:
     #: Type:
     #:     str
-    client_name: Optional[str]
+    client_name: str | None
 
     #: The URL to the client login page.
     #:
@@ -136,7 +135,7 @@ class LoginView(DjangoLoginView):
     #:
     #: Type:
     #:     str
-    client_url: Optional[str]
+    client_url: str | None
 
     def dispatch(self, request, *args, **kwargs):
         """Dispatch the view.
@@ -969,7 +968,7 @@ class ClientLoginConfirmationView(BaseClientLoginView):
 
 
 def _get_client_allowed_hosts(
-    port: Optional[int],
+    port: int | None,
 ) -> set:
     """Return the set of hosts that are allowed to authenticate clients.
 

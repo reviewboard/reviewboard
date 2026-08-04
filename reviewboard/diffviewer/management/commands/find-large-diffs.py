@@ -10,7 +10,7 @@ import argparse
 import csv
 import sys
 from datetime import timedelta
-from typing import Counter, Optional
+from typing import Counter
 
 from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
@@ -114,9 +114,9 @@ class Command(BaseCommand):
         """
         min_size: int = options['min_size']
         min_files: int = options['min_files']
-        num_days: Optional[int] = options['num_days']
-        start_id: Optional[int] = options['start_id']
-        end_id: Optional[int] = options['end_id']
+        num_days: (int | None) = options['num_days']
+        start_id: (int | None) = options['start_id']
+        end_id: (int | None) = options['end_id']
 
         if num_days is None and start_id is None:
             raise CommandError(_(

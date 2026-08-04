@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from reviewboard.reviews.models import (
     Screenshot,
@@ -44,7 +44,7 @@ class LegacyScreenshotReviewUI(ReviewUI[
 
     def get_caption(
         self,
-        draft: Optional[ReviewRequestDraft] = None,
+        draft: (ReviewRequestDraft | None) = None,
     ) -> str:
         """Return the caption to show for the screenshot.
 

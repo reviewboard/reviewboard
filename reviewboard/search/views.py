@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from typing import Any, Optional
+from typing import Any
 
 from django.contrib.auth.models import User
 from django.http import HttpResponseRedirect
@@ -112,7 +112,7 @@ class RBSearchView(CheckLoginRequiredViewMixin,
 
     def get_context_data(
         self,
-        form: Optional[RBSearchForm] = None,
+        form: (RBSearchForm | None) = None,
         **kwargs,
     ) -> dict[str, Any]:
         """Return context data for rendering the view.

@@ -77,7 +77,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with an invite-only review group as a
         superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         group = self.create_review_group(invite_only=True)
 
         self.assertTrue(group.is_accessible_by(self.user))
@@ -94,7 +94,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with an invite-only review group on a
         Local Site as a superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         group = self.create_review_group(invite_only=True,
                                          with_local_site=True)
 
@@ -112,7 +112,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with access to a Local Site and an
         invite-only review group
         """
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
         group = self.create_review_group(invite_only=True,
                                          with_local_site=True)
 
@@ -142,7 +142,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with access to a Local Site with a group
         on the global site
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         group = self.create_review_group()
 
         self.assertTrue(group.is_accessible_by(self.user))
@@ -175,7 +175,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with access to an invite-only review
         group on a Local Site
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         group = self.create_review_group(invite_only=True,
                                          with_local_site=True)
         group.users.add(self.user)
@@ -206,7 +206,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with an invisible review group as a
         superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         group = self.create_review_group(visible=False)
 
         self.assertTrue(group.is_accessible_by(self.user))
@@ -223,7 +223,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with an invisible review group on a
         Local Site
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         group = self.create_review_group(visible=False, with_local_site=True)
 
         self.assertTrue(group.is_accessible_by(self.user))
@@ -240,7 +240,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with an invisible review group on a
         Local Site as a superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         group = self.create_review_group(visible=False, with_local_site=True)
 
         self.assertTrue(group.is_accessible_by(self.user))
@@ -269,7 +269,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a draft review request as a
         superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         review_request = self.create_review_request(public=False)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
@@ -286,7 +286,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a draft review request on a Local
         Site
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         review_request = self.create_review_request(with_local_site=True,
                                                     submitter='admin')
 
@@ -304,7 +304,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a draft review request on a Local
         Site as a superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         review_request = self.create_review_request(with_local_site=True)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
@@ -321,7 +321,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a different
         Local Site
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         review_request = self.create_review_request(with_local_site=True,
                                                     submitter='admin',
                                                     public=True)
@@ -340,7 +340,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a different
         Local Site as a superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         review_request = self.create_review_request(with_local_site=True,
                                                     submitter='admin',
                                                     public=True)
@@ -359,7 +359,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a global site
         from a Local Site
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         review_request = self.create_review_request(public=True)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
@@ -376,7 +376,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a global site
         from a Local Site as superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         review_request = self.create_review_request(public=True)
 
         self.assertTrue(review_request.is_accessible_by(self.user))
@@ -392,7 +392,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
     def test_get_review_request_local_site(self):
         """Testing the GET search/ API with a review request on a Local Site
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         review_request = self.create_review_request(submitter='admin',
                                                     with_local_site=True,
                                                     public=True)
@@ -411,7 +411,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a Local Site
         cannot be queried by the PK using q=
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         review_request = self.create_review_request(submitter='admin',
                                                     with_local_site=True,
                                                     public=True,
@@ -431,7 +431,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a Local Site
         cannot be queried by the PK using id=
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         review_request = self.create_review_request(submitter='admin',
                                                     with_local_site=True,
                                                     public=True,
@@ -451,7 +451,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a Local Site
         can be queried by the local ID using q=
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         review_request = self.create_review_request(submitter='admin',
                                                     with_local_site=True,
                                                     public=True,
@@ -471,7 +471,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a Local Site
         can be queried by the local ID using id=
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         review_request = self.create_review_request(submitter='admin',
                                                     with_local_site=True,
                                                     public=True,
@@ -548,7 +548,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request assigned to an
         invite-only group on a Local Site
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         review_group = self.create_review_group(invite_only=True,
                                                 with_local_site=True)
         review_request = self.create_review_request(public=True,
@@ -569,7 +569,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request assigned to an
         invite-only group as a superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         review_group = self.create_review_group(invite_only=True)
         review_request = self.create_review_request(public=True)
         review_request.target_groups.add(review_group)
@@ -588,7 +588,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request assigned to an
         invite-only group on a Local Site as a superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         review_group = self.create_review_group(invite_only=True,
                                                 with_local_site=True)
         review_request = self.create_review_request(public=True,
@@ -647,7 +647,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request in a private
         repository as a superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         repository = self.create_repository(public=False)
         review_request = self.create_review_request(repository=repository,
                                                     public=True)
@@ -666,7 +666,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request in a private
         repository on a Local Site
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         repository = self.create_repository(public=False,
                                             with_local_site=True)
         review_request = self.create_review_request(repository=repository,
@@ -688,7 +688,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ PAI with a review request in a private
         repository on a Local Site with access
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         repository = self.create_repository(public=False,
                                             with_local_site=True)
         repository.users.add(self.user)
@@ -711,7 +711,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request in a private
         repository on a Local Site as a superuser
         """
-        self.user = self._login_user(admin=True)
+        self.user = self.login_user(admin=True)
         repository = self.create_repository(public=False,
                                             with_local_site=True)
         review_request = self.create_review_request(repository=repository,
@@ -756,7 +756,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         a private repository and assigned to an invite-only group that contains
         the user
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         repository = self.create_repository(public=False,
                                             with_local_site=True)
         review_group = self.create_review_group(invite_only=True,
@@ -802,7 +802,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a Local Site in
         a private repository and assigned to the user
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         repository = self.create_repository(public=False,
                                             with_local_site=True)
         review_request = self.create_review_request(repository=repository,
@@ -846,7 +846,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a Local Site
         assigned to multiple private groups, one containing the user
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         non_member_group = self.create_review_group(invite_only=True,
                                                     name='non-member',
                                                     with_local_site=True)
@@ -892,7 +892,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a Local Site
         assigned to public and private groups
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         private_group = self.create_review_group(invite_only=True,
                                                  name='private',
                                                  with_local_site=True)
@@ -935,7 +935,7 @@ class ResourceTests(SpyAgency, BaseWebAPITestCase,
         """Testing the GET search/ API with a review request on a Local Site
         assigned to public and private groups
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         private_group = self.create_review_group(invite_only=True,
                                                  with_local_site=True)
         review_request = self.create_review_request(public=True,

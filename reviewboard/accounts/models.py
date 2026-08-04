@@ -3,8 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import (Any, ClassVar, Literal, Optional, TYPE_CHECKING, Union,
-                    overload)
+from typing import TYPE_CHECKING, overload
 from uuid import uuid4
 
 from django.contrib.auth.models import AnonymousUser, User as DjangoUser
@@ -41,7 +40,7 @@ from reviewboard.site.signals import local_site_user_added
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from typing import TypeAlias
+    from typing import Any, ClassVar, Literal, TypeAlias
 
     BaseUser = DjangoUser
 else:
@@ -56,7 +55,7 @@ logger = logging.getLogger(__name__)
 #:
 #: Version Added:
 #:     8.0
-StarrableObject: TypeAlias = Union[Group, ReviewRequest]
+StarrableObject: TypeAlias = Group | ReviewRequest
 
 
 class UserLocalSiteStats(TypedDict):
@@ -1345,7 +1344,7 @@ class _ReviewBoardUser(BaseUser):
 
     def is_user_profile_visible(
         self,
-        user: Optional[User] = None,
+        user: (User | None) = None,
     ) -> bool:
         """Return whether or not the given user can view this user's profile.
 
@@ -1457,7 +1456,7 @@ class _ReviewBoardUser(BaseUser):
         cached_only: Literal[True] = True,
         create_if_missing: bool = ...,
         return_is_new: Literal[False] = False,
-    ) -> Optional[Profile]:
+    ) -> Profile | None:
         ...
 
     @overload
@@ -1466,7 +1465,7 @@ class _ReviewBoardUser(BaseUser):
         cached_only: Literal[True] = True,
         create_if_missing: bool = ...,
         return_is_new: Literal[True] = True,
-    ) -> tuple[Optional[Profile], bool]:
+    ) -> tuple[Profile | None, bool]:
         ...
 
     def get_profile(
@@ -1474,8 +1473,11 @@ class _ReviewBoardUser(BaseUser):
         cached_only: bool = False,
         create_if_missing: bool = True,
         return_is_new: bool = False,
-    ) -> Union[Optional[Profile],
-               tuple[Optional[Profile], bool]]:
+    ) -> (
+        Profile |
+        tuple[Profile | None, bool] |
+        None
+    ):
         """Return the profile for the User.
 
         The profile will be cached, preventing queries for future lookups.
@@ -1499,7 +1501,7 @@ class _ReviewBoardUser(BaseUser):
             create_if_missing (bool, optional):
                 Whether to create a site profile if one doesn't already exist.
 
-            return_is_new (bool, optional);
+            return_is_new (bool, optional):
                 If ``True``, the result of the call will be a tuple containing
                 the profile and a boolean indicating if the profile was
                 newly-created.
@@ -1519,7 +1521,7 @@ class _ReviewBoardUser(BaseUser):
         # Note that we use the same cache variable that a select_related() call
         # would use, ensuring that we benefit from Django's caching when
         # possible.
-        profile: Optional[Profile] = getattr(self, '_profile', None)
+        profile: (Profile | None) = getattr(self, '_profile', None)
         profile_was_none = profile is None
         is_new: bool = False
 
@@ -1582,7 +1584,7 @@ class _ReviewBoardUser(BaseUser):
     @overload
     def get_site_profile(
         self,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
         cached_only: Literal[False] = False,
         create_if_missing: bool = ...,
         return_is_new: Literal[False] = False,
@@ -1592,7 +1594,7 @@ class _ReviewBoardUser(BaseUser):
     @overload
     def get_site_profile(
         self,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
         cached_only: Literal[False] = False,
         create_if_missing: bool = ...,
         return_is_new: Literal[True] = True,
@@ -1602,31 +1604,34 @@ class _ReviewBoardUser(BaseUser):
     @overload
     def get_site_profile(
         self,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
         cached_only: Literal[True] = True,
         create_if_missing: bool = ...,
         return_is_new: Literal[False] = False,
-    ) -> Optional[LocalSiteProfile]:
+    ) -> LocalSiteProfile | None:
         ...
 
     @overload
     def get_site_profile(
         self,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
         cached_only: Literal[True] = True,
         create_if_missing: bool = ...,
         return_is_new: Literal[True] = True,
-    ) -> tuple[Optional[LocalSiteProfile], bool]:
+    ) -> tuple[LocalSiteProfile | None, bool]:
         ...
 
     def get_site_profile(
         self,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
         cached_only: bool = False,
         create_if_missing: bool = True,
         return_is_new: bool = False,
-    ) -> Union[Optional[LocalSiteProfile],
-               tuple[Optional[LocalSiteProfile], bool]]:
+    ) -> (
+        LocalSiteProfile |
+        tuple[LocalSiteProfile | None, bool] |
+        None
+    ):
         """Return the LocalSiteProfile for a given LocalSite for the User.
 
         The site profile will be cached, preventing queries for future lookups.
@@ -1661,7 +1666,7 @@ class _ReviewBoardUser(BaseUser):
             create_if_missing (bool, optional):
                 Whether to create a site profile if one doesn't already exist.
 
-            return_is_new (bool, optional);
+            return_is_new (bool, optional):
                 If ``True``, the result of the call will be a tuple containing
                 the profile and a boolean indicating if the profile was
                 newly-created.
@@ -1711,7 +1716,7 @@ class _ReviewBoardUser(BaseUser):
 
     def is_admin_for_user(
         self,
-        user: Optional[Union[AnonymousUser, User]],
+        user: AnonymousUser | User | None,
     ) -> bool:
         """Return whether this user is an administrator for the given user.
 

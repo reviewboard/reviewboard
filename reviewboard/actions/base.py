@@ -7,7 +7,7 @@ Version Added:
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, TYPE_CHECKING, cast
+from typing import Any, TYPE_CHECKING, cast
 
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
@@ -15,13 +15,14 @@ from djblets.pagestate.state import PageState
 from housekeeping import func_deprecated
 from typing_extensions import final
 
-from reviewboard.actions.errors import (ActionError,
-                                        MissingActionRendererError)
-from reviewboard.actions.renderers import (BaseActionGroupRenderer,
-                                           BaseActionRenderer,
-                                           DefaultActionGroupRenderer,
-                                           DefaultActionRenderer,
-                                           MenuActionGroupRenderer)
+from reviewboard.actions.errors import ActionError, MissingActionRendererError
+from reviewboard.actions.renderers import (
+    BaseActionGroupRenderer,
+    BaseActionRenderer,
+    DefaultActionGroupRenderer,
+    DefaultActionRenderer,
+    MenuActionGroupRenderer,
+)
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -536,6 +537,10 @@ class ActionPlacement:
 
     #: The DOM element ID for this element on the page.
     #:
+    #: If provided, this must be unique to the action and attachment point
+    #: to avoid ID collisions with other actions that are placed at the
+    #: same attachment point.
+    #:
     #: If not provided, an ID in the form of
     #: :samp:`action-{attachment}-{action_id}` will be used.
     dom_element_id: (str | None) = None
@@ -569,6 +574,10 @@ class ActionPlacement:
             dom_element_id (str, optional):
                 A custom DOM element ID for the action in this attachment
                 point.
+
+                If provided, this must be unique to the action and attachment
+                point to avoid ID collisions with other actions that are
+                placed at the same attachment point.
 
             parent_id (str, optional):
                 The parent ID of an action in this attachment point in which
@@ -650,7 +659,7 @@ class BaseAction:
     #:
     #: Type:
     #:     list of str
-    apply_to: Optional[Sequence[str]] = None
+    apply_to: (Sequence[str] | None) = None
 
     #: The attachment point for the action.
     #:
@@ -695,7 +704,7 @@ class BaseAction:
     #:
     #: Type:
     #:     str
-    icon_class: Optional[str] = None
+    icon_class: (str | None) = None
 
     #: The class to instantiate for the JavaScript model.
     #:
@@ -757,7 +766,7 @@ class BaseAction:
     #:
     #: Type:
     #:     str
-    url_name: Optional[str] = None
+    url_name: (str | None) = None
 
     #: The user-visible verbose label.
     #:
@@ -1141,19 +1150,43 @@ class BaseAction:
 
         return True
 
+    @func_deprecated(RemovedInReviewBoard10_0Warning, message=(
+        '%(func_name)s is deprecated and support will be removed in '
+        '%(product)s %(version)s. Please use the dom_element_id context '
+        'variable in templates or set ActionPlacement.dom_element_id instead.'
+    ))
     def get_dom_element_id(self) -> str:
         """Return the ID used for the DOM element for this action.
 
         Deprecated:
             8.0:
-            This is scheduled for removal in Review Board 9. This has been
+            This is scheduled for removal in Review Board 10. This has been
             replaced by :py:attr:`ActionPlacement.dom_element_id`.
 
         Returns:
             str:
             The ID used for the element.
         """
-        return ''
+        # We still need to return a value here instead of an empty string.
+        # Otherwise we break legacy extensions that have templates calling
+        # action.get_dom_element_id(), which is a likely scenario because a
+        # lot of our action templates did this.
+        if placements := self.placements:
+            # Match the ID that the renderer will use. Legacy actions are
+            # single-placement, so it's safe to use the first placement.
+            placement = placements[0]
+
+            if placement.dom_element_id:
+                return placement.dom_element_id
+
+            attachment = placement.attachment
+        else:
+            # Actions always have at least one placement once they've been
+            # initialized, so this is effectively unreachable. Fall back to
+            # the default attachment point though just in case.
+            attachment = AttachmentPoint.REVIEW_REQUEST
+
+        return f'action-{attachment}-{self.action_id}'
 
     def get_js_model_data(
         self,

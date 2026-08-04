@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.db.models import Q
 from django.http import (Http404,
@@ -42,9 +42,9 @@ class _FileAttachmentViewMixin:
         self,
         *,
         review_request: ReviewRequest,
-        draft: Optional[ReviewRequestDraft],
+        draft: ReviewRequestDraft | None,
         file_attachment_id: int,
-        extra_q: Optional[Q] = None,
+        extra_q: (Q | None) = None,
     ) -> FileAttachment:
         """Return a file attachment accessible on the review request.
 
@@ -145,7 +145,7 @@ class DownloadFileAttachmentView(_FileAttachmentViewMixin,
             draft=draft,
             file_attachment_id=file_attachment_id)
 
-        download_url: Optional[str] = None
+        download_url: (str | None) = None
 
         if request.GET.get('thumbnail'):
             # The caller requested a thumbnail. Determine the requested size.
@@ -182,7 +182,7 @@ class ReviewFileAttachmentView(_FileAttachmentViewMixin,
         self,
         request: HttpRequest,
         file_attachment_id: int,
-        file_attachment_diff_id: Optional[int] = None,
+        file_attachment_diff_id: (int | None) = None,
         *args,
         **kwargs,
     ) -> HttpResponse:
@@ -224,7 +224,7 @@ class ReviewFileAttachmentView(_FileAttachmentViewMixin,
                 draft=None,
                 file_attachment_id=file_attachment_id)
 
-        diff_against_attachment: Optional[FileAttachment] = None
+        diff_against_attachment: (FileAttachment | None) = None
 
         review_ui_class = ReviewUI.for_object(file_attachment)
 

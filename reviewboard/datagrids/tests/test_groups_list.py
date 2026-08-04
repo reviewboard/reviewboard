@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -15,7 +15,7 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import Profile
 from reviewboard.datagrids.tests.base import BaseViewTestCase
-from reviewboard.reviews.models import Group
+from reviewboard.reviews.models import Group, ReviewRequest
 from reviewboard.reviews.testing.queries.review_groups import (
     get_review_groups_accessible_prep_equeries,
     get_review_groups_accessible_q,
@@ -59,6 +59,169 @@ class GroupListViewTests(BaseViewTestCase):
 
         self.assertEqual(response.status_code, 302)
 
+    @add_fixtures(['test_users'])
+    def test_counts_with_both_columns_displayed(self):
+        """Testing group_list view with both PendingCountColumn and
+        GroupMemberCountColumn does not produce inflated counts
+        """
+        # Regression test: annotating both columns simultaneously previously
+        # produced a Cartesian product, inflating both counts by a factor of
+        # the other.  A group with 2 members and 3 open review requests would
+        # show 6 for both instead of 2 and 3 respectively.
+        self.client.login(username='doc', password='doc')
+        user = User.objects.get(username='doc')
+        user2 = User.objects.get(username='grumpy')
+        profile = user.get_profile()
+
+        group = self.create_review_group(name='test-group')
+        group.users.add(user, user2)
+
+        for _ in range(3):
+            self.create_review_request(
+                submitter=user,
+                target_groups=[group],
+                publish=True)
+
+        # Also add a discarded review request — should not be counted.
+        rr = self.create_review_request(
+            submitter=user,
+            target_groups=[group],
+            publish=True)
+        rr.close(close_type=ReviewRequest.DISCARDED, user=user)
+
+        self._prefetch_cached(user=user)
+
+        group_pks = [group.pk]
+
+        rows_q_result = get_review_groups_accessible_q(user=user,
+                                                       local_site=None)
+        rows_q = rows_q_result['q']
+        rows_q_tables = rows_q_result['tables']
+        rows_q_num_joins = len(rows_q_tables) - 1
+
+        equeries = get_http_request_start_equeries(user=user,
+                                                   local_site=None)
+        equeries += get_review_groups_accessible_prep_equeries(
+            user=user,
+            local_site=None,
+            needs_local_site_profile_query=True)
+        equeries += [
+            {
+                '__note__': 'Update datagrid state on the user profile',
+                'model': Profile,
+                'type': 'UPDATE',
+                'where': Q(pk=profile.pk),
+            },
+            {
+                '__note__': (
+                    'Fetch the number of items across all datagrid pages'
+                ),
+                'annotations': {'__count': Count('*')},
+                'model': Group,
+                'subqueries': [
+                    {
+                        'distinct': True,
+                        'join_types': {
+                            'reviews_group_users': 'LEFT OUTER JOIN',
+                        },
+                        'model': Group,
+                        'num_joins': rows_q_num_joins,
+                        'subquery': True,
+                        'tables': rows_q_tables,
+                        'where': rows_q,
+                    },
+                ],
+            },
+            {
+                '__note__': 'Fetch the IDs of the items for one page',
+                'distinct': True,
+                'join_types': {
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                },
+                'limit': 1,
+                'model': Group,
+                'num_joins': rows_q_num_joins,
+                'order_by': ('name',),
+                'tables': rows_q_tables,
+                'values_select': ('pk',),
+                'where': rows_q,
+            },
+            {
+                '__note__': (
+                    "Fetch the IDs of the page's groups that are starred."
+                ),
+                'join_types': {
+                    'accounts_profile_starred_groups': 'INNER JOIN',
+                },
+                'model': Group,
+                'num_joins': 1,
+                'tables': {
+                    'accounts_profile_starred_groups',
+                    'reviews_group',
+                },
+                'values_select': ('pk',),
+                'where': (Q(starred_by__id=profile.pk) &
+                          Q(pk__in=group_pks)),
+            },
+            {
+                '__note__': (
+                    'Fetch the data for one page based on the IDs.'
+                ),
+                'annotations': {
+                    'column_pending_review_request_count': Count(
+                        'review_requests',
+                        filter=(Q(review_requests__public=True) &
+                                Q(review_requests__status='P')),
+                        distinct=True),
+                    'column_group_member_count': Count(
+                        'users',
+                        distinct=True),
+                },
+                'group_by': True,
+                'join_types': {
+                    'reviews_group_users': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest': 'LEFT OUTER JOIN',
+                    'reviews_reviewrequest_target_groups': 'LEFT OUTER JOIN',
+                },
+                'model': Group,
+                'num_joins': 3,
+                'select_related': set(),
+                'tables': {
+                    'reviews_group',
+                    'reviews_group_users',
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_target_groups',
+                },
+                'where': Q(pk__in=group_pks),
+            },
+        ]
+
+        # Pass columns as a GET parameter to enable both pending_count and
+        # member_count simultaneously, as the dashboard tests do.
+        column_ids = 'star,name,displayname,pending_count,member_count'
+
+        with assert_queries(equeries):
+            response = self.client.get(
+                self.get_datagrid_url(local_site=None),
+                {'columns': column_ids})
+
+        self.assertEqual(response.status_code, 200)
+
+        datagrid = self._get_context_var(response, 'datagrid')
+        assert datagrid is not None
+
+        rows = {
+            row['object'].name: row['object']
+            for row in datagrid.rows
+        }
+        result_group = rows.get('test-group')
+        self.assertIsNotNone(result_group)
+
+        # Without distinct=True both values would be inflated to 2*3=6.
+        self.assertEqual(
+            result_group.column_pending_review_request_count, 3)
+        self.assertEqual(result_group.column_group_member_count, 2)
+
     def _test_with_access(
         self,
         *,
@@ -82,7 +245,7 @@ class GroupListViewTests(BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -129,7 +292,7 @@ class GroupListViewTests(BaseViewTestCase):
         *,
         user: User,
         profile: Profile,
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         local_sites_in_db: bool = False,
         review_groups: Sequence[Group],
     ) -> ExpectedQueries:
@@ -255,7 +418,8 @@ class GroupListViewTests(BaseViewTestCase):
                     'column_pending_review_request_count': Count(
                         'review_requests',
                         filter=(Q(review_requests__public=True) &
-                                Q(review_requests__status='P'))),
+                                Q(review_requests__status='P')),
+                        distinct=True),
                 },
                 'group_by': True,
                 'join_types': {

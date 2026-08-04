@@ -140,3 +140,46 @@ Policy Tips
 * You probably want to allow :ref:`webapi2.0-root-resource` and
   :ref:`webapi2.0-server-info-resource`, if you're globally blocking ``GET``
   on all resource.
+
+
+Example: Allowing a Client to Post Reviews
+==========================================
+
+This policy allows a client (such as an automated review bot) to post
+reviews with comments, while limiting it to read-only access everywhere
+else in the API:
+
+.. code-block:: javascript
+
+   {
+       "resources": {
+           "*": {
+               "allow": ["GET", "HEAD", "OPTIONS"],
+               "block": ["*"]
+           },
+           "review": {
+               "*": {
+                   "allow": ["*"],
+                   "block": []
+               }
+           },
+           "review_diff_comment": {
+               "*": {
+                   "allow": ["*"],
+                   "block": []
+               }
+           },
+           "review_file_attachment_comment": {
+               "*": {
+                   "allow": ["*"],
+                   "block": []
+               }
+           },
+           "review_general_comment": {
+               "*": {
+                   "allow": ["*"],
+                   "block": []
+               }
+           }
+       }
+   }

@@ -673,9 +673,9 @@ class HostingServiceTestCase(kgb.SpyAgency,
                                         local_site=local_site)
 
         if data is not None:
-            account.data = data
+            account.data = data.copy()
         else:
-            account.data = self.default_account_data
+            account.data = self.default_account_data.copy()
 
         account.save()
 

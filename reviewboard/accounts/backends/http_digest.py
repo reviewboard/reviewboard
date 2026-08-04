@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -49,12 +49,12 @@ class HTTPDigestBackend(BaseAuthBackend):
 
     def authenticate(
         self,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
         *,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
         **kwargs,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Authenticate a user against the HTTP password file.
 
         This will attempt to authenticate the user against the digest password
@@ -128,8 +128,8 @@ class HTTPDigestBackend(BaseAuthBackend):
     def get_or_create_user(
         self,
         username: str,
-        request: Optional[HttpRequest] = None,
-    ) -> Optional[User]:
+        request: (HttpRequest | None) = None,
+    ) -> User | None:
         """Return an existing user or create one if it doesn't exist.
 
         This does not authenticate the user.

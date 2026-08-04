@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -27,7 +27,11 @@ from reviewboard.accounts.sso.backends.saml.settings import (
     SAMLBinding,
     SAMLDigestAlgorithm,
     SAMLNameIDFormat,
-    SAMLSignatureAlgorithm)
+    SAMLSignatureAlgorithm,
+)
+
+if TYPE_CHECKING:
+    from typing import Any
 
 
 class SAMLLinkUserForm(AuthenticationForm):

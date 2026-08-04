@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import kgb
 from django_assert_queries.testing import assert_queries
@@ -298,7 +298,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -393,7 +393,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -480,7 +480,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -575,7 +575,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -669,7 +669,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -762,7 +762,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -888,7 +888,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -988,7 +988,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -1064,7 +1064,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -1227,7 +1227,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -1394,7 +1394,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -1478,7 +1478,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -1648,7 +1648,7 @@ class DashboardViewTests(kgb.SpyAgency, BaseViewTestCase):
         extra: Mapping[str, Any] = {},
         load_state_equeries: ExpectedQueries = [],
         sidebar_equeries: ExpectedQueries = [],
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         local_sites_in_db: bool = False,
         include_archived: bool = False,
         include_star_column: bool = False,

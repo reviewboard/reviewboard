@@ -3,8 +3,13 @@ from __future__ import annotations
 from django.conf import settings
 from djblets.siteconfig.models import SiteConfiguration
 
-from reviewboard import (get_manual_url, get_package_version,
-                         get_version_string, is_release, VERSION)
+from reviewboard import (
+    get_manual_url,
+    get_package_version,
+    get_version_string,
+    is_release,
+    VERSION,
+)
 from reviewboard.admin.read_only import is_site_read_only_for
 
 

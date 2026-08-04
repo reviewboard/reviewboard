@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from xml.etree import ElementTree
 
 import kgb
@@ -17,6 +17,8 @@ from reviewboard.accounts.sso.backends.saml.views import (SAMLACSView,
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
+    from typing import ClassVar
+
     from typelets.json import JSONDict
 
 

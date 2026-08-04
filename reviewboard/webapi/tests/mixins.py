@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 from datetime import timedelta
-from typing import Any, Iterator, Optional, TYPE_CHECKING, Union, cast
+from typing import Any, Iterator, TYPE_CHECKING, cast
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -49,7 +49,7 @@ else:
 #:
 #: Version Added:
 #:     5.0.7
-APIRequestData: TypeAlias = Union[bytes, dict[str, Any]]
+APIRequestData: TypeAlias = bytes | dict[str, Any]
 
 
 class AuthenticateSetupState(TypedDict):
@@ -60,16 +60,16 @@ class AuthenticateSetupState(TypedDict):
     """
 
     #: The OAuth2 access token used for the test, if any.
-    oauth2_access_token: Optional[AccessToken]
+    oauth2_access_token: AccessToken | None
 
     #: The OAuth2 application used for the test, if any.
-    oauth2_application: Optional[Application]
+    oauth2_application: Application | None
 
     #: The user to use for the test.
     user: User
 
     #: The API token used for the test, if any.
-    webapi_token: Optional[WebAPIToken]
+    webapi_token: WebAPIToken | None
 
 
 class BasicTestSetupState(TypedDict):
@@ -83,20 +83,20 @@ class BasicTestSetupState(TypedDict):
     auth_user: User
 
     #: The OAuth2 access token used for the test, if any.
-    oauth2_access_token: Optional[AccessToken]
+    oauth2_access_token: AccessToken | None
 
     #: The OAuth2 application used for the test, if any.
-    oauth2_application: Optional[Application]
+    oauth2_application: Application | None
 
     #: The Local Site tests are being performed on, if any.
     #:
     #: This will be ``None`` if not testing on a Local Site.
-    local_site: Optional[LocalSite]
+    local_site: LocalSite | None
 
     #: The name of the Local Site tests are being performed on, if any.
     #:
     #: This will be ``None`` if not testing on a Local Site.
-    local_site_name: Optional[str]
+    local_site_name: str | None
 
     #: Whether the test is being performed with Local Sites in the database.
     local_sites_in_db: bool
@@ -117,7 +117,7 @@ class BasicTestSetupState(TypedDict):
     url: str
 
     #: The API token used for the test, if any.
-    webapi_token: Optional[WebAPIToken]
+    webapi_token: WebAPIToken | None
 
     #: Whether the test is being performed on a Local Site.
     with_local_site: bool
@@ -387,7 +387,7 @@ class BasicTestsMixin(_MixinsParentClass):
     def _run_api_test(
         self,
         *,
-        expected_queries: Optional[ExpectedQueries],
+        expected_queries: ExpectedQueries | None,
     ) -> Iterator[None]:
         """Context manager for running an API unit test.
 
@@ -429,7 +429,7 @@ class BasicTestsMixin(_MixinsParentClass):
         self,
         *,
         fixtures: Sequence[str],
-        owner: Optional[User] = None,
+        owner: (User | None) = None,
         with_local_site: bool = False,
         **auth_kwargs,
     ) -> dict[str, Any]:
@@ -496,10 +496,10 @@ class BasicTestsMixin(_MixinsParentClass):
         with_local_site: bool = False,
         with_admin: bool = False,
         with_webapi_token: bool = False,
-        webapi_token_local_site_id: Optional[int] = None,
+        webapi_token_local_site_id: (int | None) = None,
         with_oauth_token: bool = False,
         oauth_application_enabled: bool = True,
-        user: Optional[User] = None,
+        user: (User | None) = None,
     ) -> AuthenticateSetupState:
         """Authenticate the user for basic API tests.
 
@@ -542,15 +542,15 @@ class BasicTestsMixin(_MixinsParentClass):
             The authenticated user.
         """
         if user is None:
-            user = self._login_user(local_site=with_local_site,
-                                    admin=with_admin)
+            user = self.login_user(local_site=with_local_site,
+                                   admin=with_admin)
         elif user != self.user:
             self.assertTrue(self.client.login(username=user.username,
                                               password=user.username))
 
-        access_token: Optional[AccessToken] = None
-        application: Optional[Application] = None
-        webapi_token: Optional[WebAPIToken] = None
+        access_token: (AccessToken | None) = None
+        application: (Application | None) = None
+        webapi_token: (WebAPIToken | None) = None
         session = self.client.session
 
         if with_webapi_token:
@@ -671,7 +671,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
     ) -> tuple[str, tuple[Any, ...]]:
         """Set up a basic HTTP DELETE unit test.
 
@@ -722,7 +722,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         is_mutable: bool,
         is_owner: bool,
         **kwargs,
-    ) -> Optional[ExpectedQueries]:
+    ) -> ExpectedQueries | None:
         """Return expected queries for a basic HTTP DELETE test.
 
         If implemented by a subclass, query assertions will be automatically
@@ -789,7 +789,7 @@ class BasicDeleteTestsMixin(BasicTestsMixin):
         self.assertTrue(getattr(resource.delete, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_delete_fixtures)
-        self._login_user(admin=self.basic_delete_use_admin)
+        self.login_user(admin=self.basic_delete_use_admin)
 
         setup_state = self.setup_delete_test_state(
             with_admin=self.basic_delete_use_admin)
@@ -929,7 +929,7 @@ class BasicDeleteTestsWithLocalSiteMixin(BasicDeleteTestsMixin):
         assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        auth_user = self._login_user()
+        auth_user = self.login_user()
 
         equeries = get_webapi_request_start_equeries(
             user=auth_user,
@@ -1257,7 +1257,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
     ) -> tuple[str, str, Any]:
         """Set up a basic HTTP GET unit test.
 
@@ -1310,7 +1310,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         is_mutable: bool,
         is_owner: bool,
         **kwargs,
-    ) -> Optional[ExpectedQueries]:
+    ) -> ExpectedQueries | None:
         """Return expected queries for a basic HTTP GET item test.
 
         If implemented by a subclass, query assertions will be automatically
@@ -1357,7 +1357,7 @@ class BasicGetItemTestsMixin(BasicTestsMixin):
         self.assertTrue(getattr(resource.get, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_get_fixtures)
-        self._login_user(admin=self.basic_get_use_admin)
+        self.login_user(admin=self.basic_get_use_admin)
 
         setup_state = self.setup_get_item_test_state(
             with_admin=self.basic_get_use_admin)
@@ -1495,7 +1495,7 @@ class BasicGetItemTestsWithLocalSiteMixin(BasicGetItemTestsMixin):
         assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        auth_user = self._login_user()
+        auth_user = self.login_user()
 
         equeries = get_webapi_request_start_equeries(
             user=auth_user,
@@ -1806,7 +1806,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
         populate_items: bool,
     ) -> tuple[str, str, Sequence[str]]:
         """Set up a basic HTTP GET unit test.
@@ -1863,7 +1863,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         is_mutable: bool,
         is_owner: bool,
         **kwargs,
-    ) -> Optional[ExpectedQueries]:
+    ) -> ExpectedQueries | None:
         """Return expected queries for a basic HTTP GET list test.
 
         If implemented by a subclass, query assertions will be automatically
@@ -1910,7 +1910,7 @@ class BasicGetListTestsMixin(BasicTestsMixin):
         self.assertTrue(getattr(resource.get, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_get_fixtures)
-        self._login_user(admin=self.basic_get_use_admin)
+        self.login_user(admin=self.basic_get_use_admin)
 
         setup_state = self.setup_get_list_test_state(
             with_admin=self.basic_get_use_admin)
@@ -2049,7 +2049,7 @@ class BasicGetListTestsWithLocalSiteMixin(BasicGetListTestsMixin):
         assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        auth_user = self._login_user()
+        auth_user = self.login_user()
 
         equeries = get_webapi_request_start_equeries(
             user=auth_user,
@@ -2349,7 +2349,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
         post_valid_data: bool,
     ) -> tuple[str, str, APIRequestData, tuple[Any, ...]]:
         """Set up a basic HTTP POST unit test.
@@ -2413,7 +2413,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
         is_mutable: bool,
         is_owner: bool,
         **kwargs,
-    ) -> Optional[ExpectedQueries]:
+    ) -> ExpectedQueries | None:
         """Return expected queries for a basic HTTP POST test.
 
         If implemented by a subclass, query assertions will be automatically
@@ -2484,7 +2484,7 @@ class BasicPostTestsMixin(BasicTestsMixin):
         self.assertTrue(getattr(resource.create, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_post_fixtures)
-        self._login_user(admin=self.basic_post_use_admin)
+        self.login_user(admin=self.basic_post_use_admin)
 
         setup_state = self.setup_post_test_state(
             with_admin=self.basic_post_use_admin)
@@ -2637,7 +2637,7 @@ class BasicPostTestsWithLocalSiteMixin(BasicPostTestsMixin):
         assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        auth_user = self._login_user()
+        auth_user = self.login_user()
 
         equeries = get_webapi_request_start_equeries(
             user=auth_user,
@@ -3016,7 +3016,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
         put_valid_data: bool,
     ) -> tuple[str, str, APIRequestData, Any, tuple[Any, ...]]:
         """Set up a basic HTTP PUT unit test.
@@ -3083,7 +3083,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
         is_mutable: bool,
         is_owner: bool,
         **kwargs,
-    ) -> Optional[ExpectedQueries]:
+    ) -> ExpectedQueries | None:
         """Return expected queries for a basic HTTP PUT test.
 
         If implemented by a subclass, query assertions will be automatically
@@ -3158,7 +3158,7 @@ class BasicPutTestsMixin(BasicTestsMixin):
         self.assertTrue(getattr(resource.update, 'checks_local_site', False))
 
         self.load_fixtures(self.basic_put_fixtures)
-        self._login_user(admin=self.basic_put_use_admin)
+        self.login_user(admin=self.basic_put_use_admin)
 
         setup_state = self.setup_put_test_state(
             with_admin=self.basic_put_use_admin)
@@ -3340,7 +3340,7 @@ class BasicPutTestsWithLocalSiteMixin(BasicPutTestsMixin):
         assert local_site is not None
 
         # Undo our Local Site login, reverting back to a normal user.
-        auth_user = self._login_user()
+        auth_user = self.login_user()
 
         equeries = get_webapi_request_start_equeries(
             user=auth_user,

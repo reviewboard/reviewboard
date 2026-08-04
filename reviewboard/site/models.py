@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import ClassVar, Optional, TYPE_CHECKING, Union
+from typing import ClassVar, TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.db import models
@@ -177,5 +177,8 @@ class LocalSite(models.Model):
 #:
 #: Version Added:
 #:     5.0.7
-AnyOrAllLocalSites: TypeAlias = Union[Optional[LocalSite],
-                                      Literal[_LocalSiteConstants.ALL]]
+AnyOrAllLocalSites: TypeAlias = (
+    LocalSite |
+    Literal[_LocalSiteConstants.ALL] |
+    None
+)

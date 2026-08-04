@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import kgb
 import paramiko
@@ -96,8 +96,8 @@ class BaseRepositoryTests(kgb.SpyAgency, BaseWebAPITestCase):
     def _verify_repository_info(
         self,
         rsp: JSONDict,
-        expected_tool_id: Optional[str] = None,
-        expected_attrs: Optional[dict[str, Any]] = None,
+        expected_tool_id: (str | None) = None,
+        expected_attrs: (dict[str, Any] | None) = None,
     ) -> Repository:
         """Verify information in a payload and repository.
 
@@ -175,7 +175,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
         populate_items: bool,
     ) -> tuple[str, str, list[Repository]]:
         """Set up a basic HTTP GET test.
@@ -540,7 +540,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
         post_valid_data: bool,
     ) -> tuple[str, str, dict[str, Any], Sequence[Any]]:
         """Set up a basic HTTP POST test.
@@ -1061,7 +1061,7 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
     @webapi_test_template
     def _post_repository(
         self,
-        data: Optional[dict[str, Any]] = None,
+        data: (dict[str, Any] | None) = None,
         use_local_site: bool = False,
         use_admin: bool = True,
         expected_status: int = 201,
@@ -1123,8 +1123,8 @@ class ResourceListTests(ExtraDataListMixin, BaseRepositoryTests,
 
         # Make the request to the API.
         if use_admin:
-            self._login_user(local_site=use_local_site,
-                             admin=True)
+            self.login_user(local_site=use_local_site,
+                            admin=True)
 
         return self.api_post(
             get_repository_list_url(local_site_name),
@@ -1206,7 +1206,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
     ) -> tuple[str, str, Repository]:
         """Set up a basic HTTP GET test.
 
@@ -1248,7 +1248,7 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
         put_valid_data: bool,
     ) -> tuple[str, str, dict[str, Any], Repository, Sequence[Any]]:
         """Set up a basic HTTP PUT test.
@@ -1582,13 +1582,13 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
     def _put_repository(
         self,
         *,
-        data: Optional[dict[str, Any]] = None,
+        data: (dict[str, Any] | None) = None,
         use_local_site: bool = False,
         use_admin: bool = True,
-        repository: Optional[Repository] = None,
+        repository: (Repository | None) = None,
         expected_status: int = 200,
         send_name: bool = True,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Modify a repository via the API.
 
         This will build and send an API request to modify a repository,
@@ -1648,8 +1648,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
 
         # Make the request to the API.
         if use_admin:
-            self._login_user(local_site=use_local_site,
-                             admin=True)
+            self.login_user(local_site=use_local_site,
+                            admin=True)
 
         if data is None:
             data = {}
@@ -1709,8 +1709,8 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
 
         # Make the request to the API.
         if use_admin:
-            self._login_user(local_site=use_local_site,
-                             admin=True)
+            self.login_user(local_site=use_local_site,
+                            admin=True)
 
         self.api_delete(get_repository_item_url(repo, local_site_name),
                         expected_status=expected_status)

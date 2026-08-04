@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from reviewboard.hostingsvcs.base import BaseHostingService
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.reviews.models import ReviewRequest
@@ -957,7 +955,7 @@ def get_validate_diffcommit_url(local_site_name=None):
 #
 def get_watched_url(
     username: str,
-    local_site_name: Optional[str] = None,
+    local_site_name: (str | None) = None,
 ) -> str:
     return resources.watched.get_list_url(
         local_site_name=local_site_name,

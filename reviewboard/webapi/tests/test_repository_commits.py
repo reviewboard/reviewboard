@@ -53,7 +53,7 @@ class ResourceTests(kgb.SpyAgency, SSLTestsMixin, BaseWebAPITestCase,
     @add_fixtures(['test_site'])
     def test_get_with_site(self):
         """Testing the GET repositories/<id>/commits/ API with a local site"""
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
         repository = self.create_repository(with_local_site=True,
                                             tool_name='Test')
 

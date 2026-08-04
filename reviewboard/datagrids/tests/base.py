@@ -6,8 +6,6 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional
-
 from django.contrib.auth.models import User
 from django.db.models import QuerySet
 from django.test.client import RequestFactory
@@ -74,7 +72,7 @@ class BaseViewTestCase(TestCase):
     def get_datagrid_url(
         self,
         *,
-        local_site: Optional[LocalSite],
+        local_site: LocalSite | None,
     ) -> str:
         """Return the URL to the datagrid page.
 
@@ -102,8 +100,8 @@ class BaseViewTestCase(TestCase):
     def _prefetch_cached(
         self,
         *,
-        local_site: Optional[LocalSite] = None,
-        user: Optional[User] = None,
+        local_site: (LocalSite | None) = None,
+        user: (User | None) = None,
     ) -> None:
         """Pre-fetch cacheable statistics and data.
 

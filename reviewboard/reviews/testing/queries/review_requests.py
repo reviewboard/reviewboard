@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import OuterRef, Q, Value
@@ -31,13 +31,13 @@ if TYPE_CHECKING:
     from reviewboard.testing.queries.base import ExpectedQResult
 
     class _AccessibleKwargs(TypedDict):
-        user: Optional[Union[AnonymousUser, User]]
+        user: AnonymousUser | User | None
         local_site: NotRequired[AnyOrAllLocalSites]
         has_local_sites_in_db: NotRequired[bool]
         show_all_unpublished: NotRequired[bool]
         show_inactive: NotRequired[bool]
         filter_private: NotRequired[bool]
-        status: NotRequired[Optional[str]]
+        status: NotRequired[str | None]
         extra_query: NotRequired[Q]
         accessible_repository_ids: NotRequired[Sequence[int]]
         accessible_review_group_ids: NotRequired[Sequence[int]]
@@ -51,13 +51,13 @@ if TYPE_CHECKING:
 
 def get_review_requests_accessible_q(
     *,
-    user: Optional[Union[AnonymousUser, User]],
+    user: AnonymousUser | User | None,
     local_site: AnyOrAllLocalSites = None,
     has_local_sites_in_db: bool = False,
     show_all_unpublished: bool = False,
     show_inactive: bool = False,
     filter_private: bool = False,
-    status: Optional[str] = 'P',
+    status: (str | None) = 'P',
     extra_query: Q = Q(),
     accessible_repository_ids: Sequence[int] = [],
     accessible_review_group_ids: Sequence[int] = [],
@@ -498,7 +498,7 @@ def get_review_requests_accessible_q(
 
 def get_review_requests_from_user_q(
     *,
-    from_user: Union[str, User],
+    from_user: str | User,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQResult:
     """Return a Q expression for review requests from a user.
@@ -601,8 +601,8 @@ def get_review_requests_to_group_q(
 
 def get_review_requests_to_user_q(
     *,
-    to_user: Union[str, User],
-    to_user_profile: Optional[Profile],
+    to_user: str | User,
+    to_user_profile: Profile | None,
     target_groups: Sequence[Group] = [],
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQResult:
@@ -741,8 +741,8 @@ def get_review_requests_to_user_q(
 
 def get_review_requests_to_user_directly_q(
     *,
-    to_user: Union[str, User],
-    to_user_profile: Optional[Profile],
+    to_user: str | User,
+    to_user_profile: Profile | None,
     subquery_start_index: int = 1,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQResult:
@@ -841,8 +841,8 @@ def get_review_requests_to_user_directly_q(
 
 def get_review_requests_to_user_groups_q(
     *,
-    to_user: Union[str, User],
-    to_user_profile: Optional[Profile],
+    to_user: str | User,
+    to_user_profile: Profile | None,
     target_groups: Sequence[Group] = [],
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQResult:
@@ -942,8 +942,8 @@ def get_review_requests_to_user_groups_q(
 
 def get_review_requests_to_or_from_user_q(
     *,
-    to_or_from_user: Union[str, User],
-    to_or_from_user_profile: Optional[Profile],
+    to_or_from_user: str | User,
+    to_or_from_user_profile: Profile | None,
     target_groups: Sequence[Group] = [],
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQResult:
@@ -1110,7 +1110,7 @@ def get_review_requests_to_or_from_user_q(
 
 def get_review_requests_accessible_prep_equeries(
     *,
-    user: Union[AnonymousUser, User],
+    user: AnonymousUser | User,
     local_site: AnyOrAllLocalSites = None,
     needs_local_site_profile_query: bool = True,
     needs_user_permission_queries: bool = True,
@@ -1214,7 +1214,7 @@ def get_review_requests_accessible_equeries(
 
 def get_review_requests_from_user_equeries(
     *,
-    from_user: Union[str, User],
+    from_user: str | User,
     distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQueries:
@@ -1324,8 +1324,8 @@ def get_review_requests_to_group_equeries(
 
 def get_review_requests_to_user_equeries(
     *,
-    to_user: Union[str, User],
-    to_user_profile: Optional[Profile] = None,
+    to_user: str | User,
+    to_user_profile: (Profile | None) = None,
     target_groups: Sequence[Group] = [],
     distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],
@@ -1392,8 +1392,8 @@ def get_review_requests_to_user_equeries(
 
 def get_review_requests_to_user_directly_equeries(
     *,
-    to_user: Union[str, User],
-    to_user_profile: Optional[Profile] = None,
+    to_user: str | User,
+    to_user_profile: (Profile | None) = None,
     distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],
 ) -> ExpectedQueries:
@@ -1458,8 +1458,8 @@ def get_review_requests_to_user_directly_equeries(
 
 def get_review_requests_to_user_groups_equeries(
     *,
-    to_user: Union[str, User],
-    to_user_profile: Optional[Profile] = None,
+    to_user: str | User,
+    to_user_profile: (Profile | None) = None,
     target_groups: Sequence[Group] = [],
     distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],
@@ -1528,8 +1528,8 @@ def get_review_requests_to_user_groups_equeries(
 
 def get_review_requests_to_or_from_user_equeries(
     *,
-    to_or_from_user: Union[str, User],
-    to_or_from_user_profile: Optional[Profile] = None,
+    to_or_from_user: str | User,
+    to_or_from_user_profile: (Profile | None) = None,
     target_groups: Sequence[Group] = [],
     distinct: bool = False,
     **kwargs: Unpack[_AccessibleKwargs],

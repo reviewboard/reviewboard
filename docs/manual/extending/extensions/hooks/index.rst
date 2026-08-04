@@ -93,11 +93,15 @@ Integration With Third-Party Tools Hooks
   Adds a new version control system implementation.
 
 :ref:`avatar-service-hook`:
-  Adds a new avar service, which can be used to provide profile pictures
+  Adds a new avatar service, which can be used to provide profile pictures
   for user accounts.
 
 :ref:`auth-backend-hook`:
   Adds a new authentication backend for logging in to Review Board.
+
+:ref:`service-account-hook`:
+  Adds a service account, which represents special users intended for
+  automation and integration purposes.
 
 
 Action Hooks
@@ -254,6 +258,7 @@ Deprecated Hooks
    review-request-fieldsets-hook
    review-ui-hook
    scmtool-hook
+   service-account-hook
    signal-hook
    template-hook
    url-hook

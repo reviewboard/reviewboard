@@ -84,7 +84,7 @@ class ResourceListTests(ReviewRequestChildListMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True,
                                                     with_local_site=True)
 
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
 
         now = timezone.now()
         change1 = ChangeDescription(public=True,
@@ -359,7 +359,7 @@ class ResourceItemTests(ReviewRequestChildItemMixin, BaseWebAPITestCase):
         review_request = self.create_review_request(publish=True,
                                                     with_local_site=True)
 
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
 
         now = timezone.now()
         change = ChangeDescription(public=True, timestamp=now)

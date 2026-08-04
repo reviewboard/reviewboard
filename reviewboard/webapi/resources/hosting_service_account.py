@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from djblets.util.decorators import augment_method_from
 from djblets.webapi.decorators import (webapi_login_required,
@@ -73,7 +73,7 @@ class HostingServiceAccountResource(WebAPIResource):
     def get_queryset(
         self,
         request: HttpRequest,
-        local_site_name: Optional[str] = None,
+        local_site_name: (str | None) = None,
         is_list: bool = False,
         *args,
         **kwargs,
@@ -197,7 +197,7 @@ class HostingServiceAccountResource(WebAPIResource):
     def get_links(
         self,
         resources: Sequence[WebAPIResource] = [],
-        obj: Optional[HostingServiceAccount] = None,
+        obj: (HostingServiceAccount | None) = None,
         *args,
         **kwargs,
     ) -> WebAPIResponseLinks:
@@ -326,9 +326,9 @@ class HostingServiceAccountResource(WebAPIResource):
         username: str,
         service_id: str,
         *,
-        password: Optional[str] = None,
-        hosting_url: Optional[str] = None,
-        local_site_name: Optional[str] = None,
+        password: (str | None) = None,
+        hosting_url: (str | None) = None,
+        local_site_name: (str | None) = None,
         extra_fields: dict[str, str],
         **kwargs,
     ) -> WebAPIResourceHandlerResult:

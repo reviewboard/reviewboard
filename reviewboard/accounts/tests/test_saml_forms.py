@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import ClassVar, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from djblets.siteconfig.models import SiteConfiguration
@@ -18,6 +18,8 @@ from reviewboard.accounts.sso.backends.saml.settings import (
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
+    from typing import ClassVar
+
     from typelets.json import JSONDict
 
 

@@ -7,49 +7,88 @@ Version Added:
 
 from __future__ import annotations
 
-import json
 import re
 import logging
-from typing import TYPE_CHECKING
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, TypeVar
+from urllib.error import HTTPError
+from urllib.parse import quote as urlquote, urlencode
+
+from django.utils.translation import gettext as _
+from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.errors import (
     AuthorizationError,
     HostingServiceError,
+    HostingServiceAPIError,
 )
-from reviewboard.hostingsvcs.utils.paginator import APIPaginator
+from reviewboard.hostingsvcs.base.paginator import (
+    APIPaginator,
+    PageDataT,
+    PageDataItemT,
+    ProxyPaginator,
+)
+from reviewboard.hostingsvcs.github import api
 from reviewboard.scmtools.crypto_utils import decrypt_password
-from reviewboard.scmtools.errors import FileNotFoundError, SCMError
+from reviewboard.scmtools.errors import FileNotFoundError
 
 if TYPE_CHECKING:
+    from typing import Any
     from urllib.error import URLError
 
-    from reviewboard.hostingsvcs.base.http import HostingServiceHTTPRequest
+    from reviewboard.hostingsvcs.base.hosting_service import \
+        HostingServiceCredentials
+    from reviewboard.hostingsvcs.base.http import (
+        HostingServiceHTTPRequest,
+        HostingServiceHTTPResponse,
+    )
+    from reviewboard.hostingsvcs.base.paginator import (
+        APIPaginatorPageData,
+        BasePaginator,
+    )
     from reviewboard.hostingsvcs.github.service import GitHub
+    from reviewboard.hostingsvcs.models import HostingServiceAccount
+    from reviewboard.scmtools.models import Repository
+
+
+_T = TypeVar('_T')
+_TModel = TypeVar('_TModel', bound=BaseModel)
 
 
 logger = logging.getLogger(__name__)
 
 
-class GitHubAPIPaginator(APIPaginator):
+class GitHubAPIPaginator(APIPaginator[PageDataItemT, PageDataT]):
     """Paginates over GitHub API list resources.
 
     This is returned by some GitHubClient functions in order to handle
     iteration over pages of results, without resorting to fetching all
     pages at once or baking pagination into the functions themselves.
     """
-    start_query_param = 'page'
-    per_page_query_param = 'per_page'
 
     LINK_RE = re.compile(r'\<(?P<url>[^>]+)\>; rel="(?P<rel>[^"]+)",? *')
 
-    def fetch_url(self, url):
-        """Fetches the page data from a URL."""
+    def fetch_url(
+        self,
+        url: str,
+    ) -> APIPaginatorPageData:
+        """Fetch the page data from a URL.
+
+        Args:
+            url (str):
+                The URL to fetch.
+
+        Returns:
+            dict:
+            A page of data.
+        """
         rsp = self.client.http_get(url)
 
         # Find all the links in the Link header and key off by the link
         # name ('prev', 'next', etc.).
         link_header = rsp.get_header('Link', '')
+        assert link_header is not None
 
         links = {
             m.group('rel'): m.group('url')
@@ -83,8 +122,13 @@ class GitHubClient(HostingServiceClient['GitHub']):
         super().__init__(hosting_service)
         self.account = hosting_service.account
 
-    def get_http_credentials(self, account, username=None, password=None,
-                             **kwargs):
+    def get_http_credentials(
+        self,
+        account: HostingServiceAccount,
+        username: (str | None) = None,
+        password: (str | None) = None,
+        **kwargs,
+    ) -> HostingServiceCredentials:
         """Return credentials used to authenticate with GitHub.
 
         Unless an explicit username and password is provided, this will
@@ -94,12 +138,12 @@ class GitHubClient(HostingServiceClient['GitHub']):
             account (reviewboard.hostingsvcs.models.HostingServiceAccount):
                 The stored authentication data for the service.
 
-            username (unicode, optional):
+            username (str, optional):
                 An explicit username passed by the caller. This will override
                 the data stored in the account, if both a username and
                 password are provided.
 
-            password (unicode, optional):
+            password (str, optional):
                 An explicit password passed by the caller. This will override
                 the data stored in the account, if both a username and
                 password are provided.
@@ -129,7 +173,10 @@ class GitHubClient(HostingServiceClient['GitHub']):
 
         return {}
 
-    def process_http_response(self, response):
+    def process_http_response(
+        self,
+        response: HostingServiceHTTPResponse,
+    ) -> HostingServiceHTTPResponse:
         """Process an HTTP response and return a result.
 
         Args:
@@ -185,60 +232,60 @@ class GitHubClient(HostingServiceClient['GitHub']):
         """
         super().process_http_error(request, e)
 
-        try:
-            data = e.read()  # type: ignore
-            rsp = json.loads(data.decode('utf-8'))
-        except Exception:
-            rsp = None
+        if isinstance(e, HTTPError):
+            data = e.read()
+            http_code = e.code
 
-        http_code: (int | None) = getattr(e, 'code', None)
+            logger.error('HTTP error in HTTP request to %s: %s',
+                         e.url, e)
 
-        if rsp and 'message' in rsp:
-            message = rsp['message']
+            try:
+                error = api.APIError.model_validate_json(data)
 
-            if http_code == 401:
-                raise AuthorizationError(message, http_code=http_code)
-
-            raise HostingServiceError(message, http_code=http_code)
+                if http_code == 401:
+                    raise AuthorizationError(error.message,
+                                             http_code=http_code)
+                else:
+                    raise HostingServiceAPIError(
+                        _('API Error from GitHub: {e}').format(
+                            e=error.message),
+                        http_code=http_code,
+                        rsp=error)
+            except ValidationError as pydantic_err:
+                logger.error('Unable to parse error response for HTTP '
+                             'request to %s: %s',
+                             e.url, pydantic_err)
+                raise HostingServiceError(
+                    _('Unknown response from GitHub: {rsp}').format(
+                        rsp=data.decode()),
+                    http_code=http_code)
         else:
-            raise HostingServiceError(str(e), http_code=http_code)
+            logger.error('Error when making HTTP request to GitHub: %s',
+                         e)
+
+            raise HostingServiceError(str(e))
 
     #
     # Higher-level API methods
     #
 
-    def api_get_list(self, url, start=None, per_page=None, *args, **kwargs):
-        """Perform an HTTP GET to a GitHub API and returns a paginator.
-
-        This returns a GitHubAPIPaginator that's used to iterate over the
-        pages of results. Each page contains information on the data and
-        headers from that given page.
-
-        The ``start`` and ``per_page`` parameters can be used to control
-        where pagination begins and how many results are returned per page.
-        ``start`` is a 0-based index representing a page number.
-        """
-        if start is not None:
-            # GitHub uses 1-based indexing, so add one.
-            start += 1
-
-        return GitHubAPIPaginator(
-            client=self,
-            url=url,
-            start=start,
-            per_page=per_page)
-
-    def api_get_blob(self, repo_api_url, path, sha):
+    def get_blob(
+        self,
+        *,
+        repo_api_url: str,
+        path: str,
+        sha: str,
+    ) -> bytes:
         """Return the contents of a file using the GitHub API.
 
         Args:
-            repo_api_url (unicode):
+            repo_api_url (str):
                 The absolute URL for the base repository API.
 
-            path (unicode):
+            path (str):
                 The path of the file within the repository.
 
-            sha (unicode):
+            sha (str):
                 The SHA1 of the file within the repository.
 
         Returns:
@@ -251,120 +298,432 @@ class GitHubClient(HostingServiceClient['GitHub']):
         """
         try:
             return self.http_get(
-                url='%s/git/blobs/%s' % (repo_api_url, sha),
+                url=f'{repo_api_url}/git/blobs/{sha}',
                 headers={
                     'Accept': self.RAW_MIMETYPE,
                 }).data
         except HostingServiceError:
             raise FileNotFoundError(path, sha)
 
-    def api_get_commits(self, repo_api_url, branch=None, start=None):
-        url = '%s/commits' % repo_api_url
+    def get_branches(
+        self,
+        *,
+        repo_api_url: str,
+        repository: Repository | None,
+    ) -> BasePaginator[api.Branch, Sequence[api.Branch]]:
+        """Make a get request to the branch list API.
 
-        # Note that we don't always use the branch, since the GitHub API
-        # doesn't support limiting by branch *and* starting at a SHA. So, the
-        # branch argument can be safely ignored if a sha is provided.
-        start = start or branch
+        Args:
+            repo_api_url (str):
+                The absolute URL for the base repository API.
 
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+        Returns:
+            reviewboard.hostingsvcs.utils.APIPaginator:
+            A paginator for the branch repsponses.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching branches.
+        """
+        return self._api_get_paginated(
+            url=f'{repo_api_url}/branches',
+            result_type=TypeAdapter(list[api.Branch]),
+            repository=repository,
+        )
+
+    def get_repository(
+        self,
+        *,
+        repo_api_url: str,
+        repository: Repository | None,
+    ) -> api.Repository:
+        """Make a get request to the repository API.
+
+        Args:
+            repo_api_url (str):
+                The absolute URL of the base repository API.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+        Returns:
+            reviewboard.hostingsvcs.github.api.Repository:
+            The fetched data.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching the repository.
+        """
+        return self._api_get(
+            url=repo_api_url,
+            result_type=api.Repository,
+            repository=repository)
+
+    def get_commit(
+        self,
+        *,
+        repo_api_url: str,
+        commit_id: str,
+        repository: Repository | None,
+    ) -> api.CommitResponse:
+        """Make a get request to the commit API.
+
+        Args:
+            repo_api_url (str):
+                The absolute URL for the base repository API.
+
+            commit_id (str):
+                The revision of the commit to retrieve.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+        Returns:
+            reviewboard.hostingsvcs.github.api.CommitResponse:
+            The fetched data.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching information about the bug.
+        """
+        return self._api_get(
+            url=f'{repo_api_url}/commits/{urlquote(commit_id)}',
+            result_type=api.CommitResponse,
+            repository=repository)
+
+    def get_commits(
+        self,
+        *,
+        repo_api_url: str,
+        start: str | None,
+        repository: Repository,
+    ) -> BasePaginator[api.CommitResponse, Sequence[api.CommitResponse]]:
+        """Make a request to the commits API.
+
+        This can be called multiple times in succession using the "parent"
+        field of the last entry as the start parameter in order to paginate
+        through the history of commits in the repository.
+
+        Args:
+            repo_api_url (str):
+                The absolute URL for the base repository API.
+
+            start (str, optional):
+                An optional starting revision or branch.
+
+                If this is not provided, the most recent commits will be
+                returned.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to retrieve commits from.
+
+        Returns:
+            list of reviewboard.scmtools.core.Commit:
+            The retrieved commits.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching commits.
+        """
         if start:
-            url += '?sha=%s' % start
-
-        try:
-            return self.http_get(url).json
-        except Exception as e:
-            logger.warning('Failed to fetch commits from %s: %s',
-                           url, e, exc_info=True)
-            raise SCMError(str(e))
-
-    def api_get_compare_commits(self, repo_api_url, parent_revision, revision):
-        # If the commit has a parent commit, use GitHub's "compare two commits"
-        # API to get the diff. Otherwise, fetch the commit itself.
-        if parent_revision:
-            url = '%s/compare/%s...%s' % (repo_api_url, parent_revision,
-                                          revision)
+            params = {'sha': start}
         else:
-            url = '%s/commits/%s' % (repo_api_url, revision)
+            params = None
 
-        try:
-            comparison = self.http_get(url).json
-        except Exception as e:
-            logger.warning('Failed to fetch commit comparison from %s: %s',
-                           url, e, exc_info=True)
-            raise SCMError(str(e))
+        return self._api_get_paginated(
+            url=f'{repo_api_url}/commits',
+            result_type=TypeAdapter(list[api.CommitResponse]),
+            repository=repository,
+            params=params,
+        )
 
-        if parent_revision:
-            tree_sha = comparison['base_commit']['commit']['tree']['sha']
-        else:
-            tree_sha = comparison['commit']['tree']['sha']
+    def get_compare_commits(
+        self,
+        *,
+        repo_api_url: str,
+        parent_id: str,
+        commit_id: str,
+        repository: Repository | None,
+    ) -> api.CompareCommitsResponse:
+        """Make a get request to the compare commits API.
 
-        return comparison['files'], tree_sha
+        Args:
+            repo_api_url (str):
+                The absolute URL for the base repository API.
 
-    def api_get_heads(self, repo_api_url):
-        url = '%s/git/refs/heads' % repo_api_url
+            parent_id (str):
+                The revision of the base commit to compare against.
 
-        try:
-            rsp = self.http_get(url).json
-            return [ref for ref in rsp if ref['ref'].startswith('refs/heads/')]
-        except Exception as e:
-            logger.warning('Failed to fetch commits from %s: %s',
-                           url, e, exc_info=True)
-            raise SCMError(str(e))
+            commit_id (str):
+                The revision of the tip commit to compare to.
 
-    def api_get_issue(self, repo_api_url, issue_id):
-        url = '%s/issues/%s' % (repo_api_url, issue_id)
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object.
 
-        try:
-            return self.http_get(url).json
-        except Exception as e:
-            logger.warning('GitHub: Failed to fetch issue from %s: %s',
-                           url, e, exc_info=True)
-            raise SCMError(str(e))
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
 
-    def api_get_remote_repositories(self, api_url, owner, owner_type,
-                                    filter_type=None, start=None,
-                                    per_page=None):
-        url = api_url
+        Returns:
+            reviewboard.hostingsvcs.github.api.CommitResponse:
+            The fetched data.
 
-        if owner_type == 'organization':
-            url += 'orgs/%s/repos' % owner
-        elif owner_type == 'user':
-            if owner == self.account.username:
-                # All repositories belonging to an authenticated user.
-                url += 'user/repos'
-            else:
-                # Only public repositories for the user.
-                url += 'users/%s/repos' % owner
-        else:
-            raise ValueError(
-                "owner_type must be 'organization' or 'user', not %r'"
-                % owner_type)
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching information about the bug.
+        """
+        return self._api_get(
+            url=f'{repo_api_url}/compare/{parent_id}...{commit_id}',
+            result_type=api.CompareCommitsResponse,
+            repository=repository)
+
+    def get_issue(
+        self,
+        *,
+        repo_api_url: str,
+        bug_id: str,
+        repository: Repository | None,
+    ) -> api.Issue:
+        """Make a get request to the issue API.
+
+        Args:
+            repo_api_url (str):
+                The absolute URL for the base repository API.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object.
+
+            bug_id (str):
+                The ID of the bug to fetch.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+        Returns:
+            reviewboard.hostingsvcs.github.api.Issue:
+            The fetched data.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching information about the bug.
+        """
+        issue_rsp = self._api_get(
+            url=f'{repo_api_url}/issues/{bug_id}',
+            result_type=api.IssueResponse,
+            repository=repository)
+
+        return issue_rsp.value
+
+    def get_repositories(
+        self,
+        *,
+        repos_api_url: str,
+        filter_type: (str | None) = None,
+        start: (int | None) = None,
+        per_page: (int | None) = None,
+    ) -> BasePaginator[api.Repository, Sequence[api.Repository]]:
+        """Make a get request to the repository list API.
+
+        Args:
+            repos_api_url (str):
+                The URL of the repository list to fetch.
+
+                This can vary depending on whether we're fetching repositories
+                for a user or an organization.
+
+            filter_type (str, optional):
+                Some hosting service-specific criteria to filter by.
+
+            start (int, optional):
+                The index to start at.
+
+            per_page (int, optional):
+                The number of results per page.
+
+        Returns:
+            reviewboard.hostingsvcs.utils.APIPaginator:
+            A paginator for the repository repsponses.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching the repository.
+        """
+        params = {}
 
         if filter_type:
-            url += '?type=%s' % (filter_type or 'all')
+            params['type'] = filter_type
 
-        return self.api_get_list(url,
-                                 start=start,
-                                 per_page=per_page)
+        if start:
+            params['page'] = str(start + 1)
 
-    def api_get_remote_repository(self, api_url, owner, repository_id):
-        try:
-            return self.http_get(
-                '%srepos/%s/%s' % (api_url, owner, repository_id)).json
-        except HostingServiceError as e:
-            if e.http_code == 404:
-                return None
-            else:
-                raise
+        return self._api_get_paginated(
+            url=repos_api_url,
+            result_type=TypeAdapter(list[api.Repository]),
+            repository=None,
+            params=params,
+            per_page=per_page)
 
-    def api_get_tree(self, repo_api_url, sha, recursive=False):
-        url = '%s/git/trees/%s' % (repo_api_url, sha)
+    def get_tree(
+        self,
+        *,
+        repo_api_url: str,
+        tree_sha: str,
+        recursive: bool,
+        repository: Repository | None,
+    ) -> api.TreeResponse:
+        """Make a get request to the git tree API.
 
+        Args:
+            repo_api_url (str):
+                The absolute URL for the base repository API.
+
+            tree_sha (str):
+                The SHA of the tree object to fetch.
+
+            recursive (bool):
+                Whether to fetch the tree contents recursively.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+        Returns:
+            reviewboard.hostingsvcs.github.api.TreeResponse:
+            The fetched data.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching information about the bug.
+        """
         if recursive:
-            url += '?recursive=1'
+            params = {'recursive': '1'}
+        else:
+            params = None
+
+        return self._api_get(
+            url=f'{repo_api_url}/git/trees/{tree_sha}',
+            params=params,
+            result_type=api.TreeResponse,
+            repository=repository)
+
+    def _api_get(
+        self,
+        *,
+        url: str,
+        result_type: type[_TModel] | TypeAdapter[_T],
+        params: (dict[str, str] | None) = None,
+        repository: (Repository | None) = None,
+    ) -> _TModel | _T:
+        """Perform a GET request to the API.
+
+        Args:
+            url (str):
+                The URL of the API endpoint.
+
+            result_type (pydantic.BaseModel or pydantic.TypeAdapter):
+                The pydantic model or adapter to use for deserialization.
+
+            params (dict):
+                Parameters to include in the URL.
+
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository object, if available.
+
+        Returns:
+            object:
+            The deserialized data.
+
+        Raises:
+            reviewboard.hostingsvcs.base.errors.HostingServiceError:
+                An error occurred while making the request.
+
+            reviewboard.hostingsvcs.base.errors.HostingServiceAPIError:
+                An error occurred while making the request, with a parsed error
+                structure.
+        """
+        if params:
+            url = f'{url}?{urlencode(params)}'
+
+        logger.debug('Making GET request to %s', url)
 
         try:
-            return self.http_get(url).json
-        except Exception as e:
-            logger.warning('Failed to fetch tree from %s: %s',
-                           url, e, exc_info=True)
-            raise SCMError(str(e))
+            rsp = self.http_get(url)
+
+            if isinstance(result_type, TypeAdapter):
+                return result_type.validate_json(rsp.data)
+            else:
+                return result_type.model_validate_json(rsp.data)
+        except ValidationError as e:
+            logger.error('Data validation failed for API GET %s '
+                         '(repository=%s): %s',
+                         url, repository, e)
+
+            raise HostingServiceError(
+                _('Unexpected response from GitHub.'))
+
+    def _api_get_paginated(
+        self,
+        *,
+        url: str,
+        result_type: TypeAdapter[list[_T]],
+        repository: Repository | None,
+        params: (dict[str, str] | None) = None,
+        per_page: (int | None) = None,
+    ) -> ProxyPaginator[_T, Sequence[_T]]:
+        """Perform an HTTP GET to the API and return a paginator.
+
+        Args:
+            url (str):
+                The URL of the API endpoint.
+
+            result_type (pydantic.BaseModel or pydantic.TypeAdapter):
+                The pydantic model or adapter to use for deserialization.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+            params (dict, optional):
+                Parameters to include in the URL.
+
+            per_page (int, optional):
+                The number of items to return per page.
+
+        Returns:
+            reviewboard.hostingsvcs.paginator.ProxyPaginator:
+            A paginator over the validated results.
+
+        Raises:
+            reviewboard.hostingsvcs.base.errors.HostingServiceError:
+                An error occurred while making the request.
+        """
+        def normalize_page_data(
+            page_data: Sequence[Any],
+        ) -> Sequence[_T] | None:
+            try:
+                return result_type.validate_python(page_data)
+            except ValidationError as e:
+                logger.error('Data validation failed for API GET %s '
+                             '(repository=%s): %s',
+                             url, repository, e)
+
+                raise HostingServiceError(
+                    _('Unexpected response from GitHub.'))
+
+        if params is None:
+            params = {}
+
+        if per_page:
+            params['per_page'] = str(per_page)
+
+        if params:
+            url = f'{url}?{urlencode(params)}'
+
+        return ProxyPaginator[_T, Sequence[_T]](
+            GitHubAPIPaginator(
+                client=self,
+                url=url),
+            normalize_page_data_func=normalize_page_data)

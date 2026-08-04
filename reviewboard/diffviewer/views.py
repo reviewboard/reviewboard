@@ -7,7 +7,7 @@ import os
 import re
 import traceback
 from io import BytesIO
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 from zipfile import ZipFile
 
 from django.conf import settings
@@ -107,16 +107,16 @@ class SerializedRevisionInfo(TypedDict):
     is_interdiff: bool
 
     #: The current interdiff revision, if available.
-    interdiff_revision: Optional[int]
+    interdiff_revision: int | None
 
     #: The current base commit ID, when viewing a commit range.
-    base_commit_id: Optional[int]
+    base_commit_id: int | None
 
     #: The current tip commit ID, when viewing a commit range.
-    tip_commit_id: Optional[int]
+    tip_commit_id: int | None
 
     #: The most recent diff revision, if available.
-    latest_revision: NotRequired[Optional[int]]
+    latest_revision: NotRequired[int | None]
 
     #: Whether the current page is showing a draft diff.
     is_draft_diff: NotRequired[bool]
@@ -133,12 +133,12 @@ class SerializedDiffContext(TypedDict):
     """
 
     #: The set of commits for the current diff revision.
-    commits: Optional[list[SerializedDiffCommit]]
+    commits: list[SerializedDiffCommit] | None
 
     #: The diff of commits between two diff revisions.
     #:
     #: This will only be populated when viewing an interdiff.
-    commit_history_diff: Optional[list[SerializedCommitHistoryDiffEntry]]
+    commit_history_diff: list[SerializedCommitHistoryDiffEntry] | None
 
     #: A list of filename patterns to limit the view to.
     filename_patterns: list[str]
@@ -167,7 +167,7 @@ class DiffViewerContext(TypedDict):
     diffset: DiffSet
 
     #: The current interdiff, if available.
-    interdiffset: Optional[DiffSet]
+    interdiffset: DiffSet | None
 
     #: The list of all files in the current diff/interdiff.
     files: list[SerializedDiffFile]
@@ -242,7 +242,7 @@ class DiffViewerView(TemplateView):
         self,
         request: HttpRequest,
         diffset: DiffSet,
-        interdiffset: Optional[DiffSet] = None,
+        interdiffset: (DiffSet | None) = None,
         *args,
         **kwargs,
     ) -> HttpResponse:
@@ -329,11 +329,11 @@ class DiffViewerView(TemplateView):
         self,
         *,
         diffset: DiffSet,
-        interdiffset: Optional[DiffSet],
+        interdiffset: DiffSet | None,
         all_commits: list[DiffCommit],
-        base_commit: Optional[DiffCommit],
-        tip_commit: Optional[DiffCommit],
-        extra_context: Optional[dict[str, Any]] = None,
+        base_commit: DiffCommit | None,
+        tip_commit: DiffCommit | None,
+        extra_context: (dict[str, Any] | None) = None,
         **kwargs,
     ) -> DiffViewerContext:
         """Calculate and return data used for rendering the diff viewer.
@@ -976,12 +976,12 @@ class DiffFragmentView(View):
         self,
         *,
         diffset: DiffSet,
-        filediff: Optional[FileDiff],
-        interdiffset: Optional[DiffSet],
-        interfilediff: Optional[FileDiff],
-        base_filediff: Optional[FileDiff],
-        diff_settings: Optional[DiffSettings],
-    ) -> Optional[SerializedDiffFile]:
+        filediff: FileDiff | None,
+        interdiffset: DiffSet | None,
+        interfilediff: FileDiff | None,
+        base_filediff: FileDiff | None,
+        diff_settings: DiffSettings | None,
+    ) -> SerializedDiffFile | None:
         """Fetch information on the requested diff.
 
         This will look up information on the diff that's to be rendered

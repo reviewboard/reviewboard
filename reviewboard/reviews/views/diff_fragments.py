@@ -6,7 +6,7 @@ import io
 import logging
 import os
 import struct
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.sites.models import Site
@@ -28,10 +28,13 @@ from typing_extensions import TypedDict
 from reviewboard.attachments.mimetypes import guess_mimetype
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
-from reviewboard.diffviewer.diffutils import (get_file_chunks_in_range,
-                                              get_last_header_before_line,
-                                              get_last_line_number_in_diff,
-                                              get_sha256)
+from reviewboard.diffviewer.diffutils import (
+    get_file_chunks_in_range,
+    get_is_new_file,
+    get_last_header_before_line,
+    get_last_line_number_in_diff,
+    get_sha256,
+)
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.diffviewer.views import (DiffFragmentView,
@@ -88,9 +91,9 @@ def build_diff_comment_fragments(
     context: dict[str, Any],
     comment_template_name: str = 'reviews/diff_comment_fragment.html',
     error_template_name: str = 'diffviewer/diff_fragment_error.html',
-    lines_of_context: Optional[Sequence[int]] = None,
+    lines_of_context: (Sequence[int] | None) = None,
     show_controls: bool = False,
-    request: Optional[HttpRequest] = None,
+    request: (HttpRequest | None) = None,
 ) -> tuple[bool, list[CommentFragment]]:
     """Construct and return the comment fragment data.
 
@@ -138,8 +141,8 @@ def build_diff_comment_fragments(
 
     for comment in comments:
         try:
-            base_commit: Optional[DiffCommit] = None
-            tip_commit: Optional[DiffCommit] = None
+            base_commit: (DiffCommit | None) = None
+            tip_commit: (DiffCommit | None) = None
 
             base_filediff = comment.base_filediff
 
@@ -191,6 +194,10 @@ def build_diff_comment_fragments(
                 'lines_of_context': lines_of_context,
                 'expandable_above': show_controls and first_line != 1,
                 'expandable_below': show_controls and last_line != max_line,
+                'is_new_file': get_is_new_file(
+                    filediff=comment.filediff,
+                    interfilediff=comment.interfilediff,
+                    base_filediff=base_filediff),
                 'collapsible': lines_of_context != [0, 0],
                 'lines_above': first_line - 1,
                 'lines_below': max_line - last_line,
@@ -818,7 +825,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         self,
         renderer: DiffRenderer,
         diff_file: Mapping[str, Any],
-    ) -> dict[str, Optional[str]]:
+    ) -> dict[str, str | None]:
         """Return links for downloading the files used for the diff.
 
         Args:
@@ -903,9 +910,9 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
 
     def _render_review_ui(
         self,
-        review_ui: Optional[ReviewUI],
+        review_ui: ReviewUI | None,
         inline_only: bool = True,
-    ) -> Optional[SafeString]:
+    ) -> SafeString | None:
         """Render the review UI for a file attachment.
 
         Args:
@@ -931,7 +938,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         *,
         filediff: FileDiff,
         use_modified: bool = True,
-    ) -> Optional[FileAttachment]:
+    ) -> FileAttachment | None:
         """Fetch the FileAttachment associated with a FileDiff.
 
         Args:

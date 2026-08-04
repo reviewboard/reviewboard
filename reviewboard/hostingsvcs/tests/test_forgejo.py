@@ -752,7 +752,7 @@ class ForgejoClientTests(ForgejoTestCase):
         expected_token = decrypt_password(account.data['api_token'])
         self.assertEqual(expected_token, 'test_token_123')
         self.assertEqual(credentials, {
-            'header': {
+            'headers': {
                 'Authorization': f'token {expected_token}',
             },
         })

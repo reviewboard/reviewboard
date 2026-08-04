@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.contrib import admin
 from django.db.models.signals import pre_delete
@@ -101,7 +101,7 @@ class RepositoryAdmin(ModelAdmin):
         repository: Repository,
     ) -> str:
         result: str
-        scmtool: Optional[SCMTool]
+        scmtool: SCMTool | None
         missing_support: bool = False
 
         try:

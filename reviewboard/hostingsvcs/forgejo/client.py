@@ -112,12 +112,13 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
             token = decrypt_password(encrypted_token)
 
             return {
-                'header': {
+                'headers': {
                     'Authorization': f'token {token}',
                 },
             }
 
-        return {}
+        return super().get_http_credentials(
+            account, username, password, **kwargs)
 
     def check_repository(
         self,
@@ -244,6 +245,15 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
         url = f'{api_root}/users/{url_username}/tokens'
         trace_id = str(uuid4())
 
+        # Temporarily null-out any existing tokens, so we don't try to use
+        # it if we're reauthenticating ("Edit Credentials")
+        saved_token = self.account.data.get('api_token')
+
+        try:
+            del self.account.data['api_token']
+        except Exception:
+            pass
+
         try:
             body = json.dumps({
                 'name': token_name,
@@ -279,6 +289,10 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
             logger.error('[%s] Data validation failed for API token creation: '
                          '%s',
                          trace_id, e)
+
+            if saved_token:
+                self.account.data['api_token'] = saved_token
+
             raise HostingServiceError(
                 _(
                     'Unexpected response from Forgejo server. Check the '
@@ -291,6 +305,9 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
             logger.error('[%s] HTTP error (code=%s) creating API token with '
                          'POST %s: %s ',
                          trace_id, e.code, url, data.decode())
+
+            if saved_token:
+                self.account.data['api_token'] = saved_token
 
             try:
                 error = api.APIError.model_validate_json(data)

@@ -9,7 +9,10 @@ from housekeeping.functions import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.chunk_generator import compute_chunk_last_header
-from reviewboard.diffviewer.diffutils import populate_diff_chunks
+from reviewboard.diffviewer.diffutils import (
+    find_last_line_numbers,
+    populate_diff_chunks,
+)
 from reviewboard.diffviewer.errors import UserVisibleError
 from reviewboard.diffviewer.settings import DiffSettings
 
@@ -308,12 +311,23 @@ class DiffRenderer(object):
 
                         # Fix the headers to accommodate the new range.
                         if self.chunk_index < self.num_chunks - 1:
-                            for prefix, index in (('left', 1), ('right', 4)):
-                                meta[prefix + '_headers'] = [
-                                    header
-                                    for header in meta[prefix + '_headers']
-                                    if header[0] <= new_lines[-1][index]
-                                ]
+                            # The last line of the chunk won't always have a
+                            # line number for both sides. This happens with
+                            # interdiffs that have filtered out opcodes.
+                            last_linenums = find_last_line_numbers(new_lines)
+
+                            for prefix, last_linenum in zip(('left', 'right'),
+                                                            last_linenums):
+                                if last_linenum is None:
+                                    # No lines are shown for this side, so
+                                    # no headers apply.
+                                    meta[prefix + '_headers'] = []
+                                else:
+                                    meta[prefix + '_headers'] = [
+                                        header
+                                        for header in meta[prefix + '_headers']
+                                        if header[0] <= last_linenum
+                                    ]
 
                             meta['headers'] = \
                                 compute_chunk_last_header(new_lines, num_lines,

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
 from django.http import HttpResponse
@@ -365,7 +364,7 @@ class DiffResource(WebAPIResource):
                     }
                 }
 
-        discarded_diffset: Optional[DiffSet] = None
+        discarded_diffset: (DiffSet | None) = None
 
         draft = review_request.get_draft(user=request.user)
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from email.message import Message
 from http import HTTPStatus
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 from urllib.error import HTTPError
 
 import kgb
@@ -103,7 +103,7 @@ class ResourceListTests(kgb.SpyAgency,
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
         populate_items: bool,
     ) -> tuple[str, str, list[HostingServiceAccount]]:
         """Set up a basic HTTP GET test.
@@ -205,7 +205,7 @@ class ResourceListTests(kgb.SpyAgency,
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
         post_valid_data: bool,
     ) -> tuple[str, str, JSONDict, Sequence[Any]]:
         """Set up a basic HTTP POST test.
@@ -287,7 +287,7 @@ class ResourceListTests(kgb.SpyAgency,
                     owner=HostingServiceClient,
                     op=kgb.SpyOpReturn(response))
 
-        self._login_user(local_site=False, admin=True)
+        self.login_user(local_site=False, admin=True)
 
         rsp = self.api_post(
             get_hosting_service_account_list_url(),
@@ -327,7 +327,7 @@ class ResourceListTests(kgb.SpyAgency,
                     owner=HostingServiceClient,
                     op=kgb.SpyOpRaise(error))
 
-        self._login_user(local_site=False, admin=True)
+        self.login_user(local_site=False, admin=True)
 
         rsp = self.api_post(
             get_hosting_service_account_list_url(),
@@ -349,7 +349,7 @@ class ResourceListTests(kgb.SpyAgency,
         """Testing the POST <URL> API with a GitLab account and missing fields
         in custom HostingServiceAuthForm
         """
-        self._login_user(local_site=False, admin=True)
+        self.login_user(local_site=False, admin=True)
 
         rsp = self.api_post(
             get_hosting_service_account_list_url(),
@@ -442,7 +442,7 @@ class ResourceItemTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
     ) -> tuple[str, str, HostingServiceAccount]:
         """Set up a basic HTTP GET test.
 

@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from typing import Iterable
 
 from reviewboard.codesafety.checkers.base import BaseCodeSafetyChecker
 from reviewboard.codesafety.checkers.trojan_source import \
@@ -26,7 +26,7 @@ class CodeSafetyCheckerRegistry(OrderedRegistry[BaseCodeSafetyChecker]):
     def get_checker(
         self,
         checker_id: str,
-    ) -> Optional[BaseCodeSafetyChecker]:
+    ) -> BaseCodeSafetyChecker | None:
         """Return a code checker with the specified ID.
 
         Args:

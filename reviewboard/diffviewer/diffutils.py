@@ -12,8 +12,7 @@ import subprocess
 import tempfile
 from collections.abc import Sequence
 from difflib import SequenceMatcher
-from typing import (Any, AnyStr, Callable, Iterator, Optional,
-                    TYPE_CHECKING, TypeVar)
+from typing import Any, AnyStr, Callable, Iterator, TYPE_CHECKING, TypeVar
 
 from django.core.files.base import ContentFile, File
 from django.utils.encoding import force_str
@@ -75,7 +74,7 @@ _T = TypeVar('_T')
 #:
 #: Version Added:
 #:     9.0
-DiffRegions: TypeAlias = Optional[Sequence[tuple[int, int]]]
+DiffRegions: TypeAlias = Sequence[tuple[int, int]] | None
 
 
 class DiffFileExtraContext(TypedDict):
@@ -97,7 +96,7 @@ class SerializedDiffFile(TypedDict):
     """
 
     #: The FileDiff for the base of a commit range diff.
-    base_filediff: Optional[FileDiff]
+    base_filediff: FileDiff | None
 
     #: Whether the file is binary.
     binary: bool
@@ -139,7 +138,7 @@ class SerializedDiffFile(TypedDict):
     index: int
 
     #: The interdiff FileDiff to use.
-    interfilediff: Optional[FileDiff]
+    interfilediff: FileDiff | None
 
     #: Whether the file should be rendered as a new file.
     is_new_file: bool
@@ -356,7 +355,7 @@ def patch(
     diff: bytes,
     orig_file: bytes,
     filename: str,
-    request: Optional[HttpRequest] = None,
+    request: (HttpRequest | None) = None,
     *,
     workaround_errors: bool = True,
 ) -> bytes:
@@ -1145,19 +1144,78 @@ def get_filediffs_match(filediff1, filediff2):
               filediff1.patched_sha1 == filediff2.patched_sha1)))
 
 
+def get_is_new_file(
+    *,
+    filediff: FileDiff,
+    interfilediff: Optional[FileDiff] = None,
+    base_filediff: Optional[FileDiff] = None,
+    newfile: Optional[bool] = None,
+) -> bool:
+    """Return whether a file should be rendered as a newly-added file.
+
+    Newly-added files are rendered with only the modified side of the diff,
+    since there's no original side to show.
+
+    A file is only considered new when it's being shown on its own. When
+    shown as part of an interdiff, or relative to a base commit, both sides
+    of the diff exist and must be rendered.
+
+    Version Added:
+        8.1
+
+    Args:
+        filediff (reviewboard.diffviewer.models.filediff.FileDiff):
+            The FileDiff being rendered.
+
+        interfilediff (reviewboard.diffviewer.models.filediff.FileDiff,
+                       optional):
+            The FileDiff on the other side of an interdiff, if any.
+
+        base_filediff (reviewboard.diffviewer.models.filediff.FileDiff,
+                       optional):
+            The base FileDiff in a commit range, if any.
+
+        newfile (bool, optional):
+            Whether the FileDiff itself adds the file.
+
+            This defaults to :py:attr:`FileDiff.is_new
+            <reviewboard.diffviewer.models.filediff.FileDiff.is_new>`.
+            Callers can override it when the state is propagated from an
+            ancestor FileDiff.
+
+    Returns:
+        bool:
+        ``True`` if the file should be rendered as a newly-added file.
+    """
+    if newfile is None:
+        newfile = filediff.is_new
+
+    return (newfile and
+            base_filediff is None and
+            interfilediff is None and
+            # "new file" diffs with parent diffs are allowed in the case where
+            # we have the parent_source_revision. Prior to 3.0.19,
+            # source_revision was overloaded between the diff and the parent,
+            # making this unreliable. If we have a new file with a parent diff,
+            # it means the parent diff deleted the file and the diff added a
+            # new one, in which case we do actually want to show it as added.
+            (not filediff.parent_diff or
+             'parent_source_revision' in filediff.extra_data))
+
+
 @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
 def get_diff_files(
     *,
     diffset: DiffSet,
-    filediff: Optional[FileDiff] = None,
-    interdiffset: Optional[DiffSet] = None,
-    interfilediff: Optional[FileDiff] = None,
-    base_filediff: Optional[FileDiff] = None,
-    request: Optional[HttpRequest] = None,
-    filename_patterns: Optional[list[str]] = None,
-    base_commit: Optional[DiffCommit] = None,
-    tip_commit: Optional[DiffCommit] = None,
-    diff_settings: Optional[DiffSettings] = None,
+    filediff: (FileDiff | None) = None,
+    interdiffset: (DiffSet | None) = None,
+    interfilediff: (FileDiff | None) = None,
+    base_filediff: (FileDiff | None) = None,
+    request: (HttpRequest | None) = None,
+    filename_patterns: (list[str] | None) = None,
+    base_commit: (DiffCommit | None) = None,
+    tip_commit: (DiffCommit | None) = None,
+    diff_settings: (DiffSettings | None) = None,
 ) -> list[SerializedDiffFile]:
     """Return a list of files that will be displayed in a diff.
 
@@ -1505,20 +1563,11 @@ def get_diff_files(
                 'force_interdiff': force_interdiff,
                 'index': len(files),
                 'interfilediff': interfilediff,
-                'is_new_file': (
-                    newfile and
-                    base_filediff is None and
-                    interfilediff is None and
-                    # "new file" diffs with parent diffs are allowed in the
-                    # case where we have the parent_source_revision. Prior to
-                    # 3.0.19, source_revision was overloaded between the diff
-                    # and the parent, making this unreliable. If we have a new
-                    # file with a parent diff, it means the parent diff deleted
-                    # the file and the diff added a new one, in which case we
-                    # do actually want to show it as added.
-                    (not filediff.parent_diff or
-                     'parent_source_revision' in orig_extra_data)
-                ),
+                'is_new_file': get_is_new_file(
+                    filediff=filediff,
+                    interfilediff=interfilediff,
+                    base_filediff=base_filediff,
+                    newfile=newfile),
                 'is_symlink': filediff.extra_data.get('is_symlink', False),
                 'modified_filename': modified_filename or orig_filename,
                 'modified_revision': modified_revision,
@@ -1627,13 +1676,13 @@ def populate_diff_chunks(
 def get_file_from_filediff(
     context: dict[str, Any],
     filediff: FileDiff,
-    interfilediff: Optional[FileDiff],
+    interfilediff: FileDiff | None,
     *,
     diff_settings: DiffSettings,
-    base_filediff: Optional[FileDiff] = None,
-    base_commit: Optional[DiffCommit] = None,
-    tip_commit: Optional[DiffCommit] = None,
-) -> Optional[dict[str, Any]]:
+    base_filediff: (FileDiff | None) = None,
+    base_commit: (DiffCommit | None) = None,
+    tip_commit: (DiffCommit | None) = None,
+) -> dict[str, Any] | None:
     """Return the files that corresponds to the filediff/interfilediff.
 
     This is primarily intended for use with templates. It takes a template
@@ -1758,12 +1807,12 @@ def get_file_from_filediff(
 def get_last_line_number_in_diff(
     context: dict[str, Any],
     filediff: FileDiff,
-    interfilediff: Optional[FileDiff],
+    interfilediff: FileDiff | None,
     *,
     diff_settings: DiffSettings,
-    base_filediff: Optional[FileDiff] = None,
-    base_commit: Optional[DiffCommit] = None,
-    tip_commit: Optional[DiffCommit] = None,
+    base_filediff: (FileDiff | None) = None,
+    base_commit: (DiffCommit | None) = None,
+    tip_commit: (DiffCommit | None) = None,
 ) -> int:
     """Return the last virtual line number in the filediff/interfilediff.
 
@@ -1852,33 +1901,58 @@ def get_last_line_number_in_diff(
     return last_line[0]
 
 
+def find_last_line_numbers(
+    lines: Sequence[Sequence[Any]],
+) -> tuple[int | None, int | None]:
+    """Return the last line numbers on each side of a list of diff lines.
+
+    The last line numbers are not always contained in the last element of the
+    ``lines`` list. Interdiffs can filter out opcodes, which merges lines into
+    equal chunks where one side has fewer lines than the other. The lines at
+    the end of such a chunk have an empty line number on the shorter side.
+
+    See :py:func:`get_chunks_in_range` for a description of what is contained
+    in each element of ``lines``.
+
+    Version Added:
+        8.1:
+        Moved from being an inner function in
+        :py:func:`_get_last_header_in_chunks_before_line` to its own top-level
+        function.
+
+    Args:
+        lines (list of list):
+            The list of diff lines to search.
+
+    Returns:
+        tuple:
+        A 2-tuple of:
+
+        Tuple:
+            0 (int or None):
+                The last line number on the original side.
+
+            1 (int or None):
+                The last line number on the modified side.
+    """
+    last_left: (int | None) = None
+    last_right: (int | None) = None
+
+    for line in reversed(lines):
+        if not last_right and line[4]:
+            last_right = line[4]
+
+        if not last_left and line[1]:
+            last_left = line[1]
+
+        if last_left and last_right:
+            break
+
+    return last_left, last_right
+
+
 def _get_last_header_in_chunks_before_line(chunks, target_line):
     """Find the last header in the list of chunks before the target line."""
-    def find_last_line_numbers(lines):
-        """Return a tuple of the last line numbers in the given list of lines.
-
-        The last line numbers are not always contained in the last element of
-        the ``lines`` list. This is the case when dealing with interdiffs that
-        have filtered out opcodes.
-
-        See :py:func:`get_chunks_in_range` for a description of what is
-        contained in each element of ``lines``.
-        """
-        last_left = None
-        last_right = None
-
-        for line in reversed(lines):
-            if not last_right and line[4]:
-                last_right = line[4]
-
-            if not last_left and line[1]:
-                last_left = line[1]
-
-            if last_left and last_right:
-                break
-
-        return last_left, last_right
-
     def find_header(headers, offset, last_line):
         """Return the last header that occurs before a line.
 
@@ -1945,13 +2019,13 @@ def _get_last_header_in_chunks_before_line(chunks, target_line):
 def get_last_header_before_line(
     context: dict[str, Any],
     filediff: FileDiff,
-    interfilediff: Optional[FileDiff],
+    interfilediff: FileDiff | None,
     target_line: int,
     *,
     diff_settings: DiffSettings,
-    base_filediff: Optional[FileDiff] = None,
-    base_commit: Optional[DiffCommit] = None,
-    tip_commit: Optional[DiffCommit] = None,
+    base_filediff: (FileDiff | None) = None,
+    base_commit: (DiffCommit | None) = None,
+    tip_commit: (DiffCommit | None) = None,
 ) -> dict:
     """Return the last header that occurs before the given line.
 
@@ -2043,14 +2117,14 @@ def get_last_header_before_line(
 def get_file_chunks_in_range(
     context: dict[str, Any],
     filediff: FileDiff,
-    interfilediff: Optional[FileDiff],
+    interfilediff: FileDiff | None,
     first_line: int,
     num_lines: int,
     *,
     diff_settings: DiffSettings,
-    base_filediff: Optional[FileDiff] = None,
-    base_commit: Optional[DiffCommit] = None,
-    tip_commit: Optional[DiffCommit] = None,
+    base_filediff: (FileDiff | None) = None,
+    base_commit: (DiffCommit | None) = None,
+    tip_commit: (DiffCommit | None) = None,
 ) -> Iterator[dict[str, Any]]:
     """Generate the chunks within a range of lines in the specified filediff.
 
@@ -2282,7 +2356,7 @@ def get_line_changed_regions(
 
 def get_sorted_filediffs(
     filediffs: Sequence[_T],
-    key: Optional[Callable[[_T], FileDiff]] = None,
+    key: (Callable[[_T], FileDiff] | None) = None,
 ) -> Sequence[_T]:
     """Sorts a list of filediffs or filediff-wrapping objects.
 
@@ -2489,7 +2563,13 @@ def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):
         last_line = lines[-1]
         offset = last_vlinenum - first_line[0]
 
-        orig_end_linenum = min(last_line[1], first_line[1] + offset)
+        # Interdiffs that have filtered out opcodes can leave the last line
+        # of the chunk without a line number on this side, so find the last
+        # line that has one.
+        last_orig_linenum = find_last_line_numbers(lines)[0]
+        assert last_orig_linenum is not None
+
+        orig_end_linenum = min(last_orig_linenum, first_line[1] + offset)
         orig_end_vlinenum = min(last_line[0], first_line[0] + offset)
 
         assert orig_end_linenum >= orig_start_linenum
@@ -2509,7 +2589,14 @@ def get_displayed_diff_line_ranges(chunks, first_vlinenum, last_vlinenum):
         last_line = lines[-1]
         offset = last_vlinenum - first_line[0]
 
-        patched_end_linenum = min(last_line[4], first_line[4] + offset)
+        # Interdiffs that have filtered out opcodes can leave the last line
+        # of the chunk without a line number on this side, so find the last
+        # line that has one.
+        last_patched_linenum = find_last_line_numbers(lines)[1]
+        assert last_patched_linenum is not None
+
+        patched_end_linenum = min(last_patched_linenum,
+                                  first_line[4] + offset)
         patched_end_vlinenum = min(last_line[0], first_line[0] + offset)
 
         assert patched_end_linenum >= patched_start_linenum

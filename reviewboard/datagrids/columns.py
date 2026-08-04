@@ -728,7 +728,8 @@ class GroupMemberCountColumn(Column):
             django.db.models.query.QuerySet:
             The resulting augmented QuerySet.
         """
-        return queryset.annotate(column_group_member_count=Count('users'))
+        return queryset.annotate(
+            column_group_member_count=Count('users', distinct=True))
 
     def render_data(
         self,
@@ -1137,7 +1138,8 @@ class PendingCountColumn(Column):
             column_pending_review_request_count=Count(
                 'review_requests',
                 filter=(Q(review_requests__public=True) &
-                        Q(review_requests__status='P'))))
+                        Q(review_requests__status='P')),
+                distinct=True))
 
     def render_data(
         self,

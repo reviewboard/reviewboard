@@ -8,14 +8,19 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import ClassVar, Iterator, Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
+from django.utils.translation import gettext as _
 
+from reviewboard.accounts.service_accounts import service_account_registry
 from reviewboard.registries.registry import OrderedRegistry
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from typing import ClassVar
+
     from django.contrib.auth.models import User
     from django.http import HttpRequest
     from django.utils.safestring import SafeString
@@ -53,7 +58,7 @@ class UserBadge:
     #: as custom colors.
     #:
     #: Multiple CSS classes can be provided by separating them with spaces.
-    css_class: Optional[str] = None
+    css_class: (str | None) = None
 
     def render_to_string(self) -> SafeString:
         """Render the badge to an HTML string.
@@ -111,8 +116,8 @@ class BaseUserDetailsProvider:
         self,
         user: User,
         *,
-        local_site: Optional[LocalSite],
-        request: Optional[HttpRequest] = None,
+        local_site: LocalSite | None,
+        request: (HttpRequest | None) = None,
     ) -> Iterator[UserBadge]:
         """Return a list of badges to display for a user.
 
@@ -136,6 +141,51 @@ class BaseUserDetailsProvider:
         yield from []
 
 
+class ServiceAccountDetailsProvider(BaseUserDetailsProvider):
+    """A user details provider that identifies service accounts.
+
+    Each registered service account will have a "Service Account" badge beside
+    its name, identifying it so it's not confused as a normal account.
+
+    Version Added:
+        8.1
+    """
+
+    user_details_provider_id = 'service-accounts'
+
+    def get_user_badges(
+        self,
+        user: User,
+        *,
+        local_site: LocalSite | None,
+        request: (HttpRequest | None) = None,
+    ) -> Iterator[UserBadge]:
+        """Return all badges for service account users.
+
+        If the user is a registered service account, a "Service Account"
+        badge will be displayed.
+
+        Args:
+            user (django.contrib.auth.models.User):
+                The user the badges must correspond to.
+
+            local_site (reviewboard.site.models.LocalSite):
+                The Local Site the badges must correspond to.
+
+            request (django.http.HttpRequest, optional):
+                The optional HTTP request from the client.
+
+        Yields:
+            UserBadge:
+            Each badge to display.
+        """
+        if service_account_registry.get_for_username(user.username):
+            yield UserBadge(
+                label=_('Service Account'),
+                user=user,
+            )
+
+
 class UserDetailsProviderRegistry(OrderedRegistry[BaseUserDetailsProvider]):
     """A registry of user detail providers.
 
@@ -151,7 +201,7 @@ class UserDetailsProviderRegistry(OrderedRegistry[BaseUserDetailsProvider]):
     def get_user_details_provider(
         self,
         provider_id: str,
-    ) -> Optional[BaseUserDetailsProvider]:
+    ) -> BaseUserDetailsProvider | None:
         """Return the user details provider for a given ID.
 
         Args:
@@ -164,6 +214,18 @@ class UserDetailsProviderRegistry(OrderedRegistry[BaseUserDetailsProvider]):
             found.
         """
         return self.get('user_details_provider_id', provider_id)
+
+    def get_defaults(self) -> Iterator[BaseUserDetailsProvider]:
+        """Return default user details providers for the registry.
+
+        Version Added:
+            8.1
+
+        Yields:
+            BaseUserDetailsProvider:
+            Each default user details provider.
+        """
+        yield ServiceAccountDetailsProvider()
 
 
 #: The registry managing user details providers.

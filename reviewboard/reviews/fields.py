@@ -5,8 +5,7 @@ from __future__ import annotations
 import logging
 from html import unescape
 from collections.abc import Sequence
-from typing import (Any, Iterable, Iterator, Generic, Optional,
-                    TYPE_CHECKING, Union)
+from typing import Any, Iterable, Iterator, Generic, TYPE_CHECKING
 
 from django.template.loader import render_to_string
 from django.utils.functional import cached_property
@@ -203,13 +202,13 @@ class BaseReviewRequestFieldSet:
     #:
     #: Type:
     #:     str
-    fieldset_id: Optional[str] = None
+    fieldset_id: (str | None) = None
 
     #: The visible label of the fieldset.
     #:
     #: Type:
     #:     str
-    label: Optional[StrOrPromise] = None
+    label: (StrOrPromise | None) = None
 
     #: Whether to show this fieldset as required.
     #:
@@ -227,14 +226,14 @@ class BaseReviewRequestFieldSet:
     #:
     #: Type:
     #:     list of BaseReviewRequestField
-    field_classes: Optional[list[type[BaseReviewRequestField]]] = None
+    field_classes: (list[type[BaseReviewRequestField]] | None) = None
 
     ######################
     # Instance variables #
     ######################
 
     #: The HTTP request from the client.
-    request: Optional[HttpRequest]
+    request: HttpRequest | None
 
     #: The review request details that this field will operate on.
     review_request_details: BaseReviewRequestDetails
@@ -242,7 +241,7 @@ class BaseReviewRequestFieldSet:
     def __init__(
         self,
         review_request_details: BaseReviewRequestDetails,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
     ) -> None:
         """Initialize the field set.
 
@@ -427,10 +426,10 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     """
 
     #: The unique ID of the field.
-    field_id: Optional[str] = None
+    field_id: (str | None) = None
 
     #: The visible label for the field.
-    label: Optional[StrOrPromise] = None
+    label: (StrOrPromise | None) = None
 
     #: Whether the contents of this field can be edited.
     is_editable: bool = False
@@ -451,7 +450,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     #: An optional database model that backs this field.
     #:
     #: If set, this field will track changes made to instances of this model.
-    model: Optional[type[Model]] = None
+    model: (type[Model] | None) = None
 
     #: The HTML tag to be used when rendering the field.
     tag_name: str = 'span'
@@ -460,7 +459,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     should_render: bool = True
 
     #: The class name for the JavaScript view representing this field.
-    js_view_class: Optional[str] = None
+    js_view_class: (str | None) = None
 
     can_record_change_entry = property(lambda self: self.is_editable)
 
@@ -469,7 +468,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     ######################
 
     #: The HTTP request from the client.
-    request: Optional[HttpRequest]
+    request: HttpRequest | None
 
     #: The review request details that this field will operate on.
     review_request_details: BaseReviewRequestDetails
@@ -478,12 +477,12 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     #:
     #: This is internal and may not be present on the field. Please
     #: use :py:attr:`value` instead.
-    _value: Optional[TFieldValue]
+    _value: TFieldValue | None
 
     def __init__(
         self,
         review_request_details: BaseReviewRequestDetails,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
     ) -> None:
         """Initialize the field.
 
@@ -501,7 +500,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
         self.request = request
 
     @property
-    def value(self) -> Optional[TFieldValue]:
+    def value(self) -> TFieldValue | None:
         """Return the value loaded from the database.
 
         This will fetch the value with the associated ReviewRequest or
@@ -569,7 +568,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     def serialize_change_entry(
         self,
         changedesc: ChangeDescription,
-    ) -> Union[WebAPIResponsePayload, Sequence[WebAPIResponsePayload]]:
+    ) -> WebAPIResponsePayload | Sequence[WebAPIResponsePayload]:
         """Serialize a change entry for public consumption.
 
         This will output a version of the change entry for use in the API.
@@ -595,7 +594,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     def serialize_change_entry_for_model_list(
         self,
         field_info: Any,
-    ) -> Union[WebAPIResponsePayload, Sequence[WebAPIResponsePayload]]:
+    ) -> WebAPIResponsePayload | Sequence[WebAPIResponsePayload]:
         """Return the change entry for a list of models.
 
         Args:
@@ -635,7 +634,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     def serialize_change_entry_for_singleton(
         self,
         field_info: Any,
-    ) -> Union[WebAPIResponsePayload, Sequence[WebAPIResponsePayload]]:
+    ) -> WebAPIResponsePayload | Sequence[WebAPIResponsePayload]:
         """Return the change entry for a singleton.
 
         Singleton fields (e.g., summaries) are stored in
@@ -661,7 +660,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     def serialize_change_entry_for_list(
         self,
         field_info: Any,
-    ) -> Union[WebAPIResponsePayload, Sequence[WebAPIResponsePayload]]:
+    ) -> WebAPIResponsePayload | Sequence[WebAPIResponsePayload]:
         """Return the change entry for a list of plain data.
 
         Args:
@@ -917,7 +916,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
     def load_value(
         self,
         review_request_details: BaseReviewRequestDetails,
-    ) -> Optional[TFieldValue]:
+    ) -> TFieldValue | None:
         """Load a value from the review request or draft.
 
         By default, this loads the value as-is from the extra_data field.
@@ -937,7 +936,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
 
     def save_value(
         self,
-        value: Optional[TFieldValue],
+        value: TFieldValue | None,
     ) -> None:
         """Save the value in the review request or draft.
 
@@ -981,7 +980,7 @@ class BaseReviewRequestField(Generic[TFieldValue]):
 
     def render_value(
         self,
-        value: Optional[TFieldValue],
+        value: TFieldValue | None,
     ) -> SafeString:
         """Render the value in the field.
 
@@ -1188,7 +1187,7 @@ class BaseCommaEditableField(BaseEditableField[Sequence[TFieldValue]]):
 
     def render_value(
         self,
-        value: Optional[Sequence[TFieldValue]],
+        value: Sequence[TFieldValue] | None,
     ) -> SafeString:
         """Render the list of items.
 
@@ -1422,7 +1421,7 @@ class BaseTextAreaField(BaseEditableField[str]):
 
     def is_text_markdown(
         self,
-        value: Optional[str],
+        value: str | None,
     ) -> bool:
         """Return whether the text is in Markdown format.
 
@@ -1518,7 +1517,7 @@ class BaseTextAreaField(BaseEditableField[str]):
 
     def render_value(
         self,
-        value: Optional[str],
+        value: str | None,
     ) -> SafeString:
         """Return the value of the field.
 
@@ -1549,7 +1548,7 @@ class BaseTextAreaField(BaseEditableField[str]):
 
     def should_render_as_markdown(
         self,
-        value: Optional[str],
+        value: str | None,
     ) -> bool:
         """Return whether the text should be rendered as Markdown.
 
@@ -1883,8 +1882,8 @@ class BaseCheckboxField(BaseReviewRequestField[bool]):
         """
         assert isinstance(info, dict)
 
-        rendered_old_value: Optional[SafeString] = None
-        rendered_new_value: Optional[SafeString] = None
+        rendered_old_value: (SafeString | None) = None
+        rendered_new_value: (SafeString | None) = None
 
         if 'old' in info:
             rendered_old_value = _legacy_mark_safe(
@@ -1991,7 +1990,7 @@ class BaseDropdownField(BaseReviewRequestField[str]):
     js_view_class = 'RB.ReviewRequestFields.DropdownFieldView'
 
     #: The default value of the field.
-    default_value: Optional[str] = None
+    default_value: (str | None) = None
 
     #: The HTML tag to be used when rendering the field.
     tag_name = 'select'
@@ -2005,7 +2004,7 @@ class BaseDropdownField(BaseReviewRequestField[str]):
     def load_value(
         self,
         review_request_details,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Load a value from the review request or draft.
 
         Args:
@@ -2156,7 +2155,7 @@ def get_review_request_fieldsets(
 
 def get_review_request_fieldset(
     fieldset_id: str,
-) -> Optional[type[BaseReviewRequestFieldSet]]:
+) -> type[BaseReviewRequestFieldSet] | None:
     """Return the fieldset with the specified ID.
 
     Args:
@@ -2172,7 +2171,7 @@ def get_review_request_fieldset(
 
 def get_review_request_field(
     field_id: str,
-) -> Optional[type[BaseReviewRequestField]]:
+) -> type[BaseReviewRequestField] | None:
     """Return the field with the specified ID.
 
     Args:
@@ -2230,7 +2229,7 @@ def unregister_review_request_fieldset(
 
 
 def _legacy_mark_safe(
-    s: Union[str, SafeString],
+    s: str | SafeString,
     obj: object,
     func_name: str,
 ) -> SafeString:

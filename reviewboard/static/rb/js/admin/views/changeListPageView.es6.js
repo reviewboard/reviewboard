@@ -174,6 +174,53 @@ RB.Admin.ChangeListPageView = RB.Admin.PageView.extend({
         this.resizeElementForFullHeight(this._$changelist);
         this.resizeElementForFullHeight(this._$form);
         this._datagrid.resizeToFit();
+        this._positionDrawer();
+    },
+
+    /**
+     * Position the drawer to align with the change list form.
+     *
+     * The drawer overlays the sidebar, but should line up vertically with
+     * the change list's form (the datagrid area) rather than using a fixed
+     * offset from the top. This keeps the drawer aligned as the height of
+     * the content above the form changes, such as when a search result
+     * summary is shown.
+     *
+     * This only applies in desktop mode. In mobile mode the drawer docks
+     * along the bottom of the page, so any inline positioning is cleared.
+     *
+     * Version Added:
+     *     9.0
+     */
+    _positionDrawer() {
+        const drawer = this.drawer;
+
+        if (drawer === null || drawer.$content === null) {
+            return;
+        }
+
+        const $content = drawer.$content;
+
+        if (this.inMobileMode) {
+            $content.css({
+                bottom: '',
+                height: '',
+                top: '',
+            });
+
+            return;
+        }
+
+        const $form = this._$form;
+
+        /* Inset the drawer by 2em from the top and bottom of the form. */
+        const margin = 2 * parseFloat($content.css('font-size'));
+
+        $content.css({
+            bottom: 'auto',
+            height: $form.outerHeight() - (2 * margin),
+            top: ($form.offset().top - drawer.$el.offset().top) + margin,
+        });
     },
 
     /**

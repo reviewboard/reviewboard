@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Q
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 
 def get_review_groups_accessible_q(
     *,
-    user: Union[AnonymousUser, User],
+    user: AnonymousUser | User,
     local_site: AnyOrAllLocalSites = None,
     visible_only: bool = True,
     has_view_invite_only_groups_perm: bool = False,
@@ -170,7 +170,7 @@ def get_review_groups_accessible_q(
 
 def get_review_groups_accessible_prep_equeries(
     *,
-    user: Union[AnonymousUser, User],
+    user: AnonymousUser | User,
     local_site: AnyOrAllLocalSites = None,
     needs_local_site_profile_query: bool = False,
     needs_user_permission_queries: bool = True,
@@ -233,7 +233,7 @@ def get_review_groups_accessible_prep_equeries(
 
 def get_review_groups_accessible_equeries(
     *,
-    user: Union[AnonymousUser, User],
+    user: AnonymousUser | User,
     local_site: AnyOrAllLocalSites = None,
     visible_only: bool = True,
     has_view_invite_only_groups_perm: bool = False,
@@ -307,7 +307,7 @@ def get_review_groups_accessible_equeries(
 
 def get_review_groups_accessible_ids_equeries(
     *,
-    user: Union[AnonymousUser, User],
+    user: AnonymousUser | User,
     local_site: AnyOrAllLocalSites = None,
     visible_only: bool = True,
     has_view_invite_only_groups_perm: bool = False,

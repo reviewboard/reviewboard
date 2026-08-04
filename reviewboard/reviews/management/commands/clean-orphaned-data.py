@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import gc
 import sys
-from typing import Iterator, Optional, TYPE_CHECKING
+from typing import Iterator, TYPE_CHECKING
 
 import tqdm
 from django.core.management.base import BaseCommand
@@ -269,7 +269,7 @@ class Command(BaseCommand):
         self,
         queryset: QuerySet[_ModelT],
         *,
-        total_objects: Optional[int] = None,
+        total_objects: (int | None) = None,
         batch_size: int = 50,
     ) -> Iterator[QuerySet[_ModelT]]:
         """Iterate through items in a queryset, yielding batches.

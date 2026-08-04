@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
-from typing import Iterator, Optional, TYPE_CHECKING, cast
+from typing import Iterator, TYPE_CHECKING, cast
 
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
@@ -252,7 +252,7 @@ class SCMToolRegistry(EntryPointRegistry[type[SCMTool]]):
     def get_by_id(
         self,
         scmtool_id: str,
-    ) -> Optional[type[SCMTool]]:
+    ) -> type[SCMTool] | None:
         """Return the SCMTool with the given ID.
 
         Args:
@@ -268,7 +268,7 @@ class SCMToolRegistry(EntryPointRegistry[type[SCMTool]]):
     def get_by_name(
         self,
         name: str,
-    ) -> Optional[type[SCMTool]]:
+    ) -> type[SCMTool] | None:
         """Return the SCMTool with the given lookup name.
 
         Args:
@@ -284,7 +284,7 @@ class SCMToolRegistry(EntryPointRegistry[type[SCMTool]]):
     def get_by_class_name(
         self,
         class_name: str,
-    ) -> Optional[type[SCMTool]]:
+    ) -> type[SCMTool] | None:
         """Return the SCMTool with the given class name.
 
         Args:

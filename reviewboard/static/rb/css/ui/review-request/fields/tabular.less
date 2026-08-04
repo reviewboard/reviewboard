@@ -146,13 +146,16 @@
     thead {
       th {
         color: var(--ink-c-data-table-header-fg);
-        cursor: pointer;
         padding: var(--ink-c-data-table-cell-padding);
         text-align: left;
         white-space: nowrap;
 
-        &.-is-sortable:hover {
-          text-decoration: underline;
+        &.-is-sortable {
+          cursor: pointer;
+
+          &:hover {
+            text-decoration: underline;
+          }
         }
       }
 

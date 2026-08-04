@@ -4,21 +4,26 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
-from typing import Iterable, Optional, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 
 from django.conf import settings
 from django.contrib.auth import get_backends
 from django.utils.translation import gettext_lazy as _
-from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
-                                         NOT_REGISTERED, UNREGISTER)
-from typing_extensions import TypeAlias
+from djblets.registries.registry import (
+    ALREADY_REGISTERED,
+    LOAD_ENTRY_POINT,
+    NOT_REGISTERED,
+    UNREGISTER,
+)
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.backends.standard import StandardAuthBackend
 from reviewboard.registries.registry import EntryPointRegistry
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterable, Sequence
+    from typing import TypeAlias
+
     from importlib_metadata import EntryPoint
 
 
@@ -33,7 +38,7 @@ logger = logging.getLogger(__name__)
 
 
 _enabled_auth_backends: list[_BaseAuthBackendClass] = []
-_auth_backend_setting: Optional[str] = None
+_auth_backend_setting: (str | None) = None
 
 
 class AuthBackendRegistry(EntryPointRegistry[_BaseAuthBackendClass]):
@@ -143,7 +148,7 @@ class AuthBackendRegistry(EntryPointRegistry[_BaseAuthBackendClass]):
     def get_auth_backend(
         self,
         auth_backend_id: str,
-    ) -> Optional[_BaseAuthBackendClass]:
+    ) -> _BaseAuthBackendClass | None:
         """Return the requested authentication backend, if it exists.
 
         Args:

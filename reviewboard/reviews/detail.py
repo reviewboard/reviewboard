@@ -7,8 +7,8 @@ import logging
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from itertools import chain
-from typing import (Any, ClassVar, Final, Iterable, Iterator, Optional,
-                    Sequence, TYPE_CHECKING, TypeVar, Union)
+from typing import (Any, ClassVar, Final, Iterable, Iterator, Sequence,
+                    TYPE_CHECKING, TypeVar)
 
 from django.contrib.auth.models import AnonymousUser, User
 from django.db.models import Model, Q
@@ -153,7 +153,7 @@ class ReviewRequestPageData:
     diffsets_by_id: Mapping[int, DiffSet]
 
     #: The active draft of the review request, if any.
-    draft: Optional[ReviewRequestDraft]
+    draft: ReviewRequestDraft | None
 
     #: A mapping from review IDs to lists of draft replies.
     #:
@@ -207,16 +207,16 @@ class ReviewRequestPageData:
     issues: Sequence[BaseComment]
 
     #: The timestamp of the most recent change description on the page.
-    latest_changedesc_timestamp: Optional[datetime]
+    latest_changedesc_timestamp: datetime | None
 
     #: The timestamp of the most recent comment, for the issue summary table.
     #:
     #: Version Added:
     #:     6.0
-    latest_issue_timestamp: Optional[datetime]
+    latest_issue_timestamp: datetime | None
 
     #: The timestamp of the most recent review on the page.
-    latest_review_timestamp: Optional[datetime]
+    latest_review_timestamp: datetime | None
 
     #: A mapping from review IDs to the latest reply timestamp.
     latest_timestamps_by_review_id: Mapping[int, datetime]
@@ -241,7 +241,7 @@ class ReviewRequestPageData:
     review_request: ReviewRequest
 
     #: The object to use for showing the review request data.
-    review_request_details: Optional[Union[ReviewRequest, ReviewRequestDraft]]
+    review_request_details: ReviewRequest | ReviewRequestDraft | None
 
     #: All reviews to be shown on the page.
     #:
@@ -271,10 +271,10 @@ class ReviewRequestPageData:
         self,
         review_request: ReviewRequest,
         request: HttpRequest,
-        last_visited: Optional[datetime] = None,
-        entry_classes: Optional[
-            Sequence[type[BaseReviewRequestPageEntry]]
-        ] = None,
+        last_visited: (datetime | None) = None,
+        entry_classes: (
+            Sequence[type[BaseReviewRequestPageEntry]] | None
+        ) = None,
     ) -> None:
         """Initialize the data object.
 
@@ -478,7 +478,7 @@ class ReviewRequestPageData:
         # We'll start by figuring out what users we have and what we're
         # missing. We can then fetch all the missing ones in one go. Then
         # we can re-assign everything back to the objects.
-        users_map: dict[int, Optional[User]] = {
+        users_map: dict[int, User | None] = {
             review.user.pk: review.user
             for review in reviews
         }
@@ -930,7 +930,7 @@ class BaseReviewRequestPageEntry:
     ENTRY_POS_MAIN: Final[int] = 2
 
     #: The ID used for entries of this type.
-    entry_type_id: ClassVar[Optional[str]] = None
+    entry_type_id: ClassVar[str | None] = None
 
     #: The type of entry on the page.
     #:
@@ -991,16 +991,16 @@ class BaseReviewRequestPageEntry:
     needs_screenshots: ClassVar[bool] = False
 
     #: The template to render for the HTML.
-    template_name: ClassVar[Optional[str]] = None
+    template_name: ClassVar[str | None] = None
 
     #: The template to render for any JavaScript.
-    js_template_name: ClassVar[Optional[str]] = 'reviews/entries/entry.js'
+    js_template_name: ClassVar[str | None] = 'reviews/entries/entry.js'
 
     #: The name of the JavaScript Backbone.Model class for this entry.
-    js_model_class: ClassVar[Optional[str]] = 'RB.ReviewRequestPage.Entry'
+    js_model_class: ClassVar[str | None] = 'RB.ReviewRequestPage.Entry'
 
     #: The name of the JavaScript Backbone.View class for this entry.
-    js_view_class: ClassVar[Optional[str]] = 'RB.ReviewRequestPage.EntryView'
+    js_view_class: ClassVar[str | None] = 'RB.ReviewRequestPage.EntryView'
 
     #: Whether this entry has displayable content.
     #:
@@ -1022,7 +1022,7 @@ class BaseReviewRequestPageEntry:
     #:
     #: This can be ``None``, in which case no avatar will be displayed.
     #: Templates can also override the avatar HTML instead of using this.
-    avatar_user: Optional[User]
+    avatar_user: User | None
 
     #: The ID of the entry.
     #:
@@ -1033,13 +1033,13 @@ class BaseReviewRequestPageEntry:
     #: The timestamp when the entry was last updated.
     #:
     #: This reflects new updates or activity on the entry.
-    updated_timestamp: Optional[datetime]
+    updated_timestamp: datetime | None
 
     @classmethod
     def build_entries(
         cls,
         data: ReviewRequestPageData,
-    ) -> Optional[Iterator[BaseReviewRequestPageEntry]]:
+    ) -> Iterator[BaseReviewRequestPageEntry] | None:
         """Generate entry instances from review request page data.
 
         Subclasses should override this to yield any entries needed, based on
@@ -1059,7 +1059,7 @@ class BaseReviewRequestPageEntry:
     def build_etag_data(
         cls,
         data: ReviewRequestPageData,
-        entry: Optional[BaseReviewRequestPageEntry] = None,
+        entry: (BaseReviewRequestPageEntry | None) = None,
         **kwargs,
     ) -> str:
         """Build ETag data for the entry.
@@ -1101,8 +1101,8 @@ class BaseReviewRequestPageEntry:
         data: ReviewRequestPageData,
         entry_id: str,
         added_timestamp: datetime,
-        updated_timestamp: Optional[datetime] = None,
-        avatar_user: Optional[User] = None,
+        updated_timestamp: (datetime | None) = None,
+        avatar_user: (User | None) = None,
     ) -> None:
         """Initialize the entry.
 
@@ -1153,7 +1153,7 @@ class BaseReviewRequestPageEntry:
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.
@@ -1502,7 +1502,7 @@ class StatusUpdatesEntryMixin(DiffCommentsSerializerMixin, ReviewEntryMixin):
     def build_etag_data(
         cls,
         data: ReviewRequestPageData,
-        entry: Optional[BaseReviewRequestPageEntry] = None,
+        entry: (BaseReviewRequestPageEntry | None) = None,
         **kwargs,
     ) -> str:
         """Build ETag data for the entry.
@@ -1913,7 +1913,7 @@ class InitialStatusUpdatesEntry(StatusUpdatesEntryMixin,
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.
@@ -2077,7 +2077,7 @@ class ReviewEntry(ReviewEntryMixin, DiffCommentsSerializerMixin,
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.
@@ -2253,7 +2253,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
         if data.status_updates_enabled:
             StatusUpdatesEntryMixin.__init__(self)
 
-        cur_field_changed_group: Optional[_ChangeEntryFieldsChangedGroup] = \
+        cur_field_changed_group: (_ChangeEntryFieldsChangedGroup | None) = \
             None
 
         # See if there was a review request status change.
@@ -2316,7 +2316,7 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
     def is_entry_new(
         self,
         last_visited: datetime,
-        user: Union[AnonymousUser, User],
+        user: AnonymousUser | User,
         **kwargs,
     ) -> bool:
         """Return whether the entry is new, from the user's perspective.
@@ -2426,7 +2426,7 @@ class ReviewRequestPageEntryRegistry(
     def get_entry(
         self,
         entry_type_id: str,
-    ) -> Optional[type[BaseReviewRequestPageEntry]]:
+    ) -> type[BaseReviewRequestPageEntry] | None:
         """Return an entry with the given type ID.
 
         Args:

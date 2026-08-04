@@ -20,7 +20,7 @@ from djblets.registries.errors import ItemLookupError
 from djblets.registries.registry import (ALREADY_REGISTERED, LOAD_ENTRY_POINT,
                                          NOT_REGISTERED)
 
-from reviewboard.hostingsvcs.urls import dynamic_urls as hostingsvcs_urls
+from reviewboard.hostingsvcs.urls import hosting_service_urls, repository_urls
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.registries.registry import EntryPointRegistry
 
@@ -63,17 +63,27 @@ class HostingServiceRegistry(EntryPointRegistry[type[BaseHostingService]]):
     # Instance variables #
     ######################
 
-    #: A mapping of hosting service IDs to URL patterns/resolvers.
+    #: A mapping of hosting service IDs to URLs for hosting services.
+    #:
+    #: Version Added:
+    #:     9.0
     #:
     #: Type:
     #:     dict
-    _url_patterns: dict[str, Sequence[_AnyURL]]
+    _hosting_service_url_patterns: dict[str, Sequence[_AnyURL]]
+
+    #: A mapping of hosting service IDs to URLs for repositories.
+    #:
+    #: Type:
+    #:     dict
+    _repository_url_patterns: dict[str, Sequence[_AnyURL]]
 
     def __init__(self) -> None:
         """Initialize the registry."""
         super().__init__()
 
-        self._url_patterns = {}
+        self._hosting_service_url_patterns = {}
+        self._repository_url_patterns = {}
 
     def get_defaults(self) -> Iterator[type[BaseHostingService]]:
         """Yield the built-in hosting services.
@@ -150,14 +160,17 @@ class HostingServiceRegistry(EntryPointRegistry[type[BaseHostingService]]):
                 :py:class:`~reviewboard.hostingsvcs.base.hosting_service.
                 BaseHostingService` subclass.
         """
-        hosting_service_id = service.hosting_service_id
+        service_id = service.hosting_service_id
 
         super().unregister(service)
 
-        if hosting_service_id and hosting_service_id in self._url_patterns:
-            cls_urlpatterns = self._url_patterns[hosting_service_id]
-            hostingsvcs_urls.remove_patterns(cls_urlpatterns)
-            del self._url_patterns[hosting_service_id]
+        if service_id:
+            if patterns := self._hosting_service_url_patterns.pop(service_id,
+                                                                  None):
+                hosting_service_urls.remove_patterns(patterns)
+
+            if patterns := self._repository_url_patterns.pop(service_id, None):
+                repository_urls.remove_patterns(patterns)
 
     def unregister_by_id(
         self,
@@ -211,8 +224,10 @@ class HostingServiceRegistry(EntryPointRegistry[type[BaseHostingService]]):
         """Register a hosting service.
 
         This also adds the URL patterns defined by the hosting service. If the
-        hosting service has a :py:attr:`HostingService.repository_url_patterns`
-        attribute that is non-``None``, they will be automatically added.
+        hosting service has
+        :py:attr:`HostingService.hosting_service_url_patterns` or
+        :py:attr:`HostingService.repository_url_patterns` attributes that are
+        non-``None``, they will be automatically added.
 
         Args:
             service (type):
@@ -220,18 +235,33 @@ class HostingServiceRegistry(EntryPointRegistry[type[BaseHostingService]]):
         """
         super().register(service)
 
-        if service.repository_url_patterns:
-            assert service.hosting_service_id
+        hosting_service_url_patterns = service.hosting_service_url_patterns
+        repository_url_patterns = service.repository_url_patterns
 
-            escaped_id = re.escape(service.hosting_service_id)
+        if not (hosting_service_url_patterns or repository_url_patterns):
+            return
 
-            cls_urlpatterns = [
+        service_id = service.hosting_service_id
+        assert service_id is not None
+        escaped_id = re.escape(service_id)
+
+        if hosting_service_url_patterns:
+            patterns = [
                 re_path(rf'^(?P<hosting_service_id>{escaped_id})/',
-                        include(service.repository_url_patterns)),
+                        include(hosting_service_url_patterns)),
             ]
 
-            self._url_patterns[service.hosting_service_id] = cls_urlpatterns
-            hostingsvcs_urls.add_patterns(cls_urlpatterns)
+            self._hosting_service_url_patterns[service_id] = patterns
+            hosting_service_urls.add_patterns(patterns)
+
+        if repository_url_patterns:
+            patterns = [
+                re_path(rf'^(?P<hosting_service_id>{escaped_id})/',
+                        include(repository_url_patterns)),
+            ]
+
+            self._repository_url_patterns[service_id] = patterns
+            repository_urls.add_patterns(patterns)
 
 
 #: The main registry of hosting services.

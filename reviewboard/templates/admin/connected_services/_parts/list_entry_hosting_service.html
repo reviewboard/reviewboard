@@ -1,0 +1,42 @@
+{% load i18n %}
+
+<li class="rb-c-admin-cs-card">
+ <div class="rb-c-admin-cs-card__header">
+{% block service_header %}
+  <div>
+{%  include "admin/connected_services/_parts/service.html" %}
+  </div>
+{% endblock service_header %}
+ </div>
+
+{% block service_controls %}{% endblock %}
+
+ <div class="rb-c-admin-cs-card__body">
+  <ul class="rb-c-admin-cs-accounts">
+{% block service_accounts %}
+{%  for entry in accounts_data %}
+{%   if entry.account.visible %}
+   <li class="rb-c-admin-cs-accounts__account">
+    <div>
+     <a href="{% url "admin:hostingsvcs_hostingserviceaccount_change" entry.account.pk %}">
+      {{entry.account.username}}
+{%    if entry.account.hosting_url %}
+      ({{entry.account.hosting_url}})
+{%    endif %}
+     </a>
+    </div>
+    <div>
+{%    if entry.detail %}
+     <span class="rb-c-admin-cs-accounts__account__detail">
+      {{entry.detail}}
+     </span>
+{%    endif %}
+    {# TODO:management UI #}
+    </div>
+   </li>
+{%   endif %}
+{%  endfor %}
+{% endblock service_accounts %}
+  </ul>
+ </div>
+</li>

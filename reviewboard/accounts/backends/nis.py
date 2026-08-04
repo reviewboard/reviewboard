@@ -4,19 +4,20 @@ from __future__ import annotations
 
 import logging
 from importlib import import_module
-from types import ModuleType
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.utils.functional import cached_property
 from django.utils.translation import gettext_lazy as _
-from typing_extensions import TypeAlias
 
 from reviewboard.accounts.backends.base import BaseAuthBackend
 from reviewboard.accounts.forms.auth import NISSettingsForm
 
 if TYPE_CHECKING:
+    from types import ModuleType
+    from typing import TypeAlias
+
     from django.http import HttpRequest
 
 
@@ -40,7 +41,7 @@ class NISBackend(BaseAuthBackend):
         _('Use your standard NIS username and password.')
 
     @cached_property
-    def nis(self) -> Optional[ModuleType]:
+    def nis(self) -> ModuleType | None:
         """The nis module, used for interacting with NIS.
 
         On first access, this will check if NIS is available, logging an
@@ -61,12 +62,12 @@ class NISBackend(BaseAuthBackend):
 
     def authenticate(
         self,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
         *,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
         **kwargs,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Authenticate the user.
 
         This will attempt to authenticate the user against NIS. If the
@@ -137,9 +138,9 @@ class NISBackend(BaseAuthBackend):
     def get_or_create_user(
         self,
         username: str,
-        request: Optional[HttpRequest] = None,
-        passwd: Optional[_NISPasswdEntry] = None,
-    ) -> Optional[User]:
+        request: (HttpRequest | None) = None,
+        passwd: (_NISPasswdEntry | None) = None,
+    ) -> User | None:
         """Return an existing user, or create one if it does not exist.
 
         If the user does not exist in the database, but does in the backend,

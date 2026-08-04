@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import logging
 from datetime import datetime
-from typing import Any, Optional, TYPE_CHECKING, Union
+from typing import Any, TYPE_CHECKING
 from urllib.parse import quote as urllib_quote, urlparse
 
 from django.utils.encoding import force_str
@@ -97,7 +97,7 @@ class HgTool(SCMTool):
         self,
         path: str,
         revision: RevisionID = HEAD,
-        context: Optional[FileLookupContext] = None,
+        context: (FileLookupContext | None) = None,
         **kwargs,
     ) -> bytes:
         """Return the contents of a file from a repository.
@@ -143,10 +143,10 @@ class HgTool(SCMTool):
     def parse_diff_revision(
         self,
         filename: bytes,
-        revision: Union[Revision, bytes],
+        revision: Revision | bytes,
         *args,
         **kwargs,
-    ) -> tuple[bytes, Union[Revision, bytes]]:
+    ) -> tuple[bytes, Revision | bytes]:
         """Parse and return a filename and revision from a diff.
 
         Args:
@@ -191,8 +191,8 @@ class HgTool(SCMTool):
 
     def get_commits(
         self,
-        branch: Optional[str] = None,
-        start: Optional[str] = None,
+        branch: (str | None) = None,
+        start: (str | None) = None,
     ) -> list[Commit]:
         """Return changesets from repository.
 
@@ -693,7 +693,7 @@ class HgWebClient(SCMClient):
         self,
         path: str,
         rev: RevisionID = 'tip',
-        base_commit_id: Optional[str] = None,
+        base_commit_id: (str | None) = None,
     ) -> bytes:
         """Return the content of a file.
 
@@ -774,7 +774,7 @@ class HgWebClient(SCMClient):
     def _get_commit(
         self,
         revision: str,
-    ) -> Optional[Commit]:
+    ) -> Commit | None:
         """Return detailed information about a single changeset.
 
         Receive changeset from hgweb in JSON format.
@@ -814,8 +814,8 @@ class HgWebClient(SCMClient):
 
     def get_commits(
         self,
-        branch: Optional[str] = None,
-        start: Optional[str] = None,
+        branch: (str | None) = None,
+        start: (str | None) = None,
     ) -> list[Commit]:
         """Return detailed information about a changeset.
 
@@ -908,7 +908,7 @@ class HgWebClient(SCMClient):
     def _get_http_json(
         self,
         url: str,
-    ) -> Optional[dict[str, Any]]:
+    ) -> dict[str, Any] | None:
         """Return a JSON response from an HgWeb API endpoint.
 
         Args:
@@ -974,7 +974,7 @@ class HgClient(SCMClient):
         self,
         path: str,
         rev: RevisionID = 'tip',
-        base_commit_id: Optional[str] = None,
+        base_commit_id: (str | None) = None,
     ) -> bytes:
         """Return the content of a file.
 
@@ -1071,7 +1071,7 @@ class HgClient(SCMClient):
 
             for data in json.loads(force_str(p.stdout.read())):
                 try:
-                    parent: Optional[str] = force_str(data['parents'][0])
+                    parent: (str | None) = force_str(data['parents'][0])
 
                     if parent == INITIAL_COMMIT_ID:
                         parent = ''
@@ -1089,8 +1089,8 @@ class HgClient(SCMClient):
 
     def get_commits(
         self,
-        branch: Optional[str] = None,
-        start: Optional[str] = None,
+        branch: (str | None) = None,
+        start: (str | None) = None,
     ) -> list[Commit]:
         """Return changesets from repository in JSON.
 
@@ -1187,7 +1187,7 @@ class HgClient(SCMClient):
     def _get_hg_config(
         self,
         config_name: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         with self._run_hg(['showconfig', config_name]) as p:
             assert p.stdout is not None
 

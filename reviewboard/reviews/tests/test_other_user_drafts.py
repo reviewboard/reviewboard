@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING, Union, cast
+from typing import TYPE_CHECKING, cast
 
 from django.contrib.auth.models import Permission, User
 
@@ -1319,8 +1319,8 @@ class OtherUserDraftTests(TestCase):
         self,
         *,
         context: ReviewRequestContext,
-        draft: Optional[ReviewRequestDraft],
-        review_request_details: Union[ReviewRequest, ReviewRequestDraft],
+        draft: ReviewRequestDraft | None,
+        review_request_details: ReviewRequest | ReviewRequestDraft,
         mutable_by_user: bool,
         force_view_user_draft: bool,
         user_draft_exists: bool,

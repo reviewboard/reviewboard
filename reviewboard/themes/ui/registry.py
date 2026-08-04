@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Iterator, Optional, cast
+from typing import Iterator, cast
 
 from djblets.siteconfig.models import SiteConfiguration
 
@@ -36,7 +36,7 @@ class UIThemeRegistry(OrderedRegistry[BaseUITheme]):
     def get_theme(
         self,
         theme_id: str,
-    ) -> Optional[BaseUITheme]:
+    ) -> BaseUITheme | None:
         """Return a theme with the specified ID.
 
         A special value of "default" will always return the default theme

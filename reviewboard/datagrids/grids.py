@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from zoneinfo import ZoneInfo
 
 from django.contrib.auth.models import User
@@ -620,7 +620,7 @@ class UsersDataGrid(AlphanumericDataGrid):
         request: HttpRequest,
         queryset: QuerySet[User] = User.objects.all(),
         title: StrOrPromise = _('All users'),
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
     ) -> None:
         """Initialize the datagrid.
 

@@ -190,6 +190,15 @@
     margin: 0;
     padding: var(--ink-u-spacing-s);
     padding-left: @headerbar-padding-left;
+
+    /*
+     * Collapse the navigation area when there are no items. This keeps the
+     * topbar compact on pages with an empty nav (such as the admin
+     * dashboard).
+     */
+    &:empty {
+      padding: 0;
+    }
   }
 
   /**
@@ -458,8 +467,6 @@
    *     </li>
    */
   &__action {
-    border: var(--ink-g-header-border);
-    border-top: 0;
     box-sizing: border-box;
     display: inline-block;
     position: relative;
@@ -481,9 +488,9 @@
       }
     }
 
-		img {
+    img {
       vertical-align: middle;
-		}
+    }
   }
 
   &__content {

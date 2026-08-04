@@ -1,0 +1,71 @@
+{% extends "admin/base_site.html" %}
+{% load djblets_js i18n static %}
+
+{% block page_class %}{{block.super}} -is-fixed-width{% endblock %}
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<div id="content-main" class="rb-c-admin-cs-list">
+ <div class="rb-c-admin-cs-list__header">
+  <div class="ink-c-button-group" role="group" aria-orientation="horizontal">
+{%  comment %}
+   TODO: filter selector
+   ...
+{%  endcomment %}
+  </div>
+
+  <button class="ink-c-button -is-primary" id="rb-connect-service-button">
+   <span class="ink-c-button__icon ink-i-add" aria-hidden="true"></span>
+   <span class="ink-c-button__label">{% trans "Connect a service" %}</span>
+  </button>
+ </div>
+
+ <ul class="rb-c-admin-cs-list__entries">
+{%  for entry in service_entries %}
+  {{entry}}
+{%  endfor %}
+ </ul>
+</div>
+{% endblock content %}
+
+{% block admin_scripts_post %}
+{{block.super}}
+<script>
+RB.PageManager.ready(function() {
+    const button = document.getElementById('rb-connect-service-button');
+    const services = {{available_services|json_dumps}};
+    const connectURLTemplate =
+        "{% url 'connected-services-connect' service_id='__SERVICE_ID__' %}";
+
+    function openWizard(initialConnectURL) {
+        const wizard = new RB.Admin.ConnectServiceWizardView({
+            connectURLTemplate: connectURLTemplate,
+            csrfToken: "{{csrf_token|escapejs}}",
+            initialConnectURL: initialConnectURL,
+            services: services,
+        });
+
+        wizard.render();
+        wizard.open();
+    }
+
+    button.addEventListener('click', function() {
+        openWizard();
+    });
+
+    /*
+     * Service entries can deep-link to a specific connect step (such as the
+     * GitHub App creation page). Open these in the wizard instead of
+     * navigating to the bare fragment.
+     */
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('[data-wizard-connect-url]');
+
+        if (link) {
+            e.preventDefault();
+            openWizard(link.getAttribute('data-wizard-connect-url'));
+        }
+    });
+});
+</script>
+{% endblock admin_scripts_post %}

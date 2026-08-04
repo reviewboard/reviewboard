@@ -12,15 +12,19 @@ import os
 from datetime import datetime
 
 import kgb
+from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db.models import Q
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.attachments.forms import UploadFileForm
 from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.attachments.tests.base import BaseFileAttachmentTestCase
+from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
 from reviewboard.reviews.ui.image import ImageReviewUI
+from reviewboard.site.models import LocalSite
 
 
 class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
@@ -48,9 +52,11 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         self.assertTrue(os.path.basename(file_attachment.file.name).endswith(
             '__logo.png'))
         self.assertEqual(file_attachment.mimetype, 'image/png')
+        self.assertIsNone(file_attachment.get_local_site())
         self.assertEqual(
             file_attachment.extra_data,
             {
+                self.DEFINED_LOCAL_SITE_KEY: True,
                 'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
                                     '2225de7c47550dd1cc49085077e49'),
             })
@@ -190,6 +196,7 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         file_attachment.refresh_from_db()
 
         self.assertEqual(file_attachment.extra_data, {
+            self.DEFINED_LOCAL_SITE_KEY: True,
             'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
                                 '2225de7c47550dd1cc49085077e49'),
             'test_bool': True,
@@ -237,6 +244,7 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         file_attachment.refresh_from_db()
 
         self.assertEqual(file_attachment.extra_data, {
+            self.DEFINED_LOCAL_SITE_KEY: True,
             'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
                                 '2225de7c47550dd1cc49085077e49'),
             'test_bool': True,
@@ -271,6 +279,7 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         self.assertEqual(
             file_attachment.extra_data,
             {
+                self.DEFINED_LOCAL_SITE_KEY: True,
                 'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
                                     '2225de7c47550dd1cc49085077e49'),
             })
@@ -288,6 +297,7 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         self.assertEqual(
             file_attachment.extra_data,
             {
+                self.DEFINED_LOCAL_SITE_KEY: True,
                 'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
                                     '2225de7c47550dd1cc49085077e49'),
             })
@@ -305,6 +315,7 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         self.assertEqual(
             file_attachment.extra_data,
             {
+                self.DEFINED_LOCAL_SITE_KEY: True,
                 'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
                                     '2225de7c47550dd1cc49085077e49'),
             })
@@ -325,6 +336,7 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         file_attachment = form.create()
         file_attachment.refresh_from_db()
         self.assertEqual(file_attachment.extra_data, {
+            self.DEFINED_LOCAL_SITE_KEY: True,
             'sha256_checksum': ('1931a3b367e2913d28f9587dbd0ccf79b2c'
                                 '2225de7c47550dd1cc49085077e49'),
             'test_list': [],
@@ -332,6 +344,41 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
             'test_none': None,
             'test_str': '',
         })
+
+    def test_upload_file_sets_local_site(self) -> None:
+        """Testing uploading a file attachment sets local_site when attached
+        to a review request without a local site
+        """
+        review_request = self.create_review_request()
+
+        form = UploadFileForm(review_request,
+                              files={'path': self.make_uploaded_file()})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create()
+        file_attachment.refresh_from_db()
+
+        self.assertIsNone(file_attachment.local_site)
+        self.assertTrue(
+            file_attachment.extra_data[self.DEFINED_LOCAL_SITE_KEY])
+
+    def test_upload_file_sets_local_site_with_local_site(self) -> None:
+        """Testing uploading a file attachment sets local_site when attached
+        to a review request with a local site
+        """
+        review_request = self.create_review_request(with_local_site=True)
+
+        form = UploadFileForm(review_request,
+                              files={'path': self.make_uploaded_file()})
+        self.assertTrue(form.is_valid())
+
+        file_attachment = form.create()
+        file_attachment.refresh_from_db()
+
+        self.assertEqual(file_attachment.local_site,
+                         review_request.local_site)
+        self.assertTrue(
+            file_attachment.extra_data[self.DEFINED_LOCAL_SITE_KEY])
 
     def test_is_from_diff_with_no_association(self):
         """Testing FileAttachment.is_from_diff with standard attachment"""
@@ -446,3 +493,252 @@ class FileAttachmentTests(kgb.SpyAgency, BaseFileAttachmentTestCase):
         self.assertEqual(
             file_attachment.get_absolute_url(),
             f'http://example.com/s/{local_site_name}/r/1001/file/1/download/')
+
+    def test_get_local_site(self) -> None:
+        """Testing FileAttachment.get_local_site returns the stored local site
+        """
+        review_request = self.create_review_request(with_local_site=True)
+        file_attachment = self.create_file_attachment(
+            review_request=review_request)
+
+        self.spy_on(file_attachment.get_review_request)
+
+        with self.assertNumQueries(0):
+            local_site = file_attachment.get_local_site()
+
+        self.assertEqual(local_site, review_request.local_site)
+        self.assertIsNotNone(local_site)
+        self.assertSpyNotCalled(file_attachment.get_review_request)
+
+    def test_get_local_site_none(self) -> None:
+        """Testing FileAttachment.get_local_site with local site set to None"""
+        review_request = self.create_review_request()
+        file_attachment = self.create_file_attachment(
+            review_request=review_request)
+
+        with self.assertNumQueries(0):
+            local_site = file_attachment.get_local_site()
+
+        self.assertIsNone(local_site)
+
+    def test_get_local_site_sets_local_site(self) -> None:
+        """Testing FileAttachment.get_local_site resolves and saves for a
+        pre-8.1 attachment on a local site
+        """
+        review_request = self.create_review_request(with_local_site=True)
+        file_attachment = self.create_file_attachment(
+            review_request=review_request)
+        attachment_pk = file_attachment.pk
+
+        try:
+            delattr(file_attachment, '_review_request')
+        except AttributeError:
+            pass
+
+        file_attachment.local_site = None
+        file_attachment.extra_data.pop(self.DEFINED_LOCAL_SITE_KEY, None)
+        file_attachment.save(update_fields=['local_site', 'extra_data'])
+
+        # Get and save the local site for an attachment.
+        #
+        # 3 queries:
+        #
+        # 1. Fetch the review request.
+        # 2. Fetch the local site on the review request.
+        # 3. Save the local site on the file attachment.
+        queries = [
+            {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
+                'limit': 1,
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_file_attachments'
+                },
+                'where': Q(file_attachments__id=attachment_pk),
+            },
+            {
+                'model': LocalSite,
+                'tables': {
+                    'site_localsite',
+                },
+                'where': Q(id=self.local_site_id),
+            },
+            {
+                'model': FileAttachment,
+                'tables': {
+                    'attachments_fileattachment',
+                },
+                'type': 'UPDATE',
+                'where': Q(pk=attachment_pk),
+            },
+        ]
+
+        with assert_queries(queries):
+            local_site = file_attachment.get_local_site()
+
+        self.assertEqual(local_site, review_request.local_site)
+        self.assertIsNotNone(local_site)
+        self.assertTrue(
+            file_attachment.extra_data[self.DEFINED_LOCAL_SITE_KEY])
+
+        with self.assertNumQueries(0):
+            # Calling this again shouldn't perform any queries.
+            file_attachment.get_local_site()
+
+    def test_get_local_site_sets_local_site_none(self) -> None:
+        """Testing FileAttachment.get_local_site resolves and saves for a
+        pre-8.1 attachment not on a local site
+        """
+        review_request = self.create_review_request()
+        file_attachment = self.create_file_attachment(
+            review_request=review_request)
+        attachment_pk = file_attachment.pk
+
+        try:
+            delattr(file_attachment, '_review_request')
+        except AttributeError:
+            pass
+
+        file_attachment.local_site = None
+        file_attachment.extra_data.pop(self.DEFINED_LOCAL_SITE_KEY, None)
+        file_attachment.save(update_fields=['local_site', 'extra_data'])
+
+        # Get and save the local site for an attachment.
+        #
+        # 2 queries:
+        #
+        # 1. Fetch the review request.
+        # 2. Save the local site on the file attachment.
+        queries = [
+            {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
+                'limit': 1,
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_file_attachments'
+                },
+                'where': Q(file_attachments__id=attachment_pk),
+            },
+            {
+                'model': FileAttachment,
+                'tables': {
+                    'attachments_fileattachment',
+                },
+                'type': 'UPDATE',
+                'where': Q(pk=attachment_pk),
+            },
+        ]
+
+        with assert_queries(queries):
+            local_site = file_attachment.get_local_site()
+
+        self.assertEqual(local_site, review_request.local_site)
+        self.assertIsNone(local_site)
+        self.assertTrue(
+            file_attachment.extra_data[self.DEFINED_LOCAL_SITE_KEY])
+
+        with self.assertNumQueries(0):
+            # Calling this again shouldn't perform any queries.
+            file_attachment.get_local_site()
+
+    def test_get_local_site_before_linked_review_request(self) -> None:
+        """Testing FileAttachment.get_local_site when called before the
+        attachment is linked to a review request
+        """
+        file_attachment = FileAttachment.objects.create(
+            extra_data={})
+        attachment_pk = file_attachment.pk
+
+        # Get the local site for an attachment.
+        #
+        # 4 queries:
+        #
+        # 1. Try to fetch the review request.
+        # 2. Try to fetch the inactive review request.
+        # 3. Try to fetch the draft review request.
+        # 4. Try to fetch the inactive draft review request.
+        queries = [
+            {
+                'join_types': {
+                    'reviews_reviewrequest_file_attachments': 'INNER JOIN',
+                },
+                'limit': 1,
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_file_attachments'
+                },
+                'where': Q(file_attachments__id=attachment_pk),
+            },
+            {
+                'join_types': {
+                    'reviews_reviewrequest_inactive_file_attachments':
+                        'INNER JOIN',
+                },
+                'limit': 1,
+                'model': ReviewRequest,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequest',
+                    'reviews_reviewrequest_inactive_file_attachments'
+                },
+                'where': Q(inactive_file_attachments__id=attachment_pk),
+            },
+            {
+                'join_types': {
+                    'reviews_reviewrequestdraft_file_attachments':
+                        'INNER JOIN',
+                },
+                'limit': 21,
+                'model': ReviewRequestDraft,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequestdraft',
+                    'reviews_reviewrequestdraft_file_attachments'
+                },
+                'where': Q(file_attachments__id=attachment_pk),
+            },
+            {
+                'join_types': {
+                    'reviews_reviewrequestdraft_inactive_file_attachments':
+                        'INNER JOIN',
+                },
+                'limit': 21,
+                'model': ReviewRequestDraft,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_reviewrequestdraft',
+                    'reviews_reviewrequestdraft_inactive_file_attachments'
+                },
+                'where': Q(inactive_file_attachments__id=attachment_pk),
+            },
+        ]
+
+        with self.assertLogs() as logs:
+            with assert_queries(queries):
+                self.assertIsNone(file_attachment.get_local_site())
+
+        self.assertEqual(len(logs.records), 1)
+        self.assertEqual(
+            logs.records[0].getMessage(),
+            'Could not determine Local Site for file attachment 1. '
+            'Set either the Local Site or the review request on the '
+            'attachment to fix this.')
+
+        # Now link it to a review request on a local site.
+        review_request = self.create_review_request(with_local_site=True)
+        review_request.file_attachments.add(file_attachment)
+
+        self.assertEqual(file_attachment.get_local_site(),
+                         review_request.local_site)
+        self.assertTrue(
+            file_attachment.extra_data[self.DEFINED_LOCAL_SITE_KEY])

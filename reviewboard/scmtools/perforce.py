@@ -14,7 +14,7 @@ import subprocess
 import tempfile
 import time
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.utils.encoding import force_str
@@ -42,6 +42,20 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+#: A regex matching all known authentication-related error strings.
+#:
+#: Version Added:
+#:     8.1
+_AUTH_ERROR_RE = re.compile(
+    r'Perforce password'
+    r'|Password invalid'
+    r'|Password must be set before access can be granted'
+    r'|Password not allowed at this security level'
+    r'|The security level of this server requires the password to be reset'
+    r'|Your password has expired'
+)
 
 
 class STunnelProxy(object):
@@ -399,13 +413,15 @@ class PerforceClient(SCMClient):
                 with client.connect():
                     ...
         """
-        self.p4.user = force_str(self.username)
+        p4 = self.p4
 
-        if self.encoding:
-            self.p4.charset = force_str(self.encoding)
+        p4.user = force_str(self.username)
+
+        if encoding := self.encoding:
+            p4.charset = force_str(encoding)
 
         # Exceptions will only be raised for errors, not warnings.
-        self.p4.exception_level = 1
+        p4.exception_level = 1
 
         if self.use_stunnel:
             # Spin up an stunnel client and then redirect through that
@@ -416,13 +432,13 @@ class PerforceClient(SCMClient):
             proxy = None
             p4_port = self.p4port
 
-        self.p4.port = force_str(p4_port)
+        p4.port = force_str(p4_port)
 
-        if self.p4host:
-            self.p4.host = force_str(self.p4host)
+        if p4host := self.p4host:
+            p4.host = force_str(p4host)
 
-        if self.client_name:
-            self.p4.client = force_str(self.client_name)
+        if client_name := self.client_name:
+            p4.client = force_str(client_name)
 
         if self.use_ticket_auth:
             # The repository is configured for ticket-based authentication.
@@ -447,20 +463,23 @@ class PerforceClient(SCMClient):
                     tickets_dir = None
 
             if tickets_dir:
-                self.p4.ticket_file = force_str(
+                p4.ticket_file = force_str(
                     os.path.join(tickets_dir, 'p4tickets'))
         else:
             # The repository does not use ticket-based authentication. We'll
             # need to set the password that's provided.
-            self.p4.password = force_str(self.password)
+            p4.password = force_str(self.password)
 
         try:
-            with self.p4.connect():
-                if self.use_ticket_auth:
-                    # The ticket may not exist, may have expired, or may be
-                    # close to expiring. Check for those conditions and
-                    # possibly request/extend a ticket.
-                    self.check_refresh_ticket()
+            with p4.connect():
+                if p4.connected():
+                    if self.use_ticket_auth:
+                        # The ticket may not exist, may have expired, or may be
+                        # close to expiring. Check for those conditions and
+                        # possibly request/extend a ticket.
+                        self.check_refresh_ticket()
+                    elif p4.password:
+                        p4.run_login()
 
                 yield
         finally:
@@ -522,20 +541,20 @@ class PerforceClient(SCMClient):
                 # attributes were being checked but weren't necessarily
                 # defined during construction. We handle this by falling
                 # back to the raw value.
-                error = e.value
+                error = str(e.value)
 
-            if 'Perforce password' in error or 'Password must be set' in error:
-                raise AuthenticationError(msg=error)
+            if _AUTH_ERROR_RE.search(error):
+                raise AuthenticationError(msg=error) from e
             elif 'SSL library must be at least version' in error:
                 raise SCMError(_(
                     'The specified Perforce port includes ssl:, but the '
                     'p4python library was built without SSL support or the '
                     'system library path is incorrect.'
-                ))
+                )) from e
             elif ('check $P4PORT' in error or
                   (error.startswith('[P4.connect()] TCP connect to') and
                    'failed.' in error)):
-                raise RepositoryNotFoundError
+                raise RepositoryNotFoundError from e
             elif "To allow connection use the 'p4 trust' command" in error:
                 m = re.search(
                     r'(?P<fingerprint>(?:[0-9A-F]{2}:){19}[0-9A-F]{2})',
@@ -549,9 +568,9 @@ class PerforceClient(SCMClient):
                 certificate = Certificate(fingerprint=fingerprint,
                                           hostname=self.p4port)
 
-                raise UnverifiedCertificateError(certificate)
+                raise UnverifiedCertificateError(certificate) from e
             else:
-                raise SCMError(error)
+                raise SCMError(error) from e
 
     def get_changeset(self, changeset_id):
         """Return information about a server-side changeset.
@@ -903,10 +922,10 @@ class PerforceTool(SCMTool):
     def parse_diff_revision(
         self,
         filename: bytes,
-        revision: Union[bytes, Revision],
+        revision: bytes | Revision,
         *args,
         **kwargs,
-    ) -> tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, bytes | Revision]:
         """Parse and return a filename and revision from a diff.
 
         This will separate out the filename from the revision (separated by
@@ -1276,7 +1295,7 @@ class PerforceDiffParser(DiffParser):
         self,
         s: bytes,
         linenum: int,
-    ) -> tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, bytes | Revision]:
         """Parse a filename header in the diff.
 
         Args:
@@ -1304,7 +1323,7 @@ class PerforceDiffParser(DiffParser):
         self,
         filename: bytes,
         revision: bytes,
-    ) -> tuple[bytes, Union[bytes, Revision]]:
+    ) -> tuple[bytes, bytes | Revision]:
         """Parse a revision from the diff.
 
         Args:

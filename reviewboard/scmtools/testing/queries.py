@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -23,7 +23,7 @@ if TYPE_CHECKING:
 
 def get_repositories_accessible_equeries(
     *,
-    user: Union[AnonymousUser, User],
+    user: AnonymousUser | User,
     local_site: AnyOrAllLocalSites = None,
     visible_only: bool = True,
     distinct: bool = True,
@@ -139,7 +139,7 @@ def get_repositories_accessible_equeries(
 
 def get_repositories_accessible_ids_equeries(
     *,
-    user: Union[AnonymousUser, User],
+    user: AnonymousUser | User,
     local_site: AnyOrAllLocalSites = None,
     visible_only: bool = True,
 ) -> ExpectedQueries:

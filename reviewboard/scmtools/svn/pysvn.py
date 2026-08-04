@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from datetime import datetime
 from shutil import rmtree
 from tempfile import mkdtemp
-from typing import Any, Iterator, Optional, TYPE_CHECKING
+from typing import Any, Iterator, TYPE_CHECKING
 
 try:
     import pysvn
@@ -69,8 +69,8 @@ class Client(base.Client):
         self,
         config_dir: str,
         repopath: str,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
     ) -> None:
         """Initialize the client.
 
@@ -106,7 +106,7 @@ class Client(base.Client):
         self,
         e: Exception,
         *,
-        default_msg: Optional[str] = None,
+        default_msg: (str | None) = None,
     ) -> Exception:
         """Normalize an exception from the client.
 
@@ -342,7 +342,7 @@ class Client(base.Client):
     def accept_ssl_certificate(
         self,
         path: str,
-        on_failure: Optional[AcceptCertificateFunc] = None,
+        on_failure: (AcceptCertificateFunc | None) = None,
     ) -> Mapping[str, Any]:
         """Attempt to accept a SSL certificate.
 
@@ -394,9 +394,9 @@ class Client(base.Client):
         self,
         path: str,
         *,
-        start: Optional[str] = None,
-        end: Optional[str] = None,
-        limit: Optional[int] = None,
+        start: (str | None) = None,
+        end: (str | None) = None,
+        limit: (int | None) = None,
         discover_changed_paths: bool = False,
         limit_to_path: bool = False,
     ) -> Sequence[SVNLogEntry]:
@@ -497,7 +497,7 @@ class Client(base.Client):
         self,
         revision1: str,
         revision2: str,
-        path: Optional[str] = None,
+        path: (str | None) = None,
     ) -> bytes:
         """Return a diff between two revisions.
 

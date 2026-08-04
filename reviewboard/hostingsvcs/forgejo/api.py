@@ -10,8 +10,6 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional
-
 from pydantic import BaseModel
 
 
@@ -23,7 +21,7 @@ class APIError(BaseModel):
     """
 
     message: str
-    url: str
+    url: str | None
 
 
 class AccessToken(BaseModel):
@@ -138,7 +136,7 @@ class GitTreeResponse(BaseModel):
     page: int
     sha: str
     total_count: int
-    tree: Optional[list[GitEntry]]
+    tree: list[GitEntry] | None
     truncated: bool
 
 

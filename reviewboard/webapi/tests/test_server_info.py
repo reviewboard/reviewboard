@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from django.conf import settings
 from djblets.webapi.testing.decorators import webapi_test_template
@@ -66,7 +66,7 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         self,
         user: User,
         with_local_site: bool,
-        local_site_name: Optional[str],
+        local_site_name: str | None,
     ) -> tuple[str, str, Any]:
         """Set up a basic HTTP GET unit test.
 

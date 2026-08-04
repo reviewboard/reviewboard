@@ -6,8 +6,8 @@ Version Added:
 
 from __future__ import annotations
 
-from django_evolution.mutations import AddField, ChangeMeta
 from django.db import models
+from django_evolution.mutations import AddField, ChangeMeta
 
 
 MUTATIONS = [

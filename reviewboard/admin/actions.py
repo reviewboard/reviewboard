@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.db.models import Model, QuerySet
 from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.urls import reverse
@@ -26,7 +25,6 @@ from reviewboard.actions import (ActionPlacement,
 from reviewboard.actions.base import ActionAttachmentPoint
 from reviewboard.actions.renderers import (SidebarActionGroupRenderer,
                                            SidebarItemActionRenderer)
-from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import DefaultReviewer, Group
@@ -36,6 +34,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
     from typing import Any, ClassVar, Final
 
+    from django.db.models import Model, QuerySet
     from django.http.request import HttpRequest
     from django.template import Context
     from typelets.django.strings import StrOrPromise
@@ -242,6 +241,23 @@ class AdminDashboardNavAction(BaseAction):
     action_id = 'admin-dashboard-nav'
     label = _('Dashboard')
     url_name = 'admin-dashboard'
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.ADMIN_NAV,
+                        parent_id=AdminMainNavGroupAction.action_id),
+    ]
+
+
+class AdminConnectedServicesNavAction(BaseAction):
+    """Administration -> Connected Services navigation action.
+
+    Version Added:
+        9.0
+    """
+
+    action_id = 'admin-connected-services-nav'
+    label = _('Connected Services')
+    url_name = 'connected-services-list'
 
     placements = [
         ActionPlacement(attachment=AttachmentPoint.ADMIN_NAV,
@@ -844,23 +860,6 @@ class AdminManageWebHooksNavAction(BaseAdminSidebarManageItemAction):
     ]
 
 
-class AdminManageHostingAccountsNavAction(BaseAdminSidebarManageItemAction):
-    """Manage -> Hosting Accounts navigation action.
-
-    Version Added:
-        8.0
-    """
-
-    action_id = 'admin-manage-hosting-accounts-nav'
-    label = _('Hosting Accounts')
-    model = HostingServiceAccount
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.ADMIN_NAV,
-                        parent_id=AdminManageNavGroupAction.action_id),
-    ]
-
-
 class AdminManageOAuth2AppsNavAction(BaseAdminSidebarManageItemAction):
     """Manage -> OAuth2 Applications navigation action.
 
@@ -895,6 +894,7 @@ def get_default_admin_actions() -> Iterator[BaseAction]:
         # Administration section
         AdminMainNavGroupAction(),
         AdminDashboardNavAction(),
+        AdminConnectedServicesNavAction(),
         AdminLicensesNavAction(),
         AdminSecurityCenterNavAction(),
         AdminExtensionsNavAction(),
@@ -923,7 +923,6 @@ def get_default_admin_actions() -> Iterator[BaseAction]:
         AdminManageDefaultReviewersNavAction(),
         AdminManageRepositoriesNavAction(),
         AdminManageWebHooksNavAction(),
-        AdminManageHostingAccountsNavAction(),
         AdminManageOAuth2AppsNavAction(),
     )
 

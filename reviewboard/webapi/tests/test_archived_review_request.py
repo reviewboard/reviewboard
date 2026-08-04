@@ -68,7 +68,7 @@ class ResourceListTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
         """Testing the POST users/<username>/archived-review-requests/ API
         with a local site and Does Not Exist error
         """
-        user = self._login_user(local_site=True)
+        user = self.login_user(local_site=True)
 
         rsp = self.api_post(
             get_archived_review_request_list_url(user.username,

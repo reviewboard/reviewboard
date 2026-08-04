@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -124,7 +124,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -205,7 +205,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -335,7 +335,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -397,7 +397,7 @@ class AllReviewRequestViewTests(BaseViewTestCase):
         user: User,
         profile: Profile,
         review_request_pks: Sequence[int],
-        local_site: Optional[LocalSite] = None,
+        local_site: (LocalSite | None) = None,
         local_sites_in_db: bool = False,
         repositories_pks: Sequence[int] = [],
         target_groups_pks: Sequence[int] = [],

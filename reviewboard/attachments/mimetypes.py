@@ -2,18 +2,18 @@
 
 from __future__ import annotations
 
-from collections import OrderedDict
 import logging
 import os
 import subprocess
-from typing import ClassVar, Final, Optional, TYPE_CHECKING
+from collections import OrderedDict
+from typing import TYPE_CHECKING
 
 import docutils.core
 import mimeparse
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.templatetags.static import static
-from django.utils.html import format_html, format_html_join
 from django.utils.encoding import force_str, smart_str
+from django.utils.html import format_html, format_html_join
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext as _
 from djblets.cache.backend import cache_memoize
@@ -21,13 +21,14 @@ from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.filesystem import is_exe_in_path
 from djblets.util.templatetags.djblets_images import thumbnail
 from pygments import highlight
-from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
-                             TextLexer)
+from pygments.lexers import ClassNotFound, TextLexer, guess_lexer_for_filename
 
 from reviewboard.reviews.markdown_utils import render_markdown
 from reviewboard.webapi.server_info import get_capabilities
 
 if TYPE_CHECKING:
+    from typing import ClassVar, Final
+
     from django.core.files import File
 
 
@@ -501,9 +502,9 @@ class MimetypeHandler(object):
     def get_raw_thumbnail_image_url(
         self,
         *,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-    ) -> Optional[str]:
+        width: (int | None) = None,
+        height: (int | None) = None,
+    ) -> str | None:
         """Return the URL to a thumbnail of a given size.
 
         For mimetype handlers that support image-based thumbnails, this will
@@ -549,10 +550,10 @@ class MimetypeHandler(object):
     def generate_thumbnail_image(
         self,
         *,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
+        width: (int | None) = None,
+        height: (int | None) = None,
         create_if_missing: bool = True,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate a thumbnail of a given size.
 
         For mimetype handlers that support image-based thumbnails, this must
@@ -645,10 +646,10 @@ class ImageMimetype(MimetypeHandler):
     def generate_thumbnail_image(
         self,
         *,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
+        width: (int | None) = None,
+        height: (int | None) = None,
         create_if_missing: bool = True,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Generate a thumbnail of a given size.
 
         For mimetype handlers that support image-based thumbnails, this must
@@ -715,7 +716,7 @@ class ImageMimetype(MimetypeHandler):
                 # There's no image to delete.
                 continue
 
-            filename: Optional[str] = None
+            filename: (str | None) = None
 
             if url.startswith(site_media_url):
                 filename = url[len(site_media_url):]

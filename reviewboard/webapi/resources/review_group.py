@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
@@ -118,7 +118,7 @@ class ReviewGroupResource(WebAPIResource):
         self,
         request: HttpRequest,
         is_list: bool = False,
-        local_site_name: Optional[str] = None,
+        local_site_name: (str | None) = None,
         *args,
         **kwargs,
     ) -> QuerySet:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -34,11 +34,11 @@ class X509Backend(BaseAuthBackend):
 
     def authenticate(
         self,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
         *,
         x509_field: str = '',
         **kwargs,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Authenticate the user.
 
         This will extract the username from the provided certificate and return
@@ -119,8 +119,8 @@ class X509Backend(BaseAuthBackend):
     def get_or_create_user(
         self,
         username: str,
-        request: Optional[HttpRequest] = None,
-    ) -> Optional[User]:
+        request: (HttpRequest | None) = None,
+    ) -> User | None:
         """Return an existing user or create one if it doesn't exist.
 
         This does not authenticate the user.
@@ -139,7 +139,7 @@ class X509Backend(BaseAuthBackend):
             django.contrib.auth.models.User:
             The resulting user, or ``None`` if one could not be found.
         """
-        user: Optional[User] = None
+        user: (User | None) = None
         username = username.strip()
 
         try:

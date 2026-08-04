@@ -8,7 +8,7 @@ import subprocess
 import sys
 from datetime import datetime
 from os.path import abspath, dirname
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 from wsgiref import simple_server
 
 import django
@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 #:
 #: Type:
 #:     reviewboard.cmdline.utils.console.Console
-console: Optional[Console] = None
+console: (Console | None) = None
 
 
 def check_dependencies(settings):

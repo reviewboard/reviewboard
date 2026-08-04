@@ -9,7 +9,7 @@ from django.utils.translation import gettext as _
 from djblets.siteconfig.models import SiteConfiguration
 
 from reviewboard import get_version_string
-from reviewboard.admin.siteconfig import settings_map, defaults
+from reviewboard.admin.siteconfig import defaults, settings_map
 
 
 def init_siteconfig() -> SiteConfiguration:

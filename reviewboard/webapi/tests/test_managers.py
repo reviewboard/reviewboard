@@ -7,7 +7,6 @@ Version Added:
 from __future__ import annotations
 
 import datetime
-from typing import Optional
 
 import kgb
 from django.contrib.auth.models import User
@@ -79,6 +78,112 @@ class WebAPITokenManagerTests(kgb.SpyAgency, TestCase):
             note='API token automatically created for Test.',
             user=self.user)
 
+    def test_get_or_create_client_token_with_create_default_extra_data(
+        self,
+    ) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token creates a
+        token with a custom default extra_data
+        """
+        user = self.user
+
+        # An existing non-client token. This shouldn't be returned.
+        WebAPIToken.objects.generate_token(
+            token_generator_id=self.token_generator_id,
+            token_info=self.token_info,
+            user=user,
+        )
+
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=self.user,
+            default_extra_data={
+                'mykey': ['myvalue'],
+            },
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(client_token.extra_data, {
+            'mykey': ['myvalue'],
+            'client_name': 'Test',
+        })
+
+    def test_get_or_create_client_token_with_create_default_policy(
+        self,
+    ) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token creates a
+        token with a custom default policy
+        """
+        user = self.user
+
+        # An existing non-client token. This shouldn't be returned.
+        WebAPIToken.objects.generate_token(
+            token_generator_id=self.token_generator_id,
+            token_info=self.token_info,
+            user=user,
+        )
+
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=self.user,
+            default_policy={
+                'resources': {
+                    '*': {
+                        'allow': ['DELETE'],
+                    },
+                },
+            },
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(client_token.policy, {
+            'resources': {
+                '*': {
+                    'allow': ['DELETE'],
+                },
+            },
+        })
+
+    def test_get_or_create_client_token_with_create_local_site(self) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token creates a
+        token with a provided Local Site
+        """
+        user = self.user
+        token_info = self.token_info
+        token_generator_id = self.token_generator_id
+
+        local_site1 = self.create_local_site(name='local-site-1')
+        local_site2 = self.create_local_site(name='local-site-2')
+
+        # An existing client token on the global site.
+        WebAPIToken.objects.generate_token(
+            token_generator_id=token_generator_id,
+            token_info=token_info,
+            user=user,
+            extra_data={
+                'client_name': 'Test',
+            },
+        )
+
+        # An existing client token on a different Local Site.
+        WebAPIToken.objects.generate_token(
+            token_generator_id=token_generator_id,
+            token_info=token_info,
+            user=user,
+            extra_data={
+                'client_name': 'Test',
+            },
+            local_site=local_site1,
+        )
+
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=user,
+            local_site=local_site2,
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(client_token.local_site, local_site2)
+
     def test_get_or_create_client_token_custom_expires_none(self) -> None:
         """Testing WebAPITokenManager.get_or_create_client_token creates
         a token with no expiration date when expires=None
@@ -96,7 +201,7 @@ class WebAPITokenManagerTests(kgb.SpyAgency, TestCase):
             note='API token automatically created for Test.',
             user=self.user)
 
-    def test_get_or_create_client_token_with_extra_data(self) -> None:
+    def test_get_or_create_client_token_with_existing_extra_data(self) -> None:
         """Testing WebAPITokenManager.get_or_create_client_token returns
         an existing client token when multiple fields exist in the extra data
         """
@@ -148,6 +253,36 @@ class WebAPITokenManagerTests(kgb.SpyAgency, TestCase):
         self.assertFalse(created)
         self.assertEqual(token, client_token)
 
+    def test_get_or_create_client_token_with_existing_ignore_deprecated(
+        self,
+    ) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token returns
+        an existing client token and ignore_deprecated=True
+        """
+        user = self.user
+
+        # A deprecated API token.
+        token = WebAPIToken.objects.generate_token(
+            extra_data={
+                'client_name': 'Test',
+            },
+            token_generator_id='legacy_sha1',
+            token_info={
+                'attempt': 1,
+                'user': user,
+            },
+            user=user,
+        )
+
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=user,
+            ignore_deprecated=True,
+        )
+
+        self.assertTrue(created)
+        self.assertNotEqual(token, client_token)
+
     def test_get_or_create_client_token_with_expired(self) -> None:
         """Testing WebAPITokenManager.get_or_create_client_token creates a new
         client token when the existing client token is expired
@@ -171,6 +306,40 @@ class WebAPITokenManagerTests(kgb.SpyAgency, TestCase):
         client_token, created = WebAPIToken.objects.get_or_create_client_token(
             client_name='Test',
             user=self.user)
+
+        self.assertTrue(created)
+        self.assertNotEqual(expired_token, client_token)
+
+    def test_get_or_create_client_token_with_expires_soon(self) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token creates a new
+        client token when the existing client token is expiring soon (under
+        the minimum validity period)
+        """
+        user = self.user
+        token_info = self.token_info
+        token_generator_id = self.token_generator_id
+
+        expired_token = WebAPIToken.objects.generate_token(
+            expires=timezone.now() + datetime.timedelta(seconds=4 * 60 + 59),
+            extra_data={
+                'client_name': 'Test',
+            },
+            token_generator_id=token_generator_id,
+            token_info=token_info,
+            user=user,
+        )
+
+        # An existing non-client token. This shouldn't be returned.
+        WebAPIToken.objects.generate_token(
+            expires=timezone.now() + datetime.timedelta(days=50),
+            token_generator_id=token_generator_id,
+            token_info=token_info,
+            user=user)
+
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=user,
+        )
 
         self.assertTrue(created)
         self.assertNotEqual(expired_token, client_token)
@@ -273,7 +442,7 @@ class WebAPITokenManagerTests(kgb.SpyAgency, TestCase):
         self,
         token: WebAPIToken,
         client_name: str,
-        expires: Optional[datetime.datetime],
+        expires: datetime.datetime | None,
         note: str,
         user: User,
     ) -> None:

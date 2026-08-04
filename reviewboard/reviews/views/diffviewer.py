@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import itertools
 import logging
-from typing import Optional, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 
 from django.db.models import Q
 from django.utils.translation import gettext
@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from reviewboard.reviews.ui.base import SerializedCommentBlocks
     from reviewboard.reviews.ui.diff import SerializedDiffComment
 
-    CommentsDict: TypeAlias = dict[tuple[int, Optional[int], Optional[int]],
+    CommentsDict: TypeAlias = dict[tuple[int, int | None, int | None],
                                    list[Comment]]
 
 
@@ -54,13 +54,13 @@ class ReviewsDiffViewerContext(DiffViewerContext, ReviewRequestContext):
     diffsets: list[DiffSet]
 
     #: The current review, if present.
-    review: Optional[Review]
+    review: Review | None
 
     #: The rendered HTML for the review request status.
     review_request_status_html: str
 
     #: The draft of the review request, if present.
-    draft: Optional[ReviewRequestDraft]
+    draft: ReviewRequestDraft | None
 
     #: The timestamp of the last activity.
     last_activity_time: datetime
@@ -122,10 +122,10 @@ class SerializedCommitWithComments(TypedDict):
     """
 
     #: The commit ID of the base commit in the commit range.
-    base_commit_id: Optional[str]
+    base_commit_id: str | None
 
     #: The PK of the base DiffCommit in the commit range.
-    base_commit_pk: Optional[int]
+    base_commit_pk: int | None
 
     #: Whether this commit range is currently being viewed.
     is_current: bool
@@ -134,10 +134,10 @@ class SerializedCommitWithComments(TypedDict):
     revision: int
 
     #: The commit ID of the tip commit in the commit range.
-    tip_commit_id: Optional[str]
+    tip_commit_id: str | None
 
     #: The PK of the tip DiffCommit in the commit range.
-    tip_commit_pk: Optional[int]
+    tip_commit_pk: int | None
 
 
 class SerializedCommentsHint(TypedDict):
@@ -199,7 +199,7 @@ class SerializedReviewsDiffFile(TypedDict):
     """
 
     #: The ID of the base FileDiff when viewing a commit range.
-    base_filediff_id: Optional[int]
+    base_filediff_id: int | None
 
     #: Whether the file is binary.
     binary: bool
@@ -320,8 +320,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
     def get(
         self,
         request: HttpRequest,
-        revision: Optional[int] = None,
-        interdiff_revision: Optional[int] = None,
+        revision: (int | None) = None,
+        interdiff_revision: (int | None) = None,
         *args,
         **kwargs,
     ) -> HttpResponse:
@@ -372,7 +372,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
     def get_context_data(
         self,
         diffset: DiffSet,
-        interdiffset: Optional[DiffSet],
+        interdiffset: DiffSet | None,
         **kwargs,
     ) -> ReviewsDiffViewerContext:
         """Return additional context data for the template.
@@ -401,7 +401,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
         request = self.request
         review_request = self.review_request
         draft = self.draft
-        draft_diffset: Optional[DiffSet] = None
+        draft_diffset: (DiffSet | None) = None
 
         # Only include the draft diffset if the user is the owner of the
         # review request, or if the user wants to view the unpublished draft.
@@ -496,10 +496,10 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                    comment.base_filediff_id)
             comments.setdefault(key, []).append(comment)
 
-        base_commit_id: Optional[int] = None
-        base_commit: Optional[DiffCommit] = None
-        tip_commit_id: Optional[int] = None
-        tip_commit: Optional[DiffCommit] = None
+        base_commit_id: (int | None) = None
+        base_commit: (DiffCommit | None) = None
+        tip_commit_id: (int | None) = None
+        tip_commit: (DiffCommit | None) = None
 
         if diffset.commit_count and not interdiffset:
             # Base and tip commit selection is not supported in interdiffs.
@@ -595,8 +595,8 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
             binary = f['binary']
             filediff_id = filediff.pk
 
-            interfilediff_id: Optional[int] = None
-            base_filediff_id: Optional[int] = None
+            interfilediff_id: (int | None) = None
+            base_filediff_id: (int | None) = None
 
             if base_filediff:
                 base_filediff_id = base_filediff.pk
@@ -672,15 +672,15 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
     def _get_comments_hint(
         self,
         *,
-        pending_review: Optional[Review],
+        pending_review: Review | None,
         all_comments: CommentsDict,
         all_diffsets: list[DiffSet],
         all_commits: list[DiffCommit],
         filediffs_by_id: dict[int, FileDiff],
         current_diffset: DiffSet,
-        current_interdiffset: Optional[DiffSet],
-        current_base_commit_id: Optional[int],
-        current_tip_commit_id: Optional[int],
+        current_interdiffset: DiffSet | None,
+        current_base_commit_id: int | None,
+        current_tip_commit_id: int | None,
     ) -> SerializedCommentsHint:
         """Return the comments hint for the diff viewer.
 
@@ -911,7 +911,7 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
             # the parent commit of the one which is selected in the range
             # selector. We therefore want to serialize the PK of the
             # base_commit but the commit_id of the child of the base_commit
-            base_commit_commit_id: Optional[str] = None
+            base_commit_commit_id: (str | None) = None
 
             if base_commit_id is NO_BASE_COMMIT:
                 base_commit_commit_id = base_commit.commit_id

@@ -6,8 +6,6 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional
-
 from reviewboard.licensing.provider import BaseLicenseProvider
 from reviewboard.registries.registry import OrderedRegistry
 
@@ -26,7 +24,7 @@ class LicenseProviderRegistry(OrderedRegistry[BaseLicenseProvider]):
     def get_license_provider(
         self,
         license_provider_id: str,
-    ) -> Optional[BaseLicenseProvider]:
+    ) -> BaseLicenseProvider | None:
         """Return the license provider for a given ID.
 
         Args:

@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.reviews.models import Comment
@@ -56,18 +56,18 @@ class DiffReviewUI(ReviewUI[FileDiff, Comment, SerializedDiffComment]):
     ######################
 
     #: The FileDiff for the base change in a commit range.
-    base_filediff: Optional[FileDiff]
+    base_filediff: FileDiff | None
 
     #: The tip FileDiff when viewing an interdiff.
-    interfilediff: Optional[FileDiff]
+    interfilediff: FileDiff | None
 
     def __init__(
         self,
         *,
         review_request: ReviewRequest,
         obj: FileDiff,
-        base_filediff: Optional[FileDiff],
-        interfilediff: Optional[FileDiff],
+        base_filediff: FileDiff | None,
+        interfilediff: FileDiff | None,
         request: HttpRequest,
     ) -> None:
         """Initialize the Review UI.

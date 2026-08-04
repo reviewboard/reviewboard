@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from itertools import chain
-from typing import ClassVar, Optional, TYPE_CHECKING
+from typing import ClassVar, TYPE_CHECKING
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
@@ -1101,7 +1101,7 @@ class FileDiff(models.Model):
         """
         diff_hash.recalculate_line_counts(self.get_repository().get_scmtool())
 
-    def get_review_request(self) -> Optional[ReviewRequest]:
+    def get_review_request(self) -> ReviewRequest | None:
         """Return the ReviewRequest that this filediff is attached to.
 
         Version Added:

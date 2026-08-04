@@ -7,12 +7,11 @@ Version Added:
 from __future__ import annotations
 
 import datetime
-from typing import Optional
+from typing import TYPE_CHECKING
 from urllib.parse import quote
 
 import kgb
 from django.contrib.auth.models import User
-from django.template import Context
 from django.utils import timezone
 from django.utils.html import escape
 from djblets.siteconfig.models import SiteConfiguration
@@ -21,6 +20,9 @@ from djblets.webapi.errors import WebAPITokenGenerationError
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 from reviewboard.webapi.models import WebAPIToken
+
+if TYPE_CHECKING:
+    from django.template import Context
 
 
 class ClientLoginViewTests(kgb.SpyAgency, TestCase):
@@ -314,10 +316,10 @@ class ClientLoginViewTests(kgb.SpyAgency, TestCase):
         client_name: str,
         client_url: str,
         username: str,
-        check_payload_token: Optional[bool] = False,
-        error: Optional[str] = '',
-        redirect_to: Optional[str] = '',
-        token_expires: Optional[datetime.datetime] = None,
+        check_payload_token: (bool | None) = False,
+        error: (str | None) = '',
+        redirect_to: (str | None) = '',
+        token_expires: (datetime.datetime | None) = None,
     ) -> None:
         """Assert that the context and JS view data matches the given values.
 

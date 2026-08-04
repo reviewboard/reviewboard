@@ -1028,7 +1028,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
                                                     with_local_site=True)
         ReviewRequestDraft.create(review_request)
 
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
 
         depends_1 = self.create_review_request(
             with_local_site=True,
@@ -1236,7 +1236,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         """Testing the PUT <URL> API with target_groups field and Local Site
         draft
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
 
         review_request = self.create_review_request(submitter=self.user,
                                                     with_local_site=True,
@@ -1292,7 +1292,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         """Testing the PUT <URL> API with target_groups field and Local Site
         draft with global group
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
 
         review_request = self.create_review_request(submitter=self.user,
                                                     with_local_site=True,
@@ -1612,7 +1612,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         """Testing the PUT review-requests/<id>/draft/ API
         as another user with admin
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         self._test_put_as_other_user()
 
@@ -1621,7 +1621,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         """Testing the PUT review-requests/<id>/draft/ API
         as another user with local site and permission
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
 
         local_site = self.get_local_site(name=self.local_site_name)
 
@@ -1636,7 +1636,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         """Testing the PUT review-requests/<id>/draft/ API
         as another user with local site and admin
         """
-        self.user = self._login_user(local_site=True, admin=True)
+        self.user = self.login_user(local_site=True, admin=True)
 
         self._test_put_as_other_user(
             self.get_local_site(name=self.local_site_name))
@@ -2055,7 +2055,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
                                                 relogin=True,
                                                 review_request=None):
         if relogin:
-            self._login_user(local_site=True)
+            self.login_user(local_site=True)
 
         if review_request is None:
             review_request = self.create_review_request(submitter='doc',

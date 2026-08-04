@@ -17,4 +17,11 @@
   --ink-p-header-bg:
     var(--if-light, var(--ink-p-yellow-300))
     var(--if-dark, var(--ink-p-cool-grey-300));
+
+  &.-is-fixed-width {
+    #content-main, .rb-c-content-header.-is-main {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+  }
 }

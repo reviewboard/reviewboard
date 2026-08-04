@@ -1,0 +1,9 @@
+{% load static %}
+
+<div class="rb-c-admin-cs-service">
+{% if service_logo %}
+ <img class="rb-c-admin-cs-service__icon" src="{% static service_logo %}">
+{% endif %}
+ <div class="rb-c-admin-cs-service__name">{{service_name}}</div>
+ <div class="rb-c-admin-cs-service__type">{{service_type}}</div>
+</div>

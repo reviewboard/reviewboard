@@ -7,8 +7,7 @@ import logging
 import os
 from collections.abc import Mapping
 from inspect import signature
-from typing import (Any, ClassVar, Generic, Iterator, Optional, TYPE_CHECKING,
-                    TypeVar)
+from typing import Any, ClassVar, Generic, Iterator, TYPE_CHECKING, TypeVar
 from urllib.parse import urlencode
 from uuid import uuid4
 
@@ -226,12 +225,12 @@ class ReviewUI(Generic[
     obj: ReviewableType
 
     #: The object being compared against, if present.
-    diff_against_obj: Optional[ReviewableType]
+    diff_against_obj: ReviewableType | None
 
     #: The current HTTP request.
     #:
     #: This is only set once :py:meth:`render_to_string` is called.
-    request: Optional[HttpRequest]
+    request: HttpRequest | None
 
     #: Whether the Review UI is being rendered inline in the current request.
     #:
@@ -326,9 +325,9 @@ class ReviewUI(Generic[
 
     def is_enabled_for(
         self,
-        user: Optional[User] = None,
-        review_request: Optional[ReviewRequest] = None,
-        obj: Optional[object] = None,
+        user: (User | None) = None,
+        review_request: (ReviewRequest | None) = None,
+        obj: (object | None) = None,
         **kwargs,
     ) -> bool:
         """Return whether the Review UI is enabled under the given criteria.
@@ -552,7 +551,7 @@ class ReviewUI(Generic[
 
         return context
 
-    def get_page_cover_image_url(self) -> Optional[str]:
+    def get_page_cover_image_url(self) -> str | None:
         """Return the URL to an image used to depict this on other sites.
 
         The returned image URL will be used for services like Facebook, Slack,
@@ -594,7 +593,7 @@ class ReviewUI(Generic[
 
     def get_caption(
         self,
-        draft: Optional[ReviewRequestDraft] = None,
+        draft: (ReviewRequestDraft | None) = None,
     ) -> str:
         """Return the caption to show for the reviewable object.
 
@@ -621,7 +620,7 @@ class ReviewUI(Generic[
     def get_comment_thumbnail(
         self,
         comment: CommentType,
-    ) -> Optional[SafeString]:
+    ) -> SafeString | None:
         """Return an HTML thumbnail for a comment.
 
         If comment thumbnails are possible for the reviewable object, this
@@ -674,7 +673,7 @@ class ReviewUI(Generic[
     def get_comment_link_text(
         self,
         comment: CommentType,
-    ) -> Optional[str]:
+    ) -> str | None:
         """Return the text to link to a comment.
 
         This must be implemented by subclasses.
@@ -935,7 +934,7 @@ class ReviewUI(Generic[
     def _get_adjacent_file_attachments(
         self,
         review_request_details: BaseReviewRequestDetails,
-    ) -> tuple[Optional[FileAttachment], Optional[FileAttachment]]:
+    ) -> tuple[FileAttachment | None, FileAttachment | None]:
         """Return the next and previous file attachments.
 
         The next and previous file attachments are the file attachments that
@@ -1079,7 +1078,7 @@ class ReviewUI(Generic[
     def for_object(
         cls,
         obj: object,
-    ) -> Optional[type[ReviewUI]]:
+    ) -> type[ReviewUI] | None:
         """Return the Review UI that is the best fit for a given object.
 
         Args:
@@ -1092,8 +1091,8 @@ class ReviewUI(Generic[
             suitable one could not be found.
         """
         is_file_attachment = isinstance(obj, FileAttachment)
-        mime_str: Optional[str] = None
-        extension: Optional[str] = None
+        mime_str: (str | None) = None
+        extension: (str | None) = None
 
         if is_file_attachment:
             mime_str = obj.mimetype
@@ -1116,7 +1115,7 @@ class ReviewUI(Generic[
                 return None
 
         best_score = 0
-        best_fit: Optional[type[ReviewUI]] = None
+        best_fit: (type[ReviewUI] | None) = None
 
         from reviewboard.reviews.ui import review_ui_registry
 
@@ -1159,7 +1158,7 @@ class FileAttachmentReviewUI(ReviewUI):
     def get_best_handler(
         cls,
         mimetype: tuple[str, str, str],
-    ) -> tuple[float, Optional[type[ReviewUI]]]:
+    ) -> tuple[float, type[ReviewUI] | None]:
         """Return the Review UI and score that that best fit the mimetype.
 
         Args:
@@ -1200,7 +1199,7 @@ class FileAttachmentReviewUI(ReviewUI):
     def for_type(
         cls,
         attachment: FileAttachment,
-    ) -> Optional[ReviewUI]:
+    ) -> ReviewUI | None:
         """Return the Review UI that is the best fit for a file attachment.
 
         Args:

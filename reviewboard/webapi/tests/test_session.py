@@ -183,7 +183,7 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
     @webapi_test_template
     def test_put_with_settings_json(self) -> None:
         """Testing the PUT <URL> API with settings:json"""
-        user = self._login_user()
+        user = self.login_user()
 
         profile = user.get_profile()
         profile.settings['some_setting'] = '123'

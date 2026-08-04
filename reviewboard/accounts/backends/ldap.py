@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -103,12 +103,12 @@ class LDAPBackend(BaseAuthBackend):
 
     def authenticate(
         self,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
         *,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
         **credentials,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Authenticate a user.
 
         This will attempt to authenticate the user against the LDAP server.
@@ -207,10 +207,10 @@ class LDAPBackend(BaseAuthBackend):
     def get_or_create_user(
         self,
         username: str,
-        request: Optional[HttpRequest] = None,
-        ldapo: Optional[LDAPObject] = None,
-        userdn: Optional[str] = None,
-    ) -> Optional[User]:
+        request: (HttpRequest | None) = None,
+        ldapo: (LDAPObject | None) = None,
+        userdn: (str | None) = None,
+    ) -> User | None:
         """Return a user account, importing from LDAP if necessary.
 
         If the user already exists in the database, it will be returned
@@ -351,8 +351,8 @@ class LDAPBackend(BaseAuthBackend):
 
     def _connect(
         self,
-        request: Optional[HttpRequest] = None,
-    ) -> Optional[LDAPObject]:
+        request: (HttpRequest | None) = None,
+    ) -> LDAPObject | None:
         """Connect to LDAP.
 
         This will attempt to connect and authenticate (if needed) to the
@@ -415,8 +415,8 @@ class LDAPBackend(BaseAuthBackend):
         self,
         ldapo: LDAPObject,
         username: str,
-        request: Optional[HttpRequest] = None,
-    ) -> Optional[str]:
+        request: (HttpRequest | None) = None,
+    ) -> str | None:
         """Return the DN for a given username.
 
         This will perform a lookup in LDAP to try to find a DN for a given

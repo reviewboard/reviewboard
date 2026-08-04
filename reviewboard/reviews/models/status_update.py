@@ -22,7 +22,7 @@ from reviewboard.reviews.signals import status_update_request_run
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
-    from typing import ClassVar, Literal, Optional
+    from typing import ClassVar, Literal
 
     from django.contrib.auth.models import AnonymousUser
     from typelets.django.strings import StrOrPromise
@@ -177,7 +177,7 @@ class StatusUpdate(models.Model):
     # Instance variables #
     ######################
 
-    _integration_config: Optional[IntegrationConfig]
+    _integration_config: IntegrationConfig | None
 
     @staticmethod
     def state_to_string(
@@ -244,7 +244,7 @@ class StatusUpdate(models.Model):
             raise ValueError(f'Invalid state string "{state}"')  # type:ignore
 
     @property
-    def integration_config(self) -> Optional[IntegrationConfig]:
+    def integration_config(self) -> IntegrationConfig | None:
         """The integration config that manages this status update, if any.
 
         If the stored configuration no longer exists, or is no longer
@@ -259,7 +259,7 @@ class StatusUpdate(models.Model):
         Type:
             reviewboard.integrations.models.IntegrationConfig
         """
-        config: Optional[IntegrationConfig]
+        config: IntegrationConfig | None
 
         if hasattr(self, '_integration_config'):
             config = self._integration_config

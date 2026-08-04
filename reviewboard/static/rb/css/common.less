@@ -384,33 +384,4 @@
    width: 100%;
 }
 
-
-/****************************************************************************
- * clearfix hacks
- ****************************************************************************/
-
-/*
- * clearfix hack. See http://www.webtoolkit.info/css-clearfix.html
- */
-.clearfix {
-  display: inline-block;
-
-  &:after {
-    content: ".";
-    display: block;
-    clear: both;
-    visibility: hidden;
-    line-height: 0;
-    height: 0;
-  }
-}
-
-html[xmlns] .clearfix {
-  display: block;
-}
-
-* html .clearfix {
-  height: 1%;
-}
-
 // vim: set et ts=2 sw=2:

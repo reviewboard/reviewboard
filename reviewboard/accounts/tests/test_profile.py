@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from django_assert_queries.testing import assert_queries
-from django.core.cache import cache
 from django.contrib.auth.models import AnonymousUser, User
+from django.core.cache import cache
 from django.db.models import Count, Q, Value
+from django_assert_queries.testing import assert_queries
 from djblets.testing.decorators import add_fixtures
 
 from reviewboard.accounts.models import LocalSiteProfile, Profile

@@ -40,9 +40,9 @@ There are three key things to know about building conditions:
 Choosing a Base Class
 =====================
 
-Djblets_, Review Board's companion library for writing extensions, provides
-several ready-made base classes you can choose from. Each has a built-in set
-of standard operators.
+:pypi:`Djblets`, Review Board's companion library for writing extensions,
+provides several ready-made base classes you can choose from. Each has a
+built-in set of standard operators.
 
 These are:
 

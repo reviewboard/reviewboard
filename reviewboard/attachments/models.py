@@ -6,7 +6,7 @@ import logging
 import os
 from collections.abc import Sequence
 from inspect import signature
-from typing import ClassVar, Optional
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
@@ -15,7 +15,6 @@ from django.db.models import Max
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField, RelationCounterField
 from djblets.util.decorators import cached_property
-from typing_extensions import TypeAlias
 
 from reviewboard.admin.server import build_server_url
 from reviewboard.attachments.managers import FileAttachmentManager
@@ -26,6 +25,11 @@ from reviewboard.diffviewer.models import FileDiff
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
+
+if TYPE_CHECKING:
+    from typing import ClassVar, TypeAlias
+
+    from reviewboard.reviews.models import ReviewRequest
 
 
 logger = logging.getLogger(__name__)
@@ -91,12 +95,15 @@ class FileAttachment(models.Model):
 
     #: The local site that this attachment is on.
     #:
-    #: This is only present for "user" file attachments (that is, attachments
-    #: that were uploaded into a comment box or otherwise created from the user
-    #: file attachments API). Attachments which are linked to a Review Request
-    #: will not have this relation populated, and should instead use the Review
-    #: Request's local site. Callers should use the :py:meth:`get_local_site`
-    #: method instead of accessing this directly.
+    #: Prior to RB 8.1, this was only  present for "user" file attachments
+    #: (that is, attachments that were uploaded into a comment box or otherwise
+    #: created from the user file attachments API) and for ones linked to
+    #: file diffs. Attachments which are uploaded directly to a Review Request,
+    #: not part of the diff, did not have this relation populated.
+    #:
+    #: On RB 8.1 and higher we set this for all file attachments. Callers
+    #: should still use the :py:meth:`get_local_site` method instead of
+    #: accessing this directly for consistency.
     local_site = models.ForeignKey(LocalSite,
                                    on_delete=models.CASCADE,
                                    blank=True,
@@ -148,6 +155,12 @@ class FileAttachment(models.Model):
     attachment_revision = models.IntegerField(default=0)
 
     objects: ClassVar[FileAttachmentManager] = FileAttachmentManager()
+
+    #: The extra_data key that denotes if :py:attr:`local_site` has been set.
+    #:
+    #: Version Added:
+    #:     8.1
+    DEFINED_LOCAL_SITE_KEY = '__defined_local_site'
 
     @property
     def mimetype_handler(self):
@@ -281,16 +294,21 @@ class FileAttachment(models.Model):
         """Return a string representation of this file for the admin list."""
         return self.caption
 
-    def get_review_request(self):
-        """Return the ReviewRequest that this file is attached to."""
+    def get_review_request(self) -> ReviewRequest:
+        """Return the ReviewRequest that this file is attached to.
+
+        Raises:
+            django.core.exceptions.ObjectDoesNotExist:
+                The review request does not exist or hasn't been linked yet.
+        """
         if hasattr(self, '_review_request'):
             return self._review_request
 
         try:
-            return self.review_request.all()[0]
+            self._review_request = self.review_request.all()[0]
         except IndexError:
             try:
-                return self.inactive_review_request.all()[0]
+                self._review_request = self.inactive_review_request.all()[0]
             except IndexError:
                 # Maybe it's on a draft.
                 try:
@@ -298,10 +316,19 @@ class FileAttachment(models.Model):
                 except ObjectDoesNotExist:
                     draft = self.inactive_drafts.get()
 
-                return draft.review_request
+                self._review_request = draft.review_request
 
-    def get_local_site(self) -> Optional[LocalSite]:
+        return self._review_request
+
+    def get_local_site(self) -> LocalSite | None:
         """Return the local site for this attachment.
+
+        Version Changed:
+            8.1:
+            This will return :py:attr:`local_site` if we know that a value has
+            been explicitly set for it. Otherwise, this will determine the
+            local site, save that value to :py:attr:`local_site` and return
+            it.
 
         Version Added:
             7.0.3
@@ -310,10 +337,45 @@ class FileAttachment(models.Model):
             reviewboard.site.models.LocalSite:
             The local site that this attachment is related to, if any.
         """
-        if self.user is not None:
-            return self.local_site
-        else:
-            return self.get_review_request().local_site
+        local_site = self.local_site
+        defined_local_site_key = self.DEFINED_LOCAL_SITE_KEY
+
+        if self.extra_data.get(defined_local_site_key, False):
+            # We have an explicit value for the local site (passed on creation
+            # for RB 8.1+ or we figured it out below already). We can use it.
+            return local_site
+
+        # Pre RB 8.1, we need to figure out the local site and save it.
+        if self.user_id is None and local_site is None:
+            # This could be a file attachment that doesn't have a local site,
+            # or one that relies on its review request for the local site.
+            try:
+                local_site = self.get_review_request().local_site
+            except ObjectDoesNotExist:
+                # We're being asked for the local site before the attachment
+                # has been linked to a review request. This shouldn't happen
+                # in normal operation, RB 8.1+ sets local_site at creation
+                # and any existing attachments will have already been linked
+                # to their review request right after their first save.
+                #
+                # Fall back to ``None`` and log just in case.
+                logger.error(
+                    'Could not determine Local Site for file attachment %s. '
+                    'Set either the Local Site or the review request on the '
+                    'attachment to fix this.',
+                    self.pk)
+
+                return None
+
+        # We now know the local_site value for pre RB 8.1 file attachments.
+        # Save it so we don't have to figure it out again on the next access.
+        self.local_site = local_site
+        self.extra_data[defined_local_site_key] = True
+
+        if self.pk is not None:
+            self.save(update_fields=['local_site', 'extra_data'])
+
+        return local_site
 
     def get_comments(self):
         """Return all the comments made on this file attachment."""
@@ -322,7 +384,7 @@ class FileAttachment(models.Model):
 
         return self._comments
 
-    def get_raw_download_url(self) -> Optional[str]:
+    def get_raw_download_url(self) -> str | None:
         """Return the absolute URL to download this file.
 
         The URL will be determined by the storage backend. It may be
@@ -351,9 +413,9 @@ class FileAttachment(models.Model):
     def get_raw_thumbnail_image_url(
         self,
         *,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-    ) -> Optional[str]:
+        width: (int | None) = None,
+        height: (int | None) = None,
+    ) -> str | None:
         """Return the absolute URL for an image thumbnail for this file.
 
         The URL will be determined by the storage backend. It may be
@@ -373,7 +435,7 @@ class FileAttachment(models.Model):
             This will be ``None`` if there's no file backing for any reason,
             or if the attachment doesn't support image thumbnails.
         """
-        url: Optional[str] = None
+        url: (str | None) = None
         mimetype_handler = self.mimetype_handler
 
         if mimetype_handler:
@@ -390,7 +452,7 @@ class FileAttachment(models.Model):
 
         return build_server_url(url)
 
-    def get_absolute_url(self) -> Optional[str]:
+    def get_absolute_url(self) -> str | None:
         """Return the absolute URL for accessing the file.
 
         This will return the correct URL for either user-uploaded or

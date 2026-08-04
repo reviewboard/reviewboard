@@ -139,7 +139,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 6)
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
         rsp = self.api_get(url, {'status': 'all'},
                            expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -167,7 +167,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(len(rsp['review_requests']), 2)
 
-        self._login_user(admin=True)
+        self.login_user(admin=True)
         rsp = self.api_get(url, unpublished_params,
                            expected_mimetype=review_request_list_mimetype)
         self.assertEqual(rsp['stat'], 'ok')
@@ -1164,7 +1164,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         """
         repository = self.create_repository()
 
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
         rsp = self.api_post(
             get_review_request_list_url(self.local_site_name),
             {'repository': repository.path},
@@ -1643,7 +1643,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         """Testing the POST review-requests/?submit_as= API
         with a local site and local permission
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
 
         local_site = self.get_local_site(name=self.local_site_name)
 
@@ -1658,7 +1658,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         """Testing the POST review-requests/?submit_as= API
         with a local site and site admin
         """
-        self._login_user(local_site=True, admin=True)
+        self.login_user(local_site=True, admin=True)
 
         self._test_post_with_submit_as(
             self.get_local_site(name=self.local_site_name))
@@ -2017,7 +2017,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, SSLTestsMixin,
         """Testing the DELETE review-requests/<id>/ API
         with a local site and a local permission is not allowed
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
         local_site = self.get_local_site(name=self.local_site_name)
 
         site_profile = self.user.get_site_profile(local_site)
@@ -2036,7 +2036,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, SSLTestsMixin,
         """Testing the DELETE review-requests/<id>/ API
         with a local site and a site admin is not allowed
         """
-        self.user = self._login_user(local_site=True, admin=True)
+        self.user = self.login_user(local_site=True, admin=True)
         review_request = self.create_review_request(with_local_site=True)
 
         self.api_delete(
@@ -2393,7 +2393,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, SSLTestsMixin,
         """Testing the PUT review-requests/<id>/?status=submitted API
         with a local site
         """
-        self._login_user(local_site=True)
+        self.login_user(local_site=True)
         r = self.create_review_request(submitter='doc', with_local_site=True,
                                        publish=True)
 
@@ -2443,7 +2443,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, SSLTestsMixin,
         """Testing the PUT review-requests/<id>/?status= API
         as another user with admin
         """
-        self._login_user(admin=True)
+        self.login_user(admin=True)
 
         self._test_put_status_as_other_user()
 
@@ -2467,7 +2467,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, SSLTestsMixin,
         """Testing the PUT review-requests/<id>/?status=pending API
         as another user with local site and permission
         """
-        self.user = self._login_user(local_site=True)
+        self.user = self.login_user(local_site=True)
 
         local_site = self.get_local_site(name=self.local_site_name)
 
@@ -2482,7 +2482,7 @@ class ResourceItemTests(kgb.SpyAgency, ExtraDataItemMixin, SSLTestsMixin,
         """Testing the PUT review-requests/<id>/?status=pending API
         as another user with local site and admin
         """
-        self.user = self._login_user(local_site=True, admin=True)
+        self.user = self.login_user(local_site=True, admin=True)
 
         self._test_put_status_as_other_user(
             self.get_local_site(name=self.local_site_name))

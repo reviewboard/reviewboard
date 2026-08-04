@@ -8,7 +8,6 @@ Version Added:
 from __future__ import annotations
 
 import kgb
-
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils.safestring import SafeString
 

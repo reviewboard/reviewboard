@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from django.db.models import Manager, Q
 
@@ -22,7 +22,7 @@ class HostingServiceAccountManager(Manager['HostingServiceAccount']):
     def accessible(
         self,
         visible_only: bool = True,
-        local_site: Optional[AnyOrAllLocalSites] = None,
+        local_site: (AnyOrAllLocalSites | None) = None,
     ) -> QuerySet[HostingServiceAccount]:
         """Return hosting service accounts that are accessible.
 
@@ -70,7 +70,7 @@ class HostingServiceAccountManager(Manager['HostingServiceAccount']):
     def can_create(
         self,
         user: User,
-        local_site: Optional[AnyOrAllLocalSites] = None,
+        local_site: (AnyOrAllLocalSites | None) = None,
     ) -> bool:
         """Return whether the user can create a hosting service account.
 

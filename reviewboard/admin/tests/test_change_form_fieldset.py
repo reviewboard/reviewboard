@@ -8,8 +8,8 @@ from django.contrib.auth.models import User
 from reviewboard.admin import admin_site
 from reviewboard.admin.forms.change_form import (ChangeFormFieldset,
                                                  ChangeFormRow)
-from reviewboard.testing.testcase import TestCase
 from reviewboard.admin.templatetags.rbadmintags import change_form_fieldsets
+from reviewboard.testing.testcase import TestCase
 
 
 class ChangeFormFieldsetTests(TestCase):

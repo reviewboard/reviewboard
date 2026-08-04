@@ -6,7 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import Any, Optional, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import User
@@ -126,7 +126,7 @@ class SubmitterViewTests(BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -226,7 +226,7 @@ class SubmitterViewTests(BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -319,7 +319,7 @@ class SubmitterViewTests(BaseViewTestCase):
             AssertionError:
                 One of the checks failed.
         """
-        local_site: Optional[LocalSite]
+        local_site: LocalSite | None
 
         if with_local_site:
             local_site = self.get_local_site(name=self.local_site_name)
@@ -415,8 +415,8 @@ class SubmitterViewTests(BaseViewTestCase):
         user: User,
         viewed_user: User,
         review_request_pks: Sequence[int],
-        profile: Optional[Profile] = None,
-        local_site: Optional[LocalSite] = None,
+        profile: (Profile | None) = None,
+        local_site: (LocalSite | None) = None,
         local_sites_in_db: bool = False,
         accessible_review_group_ids: Sequence[int] = [],
     ) -> ExpectedQueries:
@@ -662,8 +662,8 @@ class SubmitterViewTests(BaseViewTestCase):
         user: User,
         viewed_user: User,
         review_pks: Sequence[int],
-        profile: Optional[Profile] = None,
-        local_site: Optional[LocalSite] = None,
+        profile: (Profile | None) = None,
+        local_site: (LocalSite | None) = None,
         local_sites_in_db: bool = False,
     ) -> ExpectedQueries:
         """Return expected queries for viewing the user reviews datagrid.

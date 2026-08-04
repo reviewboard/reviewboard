@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional, TYPE_CHECKING, Union, cast
+from typing import TYPE_CHECKING, cast
 
 from django.conf import settings
 from django.contrib.auth import hashers
@@ -18,6 +18,8 @@ from reviewboard.accounts.models import LocalSiteProfile
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from django.contrib.auth.models import AbstractBaseUser, AnonymousUser
     from django.db.models import Model
     from django.http import HttpRequest
@@ -70,12 +72,12 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
 
     def authenticate(
         self,
-        request: Optional[HttpRequest] = None,
+        request: (HttpRequest | None) = None,
         *,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: (str | None) = None,
+        password: (str | None) = None,
         **kwargs,
-    ) -> Optional[User]:
+    ) -> User | None:
         """Authenticate the user.
 
         This will attempt to authenticate the user against the database.
@@ -127,8 +129,8 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
     def get_or_create_user(
         self,
         username: str,
-        request: Optional[HttpRequest] = None,
-    ) -> Optional[User]:
+        request: (HttpRequest | None) = None,
+    ) -> User | None:
         """Return an existing user or create one if it doesn't exist.
 
         This does not authenticate the user.
@@ -167,8 +169,8 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
 
     def get_all_permissions(
         self,
-        user: Union[AbstractBaseUser, AnonymousUser],
-        obj: Optional[Model] = None,
+        user: AbstractBaseUser | AnonymousUser,
+        obj: (Model | None) = None,
     ) -> set[str]:
         """Return a list of all permissions for a user.
 
@@ -252,7 +254,7 @@ class StandardAuthBackend(BaseAuthBackend, ModelBackend):
 
     def has_perm(
         self,
-        user: Union[AbstractBaseUser, AnonymousUser],
+        user: AbstractBaseUser | AnonymousUser,
         perm: str,
         obj: Any = None,
     ) -> bool:

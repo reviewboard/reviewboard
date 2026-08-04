@@ -12,11 +12,13 @@ from django.template import Context
 from django.utils.safestring import SafeString
 from djblets.pagestate.state import PageState
 
+from reviewboard.actions import ActionPlacement, AttachmentPoint
 from reviewboard.actions.base import BaseAction
 from reviewboard.actions.errors import MissingActionRendererError
 from reviewboard.actions.renderers import (ButtonActionRenderer,
                                            DefaultActionRenderer)
-from reviewboard.actions.tests.base import SpecialButtonActionRenderer
+from reviewboard.actions.tests.base import (SpecialButtonActionRenderer,
+                                            TestAction)
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.testing import TestCase
 
@@ -85,6 +87,52 @@ class BaseActionTests(TestCase):
 
         with self.assertWarnings(warning_list):
             MyAction()
+
+    def test_get_dom_element_id(self) -> None:
+        """Testing BaseAction.get_dom_element_id"""
+        action = TestAction()
+
+        with self.assertWarns(RemovedInReviewBoard10_0Warning):
+            dom_element_id = action.get_dom_element_id()
+
+        # The ID matches what the renderer computes for the placement.
+        self.assertEqual(dom_element_id, 'action-review-request-test')
+
+    def test_get_dom_element_id_with_placement_dom_element_id(self) -> None:
+        """Testing BaseAction.get_dom_element_id with placement.dom_element_id
+        """
+        class MyAction(BaseAction):
+            action_id = 'placement-test'
+            placements = [
+                ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST,
+                                dom_element_id='placement-id'),
+            ]
+
+        action = MyAction()
+
+        with self.assertWarns(RemovedInReviewBoard10_0Warning):
+            dom_element_id = action.get_dom_element_id()
+
+        self.assertEqual(dom_element_id, 'placement-id')
+
+    def test_get_dom_element_id_with_multiple_placements(self) -> None:
+        """Testing BaseAction.get_dom_element_id with multiple placements"""
+        class MyAction(BaseAction):
+            action_id = 'test-action'
+            placements = [
+                ActionPlacement(attachment=AttachmentPoint.HEADER),
+                ActionPlacement(attachment=AttachmentPoint.REVIEW_REQUEST),
+            ]
+
+        action = MyAction()
+
+        # The method can only resolve against the first placement. Renderers
+        # compute the ID per-placement instead, which is why this is
+        # deprecated. This is here for backwards compatibility.
+        with self.assertWarns(RemovedInReviewBoard10_0Warning):
+            dom_element_id = action.get_dom_element_id()
+
+        self.assertEqual(dom_element_id, 'action-header-test-action')
 
     def test_should_register_with_rendered(self) -> None:
         """Testing BaseAction.should_register with rendered"""
