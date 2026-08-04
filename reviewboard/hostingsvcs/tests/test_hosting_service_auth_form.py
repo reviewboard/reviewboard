@@ -2,18 +2,17 @@
 
 from __future__ import annotations
 
-import os
-import shutil
 from typing import TYPE_CHECKING
 
 import kgb
 
-from reviewboard.admin.server import get_data_dir
 from reviewboard.certs.cert import Certificate, CertificateFingerprints
 from reviewboard.certs.errors import (CertificateVerificationError,
                                       CertificateVerificationFailureCode)
 from reviewboard.certs.manager import cert_manager
-from reviewboard.certs.tests.testcases import TEST_SHA256, TEST_TRUST_CERT_PEM
+from reviewboard.certs.tests.testcases import (CaptureSSLMixin,
+                                               TEST_SHA256,
+                                               TEST_TRUST_CERT_PEM)
 from reviewboard.deprecation import (RemovedInReviewBoard10_0Warning,
                                      RemovedInReviewBoard90Warning)
 from reviewboard.hostingsvcs.base import hosting_service_registry
@@ -32,7 +31,7 @@ if TYPE_CHECKING:
     from djblets.testing.testcases import ExpectedWarning
 
 
-class HostingServiceAuthFormTests(kgb.SpyAgency, TestCase):
+class HostingServiceAuthFormTests(kgb.SpyAgency, CaptureSSLMixin, TestCase):
     """Unit tests for BaseHostingServiceAuthForm."""
 
     fixtures = ['test_scmtools']
@@ -46,8 +45,6 @@ class HostingServiceAuthFormTests(kgb.SpyAgency, TestCase):
 
         hosting_service_registry.register(TestService)
         hosting_service_registry.register(SelfHostedTestService)
-        shutil.rmtree(os.path.join(get_data_dir(), 'rb-certs'),
-                      ignore_errors=True)
 
     def tearDown(self) -> None:
         """Tear down state for the test.
@@ -56,8 +53,6 @@ class HostingServiceAuthFormTests(kgb.SpyAgency, TestCase):
         """
         hosting_service_registry.unregister(SelfHostedTestService)
         hosting_service_registry.unregister(TestService)
-        shutil.rmtree(os.path.join(get_data_dir(), 'rb-certs'),
-                      ignore_errors=True)
 
         super().tearDown()
 

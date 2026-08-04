@@ -6,6 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
+import logging
 import ssl
 from typing import TYPE_CHECKING
 from urllib.error import URLError
@@ -34,6 +35,9 @@ if TYPE_CHECKING:
     from reviewboard.site.models import LocalSite
 
 
+logger = logging.getLogger(__name__)
+
+
 class CertificateVerificationHTTPSHandler(HTTPSHandler):
     """An urlopen handler for CertificateManager-backed HTTPS connections.
 
@@ -54,15 +58,27 @@ class CertificateVerificationHTTPSHandler(HTTPSHandler):
     #: The associated Certificate Manager for the handler.
     _cert_manager: CertificateManager
 
+    #: Optional PEM-formatted certificate data to use for verification.
+    _extra_cert_data: str | None
+
     #: The Local Site used for certificate lookup.
     _local_site: LocalSite | None
+
+    #: Whether we're checking the hostname against the certificate.
+    #:
+    #: We're storing this under a namespace, because the handler will
+    #: normally set :py:attr:`_check_hostname` and trigger a deprecation
+    #: error for that argument. We're controlling this ourselves and
+    #: don't want to risk informing the parent of this.
+    _rb_check_hostname: bool
 
     def __init__(
         self,
         *,
         local_site: (LocalSite | None),
-        context: (ssl.SSLContext | None) = None,
         cert_manager: (CertificateManager | None) = None,
+        check_hostname: bool = True,
+        extra_cert_data: (str | None) = None,
     ) -> None:
         """Initialize the handler.
 
@@ -70,19 +86,30 @@ class CertificateVerificationHTTPSHandler(HTTPSHandler):
             local_site (reviewboard.site.models.LocalSite):
                 The Local Site the certificates would be associated with.
 
-            context (ssl.SSLContext, optional):
-                A specific SSLContext to use for the request.
-
             cert_manager (reviewboard.certs.manager.CertificateManager,
                           optional):
                 A specific Certificate Manager instance.
 
                 If not provided, the default will be used.
+
+            check_hostname (bool, optional):
+                Whether to verify that the hostname in the URL matches
+                the hostname in the certificate.
+
+            extra_cert_data (str, optional):
+                Optional PEM-formatted certificate data to use for
+                verification.
         """
         self._cert_manager = cert_manager or default_cert_manager
         self._local_site = local_site
+        self._extra_cert_data = extra_cert_data
+        self._rb_check_hostname = check_hostname
 
-        super().__init__()
+        # On Python 3.12+, the parent builds a default SSL context if one
+        # isn't provided, loading the system certificates in the process.
+        # We build our own context per-request in https_open(), so pass a
+        # placeholder to avoid that wasted work.
+        super().__init__(context=ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT))
 
     def https_open(
         self,
@@ -110,13 +137,27 @@ class CertificateVerificationHTTPSHandler(HTTPSHandler):
         port = parsed_url.port or 443
 
         if hostname:
-            self._context = self._cert_manager.build_ssl_context(
+            context = self._cert_manager.build_ssl_context(
                 hostname=hostname,
                 port=port,
                 local_site=self._local_site,
             )
+
+            context.check_hostname = self._rb_check_hostname
+
+            if extra_cert_data := self._extra_cert_data:
+                try:
+                    context.load_verify_locations(cadata=extra_cert_data)
+                except ssl.SSLError as e:
+                    logger.error(
+                        'Failed to load legacy certificate data into HTTPS '
+                        'SSL context for %s:%s: %s',
+                        hostname, port, e,
+                    )
         else:
-            self._context = None
+            context = None
+
+        self._context = context
 
         # Specially handle SSLErrors that come from the request, and let
         # anything else bubble up.

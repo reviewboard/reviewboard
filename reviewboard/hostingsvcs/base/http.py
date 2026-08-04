@@ -11,7 +11,6 @@ from __future__ import annotations
 import base64
 import json
 import logging
-import ssl
 from collections import OrderedDict
 from collections.abc import Mapping
 from typing import Any, TypedDict, TYPE_CHECKING
@@ -35,6 +34,7 @@ from reviewboard.deprecation import RemovedInReviewBoard90Warning
 if TYPE_CHECKING:
     from urllib.request import BaseHandler
 
+    from typelets.funcs import KwargsDict
     from typelets.json import JSONValue
     from typing_extensions import Never, TypeAlias
 
@@ -93,11 +93,11 @@ QueryArgs: TypeAlias = Mapping[str, Any]
 UploadedFiles: TypeAlias = Mapping[bytes | str, UploadedFileInfo]
 
 
-def _build_ssl_context_from_ssl_cert(
+def _build_ssl_kwargs_from_ssl_cert(
     *,
     hosting_account: HostingServiceAccount,
-) -> ssl.SSLContext:
-    """Return an SSL context for a hosting service with legacy cert data.
+) -> KwargsDict:
+    """Return keyword arguments for an HTTPS handler with legacy cert data.
 
     This will attempt to migrate the stored ``ssl_cert`` data a hosting
     service account to a modern stored certificate that can then be
@@ -118,11 +118,12 @@ def _build_ssl_context_from_ssl_cert(
             The hosting service account to migrate.
 
     Returns:
-        ssl.SSLContext:
-        A configured SSL context with the certificate trusted.
+        dict:
+        Keyword arguments to pass to :py:class:`reviewboard.certs.http.
+        CertificateVerificationHTTPSHandler`.
     """
-    context: (ssl.SSLContext | None) = None
     cert_data = hosting_account.data['ssl_cert']
+    migrated = True
 
     if hosting_url := hosting_account.hosting_url:
         local_site = hosting_account.local_site
@@ -179,14 +180,9 @@ def _build_ssl_context_from_ssl_cert(
                         certificate = None
 
                 if certificate is not None:
-                    # Use cert_manager to build the SSL context (loads the
-                    # stored cert via load_verify_locations in
-                    # build_ssl_context).
-                    context = cert_manager.build_ssl_context(
-                        hostname=hostname,
-                        port=port,
-                        local_site=local_site,
-                    )
+                    # A certificate was parsed and valid, so we don't have
+                    # to fall back to legacy behavior below.
+                    migrated = False
         except Exception:
             # This will be issued every time this cert is used, making it
             # loud and noisy in order to better catch an admin's attention.
@@ -197,14 +193,17 @@ def _build_ssl_context_from_ssl_cert(
                 hosting_account.pk,
             )
 
-    if context is None:
+    if migrated:
         # Fall back to using the certificate data directly without hostname
         # validation.
-        context = ssl.create_default_context()
-        context.load_verify_locations(cadata=cert_data)
-        context.check_hostname = False
+        return {
+            'check_hostname': False,
+            'extra_cert_data': cert_data,
+        }
 
-    return context
+    # No legacy arguments are required. The certificate was successfully
+    # migrated to cert storage.
+    return {}
 
 
 def _log_and_raise(
@@ -579,8 +578,6 @@ class HostingServiceHTTPRequest:
         urlopen_handlers = self._urlopen_handlers
 
         if hosting_service:
-            context: (ssl.SSLContext | None)
-
             hosting_account = hosting_service.account
 
             if 'ssl_cert' in hosting_account.data:
@@ -588,15 +585,15 @@ class HostingServiceHTTPRequest:
                 # the account. Convert it to a modern Certificate if
                 # possible, and build a context with it. If successful,
                 # 'ssl_cert' will be removed from the data.
-                context = _build_ssl_context_from_ssl_cert(
+                ssl_kwargs = _build_ssl_kwargs_from_ssl_cert(
                     hosting_account=hosting_account,
                 )
             else:
-                context = None
+                ssl_kwargs = {}
 
             urlopen_handlers.append(CertificateVerificationHTTPSHandler(
-                context=context,
                 local_site=hosting_account.local_site,
+                **ssl_kwargs,
             ))
 
             timer_msg = (

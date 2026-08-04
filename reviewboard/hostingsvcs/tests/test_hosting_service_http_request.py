@@ -8,15 +8,11 @@ from __future__ import annotations
 
 import logging
 import os
-import shutil
-import ssl
-from urllib.request import HTTPSHandler, OpenerDirector
 
 import kgb
 
-from reviewboard.admin.server import get_data_dir
 from reviewboard.certs.manager import cert_manager
-from reviewboard.certs.tests.testcases import (CaptureSSLContext,
+from reviewboard.certs.tests.testcases import (CaptureSSLMixin,
                                                TEST_TRUST_CERT_PEM,
                                                TEST_TRUST_SAN_CERT_PEM)
 from reviewboard.hostingsvcs.base.http import HostingServiceHTTPRequest
@@ -24,53 +20,18 @@ from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.testing import TestCase
 
 
-class _DummyResponse:
-    headers = {}
-
-    def getcode(self) -> int:
-        return 200
-
-    def geturl(self) -> str:
-        return 'https://example.com/'
-
-    def read(self) -> bytes:
-        return b''
-
-
-class BuildSSLContextFromSSLCertTests(kgb.SpyAgency, TestCase):
+class HostingServiceHTTPRequestTests(kgb.SpyAgency,
+                                     CaptureSSLMixin,
+                                     TestCase):
     """Unit tests for HostingServiceHTTPRequest.
 
     Version Added:
         8.0
     """
 
-    def setUp(self) -> None:
-        """Set up state for the test.
-
-        This will clear out the certs directory before running a test.
-        """
-        super().setUp()
-
-        shutil.rmtree(os.path.join(get_data_dir(), 'rb-certs'),
-                      ignore_errors=True)
-
-    def tearDown(self) -> None:
-        """Tear down state for the test.
-
-        This will clear out the certs directory after running a test.
-        """
-        shutil.rmtree(os.path.join(get_data_dir(), 'rb-certs'),
-                      ignore_errors=True)
-
-        super().tearDown()
-
     def test_open_with_https(self) -> None:
         """Testing HostingServiceHTTPRequest.open with HTTPS"""
-        self.spy_on(OpenerDirector.open,
-                    owner=OpenerDirector,
-                    op=kgb.SpyOpReturn(_DummyResponse()))
-        self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(CaptureSSLContext()))
+        storage_backend = self.cert_manager.storage_backend
 
         hosting_account = HostingServiceAccount.objects.create(
             service_name='gitlab',
@@ -87,16 +48,15 @@ class BuildSSLContextFromSSLCertTests(kgb.SpyAgency, TestCase):
         http_request.open()
 
         # Make sure hostname checks are enabled.
-        handler = http_request._urlopen_handlers[-1]
-        assert isinstance(handler, HTTPSHandler)
+        ssl_contexts = self.ssl_contexts
+        self.assertEqual(len(ssl_contexts), 1)
         self.assertAttrsEqual(
-            handler._context,
+            ssl_contexts[0],
             {
                 'cadatas': [],
                 'cafiles': [],
                 'capaths': [
-                    os.path.join(get_data_dir(), 'rb-certs', 'file',
-                                 'cabundles'),
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
                 ],
                 'certfiles': [],
                 'check_hostname': True,
@@ -106,11 +66,7 @@ class BuildSSLContextFromSSLCertTests(kgb.SpyAgency, TestCase):
 
     def test_open_with_legacy_ssl_cert_data(self) -> None:
         """Testing HostingServiceHTTPRequest.open with legacy ssl_cert data"""
-        self.spy_on(OpenerDirector.open,
-                    owner=OpenerDirector,
-                    op=kgb.SpyOpReturn(_DummyResponse()))
-        self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(CaptureSSLContext()))
+        storage_backend = self.cert_manager.storage_backend
 
         self.assertIsNone(cert_manager.get_certificate(
             hostname='example.com',
@@ -135,19 +91,18 @@ class BuildSSLContextFromSSLCertTests(kgb.SpyAgency, TestCase):
         http_request.open()
 
         # Make sure hostname checks are enabled.
-        handler = http_request._urlopen_handlers[-1]
-        assert isinstance(handler, HTTPSHandler)
+        ssl_contexts = self.ssl_contexts
+        self.assertEqual(len(ssl_contexts), 1)
         self.assertAttrsEqual(
-            handler._context,
+            ssl_contexts[0],
             {
                 'cadatas': [],
                 'cafiles': [
-                    os.path.join(get_data_dir(), 'rb-certs', 'file',
+                    os.path.join(storage_backend.storage_path,
                                  'certs', 'trust', 'example.com__443.crt'),
                 ],
                 'capaths': [
-                    os.path.join(get_data_dir(), 'rb-certs', 'file',
-                                 'cabundles'),
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
                 ],
                 'certfiles': [],
                 'check_hostname': True,
@@ -173,11 +128,7 @@ class BuildSSLContextFromSSLCertTests(kgb.SpyAgency, TestCase):
         """Testing HostingServiceHTTPRequest.open with legacy ssl_cert data
         and hostname in SAN
         """
-        self.spy_on(OpenerDirector.open,
-                    owner=OpenerDirector,
-                    op=kgb.SpyOpReturn(_DummyResponse()))
-        self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(CaptureSSLContext()))
+        storage_backend = self.cert_manager.storage_backend
 
         self.assertIsNone(cert_manager.get_certificate(
             hostname='example.com',
@@ -202,19 +153,18 @@ class BuildSSLContextFromSSLCertTests(kgb.SpyAgency, TestCase):
         http_request.open()
 
         # Make sure hostname checks are enabled.
-        handler = http_request._urlopen_handlers[-1]
-        assert isinstance(handler, HTTPSHandler)
+        ssl_contexts = self.ssl_contexts
+        self.assertEqual(len(ssl_contexts), 1)
         self.assertAttrsEqual(
-            handler._context,
+            ssl_contexts[0],
             {
                 'cadatas': [],
                 'cafiles': [
-                    os.path.join(get_data_dir(), 'rb-certs', 'file',
+                    os.path.join(storage_backend.storage_path,
                                  'certs', 'trust', 'example.com__443.crt'),
                 ],
                 'capaths': [
-                    os.path.join(get_data_dir(), 'rb-certs', 'file',
-                                 'cabundles'),
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
                 ],
                 'certfiles': [],
                 'check_hostname': True,
@@ -240,11 +190,9 @@ class BuildSSLContextFromSSLCertTests(kgb.SpyAgency, TestCase):
         """Testing HostingServiceHTTPRequest.open with legacy ssl_cert data
         and hostname mismatch
         """
-        self.spy_on(OpenerDirector.open,
-                    owner=OpenerDirector,
-                    op=kgb.SpyOpReturn(_DummyResponse()))
-        self.spy_on(ssl.create_default_context,
-                    op=kgb.SpyOpReturn(CaptureSSLContext()))
+        storage_backend = self.cert_manager.storage_backend
+
+        self.mock_http_response.url = 'https://test.example.com'
 
         self.assertIsNone(cert_manager.get_certificate(
             hostname='test.example.com',
@@ -282,14 +230,16 @@ class BuildSSLContextFromSSLCertTests(kgb.SpyAgency, TestCase):
             ])
 
         # Make sure hostname checks aren't enabled.
-        handler = http_request._urlopen_handlers[-1]
-        assert isinstance(handler, HTTPSHandler)
+        ssl_contexts = self.ssl_contexts
+        self.assertEqual(len(ssl_contexts), 1)
         self.assertAttrsEqual(
-            handler._context,
+            ssl_contexts[0],
             {
                 'cadatas': [cert_data],
                 'cafiles': [],
-                'capaths': [],
+                'capaths': [
+                    os.path.join(storage_backend.storage_path, 'cabundles'),
+                ],
                 'certfiles': [],
                 'check_hostname': False,
                 'keyfiles': [],

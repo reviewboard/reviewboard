@@ -7,8 +7,6 @@ Version Added:
 from __future__ import annotations
 
 import os
-import shutil
-import ssl
 from http.client import HTTPConnection
 from typing import TYPE_CHECKING
 from urllib.request import HTTPHandler, HTTPSHandler, Request
@@ -19,130 +17,24 @@ from reviewboard.certs.cert import (CertPurpose,
                                     CertificateBundle)
 from reviewboard.certs.http import urlopen
 from reviewboard.certs.manager import CertificateManager
-from reviewboard.certs.tests.testcases import (CaptureSSLContext,
+from reviewboard.certs.tests.testcases import (CaptureSSLMixin,
                                                CertificateTestCase,
+                                               MockHTTPResponse,
                                                TEST_CERT_BUNDLE_PEM,
                                                TEST_CLIENT_CERT_PEM,
                                                TEST_CLIENT_KEY_PEM,
                                                TEST_TRUST_CERT_PEM)
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
-
     from reviewboard.site.models import LocalSite
 
 
-class _MyResponse:
-    def __init__(
-        self,
-        *,
-        data: bytes = b'test',
-        code: int = 200,
-        reason: str = 'OK',
-        headers: (Mapping[str, str] | None) = None,
-    ) -> None:
-        self.data = data
-        self.code = code
-        self.reason = reason
-        self.headers = headers
-
-    def info(self):
-        return self.headers or {
-            'content-type': 'text/plain',
-        }
-
-    def read(self) -> bytes:
-        return self.data
-
-    def close(self) -> None:
-        pass
-
-
-class URLOpenTests(kgb.SpyAgency, CertificateTestCase):
+class URLOpenTests(kgb.SpyAgency, CaptureSSLMixin, CertificateTestCase):
     """Unit tests for urlopen.
 
     Version Added:
         8.1
     """
-
-    cert_manager: CertificateManager
-
-    #: All SSL contexts created during the test.
-    #:
-    #: This includes the throwaway default context that
-    #: :py:class:`urllib.request.HTTPSHandler` builds in its constructor. Use
-    #: :py:attr:`ssl_contexts` to get just the contexts Review Board built.
-    _created_ssl_contexts: list[CaptureSSLContext]
-
-    @property
-    def ssl_contexts(self) -> list[CaptureSSLContext]:
-        """The SSL contexts built by Review Board's certificate manager.
-
-        On Python 3.14, :py:meth:`urllib.request.HTTPSHandler.__init__` builds
-        its own default context, which the standard library configures with
-        ALPN protocols. Review Board's contexts never set those, so we filter
-        the standard-library contexts out here.
-        """
-        return [
-            ssl_context
-            for ssl_context in self._created_ssl_contexts
-            if ssl_context.alpn_protocols is None
-        ]
-
-    def setUp(self) -> None:
-        """Set up state for the test.
-
-        This will clear out any existing certificate state and begin spying
-        on all HTTP(S) operations needed to control communication and test
-        results.
-        """
-        super().setUp()
-
-        cert_manager = CertificateManager()
-        storage_path = cert_manager.storage_backend.storage_path
-        self.cert_manager = cert_manager
-
-        if os.path.exists(storage_path):
-            shutil.rmtree(storage_path)
-
-        # We only need to spy on HTTPConnection. HTTPSConnection inherits
-        # these from that.
-        self.spy_on(HTTPConnection.request,
-                    owner=HTTPConnection,
-                    call_original=False)
-        self.spy_on(HTTPConnection.getresponse,
-                    owner=HTTPConnection,
-                    op=kgb.SpyOpReturn(_MyResponse()))
-
-        self.spy_on(HTTPHandler.http_open,
-                    owner=HTTPHandler)
-        self.spy_on(HTTPSHandler.https_open,
-                    owner=HTTPSHandler)
-
-        self._created_ssl_contexts = []
-
-        @self.spy_for(ssl.create_default_context)
-        def _create_default_context(*args, **kwargs):
-            ssl_context = CaptureSSLContext()
-            self._created_ssl_contexts.append(ssl_context)
-
-            return ssl_context
-
-    def tearDown(self) -> None:
-        """Set up state for the test.
-
-        This will clear out any existing certificate state and begin spying
-        on all HTTP(S) operations needed to control communication and test
-        results.
-        """
-        storage_path = self.cert_manager.storage_backend.storage_path
-
-        if os.path.exists(storage_path):
-            shutil.rmtree(storage_path)
-
-        delattr(self, 'cert_manager')
-
-        super().tearDown()
 
     def test_with_http(self) -> None:
         """Testing urlopen with http:// URLs"""
@@ -236,14 +128,14 @@ class URLOpenTests(kgb.SpyAgency, CertificateTestCase):
             HTTPConnection.getresponse,
             owner=HTTPConnection,
             op=kgb.SpyOpReturnInOrder([
-                _MyResponse(
+                MockHTTPResponse(
                     code=302,
                     reason='Found',
                     headers={
                         'location': 'https://example.com',
                     },
                 ),
-                _MyResponse(
+                MockHTTPResponse(
                     data=b'https result',
                 ),
             ]))
@@ -293,14 +185,14 @@ class URLOpenTests(kgb.SpyAgency, CertificateTestCase):
             HTTPConnection.getresponse,
             owner=HTTPConnection,
             op=kgb.SpyOpReturnInOrder([
-                _MyResponse(
+                MockHTTPResponse(
                     code=302,
                     reason='Found',
                     headers={
                         'location': 'https://example.com',
                     },
                 ),
-                _MyResponse(
+                MockHTTPResponse(
                     data=b'https result',
                 ),
             ]))
@@ -364,14 +256,14 @@ class URLOpenTests(kgb.SpyAgency, CertificateTestCase):
             HTTPConnection.getresponse,
             owner=HTTPConnection,
             op=kgb.SpyOpReturnInOrder([
-                _MyResponse(
+                MockHTTPResponse(
                     code=302,
                     reason='Found',
                     headers={
                         'location': 'https://other.com',
                     },
                 ),
-                _MyResponse(
+                MockHTTPResponse(
                     data=b'https result',
                 ),
             ]))
