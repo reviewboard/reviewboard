@@ -1,0 +1,208 @@
+.. default-intersphinx:: djblets6.x powerpack rb8.x
+
+
+==============================
+Review Board 8.1 Release Notes
+==============================
+
+**Release date**: TBD
+
+
+Installation/Upgrade
+====================
+
+Review Board 8.1 is compatible with Python 3.8 - 3.13.
+
+Follow our :ref:`installation guide <installing-reviewboard-toc>` to prepare
+your system for Review Board or to upgrade your existing install.
+
+To install this release, run:
+
+.. code-block:: console
+
+    $ pip3 install ReviewBoard==8.1
+
+To learn more, see:
+
+* :ref:`Documentation <reviewboard-docs>`
+* :ref:`Installing Review Board on Docker <installation-docker>`
+* :pypi:`Review Board on PyPI <reviewboard>`
+* `Review Board on GitHub <https://github.com/reviewboard/reviewboard>`_
+
+
+Packaging
+=========
+
+* :pypi:`bleach` 6.1 or higher is now required.
+
+* :pypi:`cryptography` 49.0.x is now required on Python 3.9 and higher.
+
+* :pypi:`pyOpenSSL` 26.3.x is now required on Python 3.9 and higher.
+
+
+General
+=======
+
+* :pypi:`rbintegrations` and `Power Pack`_ are now always enabled.
+
+  These extensions are core to the Review Board experience. Both are now
+  always enabled at startup and can no longer be disabled.
+
+
+.. _Power Pack: https://www.reviewboard.org/powerpack/
+
+
+New Features
+============
+
+* Added support for Perforce 2026.1.
+
+  Perforce 2026.1 was a security-focused release, increasing the default
+  security level for authentication and removing password-less access and
+  set-password-on-first-connect behavior. Review Board now performs an
+  explicit login once a connection has been established, which is required
+  for these servers.
+
+* Self-managed certificates and CA bundles are now used when communicating
+  with repository hosting services, webhooks, and security checks in the
+  administration UI.
+
+
+Usability Updates
+=================
+
+* Added confetti that pops out of trophies when they're awarded. Yay.
+
+
+Bug Fixes
+=========
+
+Diff Viewer
+-----------
+
+* Fixed errors expanding collapsed chunks in some interdiffs.
+
+* Fixed a bug where comment fragments for interdiffs of newly-added files
+  would only show the modified side of the diff.
+
+
+Forgejo
+-------
+
+* Fixed authenticating against Forgejo servers. (:bug:`5069`)
+
+* Fixed re-authentication after editing credentials.
+
+
+SSL/TLS Certificates
+--------------------
+
+* Fixed migrating certificates that were stored by older versions of Review
+  Board to the modern certificate store.
+
+
+Extensions
+==========
+
+Review Board 8.1 builds upon Djblets 6.1.
+
+See the `Djblets 6.1 release notes`_ for a list of changes useful to extension
+authors.
+
+
+.. _Djblets 6.1 release notes:
+   https://www.reviewboard.org/docs/releasenotes/djblets/6.1/
+
+
+Service Accounts
+----------------
+
+Service accounts represent special managed users used for automations and
+integrations. They can perform operations through the Review Board API,
+but cannot otherwise log in, and do not take a seat on the license.
+
+These are ideal for extensions and integrations that need to:
+
+* Associate data (such as reviews, comments, or review requests) with a
+  managed user account rather than a real user.
+
+* Manage API tokens for a service that communicates with Review Board.
+
+See the :ref:`documentation <service-account-hook>` for guidance on how
+to create and register service accounts.
+
+
+Certificate-aware HTTPS requests
+--------------------------------
+
+A new :py:mod:`reviewboard.certs.http` module provides certificate-aware
+HTTPS support for extensions:
+
+* :py:func:`~reviewboard.certs.http.urlopen` is a drop-in replacement for
+  :py:func:`urllib.request.urlopen`. When communicating over HTTPS, it builds
+  a suitable SSL context from Review Board's certificate store.
+
+* :py:class:`~reviewboard.certs.http.CertificateVerificationHTTPSHandler` can
+  be used directly when you need to build your own URL opener.
+
+:py:meth:`CertificateManager.build_urlopen_kwargs()
+<reviewboard.certs.manager.CertificateManager.build_urlopen_kwargs>` is now
+deprecated in favor of the above, and will be removed in Review Board 10.
+
+
+Client API tokens
+-----------------
+
+:py:meth:`WebAPITokenManager.get_or_create_client_token()
+<reviewboard.webapi.managers.WebAPITokenManager.get_or_create_client_token>`
+now allows for more customization of the token, supporting:
+
+* ``local_site``:
+
+  For filtering and creating tokens on a :term:`Local Site`.
+
+* ``default_extra_data``:
+
+  For setting extra data on the token.
+
+* ``default_policy``:
+
+  For setting a :ref:`policy <api-token-policies>` on newly-created tokens.
+
+* ``min_validity_secs``:
+
+  For specifying the minimum amount of time an existing token must still be
+  valid in order to be returned.
+
+* ``ignore_deprecated``:
+
+  For ignoring any deprecated existing tokens.
+
+
+Confetti Animation
+------------------
+
+:js:class:`RB.ConfettiView` can be used to add a bit of whimsy to a page
+in the form of a shotgun spread of colorful confetti.
+
+
+Actions
+-------
+
+* Fixed breakages with legacy actions written for Review Board 7 and earlier.
+
+  The :ref:`actions framework <extension-actions>` was rewritten in Review
+  Board 8, and actions built the old way could potentially break. Legacy
+  actions are supported through their deprecation period, and now once
+  again render correctly.
+
+  It's recommended to port over to the new actions framework.
+
+
+Contributors
+============
+
+* Christian Hammond
+* Daniel Casares-Iglesias
+* David Trowbridge
+* Michelle Aubin
