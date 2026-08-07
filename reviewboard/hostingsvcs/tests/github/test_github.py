@@ -17,6 +17,7 @@ from django.utils.safestring import SafeString
 from reviewboard.hostingsvcs.errors import (
     AuthorizationError,
     HostingServiceError,
+    InvalidPlanError,
     RepositoryError,
 )
 from reviewboard.hostingsvcs.github.service import GitHub, _is_fine_grained_pat
@@ -45,57 +46,113 @@ class GitHubTests(GitHubTestCase):
         self.assertTrue(self.service_class.supports_repositories)
         self.assertFalse(self.service_class.supports_ssh_key_association)
 
+    def test_get_repository_ids(self) -> None:
+        """Testing GitHub.get_repository_ids with canonical keys"""
+        repository = Repository(extra_data={
+            'github_owner': 'example',
+            'github_repo_name': 'reviewboard',
+
+            # These must be ignored in favor of the canonical keys.
+            'repository_plan': 'public-org',
+            'github_public_org_name': 'stale-org',
+            'github_public_org_repo_name': 'stale-repo',
+        })
+
+        self.assertEqual(
+            self.service_class.get_repository_ids(repository),
+            ('example', 'reviewboard'))
+
+    def test_get_repository_ids_with_legacy_personal_plan(self) -> None:
+        """Testing GitHub.get_repository_ids with legacy data on a
+        personal plan
+        """
+        account = HostingServiceAccount(service_name='github',
+                                        username='example')
+
+        for plan in ('public', 'private'):
+            repository = Repository(
+                hosting_account=account,
+                extra_data={
+                    'repository_plan': plan,
+                    f'github_{plan}_repo_name': 'reviewboard',
+                })
+
+            self.assertEqual(
+                self.service_class.get_repository_ids(repository),
+                ('example', 'reviewboard'))
+
+    def test_get_repository_ids_with_legacy_org_plan(self) -> None:
+        """Testing GitHub.get_repository_ids with legacy data on an
+        organization plan
+        """
+        for plan in ('public-org', 'private-org'):
+            plan_prefix = 'github_{}'.format(plan.replace('-', '_'))
+            repository = Repository(extra_data={
+                'repository_plan': plan,
+                f'{plan_prefix}_name': 'example',
+                f'{plan_prefix}_repo_name': 'reviewboard',
+            })
+
+            self.assertEqual(
+                self.service_class.get_repository_ids(repository),
+                ('example', 'reviewboard'))
+
+    def test_get_repository_ids_with_invalid_plan(self) -> None:
+        """Testing GitHub.get_repository_ids with legacy data on an
+        invalid plan
+        """
+        repository = Repository(extra_data={
+            'repository_plan': 'bad-plan',
+        })
+
+        with self.assertRaises(InvalidPlanError):
+            self.service_class.get_repository_ids(repository)
+
+    def test_get_repository_ids_with_missing_data(self) -> None:
+        """Testing GitHub.get_repository_ids with unusable stored data"""
+        repository = Repository(extra_data={})
+
+        with self.assertRaises(KeyError):
+            self.service_class.get_repository_ids(repository)
+
     def test_get_repository_display_path(self) -> None:
         """Testing GitHubConnectUI.get_repository_display_path"""
-        for path in ('git://github.com/example/reviewboard.git',
-                     'git@github.com:example/reviewboard.git',
-                     'https://github.com/example/reviewboard.git',
-                     'ssh://git@github.com/example/reviewboard.git',
-                     'git://github.com/example/reviewboard',
-                     'git://github.com/example/reviewboard.git/',
-                     'github.com/example/reviewboard.git',
-                     'HTTPS://github.com/example/reviewboard.git'):
-            repository = Repository(path=path)
-            self.assertEqual(
-                self.service_class.connect_ui.get_repository_display_path(
-                    repository),
-                'example/reviewboard')
+        repository = Repository(extra_data={
+            'github_owner': 'example',
+            'github_repo_name': 'reviewboard',
+        })
 
-    def test_get_repository_display_path_with_port(self) -> None:
-        """Testing GitHubConnectUI.get_repository_display_path with a port in
-        the URL
-        """
-        repository = Repository(
-            path='https://github.example.com:8443/example/reviewboard.git')
         self.assertEqual(
             self.service_class.connect_ui.get_repository_display_path(
                 repository),
             'example/reviewboard')
 
-    def test_get_repository_display_path_with_dots_in_name(self) -> None:
-        """Testing GitHubConnectUI.get_repository_display_path with dots in the
-        repository name
+    def test_get_repository_display_path_with_legacy_data(self) -> None:
+        """Testing GitHubConnectUI.get_repository_display_path with legacy
+        plan-specific fields
         """
-        repository = Repository(
-            path='https://github.com/example/my.git.repo.git')
+        repository = Repository(extra_data={
+            'repository_plan': 'public-org',
+            'github_public_org_name': 'example',
+            'github_public_org_repo_name': 'reviewboard',
+        })
+
         self.assertEqual(
             self.service_class.connect_ui.get_repository_display_path(
                 repository),
-            'example/my.git.repo')
+            'example/reviewboard')
 
-    def test_get_repository_display_path_with_unparsable_path(self) -> None:
+    def test_get_repository_display_path_with_unusable_data(self) -> None:
         """Testing GitHubConnectUI.get_repository_display_path falls back to
-        the raw path
+        the raw path with unusable stored data
         """
-        for path in ('some-local-path',
-                     '/var/lib/git/myrepo.git',
-                     'https://github.com/',
-                     ''):
-            repository = Repository(path=path)
-            self.assertEqual(
-                self.service_class.connect_ui.get_repository_display_path(
-                    repository),
-                path)
+        path = 'git://github.com/example/reviewboard.git'
+        repository = Repository(path=path, extra_data={})
+
+        self.assertEqual(
+            self.service_class.connect_ui.get_repository_display_path(
+                repository),
+            path)
 
     def test_get_account_filter_label_with_pat(self) -> None:
         """Testing GitHubConnectUI.get_account_filter_label with a personal

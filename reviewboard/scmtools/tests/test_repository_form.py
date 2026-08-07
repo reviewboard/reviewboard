@@ -1867,7 +1867,9 @@ class RepositoryFormTests(SpyAgency, TestCase):
             repository.extra_data,
             {
                 'bug_tracker_use_hosting': True,
+                'github_owner': 'testuser',
                 'github_public_repo_name': 'testrepo',
+                'github_repo_name': 'testrepo',
                 'repository_plan': 'public',
             })
 
@@ -2318,7 +2320,9 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(repository.extra_data, {
             'another-key': 123,
             'bug_tracker_use_hosting': True,
+            'github_owner': 'testuser',
             'github_public_repo_name': 'testrepo',
+            'github_repo_name': 'testrepo',
             'repository_plan': 'public',
             'test-key': 'test-value',
         })
@@ -2383,7 +2387,9 @@ class RepositoryFormTests(SpyAgency, TestCase):
         self.assertEqual(repository.extra_data, {
             'another-key': 123,
             'bug_tracker_use_hosting': True,
+            'github_owner': 'testuser',
             'github_private_repo_name': 'testrepo',
+            'github_repo_name': 'testrepo',
             'repository_plan': 'private',
             'test-key': 'test-value',
         })

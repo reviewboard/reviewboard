@@ -36,10 +36,7 @@ from pydantic import ValidationError
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.hostingsvcs.base.http import HostingServiceHTTPRequest
-from reviewboard.hostingsvcs.errors import (
-    InvalidPlanError,
-    MissingHostingServiceError,
-)
+from reviewboard.hostingsvcs.errors import InvalidPlanError
 from reviewboard.hostingsvcs.github import api
 from reviewboard.hostingsvcs.github.accounts import (
     GitHubAppInstallationData,
@@ -1217,17 +1214,12 @@ class GitHubAppInstallCallbackView(GitHubAppView):
                 continue
 
             try:
-                plan = repository.extra_data['repository_plan']
-                service = repository.hosting_service
-                owner = service._get_repository_owner_raw(
-                    plan, repository.extra_data)
-                name = service._get_repository_name_raw(
-                    plan, repository.extra_data)
-            except (KeyError, InvalidPlanError, MissingHostingServiceError):
+                ids = GitHub.get_repository_ids(repository)
+            except (KeyError, InvalidPlanError):
                 continue
 
-            if owner.lower() == owner_login:
-                matched.append((repository, name.lower()))
+            if ids.owner.lower() == owner_login:
+                matched.append((repository, ids.name.lower()))
 
         # When the app can access all repositories on the account, every
         # owner-matched candidate is accessible by definition, so skip the API

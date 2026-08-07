@@ -7,10 +7,9 @@ Version Added:
 
 from __future__ import annotations
 
-import re
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
-from urllib.parse import quote as urlquote, urljoin, urlparse
+from typing import TYPE_CHECKING, NamedTuple
+from urllib.parse import quote as urlquote, urljoin
 
 from django.db.models import ObjectDoesNotExist
 from django.template.loader import render_to_string
@@ -594,28 +593,18 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
 
         Returns:
             str:
-            The ``owner/repo`` identifier, or the raw path if it could not
-            be parsed.
+            The ``owner/repo`` identifier, or the raw path if the stored
+            repository data was unusable.
         """
-        path = repository.path or ''
-        parsed = urlparse(path)
+        try:
+            service = self._hosting_service_cls
+            assert issubclass(service, GitHub)
 
-        if parsed.netloc:
-            # A full URL. urlparse has already separated off the host, along
-            # with any credentials and port.
-            name = parsed.path
-        else:
-            # Not a URL, so look for a host to strip off the front.
-            m = GitHub._HOST_PREFIX_RE.match(path)
+            ids = service.get_repository_ids(repository)
+        except (KeyError, InvalidPlanError):
+            return repository.path
 
-            if m is None:
-                return path
-
-            name = path[m.end():]
-
-        name = name.strip('/').removesuffix('.git')
-
-        return name or path
+        return f'{ids.owner}/{ids.name}'
 
     def get_account_filter_label(
         self,
@@ -678,6 +667,20 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
                     f'/settings/installations/{installation_id}')
 
         return f'{base}/settings/installations/{installation_id}'
+
+
+class GitHubRepositoryIDs(NamedTuple):
+    """The owner and name identifying a repository on GitHub.
+
+    Version Added:
+        9.0
+    """
+
+    #: The login of the user or organization owning the repository.
+    owner: str
+
+    #: The name of the repository, without the owner.
+    name: str
 
 
 class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
@@ -807,11 +810,62 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         '-granting-organization-access-on-github'
     )
 
-    #: Matches the host at the front of a non-URL repository path.
-    #:
-    #: This covers the ``user@host:`` and bare ``host/`` forms, which are not
-    #: URLs and so cannot be parsed by :py:func:`~urllib.parse.urlparse`.
-    _HOST_PREFIX_RE = re.compile(r'^(?:[^@/:]+@)?[^/:]+[:/]')
+    @classmethod
+    def get_repository_ids(
+        cls,
+        repository: Repository,
+    ) -> GitHubRepositoryIDs:
+        """Return the owner and name of a repository on GitHub.
+
+        This reads the canonical ``github_owner`` and ``github_repo_name``
+        keys in the repository's
+        :py:attr:`~reviewboard.scmtools.models.Repository.extra_data`.
+        Repositories last saved before those keys existed fall back to the
+        plan-specific form fields, using the linked account's username as
+        the owner for personal plans.
+
+        Version Added:
+            9.0
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository):
+                The repository to return identifiers for.
+
+        Returns:
+            GitHubRepositoryIDs:
+            The owner and name of the repository.
+
+        Raises:
+            KeyError:
+                The stored repository data was missing required fields.
+
+            reviewboard.hostingsvcs.errors.InvalidPlanError:
+                The stored plan was not valid.
+        """
+        extra_data = repository.extra_data
+
+        try:
+            return GitHubRepositoryIDs(owner=extra_data['github_owner'],
+                                       name=extra_data['github_repo_name'])
+        except KeyError:
+            pass
+
+        # This repository was last saved before the canonical keys existed.
+        # Derive the values from the plan-specific form fields.
+        plan = extra_data['repository_plan']
+        plan_prefix = '{}_{}'.format(cls.plan_field_prefix,
+                                     plan.replace('-', '_'))
+
+        if plan in {'public', 'private'}:
+            owner = repository.hosting_account.username
+        elif plan in {'public-org', 'private-org'}:
+            owner = extra_data[f'{plan_prefix}_name']
+        else:
+            raise InvalidPlanError(plan)
+
+        return GitHubRepositoryIDs(
+            owner=owner,
+            name=extra_data[f'{plan_prefix}_repo_name'])
 
     def get_api_url(
         self,
@@ -889,14 +943,27 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
                 Additional keyword arguments passed by the repository form.
 
         Raises:
+            reviewboard.hostingsvcs.errors.InvalidPlanError:
+                The provided plan was not valid.
+
             reviewboard.hostingsvcs.errors.RepositoryError:
                 The repository is not valid.
         """
         assert plan is not None
 
+        # Resolve the owner and repository name from the plan-specific
+        # form fields. Nothing has been saved yet, so the canonical keys
+        # read by get_repository_ids() are not available.
+        if plan in {'public', 'private'}:
+            owner = self.account.username
+        elif plan in {'public-org', 'private-org'}:
+            owner = self.get_plan_field(plan, kwargs, 'name')
+        else:
+            raise InvalidPlanError(plan)
+
         repo_api_url = self._get_repo_api_url_raw(
-            self._get_repository_owner_raw(plan, kwargs),
-            self._get_repository_name_raw(plan, kwargs))
+            owner,
+            self.get_plan_field(plan, kwargs, 'repo_name'))
 
         try:
             rsp = self.client.http_get(repo_api_url)
@@ -1623,13 +1690,10 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         repository: Repository,
     ) -> SafeString:
         """Returns instructions for setting up incoming webhooks."""
-        plan = repository.extra_data['repository_plan']
-
-        owner = self._get_repository_owner_raw(plan, repository.extra_data)
-        name = self._get_repository_name_raw(plan, repository.extra_data)
+        ids = self.get_repository_ids(repository)
         add_webhook_url = urljoin(
             self.account.hosting_url or 'https://github.com/',
-            f'{owner}/{name}/settings/hooks/new')
+            f'{ids.owner}/{ids.name}/settings/hooks/new')
 
         webhook_endpoint_url = build_server_url(local_site_reverse(
             'github-hooks-close-submitted',
@@ -1673,12 +1737,17 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         Returns:
             str:
             The URL to the API endpoint for the repository.
-        """
-        plan = repository.extra_data['repository_plan']
 
-        return self._get_repo_api_url_raw(
-            self._get_repository_owner_raw(plan, repository.extra_data),
-            self._get_repository_name_raw(plan, repository.extra_data))
+        Raises:
+            KeyError:
+                The stored repository data was missing required fields.
+
+            reviewboard.hostingsvcs.errors.InvalidPlanError:
+                The stored plan was not valid.
+        """
+        ids = self.get_repository_ids(repository)
+
+        return self._get_repo_api_url_raw(ids.owner, ids.name)
 
     def _get_repo_api_url_raw(
         self,
@@ -1701,59 +1770,6 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         api_url = self.get_api_url(self.account.hosting_url)
 
         return f'{api_url}repos/{owner}/{repo_name}'
-
-    def _get_repository_owner_raw(
-        self,
-        plan: GitHubPlanName,
-        extra_data: dict[str, Any],
-    ) -> str:
-        """Return the repository owner from the repository extra data.
-
-        Args:
-            plan (str):
-                The selected plan.
-
-            extra_data (dict):
-                The repository extra data.
-
-        Returns:
-            str:
-            The repository owner given the selected plan and provided data.
-
-        Raises:
-            reviewboard.hostingsvcs.errors.InvalidPlanError:
-                The provided plan was not valid.
-        """
-        if plan in {'public', 'private'}:
-            return self.account.username
-        elif plan in {'public-org', 'private-org'}:
-            return self.get_plan_field(plan, extra_data, 'name')
-        else:
-            raise InvalidPlanError(plan)
-
-    def _get_repository_name_raw(
-        self,
-        plan: str,
-        extra_data: dict[str, Any],
-    ) -> str:
-        """Return the repository name from the repository extra data.
-
-        Args:
-            plan (str):
-                The selected plan.
-
-            extra_data (dict):
-                The repository extra data.
-
-        Returns:
-            str:
-            The repository owner given the selected plan and provided data.
-
-        Raises:
-            reviewboard.hostingsvcs.errors.InvalidPlanError:
-                The provided plan was not valid.
-        """
-        return self.get_plan_field(plan, extra_data, 'repo_name')
 
     @classmethod
     def get_protected_objects_for_account_deletion(
