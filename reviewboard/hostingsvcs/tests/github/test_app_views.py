@@ -864,6 +864,10 @@ class GitHubAppInstallCallbackViewTests(GitHubTestCase):
         repository1 = self._create_org_repo('repo1', 'myorg', pat_account)
         repository2 = self._create_org_repo('repo2', 'myorg', pat_account)
 
+        # Keys we don't own must survive the rewrite.
+        repository1.extra_data['github_extension_data'] = 'keep'
+        repository1.save(update_fields=('extra_data',))
+
         self.login_user(admin=True)
         url = local_site_reverse('github-app-install-callback',
                                  kwargs={'hosting_service_id': 'github'})
@@ -873,12 +877,27 @@ class GitHubAppInstallCallbackViewTests(GitHubTestCase):
         })
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(
-            Repository.objects.get(pk=repository1.pk).hosting_account,
-            installation_account)
-        self.assertEqual(
-            Repository.objects.get(pk=repository2.pk).hosting_account,
-            pat_account)
+
+        # The moved repository is rewritten onto the app plan, with the
+        # canonical owner/name keys and the old plan fields removed.
+        repository1 = Repository.objects.get(pk=repository1.pk)
+        self.assertEqual(repository1.hosting_account, installation_account)
+        self.assertEqual(repository1.extra_data, {
+            'github_app_repo_name': 'repo1',
+            'github_extension_data': 'keep',
+            'github_owner': 'myorg',
+            'github_repo_name': 'repo1',
+            'repository_plan': 'app',
+        })
+
+        # The unselected repository is untouched.
+        repository2 = Repository.objects.get(pk=repository2.pk)
+        self.assertEqual(repository2.hosting_account, pat_account)
+        self.assertEqual(repository2.extra_data, {
+            'github_public_org_name': 'myorg',
+            'github_public_org_repo_name': 'repo2',
+            'repository_plan': 'public-org',
+        })
 
     def test_post_ignores_non_candidate_repository(self) -> None:
         """Testing GitHubAppInstallCallbackView POST ignores non-candidates"""

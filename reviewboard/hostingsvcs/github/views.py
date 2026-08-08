@@ -981,12 +981,35 @@ class GitHubAppInstallCallbackView(GitHubAppView):
 
             selected_repositories.append(repository)
 
-        if selected_repositories:
-            Repository.objects.filter(
-                pk__in=[
-                    repository.pk
-                    for repository in selected_repositories
-                ]).update(hosting_account=installation_account)
+        from reviewboard.hostingsvcs.github.service import GitHub
+
+        for repository in selected_repositories:
+            # The candidate matching guarantees the owner matches the
+            # installation, so the installation's username is the
+            # canonical owner.
+            ids = GitHub.get_repository_ids(repository)
+            extra_data = repository.extra_data
+
+            # Remove the old plan-specific fields. The repository now uses
+            # the app plan, which stores only the canonical keys and the
+            # app repository name.
+            for key in ('github_public_repo_name',
+                        'github_private_repo_name',
+                        'github_public_org_name',
+                        'github_public_org_repo_name',
+                        'github_private_org_name',
+                        'github_private_org_repo_name'):
+                extra_data.pop(key, None)
+
+            extra_data.update({
+                'github_app_repo_name': ids.name,
+                'github_owner': installation_account.username,
+                'github_repo_name': ids.name,
+                'repository_plan': 'app',
+            })
+
+            repository.hosting_account = installation_account
+            repository.save(update_fields=('extra_data', 'hosting_account'))
 
         count = len(selected_repositories)
 
