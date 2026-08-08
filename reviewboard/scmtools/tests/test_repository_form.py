@@ -2598,6 +2598,44 @@ class RepositoryFormTests(kgb.SpyAgency, TestCase):
                 'grant access only to specific users and/or to users '
                 'who are members of specific invite-only review groups.')
 
+    def test_hosting_service_info_with_github(self) -> None:
+        """Testing RepositoryForm.hosting_service_info includes GitHub's
+        repository form view and account data
+        """
+        pat_account = HostingServiceAccount.objects.create(
+            username='testuser',
+            service_name='github')
+        installation_account = HostingServiceAccount.objects.create(
+            username='testorg',
+            service_name='github',
+            data={
+                'github_app': {
+                    'app_account_id': 1,
+                    'installation_id': 42,
+                    'owner_id': 100,
+                    'owner_login': 'testorg',
+                    'owner_type': 'organization',
+                    'repository_selection': 'all',
+                    'role': 'installation',
+                    'status': 'active',
+                },
+            })
+
+        form = self._build_form()
+        info = form.hosting_service_info['github']
+
+        self.assertEqual(info['js_view_class'],
+                         'RB.Admin.GitHubRepositoryFormView')
+        self.assertEqual(
+            info['js_view_data'],
+            {
+                'accountLabels': {
+                    str(pat_account.pk): 'testuser (PAT)',
+                    str(installation_account.pk): 'testorg',
+                },
+                'appAccountIDs': [installation_account.pk],
+            })
+
     def test_extra_data_with_new_repo(self):
         """Testing RepositoryForm preserves extra_data by default on new
         repositories

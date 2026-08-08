@@ -35,6 +35,9 @@ export {
     type ConnectedServicesViewOptions,
     ConnectedServicesView,
 } from './views/connectedServicesView';
+export {
+    GitHubRepositoryFormView,
+} from './views/gitHubRepositoryFormView';
 export { LicenseView } from './views/licenseView';
 export {
     type BugTrackerConfigInfo,
@@ -71,6 +74,9 @@ import {
 } from './views/repositoryBugTrackersView';
 import { RepositoryFormView } from './views/repositoryFormView';
 import {
+    GitHubRepositoryFormView,
+} from './views/gitHubRepositoryFormView';
+import {
     HostingServiceRepositoryFormView,
 } from './views/hostingServiceRepositoryFormView';
 import {
@@ -81,6 +87,7 @@ export const Admin = {
     BugTrackerFormView,
     ConnectServiceWizardView,
     ConnectedServicesView,
+    GitHubRepositoryFormView,
     HostingServiceRepositoryFormView,
     PageView: BaseAdminPageView,
     RepositoryBugTrackersView,

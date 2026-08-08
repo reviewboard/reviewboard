@@ -66,6 +66,7 @@ if TYPE_CHECKING:
     from django.urls import _AnyURL
     from django.utils.safestring import SafeString
     from typelets.django.strings import StrOrPromise
+    from typelets.json import JSONDict
 
     from reviewboard.hostingsvcs.base.bug_tracker import (
         BugInfo,
@@ -711,6 +712,7 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
     connect_ui_cls = GitHubConnectUI
     has_repository_hook_instructions = True
     needs_authorization = True
+    repository_form_js_view_class = 'RB.Admin.GitHubRepositoryFormView'
     supported_scmtools: ClassVar[Sequence[str]] = ['Git']
     supports_bug_info = True
     supports_bug_trackers = True
@@ -904,6 +906,44 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         return GitHubRepositoryIDs(
             owner=owner,
             name=extra_data[f'{plan_prefix}_repo_name'])
+
+    @classmethod
+    def get_repository_form_js_view_data(
+        cls,
+        accounts: Sequence[HostingServiceAccount],
+    ) -> JSONDict:
+        """Return data for the repository form's JavaScript view.
+
+        This lists the accounts that are GitHub App installations, which
+        only use the ``app`` plan. It also provides labels that tell
+        installations and Personal Access Token accounts apart.
+
+        Version Added:
+            9.0
+
+        Args:
+            accounts (list of
+                      reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The GitHub accounts offered in the form.
+
+        Returns:
+            dict:
+            The data for ``RB.Admin.GitHubRepositoryFormView``.
+        """
+        connect_ui = cls.connect_ui
+
+        return {
+            'accountLabels': {
+                str(account.pk):
+                    str(connect_ui.get_account_filter_label(account))
+                for account in accounts
+            },
+            'appAccountIDs': [
+                account.pk
+                for account in accounts
+                if is_installation_account(account)
+            ],
+        }
 
     def get_api_url(
         self,

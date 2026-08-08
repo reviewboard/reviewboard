@@ -195,6 +195,24 @@ class GitHubTests(GitHubTestCase):
             self.service_class.connect_ui.get_account_filter_label(account),
             'example')
 
+    def test_get_repository_form_js_view_data(self) -> None:
+        """Testing GitHub.get_repository_form_js_view_data"""
+        pat_account = HostingServiceAccount.objects.create(
+            service_name='github',
+            username='example')
+        app_account = self._create_app_installation_account()
+
+        self.assertEqual(
+            self.service_class.get_repository_form_js_view_data(
+                [pat_account, app_account]),
+            {
+                'accountLabels': {
+                    str(pat_account.pk): 'example (PAT)',
+                    str(app_account.pk): 'myorg',
+                },
+                'appAccountIDs': [app_account.pk],
+            })
+
     def test_get_repository_fields_with_public_plan(self) -> None:
         """Testing GitHub.get_repository_fields with the public plan"""
         self.assertEqual(
