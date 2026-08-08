@@ -78,7 +78,7 @@ class GitHubTests(GitHubTestCase):
         account = HostingServiceAccount(service_name='github',
                                         username='example')
 
-        for plan in ('public', 'private'):
+        for plan in ('app', 'public', 'private'):
             repository = Repository(
                 hosting_account=account,
                 extra_data={
@@ -257,6 +257,21 @@ class GitHubTests(GitHubTestCase):
                 'mirror_path': '',
             })
 
+    def test_get_repository_fields_with_app_plan(self) -> None:
+        """Testing GitHub.get_repository_fields with the app plan"""
+        self.assertEqual(
+            self.get_repository_fields(
+                'Git',
+                plan='app',
+                fields={
+                    'github_app_repo_name': 'myrepo',
+                }
+            ),
+            {
+                'path': 'https://github.com/myuser/myrepo.git',
+                'mirror_path': 'git@github.com:myuser/myrepo.git',
+            })
+
     def test_get_repo_api_url_with_public_plan(self) -> None:
         """Testing GitHub._get_repo_api_url with the public plan"""
         url = self._get_repo_api_url('public', {
@@ -286,6 +301,13 @@ class GitHubTests(GitHubTestCase):
             'github_private_org_repo_name': 'testrepo',
         })
         self.assertEqual(url, 'https://api.github.com/repos/myorg/testrepo')
+
+    def test_get_repo_api_url_with_app_plan(self) -> None:
+        """Testing GitHub._get_repo_api_url with the app plan"""
+        url = self._get_repo_api_url('app', {
+            'github_app_repo_name': 'testrepo',
+        })
+        self.assertEqual(url, 'https://api.github.com/repos/myuser/testrepo')
 
     def test_get_bug_tracker_field_with_public_plan(self) -> None:
         """Testing GitHub.get_bug_tracker_field with the public plan"""
@@ -330,6 +352,17 @@ class GitHubTests(GitHubTestCase):
                 'github_private_org_repo_name': 'myrepo',
             }),
             'http://github.com/myorg/myrepo/issues#issue/%s')
+
+    def test_get_bug_tracker_field_with_app_plan(self) -> None:
+        """Testing GitHub.get_bug_tracker_field with the app plan"""
+        self.assertTrue(
+            self.service_class.get_bug_tracker_requires_username('app'))
+        self.assertEqual(
+            self.service_class.get_bug_tracker_field('app', {
+                'github_app_repo_name': 'myrepo',
+                'hosting_account_username': 'myuser',
+            }),
+            'http://github.com/myuser/myrepo/issues#issue/%s')
 
     def test_search_bugs(self) -> None:
         """Testing GitHub.search_bugs"""
@@ -542,6 +575,34 @@ class GitHubTests(GitHubTestCase):
             expected_error='A repository with this organization or name '
                            'was not found, or your user may not have access '
                            'to it.')
+
+    def test_check_repository_app(self) -> None:
+        """Testing GitHub.check_repository with app repository"""
+        self._test_check_repository(plan='app',
+                                    github_app_repo_name='myrepo')
+
+    def test_check_repository_app_not_found(self) -> None:
+        """Testing GitHub.check_repository with not found error and app
+        repository
+        """
+        self._test_check_repository_error(
+            plan='app',
+            github_app_repo_name='myrepo',
+            http_status=404,
+            payload=b'{"message": "Not Found"}',
+            expected_url='https://api.github.com/repos/myuser/myrepo',
+            expected_error='A repository with this name was not found, or '
+                           'the GitHub App installation may not have access '
+                           'to it.')
+
+    def test_check_repository_app_plan_private_repo(self) -> None:
+        """Testing GitHub.check_repository with app plan ignores repository
+        visibility
+        """
+        with self.setup_http_test(payload=b'{"private": true}',
+                                  expected_http_calls=2) as ctx:
+            ctx.service.check_repository(plan='app',
+                                         github_app_repo_name='myrepo')
 
     def test_check_repository_public_plan_private_repo(self) -> None:
         """Testing GitHub.check_repository with public plan and

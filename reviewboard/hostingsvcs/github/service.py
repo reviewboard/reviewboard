@@ -45,6 +45,7 @@ from reviewboard.hostingsvcs.github.accounts import (
 )
 from reviewboard.hostingsvcs.github.client import GitHubClient, get_github_urls
 from reviewboard.hostingsvcs.github.forms import (
+    GitHubAppForm,
     GitHubAuthForm,
     GitHubPrivateForm,
     GitHubPrivateOrgForm,
@@ -81,6 +82,7 @@ if TYPE_CHECKING:
     from reviewboard.scmtools.models import Repository
 
     GitHubPlanName: TypeAlias = Literal[
+        'app',
         'public',
         'public-org',
         'private',
@@ -781,6 +783,29 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
                                  '%(github_private_org_repo_name)s/'
                                  'issues#issue/%%s',
         }),
+
+        # This plan is only offered when the selected hosting account is a
+        # GitHub App installation. The installation is bound to a single user
+        # or organization, so the account's username is always the repository
+        # owner, and public/private doesn't affect access.
+        ('app', {
+            'name': _('GitHub App'),
+            'form': GitHubAppForm,
+            'repository_fields': {
+                'Git': {
+                    'path': 'https://github.com/'
+                            '%(hosting_account_username)s/'
+                            '%(github_app_repo_name)s.git',
+                    'mirror_path': 'git@github.com:'
+                                   '%(hosting_account_username)s/'
+                                   '%(github_app_repo_name)s.git',
+                },
+            },
+            'bug_tracker_field': 'http://github.com/'
+                                 '%(hosting_account_username)s/'
+                                 '%(github_app_repo_name)s/'
+                                 'issues#issue/%%s',
+        }),
     ]
 
     hosting_service_url_patterns: ClassVar[Sequence[_AnyURL] | None] = [
@@ -869,7 +894,7 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         plan_prefix = '{}_{}'.format(cls.plan_field_prefix,
                                      plan.replace('-', '_'))
 
-        if plan in {'public', 'private'}:
+        if plan in {'app', 'public', 'private'}:
             owner = repository.hosting_account.username
         elif plan in {'public-org', 'private-org'}:
             owner = extra_data[f'{plan_prefix}_name']
@@ -967,7 +992,7 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         # Resolve the owner and repository name from the plan-specific
         # form fields. Nothing has been saved yet, so the canonical keys
         # read by get_repository_ids() are not available.
-        if plan in {'public', 'private'}:
+        if plan in {'app', 'public', 'private'}:
             owner = self.account.username
         elif plan in {'public-org', 'private-org'}:
             owner = self.get_plan_field(plan, kwargs, 'name')
@@ -983,19 +1008,28 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             repo_info = rsp.json
         except HostingServiceError as e:
             if e.http_code == 404:
-                if plan in {'public', 'private'}:
-                    raise RepositoryError(
-                        gettext('A repository with this name was not found, '
-                                'or your user may not own it.'))
+                if plan == 'app':
+                    raise RepositoryError(gettext(
+                        'A repository with this name was not found, or the '
+                        'GitHub App installation may not have access to it.'
+                    ))
+                elif plan in {'public', 'private'}:
+                    raise RepositoryError(gettext(
+                        'A repository with this name was not found, or your '
+                        'user may not own it.'
+                    ))
                 elif plan == 'public-org':
-                    raise RepositoryError(
-                        gettext('A repository with this organization or '
-                                'name was not found.'))
+                    raise RepositoryError(gettext(
+                        'A repository with this organization or name was not '
+                        'found.'
+                    ))
                 elif plan == 'private-org':
                     raise RepositoryError(
-                        gettext('A repository with this organization or name '
-                                'was not found, or your user may not have '
-                                'access to it.'),
+                        gettext(
+                            'A repository with this organization or name was '
+                            'not found, or your user may not have access to '
+                            'it.'
+                        ),
                         help_link=self._ORG_ACCESS_SUPPORT_URL,
                         help_link_text=gettext(
                             'Get help on granting access.'))
@@ -1006,13 +1040,15 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             is_private = repo_info['private']
 
             if is_private and plan in {'public', 'public-org'}:
-                raise RepositoryError(
-                    gettext('This is a private repository, but you have '
-                            'selected a public plan.'))
+                raise RepositoryError(gettext(
+                    'This is a private repository, but you have selected a '
+                    'public plan.'
+                ))
             elif not is_private and plan in {'private', 'private-org'}:
-                raise RepositoryError(
-                    gettext('This is a public repository, but you have '
-                            'selected a private plan.'))
+                raise RepositoryError(gettext(
+                    'This is a public repository, but you have selected a '
+                    'private plan.'
+                ))
 
         # Make a request to an endpoint that requires the "Contents" permission
         # to verify that a fine-grained PAT has the correct permissions. We
