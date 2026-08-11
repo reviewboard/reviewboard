@@ -220,6 +220,7 @@ Hosting Service Integration
    reviewboard.hostingsvcs.base
    reviewboard.hostingsvcs.base.bug_tracker
    reviewboard.hostingsvcs.base.client
+   reviewboard.hostingsvcs.base.connect_ui
    reviewboard.hostingsvcs.base.forms
    reviewboard.hostingsvcs.base.hosting_service
    reviewboard.hostingsvcs.base.http

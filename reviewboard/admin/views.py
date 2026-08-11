@@ -380,8 +380,9 @@ class ConnectedServicesListView(View):
         return [
             (
                 (service.name or '').lower(),
-                service.render_connected_services_list_entry(
-                    request, accounts),
+                service.connect_ui.render_connected_services_list_entry(
+                    request,
+                    accounts=accounts),
             )
             for service, accounts in service_groups
             if service
@@ -466,7 +467,7 @@ class ConnectServiceView(View):
         """
         service = self._get_service(service_id)
 
-        return HttpResponse(service.render_connect_ui(request))
+        return HttpResponse(service.connect_ui.render_connect_ui(request))
 
     def post(
         self,
@@ -497,7 +498,7 @@ class ConnectServiceView(View):
         """
         service = self._get_service(service_id)
 
-        form = service.get_auth_form_class()(
+        form = service.connect_ui.get_auth_form_class()(
             data=request.POST,
             hosting_service_cls=service)
 
@@ -532,7 +533,7 @@ class ConnectServiceView(View):
 
         return JsonResponse({
             'success': False,
-            'html': service.render_connect_ui(request, form=form),
+            'html': service.connect_ui.render_connect_ui(request, form=form),
         })
 
     def _get_service(
