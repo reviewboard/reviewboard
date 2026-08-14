@@ -97,11 +97,18 @@ def setup_siteconfig():
 
 
 @pytest.fixture(scope='session')
-def django_db_setup(django_db_setup, django_db_blocker):
+def django_db_setup(setup_siteconfig, django_db_setup, django_db_blocker):
     """Set up the Django database.
 
     This is run at the start of the project-wide test session, setting up
     an initial siteconfig in the database.
+
+    This depends on :py:func:`setup_siteconfig` so that the media and static
+    paths point at the test directories before the siteconfig is created.
+    Creating it first would store the in-tree paths in the database, and
+    those would then be applied back onto the Django settings on the first
+    request. pytest 9 no longer runs the autouse session fixture first, so
+    the dependency has to be explicit.
     """
     with django_db_blocker.unblock():
         from reviewboard.admin.management.sites import init_siteconfig
