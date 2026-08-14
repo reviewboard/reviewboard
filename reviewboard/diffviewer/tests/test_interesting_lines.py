@@ -1,329 +1,419 @@
 from __future__ import annotations
 
+from textwrap import dedent
+from typing import TYPE_CHECKING
+
+import pytest
+
 from reviewboard.diffviewer.myersdiff import MyersDiffer
-from reviewboard.testing import TestCase
+from reviewboard.diffviewer.interesting_lines import (
+    InterestingLine,
+    _get_interesting_lines_via_regex,
+)
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
-class InterestingLinesTest(TestCase):
-    """Unit tests for interesting lines scanner in differ."""
+@pytest.fixture(autouse=True, scope='session')
+def django_db_setup() -> None:
+    """Perform django database setup.
 
-    def test_csharp(self):
-        """Testing interesting lines scanner with a C# file"""
-        a = ('public class HelloWorld {\n'
-             '    public static void Main() {\n'
-             '        System.Console.WriteLine("Hello world!");\n'
-             '    }\n'
-             '}\n')
+    These tests don't use the django database at all, and because of
+    parameterize(), that ends up being a pretty big performance hit. This
+    overrides db setup to be a no-op.
+    """
+    pass
 
-        b = ('/*\n'
-             ' * The Hello World class.\n'
-             ' */\n'
-             'public class HelloWorld\n'
-             '{\n'
-             '    /*\n'
-             '     * The main function in this class.\n'
-             '     */\n'
-             '    public static void Main()\n'
-             '    {\n'
-             '        /*\n'
-             '         * Print "Hello world!" to the screen.\n'
-             '         */\n'
-             '        System.Console.WriteLine("Hello world!");\n'
-             '    }\n'
-             '}\n')
 
-        lines = self._get_lines(a, b, 'helloworld.cs')
+@pytest.fixture
+def _django_db_helper() -> None:  # pyright:ignore[reportUnusedFunction]
+    """Perform internal django database work.
 
-        self.assertEqual(len(lines), 2)
-        self.assertEqual(
-            lines[0],
-            [
-                (0, 'public class HelloWorld {\n'),
-                (1, '    public static void Main() {\n'),
-            ])
-        self.assertEqual(
-            lines[1],
-            [
-                (3, 'public class HelloWorld\n'),
-                (8, '    public static void Main()\n'),
-            ])
+    These tests don't use the django database at all, and because of
+    parameterize(), that ends up being a pretty big performance hit. This
+    overrides db setup to be a no-op.
+    """
+    pass
 
-    def test_java(self):
-        """Testing interesting lines scanner with a Java file"""
-        a = ('class HelloWorld {\n'
-             '    public static void main(String[] args) {\n'
-             '        System.out.println("Hello world!");\n'
-             '    }\n'
-             '}\n')
 
-        b = ('/*\n'
-             ' * The Hello World class.\n'
-             ' */\n'
-             'class HelloWorld\n'
-             '{\n'
-             '    /*\n'
-             '     * The main function in this class.\n'
-             '     */\n'
-             '    public static void main(String[] args)\n'
-             '    {\n'
-             '        /*\n'
-             '         * Print "Hello world!" to the screen.\n'
-             '         */\n'
-             '        System.out.println("Hello world!");\n'
-             '    }\n'
-             '}\n')
+REGEX_TEST_CASES = [
+    pytest.param(
+        'a.cs',
+        """
+            public class HelloWorld {
+                public static void Main() {
+                    System.Console.WriteLine("Hello world!");
+                }
+            }
+        """,
+        [
+            (0, 'public class HelloWorld {'),
+            (1, '    public static void Main() {'),
+        ],
+        id='csharp',
+    ),
+    pytest.param(
+        'b.cs',
+        """
+            /*
+             * The Hello World class.
+             */
+            public class HelloWorld
+            {
+                /*
+                 * The main function in this class.
+                 */
+                public static void Main()
+                {
+                    /*
+                     * Print "Hello world!" to the screen.
+                     */
+                    System.Console.WriteLine("Hello world!");
+                }
+            }
+        """,
+        [
+            (3, 'public class HelloWorld'),
+            (8, '    public static void Main()'),
+        ],
+        id='csharp',
+    ),
+    pytest.param(
+        'a.java',
+        """
+            class HelloWorld {
+                public static void main(String[] args) {
+                    System.out.println("Hello world!");
+                }
+            }
+        """,
+        [
+            (0, 'class HelloWorld {'),
+            (1, '    public static void main(String[] args) {'),
+        ],
+        id='java',
+    ),
+    pytest.param(
+        'b.java',
+        """
+            /*
+             * The Hello World class.
+             */
+            class HelloWorld
+            {
+                /*
+                 * The main function in this class.
+                 */
+                public static void main(String[] args)
+                {
+                    /*
+                     * Print "Hello world!" to the screen.
+                     */
+                    System.out.println("Hello world!");
+                }
+            }
+        """,
+        [
+            (3, 'class HelloWorld'),
+            (8, '    public static void main(String[] args)'),
+        ],
+        id='java',
+    ),
+    pytest.param(
+        'a.js',
+        """
+            function helloWorld() {
+                alert("Hello world!");
+            }
 
-        lines = self._get_lines(a, b, 'helloworld.java')
+            var data = {
+                helloWorld2: function() {
+                    alert("Hello world!");
+                }
+            }
 
-        self.assertEqual(len(lines), 2)
-        self.assertEqual(
-            lines[0],
-            [
-                (0, 'class HelloWorld {\n'),
-                (1, '    public static void main(String[] args) {\n'),
-            ])
-        self.assertEqual(
-            lines[1],
-            [
-                (3, 'class HelloWorld\n'),
-                (8, '    public static void main(String[] args)\n'),
-            ])
+            var helloWorld3 = function() {
+                alert("Hello world!");
+            }
+        """,
+        [
+            (0, 'function helloWorld() {'),
+            (5, '    helloWorld2: function() {'),
+            (10, 'var helloWorld3 = function() {'),
+        ],
+        id='javascript',
+    ),
+    pytest.param(
+        'b.js',
+        """
+            /*
+             * Prints "Hello world!"
+             */
+            function helloWorld()
+            {
+                alert("Hello world!");
+            }
 
-    def test_javascript(self):
-        """Testing interesting lines scanner with a JavaScript file"""
-        a = ('function helloWorld() {\n'
-             '    alert("Hello world!");\n'
-             '}\n'
-             '\n'
-             'var data = {\n'
-             '    helloWorld2: function() {\n'
-             '        alert("Hello world!");\n'
-             '    }\n'
-             '}\n'
-             '\n'
-             'var helloWorld3 = function() {\n'
-             '    alert("Hello world!");\n'
-             '}\n')
+            var data = {
+                /*
+                 * Prints "Hello world!"
+                 */
+                helloWorld2: function()
+                {
+                    alert("Hello world!");
+                }
+            }
 
-        b = ('/*\n'
-             ' * Prints "Hello world!"\n'
-             ' */\n'
-             'function helloWorld()\n'
-             '{\n'
-             '    alert("Hello world!");\n'
-             '}\n'
-             '\n'
-             'var data = {\n'
-             '    /*\n'
-             '     * Prints "Hello world!"\n'
-             '     */\n'
-             '    helloWorld2: function()\n'
-             '    {\n'
-             '        alert("Hello world!");\n'
-             '    }\n'
-             '}\n'
-             '\n'
-             'var helloWorld3 = function()\n'
-             '{\n'
-             '    alert("Hello world!");\n'
-             '}\n')
+            var helloWorld3 = function()
+            {
+                alert("Hello world!");
+            }
+        """,
+        [
+            (3, 'function helloWorld()'),
+            (12, '    helloWorld2: function()'),
+            (18, 'var helloWorld3 = function()'),
+        ],
+        id='javascript',
+    ),
+    pytest.param(
+        'a.m',
+        """
+            @interface MyClass : Object
+            - (void) sayHello;
+            @end
 
-        lines = self._get_lines(a, b, 'helloworld.js')
+            @implementation MyClass
+            - (void) sayHello {
+                printf("Hello world!");
+            }
+            @end
+        """,
+        [
+            (0, '@interface MyClass : Object'),
+            (4, '@implementation MyClass'),
+            (5, '- (void) sayHello {'),
+        ],
+        id='objc',
+    ),
+    pytest.param(
+        'b.m',
+        """
+            @interface MyClass : Object
+            - (void) sayHello;
+            @end
 
-        self.assertEqual(len(lines), 2)
-        self.assertEqual(
-            lines[0],
-            [
-                (0, 'function helloWorld() {\n'),
-                (5, '    helloWorld2: function() {\n'),
-                (10, 'var helloWorld3 = function() {\n'),
-            ])
-        self.assertEqual(
-            lines[1],
-            [
-                (3, 'function helloWorld()\n'),
-                (12, '    helloWorld2: function()\n'),
-                (18, 'var helloWorld3 = function()\n'),
-            ])
+            @implementation MyClass
+            /*
+             * Prints Hello world!
+             */
+            - (void) sayHello
+            {
+                printf("Hello world!");
+            }
+            @end
+        """,
+        [
+            (0, '@interface MyClass : Object'),
+            (4, '@implementation MyClass'),
+            (8, '- (void) sayHello'),
+        ],
+        id='objc',
+    ),
+    pytest.param(
+        'a.pl',
+        """
+            sub helloWorld {
+                print "Hello world!"
+            }
+        """,
+        [
+            (0, 'sub helloWorld {'),
+        ],
+        id='perl',
+    ),
+    pytest.param(
+        'b.pl',
+        """
+            # Prints Hello World
+            sub helloWorld
+            {
+                print "Hello world!"
+            }
+        """,
+        [
+            (1, 'sub helloWorld'),
+        ],
+        id='perl',
+    ),
+    pytest.param(
+        'a.php',
+        """
+            <?php
+            class HelloWorld {
+                function helloWorld() {
+                    print "Hello world!";
+                }
+            }
+            ?>
+        """,
+        [
+            (1, 'class HelloWorld {'),
+            (2, '    function helloWorld() {'),
+        ],
+        id='php',
+    ),
+    pytest.param(
+        'b.php',
+        """
+            <?php
+            /*
+             * Hello World class
+             */
+            class HelloWorld
+            {
+                /*
+                 * Prints Hello World
+                 */
+                function helloWorld()
+                {
+                    print "Hello world!";
+                }
 
-    def test_objective_c(self):
-        """Testing interesting lines scanner with an Objective C file"""
-        a = ('@interface MyClass : Object\n'
-             '- (void) sayHello;\n'
-             '@end\n'
-             '\n'
-             '@implementation MyClass\n'
-             '- (void) sayHello {\n'
-             '    printf("Hello world!");\n'
-             '}\n'
-             '@end\n')
+                public function foo() {
+                    print "Hello world!";
+                }
+            }
+            ?>
+        """,
+        [
+            (4, 'class HelloWorld'),
+            (9, '    function helloWorld()'),
+            (14, '    public function foo() {'),
+        ],
+        id='php',
+    ),
+    pytest.param(
+        'a.py',
+        """
+            class HelloWorld:
+                def main(self):
+                    print "Hello World"
+        """,
+        [
+            (0, 'class HelloWorld:'),
+            (1, '    def main(self):'),
+        ],
+        id='python',
+    ),
+    pytest.param(
+        'b.py',
+        '''
+            class HelloWorld:
+                """The Hello World class"""
 
-        b = ('@interface MyClass : Object\n'
-             '- (void) sayHello;\n'
-             '@end\n'
-             '\n'
-             '@implementation MyClass\n'
-             '/*\n'
-             ' * Prints Hello world!\n'
-             ' */\n'
-             '- (void) sayHello\n'
-             '{\n'
-             '    printf("Hello world!");\n'
-             '}\n'
-             '@end\n')
+                def main(self):
+                    """The main function in this class."""
 
-        lines = self._get_lines(a, b, 'helloworld.m')
+                    # Prints "Hello world!" to the screen.
+                    print "Hello world!"
+        ''',
+        [
+            (0, 'class HelloWorld:'),
+            (3, '    def main(self):'),
+        ],
+        id='python',
+    ),
+    pytest.param(
+        'a.rb',
+        """
+            class HelloWorld
+                def helloWorld
+                    puts "Hello world!"
+                end
+            end
+        """,
+        [
+            (0, 'class HelloWorld'),
+            (1, '    def helloWorld'),
+        ],
+        id='ruby',
+    ),
+    pytest.param(
+        'b.rb',
+        """
+            # Hello World class
+            class HelloWorld
+                # Prints Hello World
+                def helloWorld()
+                    puts "Hello world!"
+                end
+            end
+        """,
+        [
+            (1, 'class HelloWorld'),
+            (3, '    def helloWorld()'),
+        ],
+        id='ruby',
+    ),
+]
 
-        self.assertEqual(len(lines), 2)
-        self.assertEqual(
-            lines[0],
-            [
-                (0, '@interface MyClass : Object\n'),
-                (4, '@implementation MyClass\n'),
-                (5, '- (void) sayHello {\n'),
-            ])
-        self.assertEqual(
-            lines[1],
-            [
-                (0, '@interface MyClass : Object\n'),
-                (4, '@implementation MyClass\n'),
-                (8, '- (void) sayHello\n'),
-            ])
 
-    def test_perl(self):
-        """Testing interesting lines scanner with a Perl file"""
-        a = ('sub helloWorld {\n'
-             '    print "Hello world!"\n'
-             '}\n')
+@pytest.mark.parametrize(('filename', 'file_content', 'expected_lines'),
+                         REGEX_TEST_CASES)
+def test_get_lines_by_regex(
+    filename: str,
+    file_content: str,
+    expected_lines: Sequence[InterestingLine],
+) -> None:
+    """Test get_interesting_lines_via_regex.
 
-        b = ('# Prints Hello World\n'
-             'sub helloWorld\n'
-             '{\n'
-             '    print "Hello world!"\n'
-             '}\n')
+    Args:
+        filename (str):
+            The filename of the file.
 
-        lines = self._get_lines(a, b, 'helloworld.pl')
+        file_content (list of str):
+            The content of the file, split into lines.
 
-        self.assertEqual(len(lines), 2)
-        self.assertEqual(lines[0], [(0, 'sub helloWorld {\n')])
-        self.assertEqual(lines[1], [(1, 'sub helloWorld\n')])
+        expected_lines (list of tuple):
+            The expected result.
+    """
+    file_lines = dedent(file_content.strip('\n')).splitlines()
+    result = _get_interesting_lines_via_regex(filename, file_lines)
 
-    def test_php(self):
-        """Testing interesting lines scanner with a PHP file"""
-        a = ('<?php\n'
-             'class HelloWorld {\n'
-             '    function helloWorld() {\n'
-             '        print "Hello world!";\n'
-             '    }\n'
-             '}\n'
-             '?>\n')
+    assert result == expected_lines
 
-        b = ('<?php\n'
-             '/*\n'
-             ' * Hello World class\n'
-             ' */\n'
-             'class HelloWorld\n'
-             '{\n'
-             '    /*\n'
-             '     * Prints Hello World\n'
-             '     */\n'
-             '    function helloWorld()\n'
-             '    {\n'
-             '        print "Hello world!";\n'
-             '    }\n'
-             '\n'
-             '    public function foo() {\n'
-             '        print "Hello world!";\n'
-             '    }\n'
-             '}\n'
-             '?>\n')
 
-        lines = self._get_lines(a, b, 'helloworld.php')
+@pytest.mark.parametrize(('filename', 'file_content', 'expected_lines'),
+                         REGEX_TEST_CASES)
+def test_legacy_differ_api(
+    filename: str,
+    file_content: str,
+    expected_lines: Sequence[InterestingLine],
+) -> None:
+    """Test the legacy Differ.get_interesting_lines API.
 
-        self.assertEqual(len(lines), 2)
-        self.assertEqual(
-            lines[0],
-            [
-                (1, 'class HelloWorld {\n'),
-                (2, '    function helloWorld() {\n'),
-            ])
-        self.assertEqual(
-            lines[1],
-            [
-                (4, 'class HelloWorld\n'),
-                (9, '    function helloWorld()\n'),
-                (14, '    public function foo() {\n'),
-            ])
+    Args:
+        filename (str):
+            The filename of the file.
 
-    def test_python(self):
-        """Testing interesting lines scanner with a Python file"""
-        a = ('class HelloWorld:\n'
-             '    def main(self):\n'
-             '        print "Hello World"\n')
+        file_content (list of str):
+            The content of the file, split into lines.
 
-        b = ('class HelloWorld:\n'
-             '    """The Hello World class"""\n'
-             '\n'
-             '    def main(self):\n'
-             '        """The main function in this class."""\n'
-             '\n'
-             '        # Prints "Hello world!" to the screen.\n'
-             '        print "Hello world!"\n')
+        expected_lines (list of tuple):
+            The expected result.
+    """
+    file_lines = dedent(file_content.strip('\n')).splitlines()
 
-        lines = self._get_lines(a, b, 'helloworld.py')
+    # Since we've now moved each test case into its own parametrized case, just
+    # do a diff from an empty file to the file content.
+    differ = MyersDiffer([], file_lines)
+    differ.add_interesting_lines_for_headers(filename)
 
-        self.assertEqual(len(lines), 2)
-        self.assertEqual(
-            lines[0],
-            [
-                (0, 'class HelloWorld:\n'),
-                (1, '    def main(self):\n'),
-            ])
-        self.assertEqual(
-            lines[1],
-            [
-                (0, 'class HelloWorld:\n'),
-                (3, '    def main(self):\n'),
-            ])
+    # Begin the scan.
+    list(differ.get_opcodes())
 
-    def test_ruby(self):
-        """Testing interesting lines scanner with a Ruby file"""
-        a = ('class HelloWorld\n'
-             '    def helloWorld\n'
-             '        puts "Hello world!"\n'
-             '    end\n'
-             'end\n')
+    result = differ.get_interesting_lines('header', True)
 
-        b = ('# Hello World class\n'
-             'class HelloWorld\n'
-             '    # Prints Hello World\n'
-             '    def helloWorld()\n'
-             '        puts "Hello world!"\n'
-             '    end\n'
-             'end\n')
-
-        lines = self._get_lines(a, b, 'helloworld.rb')
-
-        self.assertEqual(len(lines), 2)
-        self.assertEqual(
-            lines[0],
-            [
-                (0, 'class HelloWorld\n'),
-                (1, '    def helloWorld\n'),
-            ])
-        self.assertEqual(
-            lines[1],
-            [
-                (1, 'class HelloWorld\n'),
-                (3, '    def helloWorld()\n'),
-            ])
-
-    def _get_lines(self, a, b, filename):
-        differ = MyersDiffer(a.splitlines(True), b.splitlines(True))
-        differ.add_interesting_lines_for_headers(filename)
-
-        # Begin the scan.
-        list(differ.get_opcodes())
-
-        return (differ.get_interesting_lines('header', False),
-                differ.get_interesting_lines('header', True))
+    assert result == expected_lines

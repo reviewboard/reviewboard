@@ -528,6 +528,110 @@ def _highlight_injections(
         del parser.included_ranges
 
 
+def _get_line_start_offsets(
+    content: bytes,
+) -> Sequence[int]:
+    """Return the byte offset of the start of each line in the content.
+
+    Version Added:
+        9.0
+
+    Args:
+        content (bytes):
+            The file content.
+
+    Returns:
+        list of int:
+        The byte offset of each line start.
+    """
+    offsets = [0]
+    pos = content.find(b'\n')
+
+    while pos != -1:
+        offsets.append(pos + 1)
+        pos = content.find(b'\n', pos + 1)
+
+    return offsets
+
+
+def _offset_range(
+    node_range: tree_sitter.Range,
+    deltas_str: str,
+    line_start_offsets: Sequence[int],
+    content_len: int,
+) -> tree_sitter.Range | None:
+    """Return a range adjusted by offset! directive deltas.
+
+    This matches nvim's semantics for the ``#offset!`` directive: each
+    delta is added to the corresponding (row, column) component of the
+    range. Byte offsets are recomputed from the adjusted points, clamped
+    to line boundaries.
+
+    Version Added:
+        9.0
+
+    Args:
+        node_range (tree_sitter.Range):
+            The range of the captured node.
+
+        deltas_str (str):
+            The deltas, as a space-separated string of
+            ``start_row start_col end_row end_col`` (as stored by the
+            ``offset!`` directive handler).
+
+        line_start_offsets (list of int):
+            The byte offset of each line start in the content.
+
+        content_len (int):
+            The total length of the content in bytes.
+
+    Returns:
+        tree_sitter.Range:
+        The adjusted range, or ``None`` if the adjusted range is empty or
+        out of bounds.
+    """
+    d_start_row, d_start_col, d_end_row, d_end_col = (
+        int(delta)
+        for delta in deltas_str.split()
+    )
+
+    num_lines = len(line_start_offsets)
+
+    start_row = node_range.start_point.row + d_start_row
+    end_row = node_range.end_point.row + d_end_row
+
+    if not (0 <= start_row < num_lines and 0 <= end_row < num_lines):
+        return None
+
+    def to_pos(
+        row: int,
+        col: int,
+    ) -> tuple[tuple[int, int], int]:
+        line_start = line_start_offsets[row]
+
+        if row + 1 < num_lines:
+            line_end = line_start_offsets[row + 1]
+        else:
+            line_end = content_len
+
+        byte_offset = min(max(line_start + col, line_start), line_end)
+
+        return (row, byte_offset - line_start), byte_offset
+
+    start_point, start_byte = to_pos(
+        start_row, node_range.start_point.column + d_start_col)
+    end_point, end_byte = to_pos(
+        end_row, node_range.end_point.column + d_end_col)
+
+    if start_byte >= end_byte:
+        return None
+
+    return tree_sitter.Range(start_point=start_point,
+                             end_point=end_point,
+                             start_byte=start_byte,
+                             end_byte=end_byte)
+
+
 def highlight(
     content: bytes,
     lines: Sequence[str],
@@ -586,11 +690,15 @@ def highlight(
             set[tree_sitter.Range]
         ] = defaultdict(set)
 
+        line_start_offsets: Sequence[int] | None = None
+
         for pattern_index, match in matches:
             nodes = match.get('injection.content')
 
             if not nodes:
                 continue
+
+            settings = injections_query.pattern_settings(pattern_index)
 
             if 'injection.language' in match:
                 language_node = match['injection.language'][0]
@@ -601,20 +709,36 @@ def highlight(
             else:
                 matched_lang = None
 
+            offsets = settings.get('offset.injection.content')
+
             for node in nodes:
                 injection_lang = matched_lang
 
                 # Other queries may use set! or gsub! to store the language in
                 # the pattern settings.
                 if not injection_lang:
-                    settings = injections_query.pattern_settings(pattern_index)
                     injection_lang = settings.get('injection.language')
 
                 if (injection_lang is None or
                     injection_lang not in SUPPORTED_LANGUAGES):
                     continue
 
-                injection_ranges[injection_lang].add(node.range)
+                node_range = node.range
+
+                if offsets:
+                    if line_start_offsets is None:
+                        line_start_offsets = _get_line_start_offsets(content)
+
+                    adjusted_range = _offset_range(node_range, offsets,
+                                                   line_start_offsets,
+                                                   len(content))
+
+                    if adjusted_range is None:
+                        continue
+
+                    node_range = adjusted_range
+
+                injection_ranges[injection_lang].add(node_range)
 
         for language, ranges in injection_ranges.items():
             chained_captures.append(_highlight_injections(

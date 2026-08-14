@@ -22,7 +22,9 @@ from reviewboard.treesitter.highlight import (
     _apply_events,
     _find_matching_highlight_tag,
     _get_events_by_line,
+    _get_line_start_offsets,
     _get_nodes_by_line,
+    _offset_range,
     highlight,
 )
 
@@ -535,3 +537,97 @@ def test_highlight_with_multibyte_unicode_character() -> None:
         '<span class="ts-keyword">return</span> '
         '<span class="ts-number">0</span> ;'
     )
+
+
+def test_get_line_start_offsets() -> None:
+    """Test _get_line_start_offsets."""
+    assert _get_line_start_offsets(b'') == [0]
+    assert _get_line_start_offsets(b'abc') == [0]
+    assert _get_line_start_offsets(b'abc\ndef\n') == [0, 4, 8]
+    assert _get_line_start_offsets(b'abc\ndef\nx') == [0, 4, 8]
+
+
+def test_offset_range_same_row_trim() -> None:
+    """Test _offset_range trimming columns on the same rows."""
+    content = b'x = "hello"\n'
+    node_range = tree_sitter.Range(start_point=(0, 4),
+                                   end_point=(0, 11),
+                                   start_byte=4,
+                                   end_byte=11)
+
+    result = _offset_range(node_range, '0 1 0 -1',
+                           _get_line_start_offsets(content),
+                           len(content))
+
+    assert result is not None
+    assert result.start_point == (0, 5)
+    assert result.end_point == (0, 10)
+    assert result.start_byte == 5
+    assert result.end_byte == 10
+
+
+def test_offset_range_trim_rows() -> None:
+    """Test _offset_range trimming whole rows."""
+    content = b'---\ntitle: x\n---\n'
+    node_range = tree_sitter.Range(start_point=(0, 0),
+                                   end_point=(3, 0),
+                                   start_byte=0,
+                                   end_byte=17)
+
+    result = _offset_range(node_range, '1 0 -1 0',
+                           _get_line_start_offsets(content),
+                           len(content))
+
+    assert result is not None
+    assert result.start_point == (1, 0)
+    assert result.end_point == (2, 0)
+    assert result.start_byte == 4
+    assert result.end_byte == 13
+
+
+def test_offset_range_out_of_bounds() -> None:
+    """Test _offset_range with rows adjusted out of bounds."""
+    content = b'abc\n'
+    node_range = tree_sitter.Range(start_point=(0, 0),
+                                   end_point=(0, 3),
+                                   start_byte=0,
+                                   end_byte=3)
+
+    assert _offset_range(node_range, '-1 0 0 0',
+                         _get_line_start_offsets(content),
+                         len(content)) is None
+
+
+def test_offset_range_empty_result() -> None:
+    """Test _offset_range with a range that becomes empty."""
+    content = b'ab\n'
+    node_range = tree_sitter.Range(start_point=(0, 0),
+                                   end_point=(0, 2),
+                                   start_byte=0,
+                                   end_byte=2)
+
+    assert _offset_range(node_range, '0 1 0 -1',
+                         _get_line_start_offsets(content),
+                         len(content)) is None
+
+
+def test_highlight_injection_with_offset() -> None:
+    """Test highlight applies offset! directives to injection ranges.
+
+    The markdown frontmatter injection trims the --- fence lines from the
+    injected YAML region using #offset!.
+    """
+    content = '---\ntitle: hello\ndate: 2026\n---\n\n# Header'
+    content_bytes = content.encode()
+    lines = content.splitlines()
+
+    parser = get_parser('markdown')
+    tree = parser.parse(content_bytes)
+
+    result = highlight(content_bytes, lines, tree, 'markdown')
+
+    assert result is not None
+
+    # The YAML injection highlighted the metadata contents.
+    assert '<span class="ts-string">title</span>' in result[1]
+    assert '<span class="ts-number">2026</span>' in result[2]
