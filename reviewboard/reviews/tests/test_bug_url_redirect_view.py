@@ -5,6 +5,7 @@ from __future__ import annotations
 from django.http import HttpResponseNotFound
 from django.urls import reverse
 
+from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.testing import TestCase
 
 
@@ -18,8 +19,14 @@ class BugURLRedirectViewTests(TestCase):
         """Testing BugURLRedirectView with non-HTTP scheme loads correctly"""
         # Create a repository with a bug tracker that uses a non-standard
         # url scheme.
+        tracker = ConfiguredBugTracker.objects.create(
+            name='Custom Scheme Bugs',
+            service_name='custom-bug-tracker',
+            settings={
+                'url_template': 'scheme://bugid=%s',
+            })
         repository = self.create_repository(public=True,
-                                            bug_tracker='scheme://bugid=%s')
+                                            default_bug_tracker=tracker)
         review_request = self.create_review_request(repository=repository,
                                                     publish=True)
         url = reverse('bug_url', args=(review_request.pk, '1'))

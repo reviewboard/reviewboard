@@ -2260,9 +2260,15 @@ class RepositoryFormTests(SpyAgency, TestCase):
 
     def test_with_hosting_service_with_existing_custom_bug_tracker(self):
         """Testing RepositoryForm with existing custom bug tracker"""
+        tracker = ConfiguredBugTracker.objects.create(
+            name='Custom Bugs',
+            service_name='custom-bug-tracker',
+            settings={
+                'url_template': 'http://example.com/issue/%s',
+            })
         repository = self.create_repository(
             name='test',
-            bug_tracker='http://example.com/issue/%s')
+            default_bug_tracker=tracker)
 
         form = RepositoryForm(instance=repository)
         self.assertFalse(form._get_field_data('bug_tracker_use_hosting'))
