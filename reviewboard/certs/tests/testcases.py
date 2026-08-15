@@ -9,7 +9,7 @@ from __future__ import annotations
 import os
 import shutil
 import ssl
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from http.client import HTTPConnection
 from ssl import VerifyMode
 from typing import TYPE_CHECKING
@@ -671,8 +671,10 @@ class CertificateTestCase(TestCase):
             .issuer_name(x509.Name([
                 x509.NameAttribute(NameOID.COMMON_NAME, issuer),
             ]))
-            .not_valid_before(datetime.utcnow() + not_valid_before_delta)
-            .not_valid_after(datetime.utcnow() + not_valid_after_delta)
+            .not_valid_before(datetime.now(timezone.utc) +
+                              not_valid_before_delta)
+            .not_valid_after(datetime.now(timezone.utc) +
+                             not_valid_after_delta)
             .serial_number(x509.random_serial_number())
             .public_key(private_key.public_key())
             .sign(private_key=private_key,

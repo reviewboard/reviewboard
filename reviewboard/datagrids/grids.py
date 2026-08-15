@@ -617,6 +617,7 @@ class UsersDataGrid(AlphanumericDataGrid):
 
     def __init__(
         self,
+        *,
         request: HttpRequest,
         queryset: QuerySet[User] = User.objects.all(),
         title: StrOrPromise = _('All users'),
@@ -739,19 +740,28 @@ class GroupDataGrid(DataGrid):
                                           field_name='members',
                                           shrink=True)
 
-    def __init__(self, request, title=_('All groups'), *args, **kwargs):
+    def __init__(
+        self,
+        *,
+        request: HttpRequest,
+        title: (StrOrPromise | None) = None,
+        **kwargs,
+    ) -> None:
         """Initialize the datagrid."""
         local_site = kwargs.get('local_site')
+
+        if title is None:
+            title = _('All groups')
 
         # Build the queryset for the groups.
         queryset = Group.objects.accessible(request.user,
                                             local_site=local_site)
 
-        super().__init__(request,
-                         queryset=queryset,
-                         title=title,
-                         *args,
-                         **kwargs)
+        super().__init__(
+            request=request,
+            queryset=queryset,
+            title=title,
+            **kwargs)
 
         self.listview_template = 'datagrids/listview.html'
         self.profile_sort_field = 'sort_group_columns'
@@ -832,14 +842,15 @@ class UserPageReviewRequestDataGrid(UserPageDataGridMixin,
             filter_private=True,
             show_inactive=True)
 
-        super(UserPageReviewRequestDataGrid, self).__init__(
-            request,
+        super().__init__(
+            *args,
+            request=request,
             queryset=queryset,
             title=_("%s's Review Requests") % user.username,
             extra_context={
                 'pii_safe_title': _("User's Review Requests"),
             },
-            *args, **kwargs)
+            **kwargs)
 
         self.groups = user.review_groups.accessible(request.user)
         self.user = user
@@ -864,14 +875,15 @@ class UserPageReviewsDataGrid(UserPageDataGridMixin, ReviewDataGrid):
             status=None,
             local_site=kwargs.get('local_site'))
 
-        super(UserPageReviewsDataGrid, self).__init__(
-            request,
+        super().__init__(
+            *args,
+            request=request,
             queryset=queryset,
             title=_("%s's Reviews") % user.username,
             extra_context={
                 'pii_safe_title': _("User's Reviews"),
             },
-            *args, **kwargs)
+            **kwargs)
 
         self.groups = user.review_groups.accessible(request.user)
         self.user = user

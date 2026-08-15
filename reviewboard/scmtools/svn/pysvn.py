@@ -6,7 +6,7 @@ import logging
 import os
 from collections import OrderedDict
 from contextlib import contextmanager
-from datetime import datetime
+from datetime import datetime, timezone
 from shutil import rmtree
 from tempfile import mkdtemp
 from typing import Any, Iterator, TYPE_CHECKING
@@ -453,7 +453,8 @@ class Client(base.Client):
             commit['revision'] = str(commit['revision'].number)
 
             if 'date' in commit:
-                commit['date'] = datetime.utcfromtimestamp(commit['date'])
+                commit['date'] = datetime.fromtimestamp(commit['date'],
+                                                        timezone.utc)
 
         return commits
 
