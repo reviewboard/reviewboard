@@ -13,7 +13,10 @@ from djblets.testing.decorators import add_fixtures
 
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.github import GitHub
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+)
 from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.scmtools.git import GitTool
 from reviewboard.scmtools.models import Repository, Tool
@@ -834,3 +837,109 @@ class RepositoryTests(kgb.SpyAgency, TestCase):
             f'CRITICAL:reviewboard.scmtools.models:Unable to decrypt stored '
             f'password for repository pk={repository.pk}',
         ])
+
+
+class RepositoryGetDefaultBugTrackerTests(TestCase):
+    """Unit tests for Repository.get_default_bug_tracker.
+
+    Version Added:
+        9.0
+    """
+
+    fixtures = ['test_scmtools']
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
+
+        self.repository = self.create_repository()
+
+    def test_with_explicit_default(self) -> None:
+        """Testing Repository.get_default_bug_tracker with an explicit
+        default bug tracker
+        """
+        tracker = ConfiguredBugTracker.objects.create(name='My Tracker',
+                                                      service_name='splat')
+        other = ConfiguredBugTracker.objects.create(name='Other Tracker',
+                                                    service_name='splat')
+
+        repository = self.repository
+        repository.default_bug_tracker = tracker
+        repository.save(update_fields=('default_bug_tracker',))
+
+        self.assertEqual(repository.get_default_bug_tracker(), tracker)
+        self.assertNotEqual(repository.get_default_bug_tracker(), other)
+
+    def test_with_single_site_wide_tracker(self) -> None:
+        """Testing Repository.get_default_bug_tracker implies a default
+        from a single tracker applying to all review requests
+        """
+        tracker = ConfiguredBugTracker.objects.create(name='My Tracker',
+                                                      service_name='splat')
+
+        self.assertEqual(self.repository.get_default_bug_tracker(),
+                         tracker)
+
+    def test_with_multiple_site_wide_trackers(self) -> None:
+        """Testing Repository.get_default_bug_tracker implies no default
+        from multiple trackers applying to all review requests
+        """
+        ConfiguredBugTracker.objects.create(name='My Tracker',
+                                            service_name='splat')
+        ConfiguredBugTracker.objects.create(name='Other Tracker',
+                                            service_name='splat')
+
+        self.assertIsNone(self.repository.get_default_bug_tracker())
+
+    def test_with_attached_tracker(self) -> None:
+        """Testing Repository.get_default_bug_tracker implies no default
+        for a repository with its own attached trackers
+        """
+        ConfiguredBugTracker.objects.create(name='My Tracker',
+                                            service_name='splat')
+
+        attached = ConfiguredBugTracker.objects.create(
+            name='Repo Tracker',
+            service_name='splat',
+            apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
+        attached.repositories.add(self.repository)
+
+        self.assertIsNone(self.repository.get_default_bug_tracker())
+
+    def test_with_disabled_tracker(self) -> None:
+        """Testing Repository.get_default_bug_tracker never implies a
+        default from a disabled tracker
+        """
+        ConfiguredBugTracker.objects.create(name='My Tracker',
+                                            service_name='splat',
+                                            enabled=False)
+
+        self.assertIsNone(self.repository.get_default_bug_tracker())
+
+    def test_with_scoped_trackers(self) -> None:
+        """Testing Repository.get_default_bug_tracker never implies a
+        default from trackers not applying to all review requests
+        """
+        ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat',
+            apply_to=ConfiguredBugTracker.APPLY_TO_NO_REPOS)
+        ConfiguredBugTracker.objects.create(
+            name='Other Tracker',
+            service_name='splat',
+            apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
+
+        self.assertIsNone(self.repository.get_default_bug_tracker())
+
+    @add_fixtures(['test_users', 'test_site'])
+    def test_with_local_site_mismatch(self) -> None:
+        """Testing Repository.get_default_bug_tracker never implies a
+        default from a tracker on a different Local Site
+        """
+        local_site = self.get_local_site(name=self.local_site_name)
+
+        ConfiguredBugTracker.objects.create(name='My Tracker',
+                                            service_name='splat',
+                                            local_site=local_site)
+
+        self.assertIsNone(self.repository.get_default_bug_tracker())

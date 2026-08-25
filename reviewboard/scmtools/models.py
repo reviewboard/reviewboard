@@ -28,6 +28,7 @@ from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.models import (
     ConfiguredBugTracker,
     HostingServiceAccount,
+    SENTINEL_BUG_TRACKER_SERVICE_NAME,
 )
 from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.core import FileLookupContext
@@ -476,6 +477,48 @@ class Repository(models.Model):
             return bug_tracker_cls(HostingServiceAccount())
 
         return None
+
+    def get_default_bug_tracker(self) -> ConfiguredBugTracker | None:
+        """Return the bug tracker acting as this repository's default.
+
+        This is the explicitly assigned default bug tracker when one is
+        set. Without one, a single enabled bug tracker configured for
+        all review requests acts as the default, as long as this
+        repository has no bug trackers of its own attached.
+
+        Version Added:
+            9.0
+
+        Returns:
+            reviewboard.hostingsvcs.models.ConfiguredBugTracker:
+            The effective default bug tracker, or ``None`` if there is
+            no explicit default and no single site-wide tracker to
+            imply one from.
+        """
+        if self.default_bug_tracker is not None:
+            return self.default_bug_tracker
+
+        if not hasattr(self, '_implied_default_bug_tracker'):
+            implied: (ConfiguredBugTracker | None) = None
+
+            if not self.bug_trackers.exists():
+                candidates = list(
+                    ConfiguredBugTracker.objects
+                    .filter(
+                        enabled=True,
+                        apply_to=ConfiguredBugTracker.APPLY_TO_ALL,
+                        local_site=self.local_site_id)
+                    .exclude(
+                        service_name=SENTINEL_BUG_TRACKER_SERVICE_NAME)
+                    [:2]
+                )
+
+                if len(candidates) == 1:
+                    implied = candidates[0]
+
+            self._implied_default_bug_tracker = implied
+
+        return self._implied_default_bug_tracker
 
     @property
     def supports_post_commit(self) -> bool:
