@@ -87,7 +87,9 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
                 % bug_tracker.name)
 
         self.bug_id = bug_id
-        self.bug_info = bug_tracker.get_bug_info(repository, bug_id)
+        self.bug_info = bug_tracker.get_bug_info(
+            repository=repository,
+            bug_id=bug_id)
 
         if (not self.bug_info.get('summary') and
             not self.bug_info.get('description')):
