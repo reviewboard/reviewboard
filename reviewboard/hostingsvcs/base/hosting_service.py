@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from typing_extensions import NotRequired, TypeAlias
 
     from reviewboard.hostingsvcs.base.forms import (
+        BaseBugTrackerConfigForm,
         BaseHostingServiceAuthForm,
         BaseHostingServiceRepositoryForm)
     from reviewboard.hostingsvcs.base.paginator import BasePaginator
@@ -387,6 +388,21 @@ class BaseHostingService(Generic[THostingServiceClient]):
     #: Type:
     #:     type
     form: ClassVar[type[BaseHostingServiceRepositoryForm] | None] = None
+
+    #: The form for a standalone bug tracker configuration's settings.
+    #:
+    #: Services supporting standalone bug tracker configurations set this to
+    #: provide service-specific settings fields. Services without one offer no
+    #: extra settings.
+    #:
+    #: Version Added:
+    #:     9.0
+    #:
+    #: Type:
+    #:     type
+    bug_tracker_config_form: ClassVar[
+        type[BaseBugTrackerConfigForm] | None
+    ] = None
 
     #: Templated values to set for model repository fields.
     #:

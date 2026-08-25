@@ -708,3 +708,27 @@ class BaseHostingServiceRepositoryForm(_HostingServiceSubFormMixin,
         for key, value in self.cleaned_data.items():
             key = self.add_prefix(key)
             repository.extra_data[key] = value
+
+
+class BaseBugTrackerConfigForm(_HostingServiceSubFormMixin, forms.Form):
+    """Base form for a bug tracker configuration's settings.
+
+    This provides the service-specific settings fields for a standalone bug
+    tracker configuration.
+
+    Each field is stored directly in :py:attr:`ConfiguredBugTracker.settings
+    <reviewboard.hostingsvcs.models.ConfiguredBugTracker.settings>`, using the
+    field's name as the key. Services whose settings are migrated from legacy
+    per-repository settings must keep the legacy field names, so migrated
+    configurations stay readable.
+
+    This works much simpler than :py:class:`BaseHostingServiceRepositoryForm`.
+    Validation and storage are driven entirely by this form (where hosting
+    service repository forms are wrapped by the main SCMTools repository form).
+
+    Version Added:
+        9.0
+    """
+
+    # Turn off client-side validation, performing validation only server-side.
+    use_required_attribute = False
