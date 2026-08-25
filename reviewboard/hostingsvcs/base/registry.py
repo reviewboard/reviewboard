@@ -102,6 +102,7 @@ class HostingServiceRegistry(EntryPointRegistry[type[BaseHostingService]]):
                 ('bitbucket', 'Bitbucket'),
                 ('bugzilla', 'Bugzilla'),
                 ('codebasehq', 'CodebaseHQ'),
+                ('custom_bug_tracker', 'CustomBugTracker'),
                 ('fedorahosted', 'FedoraHosted'),
                 ('fogbugz', 'FogBugz'),
                 ('forgejo', 'Forgejo'),
