@@ -26,7 +26,7 @@ from reviewboard.hostingsvcs.managers import (
 from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping
+    from collections.abc import Mapping, Sequence
     from typing import ClassVar, Final
 
     from django.contrib.auth.models import User
@@ -34,6 +34,10 @@ if TYPE_CHECKING:
     from typelets.django.auth import AnyUser
     from typelets.django.strings import StrPromise
 
+    from reviewboard.hostingsvcs.base.bug_tracker import (
+        BugInfo,
+        BugSearchResult,
+    )
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
     from reviewboard.scmtools.certs import Certificate as LegacyCertificate
 
@@ -570,6 +574,70 @@ class ConfiguredBugTracker(models.Model):
         """
         return user.has_perm('hostingsvcs.change_configuredbugtracker',
                              self.local_site)
+
+    def get_bug_url(
+        self,
+        bug_id: str,
+    ) -> str | None:
+        """Return the public URL for a bug on this tracker.
+
+        Version Added:
+            9.0
+
+        Args:
+            bug_id (str):
+                The ID of the bug.
+
+        Returns:
+            str:
+            The URL for the bug, or ``None`` if one cannot be generated.
+        """
+        return self.service.get_bug_url(config=self, bug_id=bug_id)
+
+    def get_bug_info(
+        self,
+        bug_id: str,
+    ) -> BugInfo:
+        """Return information about a bug on this tracker.
+
+        Version Added:
+            9.0
+
+        Args:
+            bug_id (str):
+                The ID of the bug.
+
+        Returns:
+            reviewboard.hostingsvcs.base.bug_tracker.BugInfo:
+            Information about the bug.
+        """
+        return self.service.get_bug_info(config=self, bug_id=bug_id)
+
+    def search_bugs(
+        self,
+        query: str,
+        *,
+        limit: int = 25,
+    ) -> Sequence[BugSearchResult]:
+        """Return bugs on this tracker matching a search query.
+
+        Version Added:
+            9.0
+
+        Args:
+            query (str):
+                The search query.
+
+            limit (int, optional):
+                The maximum number of results to return.
+
+        Returns:
+            list of reviewboard.hostingsvcs.base.bug_tracker.
+            BugSearchResult:
+            The matching bugs.
+        """
+        return self.service.search_bugs(config=self, query=query,
+                                        limit=limit)
 
     def _check_user_conditions(
         self,
