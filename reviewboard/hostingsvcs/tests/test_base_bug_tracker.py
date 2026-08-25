@@ -167,3 +167,12 @@ class BaseBugTrackerDispatchTests(kgb.SpyAgency, TestCase):
         self.assertEqual(
             tracker.make_bug_cache_key(repository, '123'),
             ['repository', str(repository.pk), 'bug', '123'])
+
+    def test_base_search_bugs(self) -> None:
+        """Testing BaseBugTracker.search_bugs default returns no results"""
+        config = ConfiguredBugTracker.objects.create(name='Tracker',
+                                                     service_name='splat')
+
+        self.assertEqual(
+            BaseBugTracker().search_bugs(config=config, query='crash'),
+            [])

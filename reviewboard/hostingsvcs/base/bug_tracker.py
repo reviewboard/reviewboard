@@ -2,9 +2,10 @@
 
 Version Changed:
     9.0:
-    Reworked the bug info methods around
+    Reworked around
     :py:class:`~reviewboard.hostingsvcs.models.ConfiguredBugTracker`
-    configurations.
+    configurations, adding labels, capability flags, URL generation, and
+    search.
 
 Version Changed:
     8.0:
@@ -25,7 +26,7 @@ from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from typing import ClassVar, Literal
+    from typing import Any, ClassVar, Literal
 
     from typelets.django.strings import StrOrPromise
     from typing_extensions import NotRequired
@@ -61,6 +62,29 @@ class BugInfo(TypedDict):
     status: str
 
 
+class BugSearchResult(TypedDict):
+    """A result from a bug tracker search.
+
+    Version Added:
+        9.0
+    """
+
+    #: The ID of the bug on the tracker.
+    bug_id: str
+
+    #: A one-line summary of the bug.
+    summary: str
+
+    #: The bug's status.
+    status: NotRequired[str]
+
+    #: Whether the bug is closed.
+    closed: NotRequired[bool]
+
+    #: The public URL for the bug.
+    url: NotRequired[str]
+
+
 class BaseBugTracker:
     """An interface to a bug tracker.
 
@@ -77,7 +101,8 @@ class BaseBugTracker:
 
     Version Changed:
         9.0:
-        * Added :py:attr:`bug_tracker_label` and :py:attr:`bugs_in_repo`.
+        * Added :py:attr:`bug_tracker_label`, :py:attr:`bugs_in_repo`,
+          :py:meth:`get_bug_url` and :py:meth:`search_bugs`.
         * Reworked the info methods around bug tracker configurations.
 
     Version Changed:
@@ -108,6 +133,37 @@ class BaseBugTracker:
     #: Version Added:
     #:     9.0
     bugs_in_repo: ClassVar[bool] = False
+
+    def get_bug_id_sort_key(
+        self,
+        *,
+        bug_id: str,
+    ) -> tuple[Any, ...] | None:
+        """Return a sort key for a bug ID.
+
+        Services can override this to control how bug IDs on their trackers
+        are ordered for display. For example, a service whose IDs combine a
+        project key and a number can sort on the two parts rather than on the
+        raw string.
+
+        Keys must compare against each other, so an override must return
+        tuples of a consistent shape for every ID it accepts. Returning
+        ``None`` marks the ID as having no custom key; if any ID in a list has
+        no key, the whole list falls back to the default ordering (numeric
+        when every ID is numeric, alphabetical otherwise).
+
+        Version Added:
+            9.0
+
+        Args:
+            bug_id (str):
+                The ID of the bug.
+
+        Returns:
+            tuple:
+            The sort key, or ``None`` to use the default ordering.
+        """
+        return None
 
     @deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
     def get_bug_info(
@@ -243,6 +299,83 @@ class BaseBugTracker:
             'description': '',
             'status': '',
         }
+
+    def get_bug_url(
+        self,
+        *,
+        config: ConfiguredBugTracker,
+        bug_id: str,
+    ) -> str | None:
+        """Return the public URL for a bug.
+
+        The default implementation formats the service's ``bug_tracker_field``
+        template using the configuration's settings. This absorbs the legacy
+        ``Repository.bug_tracker`` template expansion.
+
+        Version Added:
+            9.0
+
+        Args:
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker configuration.
+
+            bug_id (str):
+                The ID of the bug.
+
+        Returns:
+            str:
+            The URL for the bug, or ``None`` if one cannot be generated.
+        """
+        settings = config.settings or {}
+
+        try:
+            # get_bug_tracker_field() is provided by BaseHostingService,
+            # which bug tracker services mix this class into.
+            template = self.get_bug_tracker_field(  # type: ignore
+                settings.get('plan'),
+                settings)
+        except Exception:
+            return None
+
+        if template and '%s' in template:
+            return template % bug_id
+
+        return None
+
+    def search_bugs(
+        self,
+        *,
+        config: ConfiguredBugTracker,
+        query: str,
+        limit: int = 25,
+    ) -> Sequence[BugSearchResult]:
+        """Return bugs matching a search query.
+
+        This powers typeahead search in bug fields. It is only called when
+        :py:attr:`supports_bug_search` is set.
+
+        There is no acting-user argument. Authentication is per-config through
+        the configuration's account. Access control checks happen in the
+        calling endpoint, not here.
+
+        Version Added:
+            9.0
+
+        Args:
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker configuration.
+
+            query (str):
+                The search query.
+
+            limit (int, optional):
+                The maximum number of results to return.
+
+        Returns:
+            list of BugSearchResult:
+            The matching bugs.
+        """
+        return []
 
     def make_bug_cache_key(
         self,
