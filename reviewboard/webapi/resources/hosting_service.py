@@ -118,6 +118,12 @@ class HostingServiceResource(WebAPIResource):
         multiple plans) into a more slimmed-down payload that can be
         transmitted via the API.
 
+        Version Changed:
+            9.0:
+            Services without a repository configuration form (such as
+            bug tracker-only services) now serialize as an empty set of
+            plans.
+
         Args:
             hosting_service (reviewboard.hostingsvcs.base.hosting_service.
                              BaseHostingService):
@@ -137,6 +143,9 @@ class HostingServiceResource(WebAPIResource):
         default_form = hosting_service.form
 
         if not plans:
+            if default_form is None:
+                return {}
+
             plans = [
                 ('', {
                     'name': 'Default',

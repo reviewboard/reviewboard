@@ -900,6 +900,14 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 # We don't want to show this service as an option.
                 continue
 
+            if (not hosting_service.supports_repositories and
+                not hosting_service.bug_tracker_field and
+                not hosting_service.plans):
+                # This service has no legacy bug tracker URL template, so
+                # there's nothing for this form to configure. It's set up
+                # through a bug tracker configuration instead.
+                continue
+
             hosting_service_id = hosting_service.hosting_service_id
             hosting_services.add(hosting_service_id)
 

@@ -1118,7 +1118,7 @@ class BaseHostingService(Generic[THostingServiceClient]):
         return (
             plan is not None and
             ('%(hosting_account_username)s' in
-             cls.get_field(plan, 'bug_tracker_field', ''))
+             (cls.get_field(plan, 'bug_tracker_field', '') or ''))
         )
 
     @classmethod

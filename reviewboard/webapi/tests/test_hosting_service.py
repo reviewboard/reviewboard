@@ -27,7 +27,10 @@ def _compare_item(self, item_rsp, hosting_service):
     plans_rsp = item_rsp['plans']
     plan_keys = set(plans_rsp.keys())
 
-    if plan_keys == {''}:
+    if not plan_keys:
+        self.assertIsNone(hosting_service.plans)
+        self.assertIsNone(hosting_service.form)
+    elif plan_keys == {''}:
         self.assertIsNone(hosting_service.plans)
 
         plan_rsp = plans_rsp['']
