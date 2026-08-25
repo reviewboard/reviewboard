@@ -68,7 +68,7 @@ class Splat(BaseHostingService, BaseBugTracker):
         result: BugInfo = {
             'summary': '',
             'description': '',
-            'description_text_format': '',
+            'description_text_format': 'plain',
             'status': '',
         }
 
