@@ -7,6 +7,9 @@ from typing import TYPE_CHECKING
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
+from housekeeping import deprecate_non_keyword_only_args
+
+from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 try:
     from jira.client import JIRA as JIRAClient
     from jira.exceptions import JIRAError
@@ -21,6 +24,7 @@ from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 if TYPE_CHECKING:
     from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
+    from reviewboard.hostingsvcs.models import ConfiguredBugTracker
     from reviewboard.scmtools.models import Repository
 
 
@@ -58,19 +62,33 @@ class JIRA(BaseHostingService, BaseBugTracker):
 
         self.jira_client = None
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
     def get_bug_info_uncached(
         self,
-        repository: Repository,
+        *,
+        repository: (Repository | None) = None,
         bug_id: str,
+        config: (ConfiguredBugTracker | None) = None,
     ) -> BugInfo:
         """Return the information for the specified bug.
 
+        Version Changed:
+            9.0:
+            Added the new ``config`` argument and made arguments keyword-only.
+
         Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository object.
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository object, for legacy repository-based calls.
 
             bug_id (str):
                 The ID of the bug to fetch.
+
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker,
+                    optional):
+                The bug tracker configuration.
+
+                Version Added:
+                    9.0
 
         Returns:
             reviewboard.hostingsvcs.base.bug_tracker.BugInfo:
@@ -82,17 +100,26 @@ class JIRA(BaseHostingService, BaseBugTracker):
             'status': '',
         }
 
+        if config is not None:
+            jira_url = config.settings.get('jira_url')
+        elif repository is not None:
+            jira_url = repository.extra_data.get('bug_tracker-jira_url')
+        else:
+            jira_url = None
+
+        if not jira_url:
+            return result
+
         if has_jira:
             if not self.jira_client:
                 try:
-                    jira_url = repository.extra_data['bug_tracker-jira_url']
                     self.jira_client = JIRAClient(options={
                         'server': jira_url,
                     }, max_retries=0)
                 except ValueError as e:
                     logger.warning(
                         'Unable to initialize JIRAClient for server %s: %s',
-                        repository.extra_data['bug_tracker-jira_url'], e)
+                        jira_url, e)
                     return result
 
             try:

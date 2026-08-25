@@ -19,7 +19,8 @@ from django.utils.translation import gettext, gettext_lazy as _
 from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import build_server_url, get_server_url
-from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
+from reviewboard.deprecation import (RemovedInReviewBoard10_0Warning,
+                                     RemovedInReviewBoard11_0Warning)
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.connect_ui import BaseHostingServiceConnectUI
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
@@ -72,6 +73,7 @@ if TYPE_CHECKING:
     )
     from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
     from reviewboard.hostingsvcs.base.hosting_service import HostingServicePlan
+    from reviewboard.hostingsvcs.models import ConfiguredBugTracker
     from reviewboard.hostingsvcs.utils.paginator import BasePaginator
     from reviewboard.scmtools.models import Repository
 
@@ -1555,19 +1557,36 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             extra_data=repository_rsp.__pydantic_extra__,
         )
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
     def get_bug_info_uncached(
         self,
-        repository: Repository,
+        *,
+        repository: (Repository | None) = None,
         bug_id: str,
+        config: (ConfiguredBugTracker | None) = None,
     ) -> BugInfo:
         """Return the information for the specified bug.
 
+        GitHub issues are in-repo. Configuration-based calls resolve the
+        repository from the configuration's scoped repository.
+
+        Version Changed:
+            9.0:
+            Added the new ``config`` argument and made arguments keyword-only.
+
         Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository object.
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository object, for legacy repository-based calls.
 
             bug_id (str):
                 The ID of the bug to fetch.
+
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker,
+                    optional):
+                The bug tracker configuration.
+
+                Version Added:
+                    9.0
 
         Returns:
             reviewboard.hostingsvcs.base.bug_tracker.BugInfo:
@@ -1577,6 +1596,16 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             reviewboard.hostingsvcs.errors.HostingServiceError:
                 There was an error fetching the bug.
         """
+        if repository is None and config is not None:
+            repository = config.repositories.first()
+
+        if repository is None:
+            return {
+                'summary': '',
+                'description': '',
+                'status': '',
+            }
+
         issue = self.client.get_issue(
             repo_api_url=self._get_repo_api_url(repository),
             bug_id=bug_id,
