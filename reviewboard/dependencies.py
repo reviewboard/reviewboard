@@ -59,13 +59,13 @@ djblets_doc_major_version = '6.x'
 django_version = '~=4.2.30'
 
 #: The version range required for Djblets.
-djblets_version = '~=6.0'
+djblets_version = '~=6.1'
 
 #: The version range for Power Pack.
-powerpack_version = '~=6.0'
+powerpack_version = '~=6.1'
 
 #: The version range for rbintegrations.
-rbintegrations_version = '~=5.0'
+rbintegrations_version = '~=5.0.1'
 
 
 ###########################################################################

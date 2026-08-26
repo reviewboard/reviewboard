@@ -25,7 +25,7 @@ if TYPE_CHECKING:
 #:
 #: (Major, Minor, Micro, Patch, alpha/beta/rc/final, Release Number, Released)
 #:
-VERSION: _Version = (8, 1, 0, 0, 'alpha', 0, False)
+VERSION: _Version = (8, 1, 0, 0, 'final', 0, True)
 
 
 def get_version_string() -> str:
