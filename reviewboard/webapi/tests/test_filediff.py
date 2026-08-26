@@ -526,11 +526,11 @@ class ResourceItemTests(ExtraDataItemMixin, ReviewRequestChildItemMixin,
                                     '',
                                     None,
                                     1,
-                                    '<span class="ts-function-builtin"><span '
+                                    '<span class="ts-variable"><span '
                                     'class="ts-function-call"><span '
-                                    'class="ts-variable">print</span></span>'
-                                    '</span>(<span class="ts-string">&#39;'
-                                    'hello, world!&#39;</span>)',
+                                    'class="ts-function-builtin">print</span>'
+                                    '</span></span>(<span class="ts-string">'
+                                    '&#39;hello, world!&#39;</span>)',
                                     None,
                                     False,
                                 ],

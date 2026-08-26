@@ -1,3 +1,5 @@
+"""Hosting service for Redmine."""
+
 from __future__ import annotations
 
 from django import forms
@@ -9,6 +11,8 @@ from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
 class RedmineForm(BaseHostingServiceRepositoryForm):
+    """Configuration form for Redmine."""
+
     redmine_url = forms.CharField(
         label=_('Redmine URL'),
         max_length=64,
@@ -18,8 +22,12 @@ class RedmineForm(BaseHostingServiceRepositoryForm):
 
 
 class Redmine(BaseHostingService):
-    name = 'Redmine'
+    """Hosting service for Redmine."""
+
     hosting_service_id = 'redmine'
+    name = 'Redmine'
+
     form = RedmineForm
-    bug_tracker_field = '%(redmine_url)s/issues/%%s'
     supports_bug_trackers = True
+
+    bug_tracker_field = '%(redmine_url)s/issues/%%s'

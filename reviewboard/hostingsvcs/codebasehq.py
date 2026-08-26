@@ -344,17 +344,19 @@ class CodebaseHQ(BaseHostingService[CodebaseHQClient]):
     API limitations, it does not support post-commit review at this time.
     """
 
-    name = 'Codebase HQ'
     hosting_service_id = 'codebasehq'
-    form = CodebaseHQForm
-    auth_form = CodebaseHQAuthForm
+    name = 'Codebase HQ'
 
+    form = CodebaseHQForm
     needs_authorization = True
+    supported_scmtools = ['Git', 'Subversion', 'Mercurial']
     supports_bug_trackers = True
     supports_repositories = True
 
-    supported_scmtools = ['Git', 'Subversion', 'Mercurial']
-
+    bug_tracker_field = (
+        'https://%(domain)s.codebasehq.com/projects/'
+        '%(codebasehq_project_name)s/tickets/%%s'
+    )
     repository_fields = {
         'Git': {
             'path': 'git@codebasehq.com:%(domain)s/'
@@ -372,11 +374,6 @@ class CodebaseHQ(BaseHostingService[CodebaseHQClient]):
                     '%(codebasehq_repo_name)s/',
         },
     }
-
-    bug_tracker_field = (
-        'https://%(domain)s.codebasehq.com/projects/'
-        '%(codebasehq_project_name)s/tickets/%%s'
-    )
 
     #: A mapping of Codebase SCM types to SCMTool names.
     REPO_SCM_TOOL_MAP = {

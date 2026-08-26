@@ -1,0 +1,65 @@
+/**
+ * Style defaults.
+ *
+ * Version Added:
+ *     9.0
+ */
+
+@layer defaults {
+  a:link, a:visited {
+    color: var(--ink-p-link-fg);
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: var(--ink-p-link-hover-fg);
+    text-decoration: underline;
+  }
+
+  /*
+   * Form field chrome. Being in the defaults layer, these lose to the
+   * thirdparty layer and to unlayered styles, so components (such as
+   * Ink's, which embed inputs inside styled containers) always win.
+   */
+  input[type=email],
+  input[type=number],
+  input[type=password],
+  input[type=search],
+  input[type=text],
+  input[type=url],
+  select {
+    background: var(--ink-p-input-bg);
+    border: var(--ink-g-border-input);
+    border-radius: var(--ink-u-border-radius-input);
+    color: var(--ink-p-input-fg);
+    box-sizing: border-box;
+    font-size: inherit;
+    padding: var(--ink-u-spacing-xs) var(--ink-u-spacing-s);
+  }
+
+  textarea {
+    background: var(--ink-p-input-bg);
+    border: var(--ink-g-border-input);
+    border-radius: var(--ink-u-border-radius-input);
+    box-sizing: border-box;
+    color: var(--ink-p-input-fg);
+    font-size: var(--rb-c-textarea-font-size);
+    padding: var(--rb-c-textarea-spacing);
+    resize: none;
+  }
+
+  :root,
+  [data-ink-color-scheme] {
+    #rb-ns-ui.design-tokens();
+  }
+}
+
+
+/*
+ * The thirdparty layer is on top of defaults, so this needs to happen
+ * unlayered so it takes precedence over Ink.
+ */
+:root,
+[data-ink-color-scheme] {
+  #rb-ns-ui.ink-overrides();
+}

@@ -22,6 +22,8 @@ logger = logging.getLogger(__name__)
 
 
 class BugzillaForm(BaseHostingServiceRepositoryForm):
+    """Form for Bugzilla."""
+
     bugzilla_url = forms.CharField(
         label=_('Bugzilla URL'),
         max_length=64,
@@ -42,11 +44,13 @@ class BugzillaForm(BaseHostingServiceRepositoryForm):
 class Bugzilla(BaseHostingService, BaseBugTracker):
     """Hosting service for Bugzilla."""
 
-    name = 'Bugzilla'
     hosting_service_id = 'bugzilla'
+    name = 'Bugzilla'
+
     form = BugzillaForm
-    bug_tracker_field = '%(bugzilla_url)s/show_bug.cgi?id=%%s'
     supports_bug_trackers = True
+
+    bug_tracker_field = '%(bugzilla_url)s/show_bug.cgi?id=%%s'
 
     def get_bug_info_uncached(
         self,

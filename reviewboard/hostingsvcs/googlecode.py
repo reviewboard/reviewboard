@@ -1,3 +1,5 @@
+"""Hosting service for Google Code."""
+
 from __future__ import annotations
 
 from django import forms
@@ -8,6 +10,8 @@ from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
 class GoogleCodeForm(BaseHostingServiceRepositoryForm):
+    """Repository for for Google Code."""
+
     googlecode_project_name = forms.CharField(
         label=_('Project name'),
         max_length=64,
@@ -28,14 +32,14 @@ class GoogleCode(BaseHostingService):
         repository.
     """
 
-    name = 'Google Code'
     hosting_service_id = 'googlecode'
+    name = 'Google Code'
     visible = False
 
     form = GoogleCodeForm
     supported_scmtools = ['Mercurial', 'Subversion']
-    supports_repositories = True
     supports_bug_trackers = True
+    supports_repositories = True
 
     repository_fields = {
         'Mercurial': {

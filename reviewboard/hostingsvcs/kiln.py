@@ -21,6 +21,8 @@ from reviewboard.scmtools.errors import FileNotFoundError
 
 
 class KilnForm(BaseHostingServiceRepositoryForm):
+    """Repository form for Kiln."""
+
     kiln_account_domain = forms.CharField(
         label=_('Account domain'),
         max_length=64,
@@ -76,6 +78,7 @@ class KilnAPIError(HostingServiceError):
 
 class KilnClient(HostingServiceClient):
     """Interfaces with the Kiln 1.0 API."""
+
     def __init__(self, hosting_service):
         super(KilnClient, self).__init__(hosting_service)
 
@@ -204,12 +207,11 @@ class Kiln(BaseHostingService):
     hosting_service_id = 'kiln'
     visible = False
 
-    needs_authorization = True
-    supports_repositories = True
-    supported_scmtools = ['Git', 'Mercurial']
-
-    form = KilnForm
     client_class = KilnClient
+    form = KilnForm
+    needs_authorization = True
+    supported_scmtools = ['Git', 'Mercurial']
+    supports_repositories = True
 
     repository_fields = {
         'Git': {

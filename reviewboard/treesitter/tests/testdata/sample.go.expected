@@ -34,7 +34,7 @@
 <span class="ts-comment">// NewPersonService creates a new PersonService</span>
 <span class="ts-keyword">func</span> <span class="ts-function"><span class="ts-variable">NewPersonService</span></span>() <span class="ts-operator">*</span>PersonService {
 	<span class="ts-keyword">return</span> <span class="ts-operator">&amp;</span>PersonService{
-		<span class="ts-variable">people</span>: <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">make</span></span></span>(<span class="ts-type-builtin">map</span>[<span class="ts-type-builtin">int</span>]<span class="ts-operator">*</span>Person),
+		<span class="ts-variable">people</span>: <span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">make</span></span></span>(<span class="ts-type-builtin">map</span>[<span class="ts-type-builtin">int</span>]<span class="ts-operator">*</span>Person),
 		<span class="ts-variable">nextID</span>: <span class="ts-number">1</span>,
 	}
 }
@@ -69,9 +69,9 @@
 	<span class="ts-variable">ps</span>.mu.<span class="ts-function-method-call">RLock</span>()
 	<span class="ts-keyword">defer</span> <span class="ts-variable">ps</span>.mu.<span class="ts-function-method-call">RUnlock</span>()
 
-	<span class="ts-variable">people</span> <span class="ts-operator">:=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">make</span></span></span>([]<span class="ts-operator">*</span>Person, <span class="ts-number">0</span>, <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">len</span></span></span>(<span class="ts-variable">ps</span>.people))
+	<span class="ts-variable">people</span> <span class="ts-operator">:=</span> <span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">make</span></span></span>([]<span class="ts-operator">*</span>Person, <span class="ts-number">0</span>, <span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">len</span></span></span>(<span class="ts-variable">ps</span>.people))
 	<span class="ts-keyword">for</span> <span class="ts-variable">_</span>, <span class="ts-variable">person</span> <span class="ts-operator">:=</span> <span class="ts-keyword">range</span> <span class="ts-variable">ps</span>.people {
-		<span class="ts-variable">people</span> <span class="ts-operator">=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">append</span></span></span>(<span class="ts-variable">people</span>, <span class="ts-variable">person</span>)
+		<span class="ts-variable">people</span> <span class="ts-operator">=</span> <span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">append</span></span></span>(<span class="ts-variable">people</span>, <span class="ts-variable">person</span>)
 	}
 	<span class="ts-keyword">return</span> <span class="ts-variable">people</span>
 }
@@ -115,8 +115,8 @@
 
 <span class="ts-comment">// Worker pool example</span>
 <span class="ts-keyword">func</span> <span class="ts-function"><span class="ts-variable">processData</span></span>(<span class="ts-variable">data</span> []<span class="ts-type-builtin">int</span>, <span class="ts-variable">workers</span> <span class="ts-type-builtin">int</span>) []<span class="ts-type-builtin">int</span> {
-	<span class="ts-variable">jobs</span> <span class="ts-operator">:=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">make</span></span></span>(<span class="ts-type-builtin">chan</span> <span class="ts-type-builtin">int</span>, <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">len</span></span></span>(<span class="ts-variable">data</span>))
-	<span class="ts-variable">results</span> <span class="ts-operator">:=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">make</span></span></span>(<span class="ts-type-builtin">chan</span> <span class="ts-type-builtin">int</span>, <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">len</span></span></span>(<span class="ts-variable">data</span>))
+	<span class="ts-variable">jobs</span> <span class="ts-operator">:=</span> <span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">make</span></span></span>(<span class="ts-type-builtin">chan</span> <span class="ts-type-builtin">int</span>, <span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">len</span></span></span>(<span class="ts-variable">data</span>))
+	<span class="ts-variable">results</span> <span class="ts-operator">:=</span> <span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">make</span></span></span>(<span class="ts-type-builtin">chan</span> <span class="ts-type-builtin">int</span>, <span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">len</span></span></span>(<span class="ts-variable">data</span>))
 
 	<span class="ts-comment">// Start workers</span>
 	<span class="ts-keyword">var</span> <span class="ts-variable">wg</span> <span class="ts-module">sync</span>.WaitGroup
@@ -134,7 +134,7 @@
 
 	<span class="ts-comment">// Send jobs</span>
 	<span class="ts-keyword">go</span> <span class="ts-keyword">func</span>() {
-		<span class="ts-keyword">defer</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">close</span></span></span>(<span class="ts-variable">jobs</span>)
+		<span class="ts-keyword">defer</span> <span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">close</span></span></span>(<span class="ts-variable">jobs</span>)
 		<span class="ts-keyword">for</span> <span class="ts-variable">_</span>, <span class="ts-variable">num</span> <span class="ts-operator">:=</span> <span class="ts-keyword">range</span> <span class="ts-variable">data</span> {
 			<span class="ts-variable">jobs</span> <span class="ts-operator">&lt;-</span> <span class="ts-variable">num</span>
 		}
@@ -143,20 +143,20 @@
 	<span class="ts-comment">// Close results channel when workers are done</span>
 	<span class="ts-keyword">go</span> <span class="ts-keyword">func</span>() {
 		<span class="ts-variable">wg</span>.<span class="ts-function-method-call">Wait</span>()
-		<span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">close</span></span></span>(<span class="ts-variable">results</span>)
+		<span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">close</span></span></span>(<span class="ts-variable">results</span>)
 	}()
 
 	<span class="ts-comment">// Collect results</span>
 	<span class="ts-keyword">var</span> <span class="ts-variable">processed</span> []<span class="ts-type-builtin">int</span>
 	<span class="ts-keyword">for</span> <span class="ts-variable">result</span> <span class="ts-operator">:=</span> <span class="ts-keyword">range</span> <span class="ts-variable">results</span> {
-		<span class="ts-variable">processed</span> <span class="ts-operator">=</span> <span class="ts-function-builtin"><span class="ts-function-call"><span class="ts-variable">append</span></span></span>(<span class="ts-variable">processed</span>, <span class="ts-variable">result</span>)
+		<span class="ts-variable">processed</span> <span class="ts-operator">=</span> <span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">append</span></span></span>(<span class="ts-variable">processed</span>, <span class="ts-variable">result</span>)
 	}
 
 	<span class="ts-keyword">return</span> <span class="ts-variable">processed</span>
 }
 
 <span class="ts-keyword">func</span> <span class="ts-function"><span class="ts-variable">main</span></span>() {
-	<span class="ts-variable">service</span> <span class="ts-operator">:=</span> <span class="ts-function-call"><span class="ts-constructor"><span class="ts-variable">NewPersonService</span></span></span>()
+	<span class="ts-variable">service</span> <span class="ts-operator">:=</span> <span class="ts-variable"><span class="ts-constructor"><span class="ts-function-call">NewPersonService</span></span></span>()
 
 	<span class="ts-comment">// Add some test data</span>
 	<span class="ts-variable">service</span>.<span class="ts-function-method-call">AddPerson</span>(<span class="ts-string">&quot;Alice Johnson&quot;</span>, <span class="ts-string">&quot;alice@example.com&quot;</span>, <span class="ts-number">30</span>)
@@ -169,7 +169,7 @@
 
 	<span class="ts-comment">// Example of processing data with goroutines</span>
 	<span class="ts-variable">testData</span> <span class="ts-operator">:=</span> []<span class="ts-type-builtin">int</span>{<span class="ts-number">1</span>, <span class="ts-number">2</span>, <span class="ts-number">3</span>, <span class="ts-number">4</span>, <span class="ts-number">5</span>, <span class="ts-number">6</span>, <span class="ts-number">7</span>, <span class="ts-number">8</span>, <span class="ts-number">9</span>, <span class="ts-number">10</span>}
-	<span class="ts-variable">processed</span> <span class="ts-operator">:=</span> <span class="ts-function-call"><span class="ts-variable">processData</span></span>(<span class="ts-variable">testData</span>, <span class="ts-number">3</span>)
+	<span class="ts-variable">processed</span> <span class="ts-operator">:=</span> <span class="ts-variable"><span class="ts-function-call">processData</span></span>(<span class="ts-variable">testData</span>, <span class="ts-number">3</span>)
 	<span class="ts-variable">fmt</span>.<span class="ts-function-method-call">Printf</span>(<span class="ts-string">&quot;Processed data: %v<span class="ts-string">\n</span>&quot;</span>, <span class="ts-variable">processed</span>)
 
 	<span class="ts-comment">// Start server</span>

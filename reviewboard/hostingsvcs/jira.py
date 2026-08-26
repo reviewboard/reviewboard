@@ -42,11 +42,13 @@ class JIRAForm(BaseHostingServiceRepositoryForm):
 class JIRA(BaseHostingService, BaseBugTracker):
     """Hosting service for JIRA."""
 
-    name = 'JIRA'
     hosting_service_id = 'jira'
+    name = 'JIRA'
+
     form = JIRAForm
-    bug_tracker_field = '%(jira_url)s/browse/%%s'
     supports_bug_trackers = True
+
+    bug_tracker_field = '%(jira_url)s/browse/%%s'
 
     def __init__(self, account):
         super(JIRA, self).__init__(account)

@@ -5,7 +5,7 @@
 Review Board 8.1 Release Notes
 ==============================
 
-**Release date**: TBD
+**Release date**: August 25, 2026
 
 
 Installation/Upgrade

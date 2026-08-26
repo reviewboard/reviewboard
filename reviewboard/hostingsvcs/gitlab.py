@@ -34,6 +34,8 @@ from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.scmtools.core import Branch, Commit
 
 if TYPE_CHECKING:
+    from typing import ClassVar
+
     from reviewboard.hostingsvcs.base.hosting_service import \
         HostingServiceCredentials
 
@@ -253,24 +255,17 @@ class GitLab(BaseHostingService):
     GitLab is a self-installed source hosting service that supports Git
     repositories. It's available at https://gitlab.org/.
     """
-    name = 'GitLab'
+
     hosting_service_id = 'gitlab'
+    name = 'GitLab'
 
-    # The maximum number of commits returned from each call to get_commits()
-    COMMITS_PER_PAGE = 20
-
-    self_hosted = True
+    auth_form = GitLabAuthForm
     needs_authorization = True
+    self_hosted = True
+    supported_scmtools = ['Git']
     supports_bug_trackers = True
     supports_post_commit = True
     supports_repositories = True
-    supported_scmtools = ['Git']
-
-    # Pagination links (in GitLab 6.8.0+) take the form:
-    # '<http://gitlab/api/v3/projects?page=2&per_page=100>; rel="next"'
-    LINK_HEADER_RE = re.compile(r'\<(?P<url>[^\>]+)\>; rel="next"')
-
-    auth_form = GitLabAuthForm
 
     plans = [
         ('personal', {
@@ -306,6 +301,14 @@ class GitLab(BaseHostingService):
                                  '%(gitlab_group_repo_name)s/issues/%%s'
         }),
     ]
+
+    # The maximum number of commits returned from each call to get_commits()
+    COMMITS_PER_PAGE: ClassVar[int] = 20
+
+    # Pagination links (in GitLab 6.8.0+) take the form:
+    # '<http://gitlab/api/v3/projects?page=2&per_page=100>; rel="next"'
+    LINK_HEADER_RE: ClassVar[re.Pattern[str]] = \
+        re.compile(r'\<(?P<url>[^\>]+)\>; rel="next"')
 
     @deprecate_non_keyword_only_args(RemovedInReviewBoard10_0Warning)
     def check_repository(

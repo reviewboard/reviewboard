@@ -1,3 +1,5 @@
+"""Hosting service for Gitorious."""
+
 from __future__ import annotations
 
 from django import forms
@@ -8,6 +10,8 @@ from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
 class GitoriousForm(BaseHostingServiceRepositoryForm):
+    """Form for Gitorious."""
+
     gitorious_project_name = forms.CharField(
         label=_('Project name'),
         max_length=64,
@@ -22,12 +26,15 @@ class GitoriousForm(BaseHostingServiceRepositoryForm):
 
 
 class Gitorious(BaseHostingService):
-    name = 'Gitorious'
+    """Hosting service for Gitorious."""
+
     hosting_service_id = 'gitorious'
+    name = 'Gitorious'
+
     form = GitoriousForm
+    self_hosted = True
     supported_scmtools = ['Git']
     supports_repositories = True
-    self_hosted = True
 
     repository_fields = {
         'Git': {

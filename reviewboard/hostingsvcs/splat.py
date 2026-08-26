@@ -38,12 +38,14 @@ class Splat(BaseHostingService, BaseBugTracker):
     Review Board.
     """
 
-    name = 'Splat'
     hosting_service_id = 'splat'
+    name = 'Splat'
+
     form = SplatForm
+    supports_bug_trackers = True
+
     bug_tracker_field = \
         'https://hellosplat.com/s/%(splat_org_name)s/tickets/%%s/'
-    supports_bug_trackers = True
 
     def get_bug_info_uncached(
         self,

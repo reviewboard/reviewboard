@@ -28,15 +28,18 @@ from reviewboard.hostingsvcs.errors import (
     InvalidPlanError,
     RepositoryError,
 )
+from reviewboard.hostingsvcs.github import views
+from reviewboard.hostingsvcs.github.accounts import (
+    get_github_app_role,
+)
 from reviewboard.hostingsvcs.github.client import GitHubClient
 from reviewboard.hostingsvcs.github.forms import (
     GitHubAuthForm,
-    GitHubPublicForm,
-    GitHubPublicOrgForm,
     GitHubPrivateForm,
     GitHubPrivateOrgForm,
+    GitHubPublicForm,
+    GitHubPublicOrgForm,
 )
-from reviewboard.hostingsvcs.github.views import GitHubHookViews
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
@@ -97,8 +100,19 @@ def _is_fine_grained_pat(
 class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
     """Hosting service for GitHub."""
 
-    name = _('GitHub')
     hosting_service_id = 'github'
+    name = _('GitHub')
+
+    auth_form = GitHubAuthForm
+    client_class = GitHubClient
+    has_repository_hook_instructions = True
+    needs_authorization = True
+    supported_scmtools: ClassVar[Sequence[str]] = ['Git']
+    supports_bug_trackers = True
+    supports_list_remote_repositories = True
+    supports_post_commit = True
+    supports_repositories = True
+
     plans: ClassVar[Sequence[tuple[str, HostingServicePlan]] | None] = [
         ('public', {
             'name': _('Public'),
@@ -165,32 +179,24 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         }),
     ]
 
-    auth_form = GitHubAuthForm
-
-    needs_authorization = True
-    supports_bug_trackers = True
-    supports_post_commit = True
-    supports_repositories = True
-    supports_list_remote_repositories = True
-    supported_scmtools: ClassVar[Sequence[str]] = ['Git']
-
-    has_repository_hook_instructions = True
-
-    client_class = GitHubClient
-
-    repository_url_patterns: ClassVar[list[_AnyURL] | None] = [
+    hosting_service_url_patterns: ClassVar[Sequence[_AnyURL] | None] = [
+        path('github-app/webhook/',
+             views.GitHubAppWebhookView.as_view(),
+             name='github-app-webhook'),
+    ]
+    repository_url_patterns: ClassVar[Sequence[_AnyURL] | None] = [
         path('hooks/close-submitted/',
-             GitHubHookViews.post_receive_hook_close_submitted,
+             views.GitHubHookViews.post_receive_hook_close_submitted,
              name='github-hooks-close-submitted'),
     ]
 
     # This should be the prefix for every field on the plan forms.
-    plan_field_prefix = 'github'
+    plan_field_prefix: ClassVar[str] = 'github'
 
     #: A list of the scopes that Review Board requires.
-    REQUIRED_SCOPES = _REQUIRED_SCOPES
+    REQUIRED_SCOPES: ClassVar[Sequence[str]] = _REQUIRED_SCOPES
 
-    _ORG_ACCESS_SUPPORT_URL = (
+    _ORG_ACCESS_SUPPORT_URL: ClassVar[str] = (
         'https://beanbag.freshdesk.com/solution/articles/3000045767'
         '-granting-organization-access-on-github'
     )
@@ -419,7 +425,16 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             bool:
             Whether or not the associated account is authorized.
         """
-        account_data = self.account.data
+        account = self.account
+
+        if get_github_app_role(account) in {'app', 'installation'}:
+            # This is a GitHub App account. Authorization is provided by the
+            # app's credentials, not a stored token. Whether the installation
+            # is still live on GitHub's side is tracked separately and surfaces
+            # when minting an installation token.
+            return True
+
+        account_data = account.data
 
         if account_data.get('personal_token'):
             # This is a newer linked account using a GitHub user's custom

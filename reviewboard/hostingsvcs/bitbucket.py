@@ -832,26 +832,17 @@ class Bitbucket(BaseHostingService[BitbucketClient]):
     at https://bitbucket.org/.
     """
 
-    name = 'Bitbucket'
     hosting_service_id = 'bitbucket'
+    name = 'Bitbucket'
 
-    client_class = BitbucketClient
     auth_form = BitbucketAuthForm
-
+    client_class = BitbucketClient
+    has_repository_hook_instructions = True
     needs_authorization = True
-    supports_repositories = True
+    supported_scmtools = ['Git', 'Mercurial']
     supports_bug_trackers = True
     supports_post_commit = True
-
-    has_repository_hook_instructions = True
-
-    repository_url_patterns = [
-        path('hooks/<str:hooks_uuid>/close-submitted/',
-             BitbucketHookViews.post_receive_hook_close_submitted,
-             name='bitbucket-hooks-close-submitted'),
-    ]
-
-    supported_scmtools = ['Git', 'Mercurial']
+    supports_repositories = True
     visible_scmtools = ['Git']
 
     plans = [
@@ -932,6 +923,12 @@ class Bitbucket(BaseHostingService[BitbucketClient]):
                                   '%(bitbucket_team_repo_name)s/issue/%%s/'),
 
         }),
+    ]
+
+    repository_url_patterns = [
+        path('hooks/<str:hooks_uuid>/close-submitted/',
+             BitbucketHookViews.post_receive_hook_close_submitted,
+             name='bitbucket-hooks-close-submitted'),
     ]
 
     DEFAULT_PLAN = 'personal'

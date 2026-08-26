@@ -281,6 +281,7 @@ PIPELINE_JAVASCRIPT: Mapping[str, StaticBundle] = {
 PIPELINE_STYLESHEETS: Mapping[str, StaticBundle] = {
     'common': {
         'source_filenames': (
+            'rb/css/layers.less',
             'lib/css/3rdparty.less',
             'lib/css/fontawesome.less',
             'rb/css/bundles/common.less',

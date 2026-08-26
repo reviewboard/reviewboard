@@ -41,11 +41,14 @@ def get_language(
     return lp_get_language(language_name)
 
 
-@lru_cache
 def get_parser(
     language_name: SupportedLanguage,
 ) -> Parser:
-    """Get a tree sitter parser.
+    """Return a tree sitter parser.
+
+    This returns a new parser for each call. Parser objects are stateful
+    and not thread-safe, so they must not be shared or cached. The
+    underlying language object is cached by :py:func:`get_language`.
 
     Version Added:
         9.0

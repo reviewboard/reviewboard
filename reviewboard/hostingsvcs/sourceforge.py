@@ -1,3 +1,5 @@
+"""Hosting service for SourceForge."""
+
 from __future__ import annotations
 
 from django import forms
@@ -8,6 +10,8 @@ from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
 class SourceForgeForm(BaseHostingServiceRepositoryForm):
+    """Repository form for SourceForge."""
+
     sourceforge_project_name = forms.CharField(
         label=_('Project name'),
         max_length=64,
@@ -16,12 +20,17 @@ class SourceForgeForm(BaseHostingServiceRepositoryForm):
 
 
 class SourceForge(BaseHostingService):
-    name = 'SourceForge'
+    """Hosting service for SourceForge."""
+
     hosting_service_id = 'sourceforge'
+    name = 'SourceForge'
+
     form = SourceForgeForm
-    supports_repositories = True
-    supports_bug_trackers = True
     supported_scmtools = ['Bazaar', 'CVS', 'Mercurial', 'Subversion']
+    supports_bug_trackers = True
+    supports_repositories = True
+
+    bug_tracker_field = 'http://sourceforge.net/support/tracker.php?aid=%%s'
     repository_fields = {
         'Bazaar': {
             'path': 'bzr://%(sourceforge_project_name)s'
@@ -57,4 +66,3 @@ class SourceForge(BaseHostingService):
         },
         # TODO: Support Git
     }
-    bug_tracker_field = 'http://sourceforge.net/support/tracker.php?aid=%%s'

@@ -319,10 +319,18 @@ class ConnectedServicesListView(View):
         ]
         entries.sort(key=lambda entry: entry[0])
 
+        # A connect flow that needs to finish in the wizard (such as returning
+        # from a GitHub App installation) stashes the step URL in the session.
+        # Pop it so the wizard opens on that step once, without reopening on a
+        # later refresh. The value is server-built, so it is safe to fetch and
+        # inject into the dialog.
+        auto_connect_url = request.session.pop('connect_wizard_url', None)
+
         return render(
             request=request,
             template_name='admin/connected_services/list.html',
             context={
+                'auto_connect_url': auto_connect_url,
                 'available_services': available_services,
                 'service_entries': [entry[1] for entry in entries],
                 'title': _('Connected Services'),

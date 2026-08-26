@@ -202,6 +202,40 @@ def test_get_nodes_by_line_overlapping_nodes() -> None:
     assert nodes[2][0] == 'function.call'
 
 
+def test_get_nodes_by_line_node_past_last_line() -> None:
+    """Test _get_nodes_by_line with a node ending past the last line.
+
+    A node that consumes the trailing newline of a file ends at the start
+    of a row past the last line.
+    """
+    captures = [
+        ('markup.heading', 0, 0, 1, 0, b'# Header\n'),
+    ]
+    lines = ['# Header']
+
+    result = list(_get_nodes_by_line(captures, lines))
+
+    assert len(result) == 1
+    nodes = result[0]
+    assert len(nodes) == 1
+    assert nodes[0][NODE_NAME] == 'markup.heading'
+    assert nodes[0][NODE_START] == 0
+    assert nodes[0][NODE_END] == len(lines[0])
+
+
+def test_get_nodes_by_line_node_starts_past_last_line() -> None:
+    """Test _get_nodes_by_line with a node starting past the last line."""
+    captures = [
+        ('string', 1, 0, 1, 4, b'text'),
+    ]
+    lines = ['# Header']
+
+    result = list(_get_nodes_by_line(captures, lines))
+
+    assert len(result) == 1
+    assert result[0] == []
+
+
 def test_get_events_by_line_single_node() -> None:
     """Test _get_events_by_line with single node."""
     nodes_by_line = [
@@ -427,6 +461,25 @@ def test_highlight_language_files(
     assert result == expected
 
 
+def test_highlight_trailing_newline() -> None:
+    """Test highlight with a file ending in a newline.
+
+    Nodes that consume the trailing newline end past the last line, and
+    must not break highlighting.
+    """
+    content = '---\ntitle: hello\n---\n'
+    content_bytes = content.encode()
+    lines = content.splitlines()
+
+    parser = get_parser('markdown')
+    tree = parser.parse(content_bytes)
+
+    result = highlight(content_bytes, lines, tree, 'markdown')
+
+    assert result is not None
+    assert '<span class="ts-string">title</span>' in result[1]
+
+
 def test_highlight_unsupported_language() -> None:
     """Test highlight with unsupported language."""
     lines = ['test content']
@@ -504,10 +557,10 @@ def test_highlight_with_injections() -> None:
             '</span></span>() {'
         ),
         (
-            '    <span class="ts-variable-builtin">'
-            '<span class="ts-variable">console</span></span>.'
-            '<span class="ts-function-method-call">'
-            '<span class="ts-variable">log</span></span>('
+            '    <span class="ts-variable">'
+            '<span class="ts-variable-builtin">console</span></span>.'
+            '<span class="ts-variable">'
+            '<span class="ts-function-method-call">log</span></span>('
             '<span class="ts-string">&quot;Hello&quot;</span>);'
         ),
         (
@@ -517,6 +570,27 @@ def test_highlight_with_injections() -> None:
             '&lt;/<span class="ts-tag">script</span>&gt;'
         ),
     ]
+
+
+def test_highlight_specific_capture_is_innermost() -> None:
+    """Test that more-specific captures nest inside less-specific ones.
+
+    When one node matches both a generic capture (variable) and a
+    more-specific one (constant.builtin), the specific capture must be
+    the innermost span so that its CSS takes precedence.
+    """
+    content = b'print(__name__)\n'
+    lines = ['print(__name__)']
+    parser = get_parser('python')
+    tree = parser.parse(content)
+
+    result = highlight(content, lines, tree, 'python')
+    assert result is not None
+
+    assert (
+        '<span class="ts-variable">'
+        '<span class="ts-constant-builtin">__name__</span></span>'
+    ) in result[0]
 
 
 def test_highlight_with_multibyte_unicode_character() -> None:

@@ -27,14 +27,17 @@ class FedoraHosted(BaseHostingService):
         repository.
     """
 
-    name = 'Fedora Hosted'
     hosting_service_id = 'fedorahosted'
+    name = 'Fedora Hosted'
     visible = False
 
     form = FedoraHostedForm
-    supports_repositories = True
-    supports_bug_trackers = True
     supported_scmtools = ['Git', 'Mercurial', 'Subversion']
+    supports_bug_trackers = True
+    supports_repositories = True
+
+    bug_tracker_field = \
+        'https://fedorahosted.org/%(fedorahosted_repo_name)s/ticket/%%s'
     repository_fields = {
         'Git': {
             'path': 'git://git.fedorahosted.org/git/'
@@ -56,5 +59,3 @@ class FedoraHosted(BaseHostingService):
                            '%(fedorahosted_repo_name)s/',
         },
     }
-    bug_tracker_field = \
-        'https://fedorahosted.org/%(fedorahosted_repo_name)s/ticket/%%s'

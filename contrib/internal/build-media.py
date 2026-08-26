@@ -6,6 +6,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import django
@@ -77,6 +78,23 @@ if __name__ == '__main__':
         jquery_ui_images = \
             jquery_ui_dir / 'dist' / 'themes' / 'base' / 'images'
 
+        # 3rdparty.less inlines Ink's stylesheets, which keep their
+        # sourceMappingURL comments. Collect the referenced source maps
+        # so collectstatic's post-processing can resolve them.
+        ink_lib_dir: (Path | None) = None
+
+        for node_path in settings.NODE_PATH.split(':'):
+            ink_lib = Path(node_path) / '@beanbag' / 'ink' / 'lib'
+
+            if ink_lib.is_dir():
+                ink_lib_dir = ink_lib
+
+        assert ink_lib_dir is not None
+        ink_css_maps_dir = Path(tempfile.mkdtemp(prefix='rb-ink-css-maps-'))
+
+        for css_map in ink_lib_dir.glob('*.css.map'):
+            shutil.copy(css_map, ink_css_maps_dir / css_map.name)
+
         settings.STATICFILES_FINDERS.append(
             'django.contrib.staticfiles.finders.FileSystemFinder',
         )
@@ -86,6 +104,7 @@ if __name__ == '__main__':
         # the FileSystemFinder.
         settings.STATICFILES_DIRS = [
             ('lib/css/images', str(jquery_ui_images)),
+            ('lib/css', str(ink_css_maps_dir)),
         ]
 
         # Build the static media.

@@ -55,10 +55,10 @@ django_version = '~=5.2.12'
 djblets_version = '~=7.0a0.dev'
 
 #: The version range for Power Pack.
-powerpack_version = '~=6.0'
+powerpack_version = '~=6.1'
 
 #: The version range for rbintegrations.
-rbintegrations_version = '~=5.0'
+rbintegrations_version = '~=5.0.1'
 
 
 ###########################################################################

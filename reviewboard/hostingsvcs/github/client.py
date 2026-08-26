@@ -7,29 +7,39 @@ Version Added:
 
 from __future__ import annotations
 
-import re
+import datetime
 import logging
+import re
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, TypeVar
 from urllib.error import HTTPError
 from urllib.parse import quote as urlquote, urlencode
 
+from django.core.cache import cache
 from django.utils.translation import gettext as _
+from djblets.cache.backend import make_cache_key
 from pydantic import BaseModel, TypeAdapter, ValidationError
 
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
-from reviewboard.hostingsvcs.errors import (
-    AuthorizationError,
-    HostingServiceError,
-    HostingServiceAPIError,
-)
 from reviewboard.hostingsvcs.base.paginator import (
     APIPaginator,
-    PageDataT,
     PageDataItemT,
+    PageDataT,
     ProxyPaginator,
 )
+from reviewboard.hostingsvcs.errors import (
+    AuthorizationError,
+    HostingServiceAPIError,
+    HostingServiceError,
+)
 from reviewboard.hostingsvcs.github import api
+from reviewboard.hostingsvcs.github.accounts import (
+    get_github_app_data,
+    is_app_record_data,
+    is_installation_data,
+)
+from reviewboard.hostingsvcs.github.app_auth import build_app_jwt_from_data
+from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.crypto_utils import decrypt_password
 from reviewboard.scmtools.errors import FileNotFoundError
 
@@ -47,8 +57,9 @@ if TYPE_CHECKING:
         APIPaginatorPageData,
         BasePaginator,
     )
+    from reviewboard.hostingsvcs.github.accounts import \
+        GitHubAppInstallationData
     from reviewboard.hostingsvcs.github.service import GitHub
-    from reviewboard.hostingsvcs.models import HostingServiceAccount
     from reviewboard.scmtools.models import Repository
 
 
@@ -157,11 +168,38 @@ class GitHubClient(HostingServiceClient['GitHub']):
             A dictionary of credentials for the request.
         """
         if username is None and password is None:
-            if 'personal_token' in account.data:
+            app_data = get_github_app_data(account)
+
+            if is_app_record_data(app_data):
+                # This is the hidden app-record account. Authenticate as the
+                # GitHub App itself using a short-lived signed JWT. This is
+                # used for app-level requests, such as reading installation
+                # details or minting installation access tokens.
+                jwt = build_app_jwt_from_data(app_data)
+
+                return {
+                    'headers': {
+                        'Authorization': f'Bearer {jwt}',
+                    },
+                }
+            elif is_installation_data(app_data):
+                # This is a GitHub App installation account. Authenticate using
+                # a short-lived installation access token.
+                token = self._get_installation_token(account, app_data)
+
+                return {
+                    'headers': {
+                        'Authorization': f'Bearer {token}',
+                    },
+                }
+            elif 'personal_token' in account.data:
+                # This is a personal access token.
                 username = account.username
                 password = decrypt_password(account.data['personal_token'])
             elif ('authorization' in account.data and
                   'token' in account.data['authorization']):
+                # This is a legacy OAuth token.
+                # TODO: check if this is even a thing anymore.
                 username = account.username
                 password = account.data['authorization']['token']
 
@@ -727,3 +765,179 @@ class GitHubClient(HostingServiceClient['GitHub']):
                 client=self,
                 url=url),
             normalize_page_data_func=normalize_page_data)
+
+    def _get_installation_token(
+        self,
+        account: HostingServiceAccount,
+        github_app: GitHubAppInstallationData,
+    ) -> str:
+        """Return an installation access token for a GitHub App connection.
+
+        This returns a short-lived token that authenticates API requests as
+        the GitHub App's installation. The token is cached and reused until
+        shortly before it expires, at which point a new token is minted.
+
+        The GitHub App was granted these scopes when it was created (see the
+        manifest in :py:mod:`reviewboard.hostingsvcs.github.views`), which
+        map to the current repository operations:
+
+        * ``contents:read`` - File reads
+          (:py:meth:`api_get_blob`, :py:meth:`api_get_tree`).
+        * ``metadata:read`` - Always required by GitHub.
+        * ``pull_requests:read`` - Reserved for future pull request features.
+
+        Future features may need additional scopes: commit statuses and checks
+        for build/review integration, and ``pull_requests:write`` for posting
+        to pull requests.
+
+        Version Added:
+            9.0
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The installation account holding the GitHub App connection.
+
+            github_app (reviewboard.hostingsvcs.github.accounts.
+                        GitHubAppInstallationData):
+                The ``github_app`` data stored on the installation account.
+
+        Returns:
+            str:
+            The installation access token.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                The hidden app-record account holding the credentials could
+                not be found.
+        """
+        installation_id = github_app.installation_id
+        cache_key = make_cache_key([
+            'github-app-installation-token',
+            str(account.pk),
+            str(installation_id),
+        ])
+
+        token = cache.get(cache_key)
+
+        if token is not None:
+            return token
+
+        # The app credentials (including the private key) are stored once on a
+        # separate hidden app-record account. The installation account
+        # references it by primary key. Minting runs through that account's
+        # client, which authenticates as the app.
+        try:
+            app_account = HostingServiceAccount.objects.get(
+                pk=github_app.app_account_id)
+        except HostingServiceAccount.DoesNotExist:
+            logger.error('GitHub App installation account %s references a '
+                         'missing app-record account %s.',
+                         account.pk, github_app.app_account_id)
+
+            raise HostingServiceError(_(
+                'The GitHub App connection is no longer configured correctly. '
+                'Please reconnect the GitHub App in Admin UI -> Connected '
+                'Services.'
+            ))
+
+        app_client = app_account.service.client
+        assert isinstance(app_client, GitHubClient)
+
+        token, expires_at = app_client._mint_installation_token(
+            installation_id)
+
+        cache.set(cache_key, token,
+                  timeout=self._get_token_cache_timeout(expires_at))
+
+        return token
+
+    def _get_token_cache_timeout(
+        self,
+        expires_at: str | None,
+    ) -> int:
+        """Return how long an installation token should be cached.
+
+        This is the time until the token expires, minus a safety margin so the
+        token is refreshed before GitHub rejects it.
+
+        Version Added:
+            9.0
+
+        Args:
+            expires_at (str):
+                The ISO-8601 expiry time returned by GitHub, or ``None``.
+
+        Returns:
+            int:
+            The cache timeout, in seconds.
+        """
+        # The default lifetime to use if GitHub's expiry can't be parsed.
+        # Installation tokens last about an hour.
+        default_timeout = 50 * 60
+
+        # Refresh this many seconds before the token actually expires.
+        margin = 300
+
+        if expires_at:
+            try:
+                expires = (
+                    datetime.datetime
+                    .strptime(expires_at, '%Y-%m-%dT%H:%M:%SZ')
+                    .replace(tzinfo=datetime.timezone.utc))
+                now = datetime.datetime.now(datetime.timezone.utc)
+                timeout = int((expires - now).total_seconds()) - margin
+
+                if timeout > 0:
+                    return timeout
+            except ValueError:
+                logger.warning(
+                    'Unable to parse expires_at value %r for a GitHub App '
+                    'installation token. Using the default cache timeout.',
+                    expires_at)
+
+        return default_timeout
+
+    def _mint_installation_token(
+        self,
+        installation_id: int,
+    ) -> tuple[str, str | None]:
+        """Mint a new installation access token from GitHub.
+
+        This must be called on the client for the hidden app-record account,
+        which authenticates as the app via a signed JWT.
+
+        Version Added:
+            9.0
+
+        Args:
+            installation_id (int):
+                The ID of the installation to mint a token for.
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (str):
+                    The installation access token.
+
+                1 (str):
+                    The token's ``expires_at`` value (an ISO-8601 string, or
+                    ``None`` if not provided).
+        """
+        api_url = self.hosting_service.get_api_url(self.account.hosting_url)
+        url = f'{api_url}app/installations/{installation_id}/access_tokens'
+
+        # This authenticates as the app via get_http_credentials() on this
+        # app-record account, which returns a signed JWT. There's no recursion
+        # here because app authentication does not require an installation
+        # token.
+        rsp = self.http_post(
+            url=url,
+            headers={
+                'Accept': 'application/vnd.github+json',
+            })
+
+        data = rsp.json
+
+        return data['token'], data.get('expires_at')

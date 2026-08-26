@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 
@@ -17,6 +18,10 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
                                                encrypt_password)
 from reviewboard.scmtools.errors import FileNotFoundError
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+    from typing import ClassVar
 
 
 class UnfuddleForm(BaseHostingServiceRepositoryForm):
@@ -52,20 +57,20 @@ class Unfuddle(BaseHostingService):
     Unfuddle is a source hosting service that supports Git and Subversion
     repositories. It's available at https://unfuddle.com/.
     """
-    name = 'Unfuddle'
-    hosting_service_id = 'unfuddle'
 
+    hosting_service_id = 'unfuddle'
+    name = 'Unfuddle'
+
+    form = UnfuddleForm
     needs_authorization = True
+    supported_scmtools = ['Git', 'Subversion']
     supports_bug_trackers = True
     supports_repositories = True
-    supported_scmtools = ['Git', 'Subversion']
 
     bug_tracker_field = (
         'https://%(unfuddle_account_domain)s.unfuddle.com/a#/projects/'
         '%(unfuddle_project_id)s/tickets/by_number/%%s'
     )
-
-    form = UnfuddleForm
     repository_fields = {
         'Git': {
             'path': 'git@%(unfuddle_account_domain)s.unfuddle.com:'
@@ -84,7 +89,7 @@ class Unfuddle(BaseHostingService):
     }
 
     # Maps Unfuddle "system" names to SCMTool names.
-    TOOL_NAME_MAP = {
+    TOOL_NAME_MAP: ClassVar[Mapping[str, str]] = {
         'git': 'Git',
         'svn': 'Subversion',
     }

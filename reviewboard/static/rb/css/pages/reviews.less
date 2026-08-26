@@ -1062,31 +1062,41 @@ pre.reviewtext {
 
 #review-form-modalbox {
   .modalbox-buttons {
+    justify-content: space-between;
     left: 0;
 
-    .review-dialog-buttons-left {
-      /*
-       * We're only absolutely positioning the buttons-left and not
-       * buttons-right. This way, buttons-right dictates the height, and
-       * buttons-left is able to fit in on the same row.
-       */
-      position: absolute;
-      left: 0;
-      margin-left: 0;
-
-      > :first-child {
-        margin-left: 0;
-      }
+    .review-dialog-buttons-left,
+    .review-dialog-buttons-right {
+      display: flex;
+      gap: var(--ink-u-spacing-std);
     }
 
+    /**
+     * On mobile, draw everything in one column.
+     */
     .on-mobile-medium-screen-720({
-      .review-dialog-buttons-left {
-        position: relative;
-      }
+      flex-direction: column;
 
       .review-dialog-buttons-left,
       .review-dialog-buttons-right {
-        display: inline;
+        flex-direction: column;
+      }
+
+      /*
+       * The menu button by default is inline-flex and doesn't stretch to fit
+       * its width. Ensure that it works well in column mode.
+       */
+      .ink-c-menu-button {
+        display: inherit;
+        align-self: stretch;
+      }
+
+      .ink-c-menu-button__buttons {
+        flex: 1;
+      }
+
+      .ink-c-menu-button__action-button {
+        flex: 1;
       }
     });
   }
@@ -1570,6 +1580,7 @@ pre.reviewtext {
   h1 {
     background: transparent;
     border: 0;
+    font-size: var(--ink-u-font-m);
     margin: 0;
     padding: 0;
   }
