@@ -8,7 +8,10 @@ from django.http import QueryDict
 from kgb import SpyAgency
 
 from reviewboard.hostingsvcs.base import hosting_service_registry
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+)
 from reviewboard.hostingsvcs.github import GitHub
 from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.certs import Certificate
@@ -1883,6 +1886,96 @@ class RepositoryFormTests(SpyAgency, TestCase):
             scmtool_class=GitTool,
             github_public_repo_name='testrepo',
             tool_name='Git')
+
+    def test_with_hosting_bug_tracker_creates_config(self) -> None:
+        """Testing RepositoryForm with hosting service's bug tracker
+        creates a configuration
+        """
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='github')
+        account.data['authorization'] = {
+            'token': 'abc123',
+        }
+        account.save()
+
+        form = self._build_form({
+            'name': 'test',
+            'hosting_type': 'github',
+            'hosting_account': account.pk,
+            'repository_plan': 'public',
+            'tool': 'git',
+            'github_public_repo_name': 'testrepo',
+            'bug_tracker_use_hosting': True,
+            'bug_tracker_type': 'github',
+            'bug_tracker_plan': 'public',
+        })
+
+        self.assertTrue(form.is_valid())
+
+        repository = form.save()
+
+        bug_tracker = ConfiguredBugTracker.objects.get(service_name='github')
+        self.assertEqual(bug_tracker.hosting_account, account)
+        self.assertEqual(bug_tracker.apply_to,
+                         ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
+        self.assertEqual(list(bug_tracker.repositories.all()), [repository])
+
+        repository.refresh_from_db()
+        self.assertEqual(repository.default_bug_tracker, bug_tracker)
+
+    def test_with_hosting_bug_tracker_no_deprecation_warning(self) -> None:
+        """Testing RepositoryForm with hosting service's bug tracker does not
+        emit a bug_tracker deprecation warning
+        """
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='github')
+        account.data['authorization'] = {
+            'token': 'abc123',
+        }
+        account.save()
+
+        form = self._build_form({
+            'name': 'test',
+            'hosting_type': 'github',
+            'hosting_account': account.pk,
+            'repository_plan': 'public',
+            'tool': 'git',
+            'github_public_repo_name': 'testrepo',
+            'bug_tracker_use_hosting': True,
+            'bug_tracker_type': 'github',
+            'bug_tracker_plan': 'public',
+        })
+
+        self.assertTrue(form.is_valid())
+
+        with self.assertNoWarnings():
+            repository = form.save()
+
+        repository.refresh_from_db()
+        self.assertIsNotNone(repository.default_bug_tracker_id)
+
+    def test_with_custom_bug_tracker_no_deprecation_warning(self) -> None:
+        """Testing RepositoryForm with a custom bug tracker URL does not emit
+        a bug_tracker deprecation warning
+        """
+        form = self._build_form({
+            'name': 'test',
+            'hosting_type': 'custom',
+            'tool': 'git',
+            'path': '/path/to/repo.git',
+            'bug_tracker_type': 'custom',
+            'bug_tracker': 'http://example.com/issue/%s',
+        })
+
+        self.assertTrue(form.is_valid())
+
+        with self.assertNoWarnings():
+            repository = form.save()
+
+        repository.refresh_from_db()
+        config = repository.default_bug_tracker
+        self.assertIsNotNone(config)
+        self.assertEqual(config.service_name, 'custom-bug-tracker')
 
     def test_with_hosting_service_with_hosting_bug_tracker_and_self_hosted(
             self):

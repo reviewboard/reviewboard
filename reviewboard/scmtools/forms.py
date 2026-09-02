@@ -2221,6 +2221,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
 
         # We can now start populating the repository's fields.
         repository = super(RepositoryForm, self).save(commit=False)
+
+        # The legacy bug_tracker value is composed and written by the
+        # form on the user's behalf, so a direct-write deprecation
+        # warning would be spurious.
+        repository._suppress_bug_tracker_deprecation = True
         repository.tool = Tool.objects.get(class_name=scmtool.class_name)
         repository.scmtool_id = scmtool.scmtool_id
         repository.path = self.cleaned_data['path']

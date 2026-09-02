@@ -491,3 +491,105 @@ def materialize_configs(
         )
 
     return stats
+
+
+def sync_default_bug_tracker_from_url(
+    repository: Repository,
+) -> None:
+    """Sync a repository's default bug tracker from its legacy URL.
+
+    This runs when the legacy ``bug_tracker`` URL template is written
+    directly. It gets or creates a matching custom configuration and
+    assigns it as the default, so the two fields never diverge. An
+    empty value clears the default.
+
+    Hosting-based bug trackers are left alone here. They are synced
+    after the save by :py:func:`sync_default_bug_tracker_from_hosting`,
+    once the repository has an ID.
+
+    Version Added:
+        9.0
+
+    Args:
+        repository (reviewboard.scmtools.models.Repository):
+            The repository being saved.
+    """
+    tracker_case = classify_repository(repository)
+
+    if tracker_case is not None and tracker_case != BugTrackerCase.CUSTOM_URL:
+        return
+
+    if not repository.bug_tracker:
+        if repository.default_bug_tracker_id is not None:
+            repository.default_bug_tracker = None
+
+        return
+
+    fingerprint = make_fingerprint(repository, tracker_case)
+    config = _load_configs_by_fingerprint(
+        ConfiguredBugTracker.objects.filter(service_name='custom-bug-tracker')
+    ).get(fingerprint)
+
+    if config is None:
+        config = ConfiguredBugTracker.objects.create(
+            name=_generate_name(repository, tracker_case,
+                                'custom-bug-tracker'),
+            service_name='custom-bug-tracker',
+            settings=get_settings_for_repository(repository, tracker_case),
+            local_site_id=repository.local_site_id,
+            apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS,
+            extra_data={
+                FINGERPRINT_KEY: fingerprint,
+            })
+
+    if repository.pk is None:
+        # The repository hasn't been saved yet, so it can't be linked to
+        # the configuration. Repository.save() finishes the link once
+        # the repository has an ID.
+        repository._bug_tracker_scope_pending = True
+    else:
+        config.repositories.add(repository)
+
+    if repository.default_bug_tracker_id != config.pk:
+        repository.default_bug_tracker = config
+
+
+def sync_default_bug_tracker_from_hosting(
+    repository: Repository,
+) -> None:
+    """Sync a repository's default bug tracker from legacy hosting settings.
+
+    This runs after a repository is saved with hosting-based bug tracker
+    settings in ``extra_data`` (``bug_tracker_use_hosting`` or
+    ``bug_tracker_type``). It gets or creates the matching configuration
+    and assigns it as the default, so a repository never has legacy
+    hosting settings without a default bug tracker.
+
+    A manually-assigned default is left alone. A default already derived
+    from the same settings is a no-op.
+
+    The repository must already be saved. Use-hosting configurations
+    are scoped to the repository, so they need its ID.
+
+    Version Added:
+        9.0
+
+    Args:
+        repository (reviewboard.scmtools.models.Repository):
+            The saved repository.
+    """
+    tracker_case = classify_repository(repository)
+
+    if tracker_case is None or tracker_case == BugTrackerCase.CUSTOM_URL:
+        return
+
+    default = repository.default_bug_tracker
+
+    if default is not None:
+        fingerprint = (default.extra_data or {}).get(FINGERPRINT_KEY)
+
+        if (fingerprint is None or
+            fingerprint == make_fingerprint(repository, tracker_case)):
+            return
+
+    materialize_configs([repository])
