@@ -6,6 +6,9 @@ Version Added:
 
 from __future__ import annotations
 
+import pytest
+from django.core.management import call_command
+
 from reviewboard.hostingsvcs.bug_tracker_migration import (
     BugTrackerCase,
     classify_repository,
@@ -16,7 +19,19 @@ from reviewboard.hostingsvcs.models import (
     HostingServiceAccount,
     SENTINEL_BUG_TRACKER_SERVICE_NAME,
 )
+from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY
 from reviewboard.testing import TestCase
+
+
+#: Decorator to ignore deprecation warnings for legacy URLs.
+#:
+#: Several tests exercise the deprecated direct bug_tracker writes on
+#: purpose. Silence the deprecation warning for those.
+#:
+#: Version Added:
+#:     9.0
+ignore_legacy_url_deprecation = pytest.mark.filterwarnings(
+    'ignore::reviewboard.deprecation.RemovedInReviewBoard11_0Warning')
 
 
 class ClassifyRepositoryTests(TestCase):
@@ -261,3 +276,71 @@ class MaterializeConfigsTests(TestCase):
             ConfiguredBugTracker.objects
             .filter(service_name=SENTINEL_BUG_TRACKER_SERVICE_NAME)
             .exists())
+
+
+class BackfillBugsTests(TestCase):
+    """Unit tests for the --backfill-bugs command option.
+
+    Version Added:
+        9.0
+    """
+
+    fixtures = ['test_users', 'test_scmtools']
+
+    @ignore_legacy_url_deprecation
+    def test_backfill(self) -> None:
+        """Testing migrate-bug-trackers --backfill-bugs"""
+        repository = self.create_repository(
+            bug_tracker='https://bugs.example.com/%s')
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        review_request.bugs_closed = '4,2'
+        review_request.save(update_fields=('bugs_closed',))
+
+        call_command('migrate-bug-trackers', backfill_bugs=True)
+
+        review_request.refresh_from_db()
+        self.assertTrue(review_request.extra_data.get(BUGS_MIGRATED_KEY))
+        self.assertEqual(
+            sorted(review_request.bugs.values_list('bug_id', flat=True)),
+            ['2', '4'])
+        self.assertEqual(review_request.get_bug_list(), ['2', '4'])
+
+        # The bugs are attributed to the repository's new default tracker.
+        review_request.repository.refresh_from_db()
+        default_pk = review_request.repository.default_bug_tracker_id
+        self.assertIsNotNone(default_pk)
+        self.assertEqual(
+            set(review_request.bugs.values_list('bug_tracker', flat=True)),
+            {default_pk})
+
+        # The stored string froze in place.
+        self.assertEqual(review_request.bugs_closed, '4,2')
+
+    def test_backfill_syncs_stale_links(self) -> None:
+        """Testing --backfill-bugs re-syncs rows after legacy edits"""
+        review_request = self.create_review_request(publish=True)
+        review_request.bugs_closed = '1,2'
+        review_request.save(update_fields=('bugs_closed',))
+
+        call_command('migrate-bug-trackers', backfill_bugs=True)
+
+        review_request.refresh_from_db()
+        self.assertEqual(review_request.get_bug_list(), ['1', '2'])
+
+        # Simulate a legacy edit that popped the marker, reverting the
+        # row to string-driven behavior.
+        review_request.bugs_closed = '3'
+        review_request.extra_data.pop(BUGS_MIGRATED_KEY, None)
+        review_request.save(update_fields=('bugs_closed', 'extra_data'))
+
+        call_command('migrate-bug-trackers', backfill_bugs=True)
+
+        review_request.refresh_from_db()
+
+        # Materialization is a true sync: stale links are removed, not
+        # just added to.
+        self.assertEqual(
+            list(review_request.bugs.values_list('bug_id', flat=True)),
+            ['3'])
+        self.assertEqual(review_request.get_bug_list(), ['3'])

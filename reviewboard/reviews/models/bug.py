@@ -6,6 +6,7 @@ Version Added:
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 from django.db import IntegrityError, models
@@ -203,6 +204,41 @@ class BugManager(models.Manager['Bug']):
             details.extra_data = {}
 
         details.extra_data[BUGS_MIGRATED_KEY] = True
+
+    def materialize_for(
+        self,
+        review_request_details: BaseReviewRequestDetails,
+    ) -> None:
+        """Materialize bug relations from the stored bugs_closed string.
+
+        This parses the legacy string (regardless of any migration
+        marker) and performs a true sync of the legacy view: links
+        missing from the string are removed, not just added, so
+        re-materializing after legacy edits is always correct.
+
+        The caller is responsible for saving ``extra_data``.
+
+        Version Added:
+            9.0
+
+        Args:
+            review_request_details (BaseReviewRequestDetails):
+                The review request or draft to materialize bugs for.
+        """
+        bugs_closed = review_request_details.bugs_closed or ''
+
+        if bugs_closed:
+            bug_ids = [
+                bug_id
+                for bug_id in re.split(r'[, ]+', bugs_closed)
+                if bug_id
+            ]
+        else:
+            bug_ids = []
+
+        self.sync_legacy_bug_list(
+            review_request_details=review_request_details,
+            bug_ids=bug_ids)
 
 
 class Bug(models.Model):
