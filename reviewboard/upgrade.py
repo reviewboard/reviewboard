@@ -13,6 +13,7 @@ Version Added:
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from django.db import DatabaseError
@@ -21,6 +22,9 @@ from typing_extensions import TypedDict
 if TYPE_CHECKING:
     from django.db.models import Model
     from reviewboard.cmdline.utils.console import Console
+
+
+logger = logging.getLogger(__name__)
 
 
 class UpgradeStateError(Exception):
@@ -607,6 +611,44 @@ def post_upgrade_apply_condition_tool_info(
             config.save(update_fields=('settings',))
 
 
+def post_upgrade_migrate_bug_trackers(
+    upgrade_state: UpgradeState,
+    console: Console,
+) -> None:
+    """Create bug tracker configurations for legacy repository settings.
+
+    This turns per-repository bug tracker settings into
+    :py:class:`~reviewboard.hostingsvcs.models.ConfiguredBugTracker`
+    configurations and assigns default bug trackers. It runs on every
+    upgrade: it is fast and idempotent.
+
+    The optional review request bug backfill is not run here, since it
+    scales with the number of review requests. The upgrade process
+    advises running ``migrate-bug-trackers --backfill-bugs`` when
+    unconverted data remains.
+
+    Version Added:
+        9.0
+
+    Args:
+        upgrade_state (dict, unused):
+            Upgrade state that can be used by pre-upgrade/post-upgrade
+            steps.
+
+        console (reviewboard.cmdline.utils.console.Console, unused):
+            The console output wrapper.
+    """
+    from reviewboard.hostingsvcs.bug_tracker_migration import \
+        materialize_configs
+
+    try:
+        materialize_configs()
+    except Exception as e:
+        logger.exception('Error migrating legacy bug tracker settings '
+                         'to configurations: %s',
+                         e)
+
+
 def run_pre_upgrade_tasks(
     upgrade_state: UpgradeState,
     console: Console,
@@ -661,3 +703,4 @@ def run_post_upgrade_tasks(
     post_upgrade_reset_oauth2_provider(upgrade_state, console)
     post_upgrade_apply_scmtool_data(upgrade_state, console)
     post_upgrade_apply_condition_tool_info(upgrade_state, console)
+    post_upgrade_migrate_bug_trackers(upgrade_state, console)
