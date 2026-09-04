@@ -316,6 +316,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         if draft_is_new:
             rels_to_update = [
+                ('bugs', 'bug_id', 'reviewrequest_id'),
                 ('depends_on', 'to_reviewrequest_id', 'from_reviewrequest_id'),
                 ('target_groups', 'group_id', 'reviewrequest_id'),
                 ('target_people', 'user_id', 'reviewrequest_id'),

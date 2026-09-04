@@ -20,8 +20,11 @@ from reviewboard.hostingsvcs.models import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Sequence
     from typing import ClassVar
+
+    from reviewboard.reviews.models.base_review_request_details import \
+        BaseReviewRequestDetails
 
 
 #: The extra_data key marking a review request's bugs as migrated.
@@ -135,6 +138,71 @@ class BugManager(models.Manager['Bug']):
             bug = self.get(bug_tracker=bug_tracker, bug_id=bug_id)
 
         return bug
+
+    def sync_legacy_bug_list(
+        self,
+        *,
+        review_request_details: BaseReviewRequestDetails,
+        bug_ids: Sequence[str],
+    ) -> None:
+        """Sync the legacy view of bugs on a review request or draft.
+
+        The legacy ``bugs_closed`` view covers bugs attributed to the
+        repository's default bug tracker plus unattributed (sentinel)
+        bugs. This replaces that scope with the given bug IDs: new IDs
+        are attributed to the default tracker (or the sentinel without
+        one), and stale links in the scope are removed. Links to other
+        trackers are never touched.
+
+        This marks the review request or draft as migrated. The caller
+        is responsible for saving ``extra_data``.
+
+        Args:
+            review_request_details (BaseReviewRequestDetails):
+                The review request or draft to sync.
+
+            bug_ids (list of str):
+                The new bug IDs for the legacy view.
+        """
+        details = review_request_details
+        repository = details.repository
+
+        tracker = None
+
+        if repository is not None:
+            tracker = repository.get_default_bug_tracker()
+
+        if tracker is None:
+            tracker = ConfiguredBugTracker.objects.get_sentinel()
+
+        new_ids = set(bug_ids)
+        current_bugs = list(details._get_legacy_visible_bugs())
+        current_ids = {
+            bug.bug_id
+            for bug in current_bugs
+        }
+
+        removed_bugs = [
+            bug
+            for bug in current_bugs
+            if bug.bug_id not in new_ids
+        ]
+
+        if removed_bugs:
+            details.bugs.remove(*removed_bugs)
+
+        added_bugs = [
+            self.get_or_create_bug(bug_tracker=tracker, bug_id=bug_id)
+            for bug_id in sorted(new_ids - current_ids)
+        ]
+
+        if added_bugs:
+            details.bugs.add(*added_bugs)
+
+        if details.extra_data is None:
+            details.extra_data = {}
+
+        details.extra_data[BUGS_MIGRATED_KEY] = True
 
 
 class Bug(models.Model):
