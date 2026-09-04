@@ -12,9 +12,15 @@ from django.db import IntegrityError, models
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 
-from reviewboard.hostingsvcs.models import ConfiguredBugTracker
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
+from reviewboard.hostingsvcs.errors import MissingHostingServiceError
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    SENTINEL_BUG_TRACKER_SERVICE_NAME,
+)
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from typing import ClassVar
 
 
@@ -27,6 +33,69 @@ if TYPE_CHECKING:
 #: Version Added:
 #:     9.0
 BUGS_MIGRATED_KEY = '__bugs_migrated'
+
+
+def sort_bug_ids(
+    bug_ids: Iterable[str],
+    *,
+    tracker: (ConfiguredBugTracker | None) = None,
+) -> list[str]:
+    """Return bug IDs sorted for display.
+
+    When a tracker is provided and its service defines sort keys for
+    every ID (:py:meth:`BaseBugTracker.get_bug_id_sort_key
+    <reviewboard.hostingsvcs.base.bug_tracker.BaseBugTracker
+    .get_bug_id_sort_key>`), the IDs are ordered by those keys.
+
+    Otherwise, this first tries a numeric sort, to show the best
+    results for the majority case of bug trackers with numeric IDs. If
+    that fails, it sorts alphabetically.
+
+    Version Added:
+        9.0
+
+    Args:
+        bug_ids (iterable of str):
+            The bug IDs to sort.
+
+        tracker (reviewboard.hostingsvcs.models.ConfiguredBugTracker,
+                 optional):
+            The bug tracker configuration the IDs belong to.
+
+    Returns:
+        list of str:
+        The sorted bug IDs.
+    """
+    result = list(bug_ids)
+
+    if tracker is not None:
+        service = None
+
+        if tracker.service_name != SENTINEL_BUG_TRACKER_SERVICE_NAME:
+            try:
+                service = tracker.service
+            except MissingHostingServiceError:
+                pass
+
+        if service is not None:
+            assert isinstance(service, BaseBugTracker)
+
+            keys = {
+                bug_id: service.get_bug_id_sort_key(bug_id=bug_id)
+                for bug_id in result
+            }
+
+            if all(key is not None for key in keys.values()):
+                result.sort(key=keys.__getitem__)
+
+                return result
+
+    try:
+        result.sort(key=int)
+    except ValueError:
+        result.sort()
+
+    return result
 
 
 class BugManager(models.Manager['Bug']):
