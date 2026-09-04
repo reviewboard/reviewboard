@@ -35,7 +35,7 @@ class ReviewRequestIndex(BaseSearchIndex[ReviewRequest],
     description = indexes.CharField(model_attr='description')
     testing_done = indexes.CharField(model_attr='testing_done')
     commit_id = indexes.EdgeNgramField(model_attr='commit', null=True)
-    bug = indexes.CharField(model_attr='bugs_closed')
+    bug = indexes.CharField()
     username = indexes.CharField(model_attr='submitter__username')
     author = indexes.CharField()
     last_updated = indexes.DateTimeField(model_attr='last_updated')
@@ -119,6 +119,7 @@ class ReviewRequestIndex(BaseSearchIndex[ReviewRequest],
                 'changenum',
                 'commit_id',
                 'description',
+                'extra_data',
                 'last_updated',
                 'local_id',
                 'local_site_id',
@@ -246,6 +247,31 @@ class ReviewRequestIndex(BaseSearchIndex[ReviewRequest],
             for diffset in review_request.diffset_history.diffsets.all()
             for filediff in diffset.files.all()
         }
+
+    def prepare_bug(
+        self,
+        review_request: ReviewRequest,
+    ) -> str:
+        """Prepare the bug information for the index.
+
+        This derives from :py:meth:`ReviewRequest.get_bug_list()
+        <reviewboard.reviews.models.base_review_request_details
+        .BaseReviewRequestDetails.get_bug_list>`, so migrated review
+        requests index their linked bugs rather than the frozen
+        ``bugs_closed`` column.
+
+        Version Added:
+            9.0
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request being prepared.
+
+        Returns:
+            str:
+            The bug IDs, comma-separated.
+        """
+        return ', '.join(review_request.get_bug_list())
 
     def prepare_private(
         self,
