@@ -9,7 +9,11 @@ from __future__ import annotations
 from typing import ClassVar
 
 from reviewboard.hostingsvcs.models import ConfiguredBugTracker
-from reviewboard.reviews.models import Bug
+from reviewboard.reviews.models import (
+    Bug,
+    ReviewRequest,
+    ReviewRequestDraft,
+)
 from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY
 from reviewboard.testing import TestCase
 
@@ -83,3 +87,82 @@ class GetBugListCompatTests(TestCase):
 
         # Reads key on the migration marker.
         self.assertEqual(review_request.get_bug_list(), ['2'])
+
+
+class PublishBugsCompatTests(TestCase):
+    """Unit tests for publishing drafts with migrated bugs.
+
+    Version Added:
+        9.0
+    """
+
+    fixtures: ClassVar[list[str]] = ['test_users', 'test_scmtools']
+
+    def _create_published_review_request(
+        self,
+    ) -> tuple[ReviewRequest, ConfiguredBugTracker]:
+        """Return a published review request with a default tracker.
+
+        Returns:
+            tuple:
+            The review request and its default bug tracker.
+        """
+        repository = self.create_repository()
+        review_request = self.create_review_request(
+            repository=repository,
+            submitter='doc',
+            target_people=[self.create_user(username='reviewer')],
+            publish=True)
+
+        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
+                                                      service_name='splat')
+        repository.default_bug_tracker = tracker
+        repository.save(update_fields=('default_bug_tracker',))
+
+        return review_request, tracker
+
+    def test_publish_migrated_draft(self) -> None:
+        """Testing publishing a draft with migrated bugs"""
+        review_request, tracker = self._create_published_review_request()
+
+        other_tracker = ConfiguredBugTracker.objects.create(
+            name='Other Tracker',
+            service_name='splat')
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.summary = 'New summary'
+        Bug.objects.sync_legacy_bug_list(review_request_details=draft,
+                                         bug_ids=['1', '2'])
+        draft.bugs.add(Bug.objects.get_or_create_bug(
+            bug_tracker=other_tracker,
+            bug_id='500'))
+        draft.save()
+
+        review_request.publish(review_request.submitter)
+
+        review_request.refresh_from_db()
+        self.assertTrue(review_request.extra_data.get(BUGS_MIGRATED_KEY))
+        self.assertEqual(review_request.get_bug_list(), ['1', '2'])
+        self.assertEqual(
+            sorted(review_request.bugs.values_list('bug_id', flat=True)),
+            ['1', '2', '500'])
+
+        # The stored string was never written.
+        self.assertEqual(review_request.bugs_closed, '')
+
+        # A change entry was recorded per affected tracker, plus the
+        # legacy entry.
+        changedesc = review_request.changedescs.latest()
+        self.assertIn(f'bugs:{tracker.pk}', changedesc.fields_changed)
+        self.assertIn(f'bugs:{other_tracker.pk}', changedesc.fields_changed)
+        self.assertIn('bugs_closed', changedesc.fields_changed)
+        self.assertEqual(
+            changedesc.fields_changed[f'bugs:{tracker.pk}']['label'],
+            'Tracker')
+        self.assertEqual(
+            sorted(
+                item[0]
+                for item in (changedesc.fields_changed
+                             [f'bugs:{tracker.pk}']['added'])
+            ),
+            ['1', '2'])
