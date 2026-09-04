@@ -767,7 +767,7 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
         self.assertFalse(ChangeDescription.save.called)
         self.assertTrue(ReviewRequestDraft.save.last_called_with(
-            update_fields=['bugs_closed', 'last_updated']))
+            update_fields=['extra_data', 'last_updated']))
 
     @webapi_test_template
     def test_put_with_changedescription(self):

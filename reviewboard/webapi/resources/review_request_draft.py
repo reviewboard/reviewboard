@@ -34,7 +34,12 @@ from reviewboard.reviews.builtin_fields import BuiltinFieldMixin
 from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.fields import (get_review_request_fields,
                                         get_review_request_field)
-from reviewboard.reviews.models import Group, ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.models import (
+    Bug,
+    Group,
+    ReviewRequest,
+    ReviewRequestDraft,
+)
 from reviewboard.scmtools.errors import (InvalidChangeNumberError,
                                          SCMError)
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
@@ -594,8 +599,14 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
 
         # Check for a new value for bugs_closed:
         if bugs_closed is not None:
-            new_draft_values['bugs_closed'] = \
-                ','.join(self._parse_bug_list(bugs_closed))
+            parsed_bugs = self._parse_bug_list(bugs_closed)
+
+            # The bug relations are the source of truth. The parsed IDs are
+            # attributed to the repository's default bug tracker, and the
+            # stored string is never written.
+            Bug.objects.sync_legacy_bug_list(review_request_details=draft,
+                                             bug_ids=parsed_bugs)
+            draft_update_fields.add('extra_data')
 
         # Check for a new value for changedescription.
         if changedescription is not None and draft.changedesc_id is None:

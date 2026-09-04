@@ -17,7 +17,7 @@ from reviewboard.diffviewer.models import DiffSet
 from reviewboard.hostingsvcs.models import SENTINEL_BUG_TRACKER_SERVICE_NAME
 from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.fields import get_review_request_fields
-from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY, sort_bug_ids
+from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY, Bug, sort_bug_ids
 from reviewboard.reviews.models.group import Group
 from reviewboard.reviews.models.base_review_request_details import \
     BaseReviewRequestDetails
@@ -651,8 +651,13 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             modified_fields.append('branch')
 
         if changeset.bugs_closed:
-            self.bugs_closed = ','.join(changeset.bugs_closed)
-            modified_fields.append('bugs_closed')
+            # Attribute the parsed bug IDs to the repository's default bug
+            # tracker. The stored string is not written for migrated review
+            # requests.
+            Bug.objects.sync_legacy_bug_list(
+                review_request_details=self,
+                bug_ids=changeset.bugs_closed)
+            modified_fields.append('extra_data')
 
         if changeset.extra_data:
             if self.extra_data is None:

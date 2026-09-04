@@ -6,7 +6,8 @@ Version Added:
 
 from __future__ import annotations
 
-from typing import ClassVar
+from typing import ClassVar, TYPE_CHECKING
+from urllib.parse import urlencode
 
 from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.reviews.models import (
@@ -16,6 +17,11 @@ from reviewboard.reviews.models import (
 )
 from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from typing import Any
+
+    from typelets.json import JSONDict
 
 
 class GetBugListCompatTests(TestCase):
@@ -87,6 +93,98 @@ class GetBugListCompatTests(TestCase):
 
         # Reads key on the migration marker.
         self.assertEqual(review_request.get_bug_list(), ['2'])
+
+
+class LegacyBugWriteCompatTests(TestCase):
+    """Unit tests for legacy bugs_closed writes through the API.
+
+    Version Added:
+        9.0
+    """
+
+    fixtures = ['test_users', 'test_scmtools']
+
+    def _api_put_draft(
+        self,
+        review_request: ReviewRequest,
+        fields: dict[str, Any],
+    ) -> JSONDict:
+        """PUT to a review request's draft API resource.
+
+        Args:
+            review_request (ReviewRequest):
+                The review request to update the draft of.
+
+            fields (dict):
+                The field values to send.
+
+        Returns:
+            dict:
+            The JSON response payload.
+        """
+        response = self.client.put(
+            f'/api/review-requests/{review_request.pk}/draft/',
+            data=urlencode(fields),
+            content_type='application/x-www-form-urlencoded')
+
+        self.assertEqual(response.status_code, 200)
+
+        return response.json()
+
+    def test_write_materializes_bug_relations(self) -> None:
+        """Testing a bugs_closed API write materializes bug relations"""
+        repository = self.create_repository()
+        review_request = self.create_review_request(
+            repository=repository,
+            submitter='doc',
+            publish=True)
+
+        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
+                                                      service_name='splat')
+        repository.default_bug_tracker = tracker
+        repository.save(update_fields=('default_bug_tracker',))
+
+        self.client.login(username='doc', password='doc')
+
+        rsp = self._api_put_draft(review_request, {'bugs_closed': '4,2'})
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(
+            rsp['draft']['bugs_closed'],  # type:ignore
+            ['2', '4'])
+
+        draft = ReviewRequestDraft.objects.get(
+            review_request=review_request)
+        self.assertTrue(draft.extra_data.get(BUGS_MIGRATED_KEY))
+        self.assertEqual(
+            sorted(draft.bugs.values_list('bug_id', flat=True)),
+            ['2', '4'])
+        self.assertEqual(
+            list(draft.bugs.values_list('bug_tracker', flat=True).distinct()),
+            [tracker.pk])
+
+        # The stored string is never written for migrated drafts.
+        self.assertEqual(draft.bugs_closed, '')
+
+    def test_write_without_default_tracker_uses_sentinel(self) -> None:
+        """Testing a bugs_closed API write without a default tracker
+        attributes bugs to the sentinel
+        """
+        review_request = self.create_review_request(submitter='doc',
+                                                    publish=True)
+
+        self.client.login(username='doc', password='doc')
+
+        rsp = self._api_put_draft(review_request, {'bugs_closed': '7'})
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft = ReviewRequestDraft.objects.get(
+            review_request=review_request)
+        sentinel = ConfiguredBugTracker.objects.get_sentinel()
+        self.assertEqual(
+            list(draft.bugs.values_list('bug_id', 'bug_tracker')),
+            [('7', sentinel.pk)])
 
 
 class PublishBugsCompatTests(TestCase):

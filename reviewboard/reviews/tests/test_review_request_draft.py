@@ -894,10 +894,11 @@ class PostCommitTests(SpyAgency, TestCase):
             'key1': 'value1',
             'key2': 123,
         }
+
         draft.update_from_pending_change(4, changeset)
 
         self.assertEqual(draft.branch, 'my-branch')
-        self.assertEqual(draft.bugs_closed, '123,456,BUG-789')
+        self.assertEqual(draft.get_bug_list(), ['123', '456', 'BUG-789'])
         self.assertEqual(draft.description, '* This is a description.')
         self.assertFalse(draft.description_rich_text)
         self.assertEqual(draft.extra_data.get('key1'), 'value1')
