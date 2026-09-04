@@ -1,6 +1,7 @@
 """Hooks for working with condition choices.
 
-See :ref:`review-request-condition-choices-hook` for instructions.
+See :ref:`review-request-condition-choices-hook` and
+:ref:`user-condition-choices-hook` for instructions.
 
 Version Added:
     8.0
@@ -37,11 +38,7 @@ class UserConditionChoicesHook(
 ):
     """Hook to add custom condition choices for acting users.
 
-    These choices match against the user performing an action. They are
-    evaluated with ``condition_set.matches(user=user)``, and may be
-    evaluated often. Choices must cache any computed match state (such
-    as a set of group IDs) in ``value_state_cache`` or per-request
-    state, rather than querying on every evaluation.
+    See :ref:`user-condition-choices-hook` for instructions.
 
     Version Added:
         9.0

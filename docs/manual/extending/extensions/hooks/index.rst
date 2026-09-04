@@ -69,6 +69,10 @@ Review Workflow Hooks
   Adds new condition choices (for defining rules in integration
   configurations).
 
+:ref:`user-condition-choices-hook`:
+  Adds new condition choices that match against the acting user (for
+  defining access control rules).
+
 
 File Type Review Hooks
 ----------------------
@@ -262,6 +266,7 @@ Deprecated Hooks
    signal-hook
    template-hook
    url-hook
+   user-condition-choices-hook
    user-details-provider-hook
    user-infobox-hook
    user-page-sidebar-items-hook
