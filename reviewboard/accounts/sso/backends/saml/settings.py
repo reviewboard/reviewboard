@@ -6,16 +6,24 @@ Version Added:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
-from djblets.siteconfig.models import SiteConfiguration
 try:
     from onelogin.saml2.constants import OneLogin_Saml2_Constants as constants
 except ImportError:
     constants = None
 
 from reviewboard.admin.server import build_server_url
+
+if TYPE_CHECKING:
+    from typing import Any
+
+    from reviewboard.accounts.sso.backends.saml.sso_backend import (
+        SAMLSSOBackend,
+    )
 
 
 class SAMLSignatureAlgorithm(object):
@@ -176,52 +184,71 @@ DEFAULT_ATTR_FULLNAME = 'User.FullName'
 DEFAULT_ATTR_LASTNAME = 'User.LastName'
 
 
-def get_saml2_settings():
+def get_saml2_settings(
+    backend: (SAMLSSOBackend | None) = None,
+) -> dict[str, Any]:
     """Return the SAML2.0 settings.
+
+    Version Changed:
+        9.0:
+        Added the ``backend`` argument.
 
     Version Added:
         5.0
+
+    Args:
+        backend (reviewboard.accounts.sso.backends.saml.sso_backend.
+                 SAMLSSOBackend, optional):
+            The backend to build settings for. Defaults to the built-in
+            ``saml`` backend.
 
     Returns:
         dict:
         A dictionary of the settings to use for SAML operations.
     """
-    siteconfig = SiteConfiguration.objects.get_current()
+    if backend is None:
+        from reviewboard.accounts.sso.backends import sso_backends
+
+        backend = sso_backends.get('backend_id', 'saml')
+        assert backend is not None
 
     assert constants is not None
+
+    backend_id = backend.backend_id
+    url_kwargs = {'backend_id': backend_id}
 
     saml_settings = {
         'strict': True,
         'debug': True,
         'idp': {
-            'entityId': siteconfig.get('saml_issuer'),
+            'entityId': backend.get_setting('issuer'),
             'singleSignOnService': {
-                'url': siteconfig.get('saml_sso_url'),
+                'url': backend.get_setting('sso_url'),
                 'binding': SAMLBinding.TO_SAML2_SETTING_MAP[
-                    siteconfig.get('saml_sso_binding_type')],
+                    backend.get_setting('sso_binding_type')],
             },
             'singleLogoutService': {
-                'url': siteconfig.get('saml_slo_url'),
+                'url': backend.get_setting('slo_url'),
                 'binding': SAMLBinding.TO_SAML2_SETTING_MAP[
-                    siteconfig.get('saml_slo_binding_type')],
+                    backend.get_setting('slo_binding_type')],
             },
-            'x509cert': siteconfig.get('saml_verification_cert'),
+            'x509cert': backend.get_setting('verification_cert'),
         },
         'sp': {
             'entityId': build_server_url(
-                reverse('sso:saml:metadata', kwargs={'backend_id': 'saml'})),
+                reverse(f'sso:{backend_id}:metadata', kwargs=url_kwargs)),
             'assertionConsumerService': {
                 'url': build_server_url(
-                    reverse('sso:saml:acs', kwargs={'backend_id': 'saml'})),
+                    reverse(f'sso:{backend_id}:acs', kwargs=url_kwargs)),
                 'binding': constants.BINDING_HTTP_POST,
             },
             'singleLogoutService': {
                 'url': build_server_url(
-                    reverse('sso:saml:sls', kwargs={'backend_id': 'saml'})),
+                    reverse(f'sso:{backend_id}:sls', kwargs=url_kwargs)),
                 'binding': constants.BINDING_HTTP_REDIRECT,
             },
             'NameIDFormat': SAMLNameIDFormat.TO_SAML2_SETTING_MAP[
-                siteconfig.get('saml_nameid_format')],
+                backend.get_setting('nameid_format')],
             'x509cert': '',
             'privateKey': '',
         },

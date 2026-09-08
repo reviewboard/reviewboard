@@ -33,6 +33,10 @@ from reviewboard.accounts.sso.backends.saml.settings import (
 if TYPE_CHECKING:
     from typing import Any
 
+    from reviewboard.accounts.sso.backends.saml.sso_backend import (
+        SAMLSSOBackend,
+    )
+
 
 class SAMLLinkUserForm(AuthenticationForm):
     """Form for linking existing user accounts after SAML authentication.
@@ -45,17 +49,43 @@ class SAMLLinkUserForm(AuthenticationForm):
         widget=forms.HiddenInput(),
         required=False)
 
-    def __init__(self, *args, **kwargs) -> None:
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The SSO backend instance.
+    #:
+    #: Version Added:
+    #:     9.0
+    sso_backend: SAMLSSOBackend | None
+
+    def __init__(
+        self,
+        *args,
+        sso_backend: (SAMLSSOBackend | None) = None,
+        **kwargs,
+    ) -> None:
         """Initialize the form.
+
+        Version Changed:
+            9.0:
+            Added the ``sso_backend`` argument.
 
         Args:
             *args (tuple):
                 Positional arguments to pass through to the parent class.
 
+            sso_backend (reviewboard.accounts.sso.backends.saml.sso_backend.
+                         SAMLSSOBackend, optional):
+                The backend handling the login. If not provided, settings
+                are read from the built-in ``saml`` backend's configuration.
+
             **kwargs (dict):
                 Keyword arguments to pass through to the parent class.
         """
         super().__init__(*args, **kwargs)
+
+        self.sso_backend = sso_backend
 
         # If we're in provision mode, we don't want username and password to be
         # required.
@@ -76,9 +106,15 @@ class SAMLLinkUserForm(AuthenticationForm):
             # If we're provisioning a new user, the only thing we need to check
             # is if automatic provisioning is enabled. We don't actually care
             # about authenticating the login/password.
-            siteconfig = SiteConfiguration.objects.get_current()
+            if self.sso_backend is not None:
+                provision_enabled = self.sso_backend.get_setting(
+                    'automatically_provision_users', True)
+            else:
+                siteconfig = SiteConfiguration.objects.get_current()
+                provision_enabled = siteconfig.get(
+                    'saml_automatically_provision_users', True)
 
-            if not siteconfig.get('saml_automatically_provision_users', True):
+            if not provision_enabled:
                 raise ValidationError(
                     _(
                         'A user account for {username} does not exist. Your '
