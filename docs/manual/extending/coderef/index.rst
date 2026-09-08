@@ -53,6 +53,11 @@ User Accounts
    reviewboard.accounts.pages
    reviewboard.accounts.privacy
    reviewboard.accounts.service_accounts
+   reviewboard.accounts.sso.backends
+   reviewboard.accounts.sso.backends.base
+   reviewboard.accounts.sso.backends.registry
+   reviewboard.accounts.sso.backends.saml.sso_backend
+   reviewboard.accounts.sso.errors
    reviewboard.accounts.templatetags.accounts
    reviewboard.accounts.testing
    reviewboard.accounts.testing.queries

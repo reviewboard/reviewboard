@@ -103,6 +103,10 @@ Integration With Third-Party Tools Hooks
 :ref:`auth-backend-hook`:
   Adds a new authentication backend for logging in to Review Board.
 
+:ref:`sso-backend-hook`:
+  Adds a new single sign-on backend for logging in through an external
+  identity provider.
+
 :ref:`service-account-hook`:
   Adds a service account, which represents special users intended for
   automation and integration purposes.
@@ -264,6 +268,7 @@ Deprecated Hooks
    scmtool-hook
    service-account-hook
    signal-hook
+   sso-backend-hook
    template-hook
    url-hook
    user-condition-choices-hook
