@@ -8,16 +8,37 @@ from __future__ import annotations
 
 import re
 from importlib import import_module
+from typing import TYPE_CHECKING
 
 from django.urls import include, path, re_path
 from django.utils.translation import gettext_lazy as _
-from djblets.registries.registry import ALREADY_REGISTERED, NOT_REGISTERED
+from djblets.registries.registry import (
+    ALREADY_REGISTERED,
+    LOAD_ENTRY_POINT,
+    NOT_REGISTERED,
+)
 
-from reviewboard.registries.registry import Registry
+from reviewboard.accounts.sso.backends.base import BaseSSOBackend
+from reviewboard.registries.registry import EntryPointRegistry
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from importlib_metadata import EntryPoint
 
 
-class SSOBackendRegistry(Registry):
+class SSOBackendRegistry(EntryPointRegistry[BaseSSOBackend]):
     """A registry for managing SSO backends.
+
+    Backends can be registered directly, or provided by packages through
+    the ``reviewboard.sso_backends`` entry point. Each entry point must
+    point to a :py:class:`~reviewboard.accounts.sso.backends.base.
+    BaseSSOBackend` subclass, which will be instantiated when loaded.
+
+    Version Changed:
+        9.0:
+        Backends are now loaded from the ``reviewboard.sso_backends`` entry
+        point.
 
     Version Added:
         5.0
@@ -30,6 +51,9 @@ class SSOBackendRegistry(Registry):
         ALREADY_REGISTERED: _(
             '"%(item)s" is already a registered SSO backend.'
         ),
+        LOAD_ENTRY_POINT: _(
+            'Error loading SSO backend %(entry_point)s: %(error)s'
+        ),
         NOT_REGISTERED: _(
             '"%(attr_value)s" is not a registered SSO backend.'
         ),
@@ -40,11 +64,35 @@ class SSOBackendRegistry(Registry):
         super().__init__()
         self._url_patterns = {}
 
-    def get_defaults(self):
-        """Yield the built-in SSO backends.
+    def process_value_from_entry_point(
+        self,
+        entry_point: EntryPoint,
+    ) -> BaseSSOBackend:
+        """Load and instantiate the backend class from an entry point.
+
+        Version Added:
+            9.0
+
+        Args:
+            entry_point (importlib_metadata.EntryPoint):
+                The entry point.
+
+        Returns:
+            reviewboard.accounts.sso.backends.base.BaseSSOBackend:
+            The SSO backend instance.
+        """
+        return entry_point.load()()
+
+    def get_defaults(self) -> Iterator[BaseSSOBackend]:
+        """Yield the built-in and entry point SSO backends.
 
         This will make sure the standard SSO backends are always present in the
         registry.
+
+        Version Changed:
+            9.0:
+            Backends from the ``reviewboard.sso_backends`` entry point are now
+            included.
 
         Yields:
             reviewboard.accounts.sso.backends.base.BaseSSOBackend:
@@ -59,6 +107,8 @@ class SSOBackendRegistry(Registry):
                                 % _module)
             cls = getattr(mod, _backend_cls_name)
             yield cls()
+
+        yield from super().get_defaults()
 
     def get_siteconfig_defaults(self):
         """Return defaults for the site configuration.
