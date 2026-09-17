@@ -31,7 +31,10 @@ from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.fake import FAKE_HOSTING_SERVICES
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+)
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.certs import Certificate as LegacyCertificate
@@ -836,6 +839,18 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
             self.local_site = self.cur_local_site
         else:
             self.local_site = None
+
+        # Limit the default bug tracker choices to real, non-hidden
+        # configurations.
+        if 'default_bug_tracker' in self.fields:
+            default_bug_tracker_field = self.fields['default_bug_tracker']
+            default_bug_tracker_field.required = False
+            default_bug_tracker_field.queryset = \
+                ConfiguredBugTracker.objects.accessible(
+                    local_site=self.local_site)
+            default_bug_tracker_field.help_text = \
+                _('The bug tracker that bare bug IDs on review requests '
+                  'belong to.')
 
         # Grab the entire list of HostingServiceAccounts that can be
         # used by this form. When the form is actually being used by the

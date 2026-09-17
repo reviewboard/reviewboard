@@ -21,6 +21,8 @@ from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.models import Repository, Tool
 
 if TYPE_CHECKING:
+    from django.contrib.admin.options import _FieldsetSpec
+    from django.http import HttpRequest
     from django.utils.safestring import SafeString
 
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
@@ -94,6 +96,40 @@ class RepositoryAdmin(ModelAdmin):
     form = RepositoryForm
 
     fieldset_template_name = 'admin/scmtools/repository/_fieldset.html'
+
+    def get_fieldsets(
+        self,
+        request: HttpRequest,
+        obj: (Repository | None) = None,
+    ) -> _FieldsetSpec:
+        """Return the fieldsets for the repository form.
+
+        The Bug Tracker section additionally offers the default bug
+        tracker selector.
+
+        Version Added:
+            9.0
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            obj (reviewboard.scmtools.models.Repository, optional):
+                The repository being changed.
+
+        Returns:
+            tuple:
+            The fieldsets to display.
+        """
+        fieldsets = super().get_fieldsets(request, obj)
+
+        for title, info in fieldsets:
+            if (title == RepositoryForm.BUG_TRACKER_FIELDSET and
+                'default_bug_tracker' not in info['fields']):
+                info['fields'] = (*tuple(info['fields']),
+                                  'default_bug_tracker')
+
+        return fieldsets
 
     @admin.display(description=_('Type / Account'))
     def _repository_type(
