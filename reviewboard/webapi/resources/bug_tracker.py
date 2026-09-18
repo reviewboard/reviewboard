@@ -20,6 +20,7 @@ from reviewboard.hostingsvcs.base import BaseHostingService
 from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.webapi.base import WebAPIResource
 from reviewboard.webapi.decorators import webapi_check_login_required
+from reviewboard.webapi.resources import resources
 
 if TYPE_CHECKING:
     from django.db.models import QuerySet
@@ -76,6 +77,10 @@ class BugTrackerResource(WebAPIResource):
                            'for bugs.',
         },
     }
+
+    item_child_resources = [
+        resources.bug_tracker_bugs,
+    ]
 
     @webapi_check_login_required
     def get_queryset(

@@ -107,6 +107,36 @@ def get_bug_tracker_item_url(
 
 
 #
+# BugTrackerBugsResource
+#
+def get_bug_tracker_bugs_list_url(
+    bug_tracker_or_id: ConfiguredBugTracker | int,
+    local_site_name: (str | None) = None,
+) -> str:
+    """Return the URL for the bug tracker bugs list resource.
+
+    Version Added:
+        9.0
+
+    Args:
+        bug_tracker_or_id (reviewboard.hostingsvcs.models.ConfiguredBugTracker
+                           or int):
+            The bug tracker, or its ID.
+
+        local_site_name (str, optional):
+            The name of the Local Site, if any.
+
+    Returns:
+        str:
+        The URL.
+    """
+    return resources.bug_tracker_bugs.get_list_url(
+        local_site_name=local_site_name,
+        bug_tracker_id=_normalize_id(bug_tracker_or_id,
+                                     ConfiguredBugTracker))
+
+
+#
 # ChangeResource
 #
 def get_change_list_url(review_request, local_site_name=None):

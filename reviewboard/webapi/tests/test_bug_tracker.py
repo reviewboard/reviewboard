@@ -25,6 +25,7 @@ from reviewboard.webapi.tests.mixins import (
     BasicTestsMetaclass,
 )
 from reviewboard.webapi.tests.urls import (
+    get_bug_tracker_bugs_list_url,
     get_bug_tracker_item_url,
     get_bug_tracker_list_url,
 )
@@ -62,6 +63,7 @@ def _get_item_payload(
         local_site_name = None
 
     item_url = get_bug_tracker_item_url(bug_tracker, local_site_name)
+    bugs_url = get_bug_tracker_bugs_list_url(bug_tracker, local_site_name)
     service = bug_tracker.service
     assert isinstance(service, BaseHostingService)
 
@@ -69,6 +71,10 @@ def _get_item_payload(
         'display_mode': bug_tracker.display_mode,
         'id': bug_tracker.pk,
         'links': {
+            'bugs': {
+                'href': f'{self.base_url}{bugs_url}',
+                'method': 'GET',
+            },
             'self': {
                 'href': f'{self.base_url}{item_url}',
                 'method': 'GET',

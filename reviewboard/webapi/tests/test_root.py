@@ -125,6 +125,8 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             'bug_tracker':
                 'http://testserver/api/bug-trackers/{bug_tracker_id}/',
             'bug_trackers': 'http://testserver/api/bug-trackers/',
+            'bugs':
+                'http://testserver/api/bug-trackers/{bug_tracker_id}/bugs/',
             'commit_validation': 'http://testserver/api/validation/commits/',
             'default_reviewer':
                 'http://testserver/api/default-reviewers/'
