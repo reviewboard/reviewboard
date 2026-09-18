@@ -50,7 +50,10 @@ from reviewboard.webapi.errors import (COMMIT_ID_ALREADY_EXISTS,
                                        PUBLISH_ERROR,
                                        REPO_INFO_ERROR,
                                        UNVERIFIED_HOST_CERT)
-from reviewboard.webapi.mixins import MarkdownFieldsMixin
+from reviewboard.webapi.mixins import (
+    MarkdownFieldsMixin,
+    ReviewRequestDetailsMixin,
+)
 from reviewboard.webapi.resources import resources
 
 if TYPE_CHECKING:
@@ -61,7 +64,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
+class ReviewRequestDraftResource(MarkdownFieldsMixin,
+                                 ReviewRequestDetailsMixin,
+                                 WebAPIResource):
     """An editable draft of a review request.
 
     This resource is used to actually modify a review request. Anything made
@@ -384,9 +389,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     def get_is_changedescription_rich_text(self, obj):
         return obj.changedesc_id is not None and obj.changedesc.rich_text
 
-    def serialize_bugs_closed_field(self, obj, **kwargs):
-        return obj.get_bug_list()
-
     def serialize_changedescription_field(self, obj, **kwargs):
         if obj.changedesc:
             return obj.changedesc.text
@@ -400,9 +402,6 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin, WebAPIResource):
     def serialize_description_text_type_field(self, obj, **kwargs):
         # This will be overridden by MarkdownFieldsMixin.
         return None
-
-    def serialize_status_field(self, obj, **kwargs):
-        return ReviewRequest.status_to_string(obj.status)
 
     def serialize_public_field(self, obj, **kwargs):
         return False

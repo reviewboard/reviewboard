@@ -1,16 +1,30 @@
+"""Mixins for API resources."""
+
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from django.utils.html import escape
 from djblets.markdown import markdown_escape, markdown_unescape
 from djblets.webapi.resources.mixins.forms import (
-    UpdateFormMixin as DjbletsUpdateFormMixin)
+    UpdateFormMixin as DjbletsUpdateFormMixin,
+)
 
-from reviewboard.reviews.markdown_utils import (markdown_set_field_escaped,
-                                                render_markdown)
+from reviewboard.reviews.markdown_utils import (
+    markdown_set_field_escaped,
+    render_markdown,
+)
 from reviewboard.webapi.base import ImportExtraDataError
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
-class MarkdownFieldsMixin(object):
+    from reviewboard.reviews.models.base_review_request_details import (
+        BaseReviewRequestDetails,
+    )
+
+
+class MarkdownFieldsMixin:
     """Mixes in common logic for Markdown text fields.
 
     Any resource implementing this is assumed to have at least one
@@ -39,6 +53,7 @@ class MarkdownFieldsMixin(object):
     ``?include-raw-text-fields=1`` in 2.0.9 and 2.0.10. The latter is
     deprecated.)
     """
+
     TEXT_TYPE_PLAIN = 'plain'
     TEXT_TYPE_MARKDOWN = 'markdown'
     TEXT_TYPE_HTML = 'html'
@@ -531,3 +546,32 @@ class UpdateFormMixin(DjbletsUpdateFormMixin):
         form.save_m2m()
 
         return instance
+
+
+class ReviewRequestDetailsMixin:
+    """Mixin for resources which operate on review request details.
+
+    Version Added:
+        9.0
+    """
+
+    def serialize_bugs_closed_field(
+        self,
+        obj: BaseReviewRequestDetails,
+        **kwargs,
+    ) -> Sequence[str]:
+        """Serialize the ``bugs_closed`` field.
+
+        Args:
+            obj (reviewboard.reviews.models.base_review_request_details.
+                 BaseReviewRequestDetails):
+                The object being serialized.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            list of str:
+            The contents of the ``bugs_closed`` field.
+        """
+        return obj.get_bug_list()

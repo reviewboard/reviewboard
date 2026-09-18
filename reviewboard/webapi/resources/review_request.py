@@ -66,7 +66,10 @@ from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        REPO_AUTHENTICATION_ERROR,
                                        REPO_INFO_ERROR,
                                        UNVERIFIED_HOST_CERT)
-from reviewboard.webapi.mixins import MarkdownFieldsMixin
+from reviewboard.webapi.mixins import (
+    MarkdownFieldsMixin,
+    ReviewRequestDetailsMixin,
+)
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.repository import RepositoryResource
 from reviewboard.webapi.resources.review_group import ReviewGroupResource
@@ -78,7 +81,9 @@ from reviewboard.webapi.resources.user import UserResource
 logger = logging.getLogger(__name__)
 
 
-class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
+class ReviewRequestResource(MarkdownFieldsMixin,
+                            ReviewRequestDetailsMixin,
+                            WebAPIResource):
     """Provides information on review requests.
 
     Review requests are one of the central concepts in Review Board. They
@@ -606,9 +611,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             result.pop('created_with_history', None)
 
         return result
-
-    def serialize_bugs_closed_field(self, obj, **kwargs):
-        return obj.get_bug_list()
 
     def serialize_close_description_field(self, obj, **kwargs):
         if obj.status in (obj.SUBMITTED, obj.DISCARDED):
