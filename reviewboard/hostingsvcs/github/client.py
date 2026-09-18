@@ -34,9 +34,12 @@ from reviewboard.hostingsvcs.errors import (
 )
 from reviewboard.hostingsvcs.github import api
 from reviewboard.hostingsvcs.github.accounts import (
+    InstallationStatus,
     get_github_app_data,
     is_app_record_data,
+    is_installation_account,
     is_installation_data,
+    set_installation_status,
 )
 from reviewboard.hostingsvcs.github.app_auth import build_app_jwt_from_data
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -44,6 +47,7 @@ from reviewboard.scmtools.crypto_utils import decrypt_password
 from reviewboard.scmtools.errors import FileNotFoundError
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
     from typing import Any
     from urllib.error import URLError
 
@@ -68,6 +72,46 @@ _TModel = TypeVar('_TModel', bound=BaseModel)
 
 
 logger = logging.getLogger(__name__)
+
+
+#: How long, in seconds, to wait between automatic installation status checks.
+#:
+#: Automatic checks are triggered by failing requests, so a burst of requests
+#: against a broken installation must not turn into a burst of status lookups.
+#:
+#: Version Added:
+#:     9.0
+_STATUS_CHECK_DEBOUNCE_SECS = 60
+
+
+def get_github_urls(
+    hosting_url: str | None,
+) -> Mapping[str, str]:
+    """Return the base URLs to use for a GitHub connection.
+
+    Version Added:
+        9.0
+
+    Args:
+        hosting_url (str):
+            The GitHub server URL, or ``None`` for github.com.
+
+    Returns:
+        dict:
+        A dictionary with ``app_base`` and ``api_url`` keys.
+    """
+    if hosting_url:
+        app_base = hosting_url.rstrip('/')
+
+        return {
+            'api_url': f'{app_base}/api/v3',
+            'app_base': app_base,
+        }
+
+    return {
+        'api_url': 'https://api.github.com',
+        'app_base': 'https://github.com',
+    }
 
 
 class GitHubAPIPaginator(APIPaginator[PageDataItemT, PageDataT]):
@@ -277,6 +321,16 @@ class GitHubClient(HostingServiceClient['GitHub']):
             logger.error('HTTP error in HTTP request to %s: %s',
                          e.url, e)
 
+            if (http_code in {401, 403} and
+                is_installation_account(self.account)):
+                # The request was authenticated with an installation token.
+                # GitHub rejects such tokens once the installation is
+                # suspended (403) and revokes them when it is removed (401),
+                # so this may be the first sign of a missed webhook. Drop the
+                # cached token and re-check the installation's state, raising
+                # the status error instead if the check confirms a problem.
+                self._check_installation_after_auth_error()
+
             try:
                 error = api.APIError.model_validate_json(data)
 
@@ -302,6 +356,34 @@ class GitHubClient(HostingServiceClient['GitHub']):
                          e)
 
             raise HostingServiceError(str(e))
+
+    def _check_installation_after_auth_error(
+        self,
+    ) -> None:
+        """Re-check the installation status after an authentication error.
+
+        This drops the cached installation token (which may have been
+        invalidated on the GitHub side) and refreshes the stored status, so
+        the next operation re-mints a token against current state. If the
+        refresh confirms the installation is suspended or removed, the
+        status error is raised in place of the original one.
+
+        Version Added:
+            9.0
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                The installation is suspended or removed on GitHub.
+        """
+        account = self.account
+        app_data = get_github_app_data(account)
+        assert is_installation_data(app_data)
+
+        cache.delete(self._make_installation_token_cache_key(
+            account, app_data.installation_id))
+
+        self._raise_for_installation_status(
+            self._refresh_stale_installation_status(account))
 
     #
     # Higher-level API methods
@@ -372,33 +454,42 @@ class GitHubClient(HostingServiceClient['GitHub']):
             repository=repository,
         )
 
-    def get_repository(
+    def get_installation_info(
         self,
-        *,
-        repo_api_url: str,
-        repository: Repository | None,
-    ) -> api.Repository:
-        """Make a get request to the repository API.
+        installation_id: int,
+    ) -> api.InstallationResponse:
+        """Return metadata for a GitHub App installation.
+
+        This must be called on the client for the hidden app-record account,
+        which authenticates as the app. The installation identifies the account
+        (user or organization) the app was installed on.
+
+        Version Added:
+            9.0
 
         Args:
-            repo_api_url (str):
-                The absolute URL of the base repository API.
-
-            repository (reviewboard.scmtools.models.Repository):
-                The repository object, if available.
+            installation_id (int):
+                The ID of the installation to look up.
 
         Returns:
-            reviewboard.hostingsvcs.github.api.Repository:
-            The fetched data.
+            reviewboard.hostingsvcs.github.api.InstallationResponse:
+            The parsed installation response from GitHub.
 
         Raises:
-            reviewboard.hostingsvcs.errors.HostingServiceError:
-                There was an error fetching the repository.
+            reviewboard.hostingsvcs.base.errors.HostingServiceError:
+                The request to GitHub failed, or the response could not be
+                parsed.
         """
-        return self._api_get(
-            url=repo_api_url,
-            result_type=api.Repository,
-            repository=repository)
+        api_url = self.hosting_service.get_api_url(self.account.hosting_url)
+        url = f'{api_url}app/installations/{installation_id}'
+
+        rsp = self.http_get(
+            url=url,
+            headers={
+                'Accept': 'application/vnd.github+json',
+            })
+
+        return api.InstallationResponse.model_validate_json(rsp.data)
 
     def get_commit(
         self,
@@ -520,6 +611,39 @@ class GitHubClient(HostingServiceClient['GitHub']):
             result_type=api.CompareCommitsResponse,
             repository=repository)
 
+    def get_installation_accessible_repositories(
+        self,
+        api_url: str,
+    ) -> BasePaginator[api.Repository, Sequence[api.Repository]]:
+        """Return the repositories a GitHub App installation can access.
+
+        This authenticates as the installation account this client is bound to
+        and lists every repository the app was granted access to. It is used to
+        limit reassignment suggestions to repositories the app can actually
+        read.
+
+        Version Added:
+            9.0
+
+        Args:
+            api_url (str):
+                The root URL for the API.
+
+        Returns:
+            reviewboard.hostingsvcs.base.paginator.BasePaginator:
+            A paginator for the repository results.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                An error occurred while talking to GitHub.
+        """
+        return self._api_get_paginated(
+            url=f'{api_url}installation/repositories',
+            result_type=TypeAdapter(list[api.Repository]),
+            list_key='repositories',
+            per_page=100,
+            repository=None)
+
     def get_issue(
         self,
         *,
@@ -606,6 +730,34 @@ class GitHubClient(HostingServiceClient['GitHub']):
             params=params,
             per_page=per_page)
 
+    def get_repository(
+        self,
+        *,
+        repo_api_url: str,
+        repository: Repository | None,
+    ) -> api.Repository:
+        """Make a get request to the repository API.
+
+        Args:
+            repo_api_url (str):
+                The absolute URL of the base repository API.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+        Returns:
+            reviewboard.hostingsvcs.github.api.Repository:
+            The fetched data.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching the repository.
+        """
+        return self._api_get(
+            url=repo_api_url,
+            result_type=api.Repository,
+            repository=repository)
+
     def get_tree(
         self,
         *,
@@ -676,12 +828,12 @@ class GitHubClient(HostingServiceClient['GitHub']):
             The deserialized data.
 
         Raises:
-            reviewboard.hostingsvcs.base.errors.HostingServiceError:
-                An error occurred while making the request.
-
-            reviewboard.hostingsvcs.base.errors.HostingServiceAPIError:
+            reviewboard.hostingsvcs.errors.HostingServiceAPIError:
                 An error occurred while making the request, with a parsed error
                 structure.
+
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                An error occurred while making the request.
         """
         if params:
             url = f'{url}?{urlencode(params)}'
@@ -711,8 +863,13 @@ class GitHubClient(HostingServiceClient['GitHub']):
         repository: Repository | None,
         params: (dict[str, str] | None) = None,
         per_page: (int | None) = None,
+        list_key: (str | None) = None,
     ) -> ProxyPaginator[_T, Sequence[_T]]:
         """Perform an HTTP GET to the API and return a paginator.
+
+        Version Changed:
+            9.0:
+            Added the ``list_key`` argument.
 
         Args:
             url (str):
@@ -728,19 +885,31 @@ class GitHubClient(HostingServiceClient['GitHub']):
                 Parameters to include in the URL.
 
             per_page (int, optional):
-                The number of items to return per page.
+                The number of items to return per page. This is added to the
+                query parameters in the URL.
+
+            list_key (str, optional):
+                The key under which the list of results is nested, for
+                endpoints that wrap the list in an object instead of returning
+                a bare array.
+
+                Version Added:
+                    9.0
 
         Returns:
             reviewboard.hostingsvcs.paginator.ProxyPaginator:
             A paginator over the validated results.
 
         Raises:
-            reviewboard.hostingsvcs.base.errors.HostingServiceError:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
                 An error occurred while making the request.
         """
         def normalize_page_data(
             page_data: Sequence[Any],
         ) -> Sequence[_T] | None:
+            if list_key is not None and isinstance(page_data, dict):
+                page_data = page_data.get(list_key) or []
+
             try:
                 return result_type.validate_python(page_data)
             except ValidationError as e:
@@ -807,25 +976,166 @@ class GitHubClient(HostingServiceClient['GitHub']):
 
         Raises:
             reviewboard.hostingsvcs.errors.HostingServiceError:
-                The hidden app-record account holding the credentials could
-                not be found.
+                The installation is suspended or removed on GitHub, or the
+                hidden app-record account holding the credentials could not
+                be found.
         """
+        status = github_app.status
+
+        if status != InstallationStatus.ACTIVE:
+            # The stored status comes from webhooks, and webhook deliveries
+            # can be missed. An unsuspend or reinstall performed on GitHub
+            # may never have been delivered, and refusing here would keep a
+            # healthy connection broken forever. Re-check with GitHub (at
+            # most once a minute) before refusing.
+            status = self._refresh_stale_installation_status(account)
+
+            # The refresh may have updated the stored data, including the
+            # installation ID after a reinstall.
+            refreshed_app = get_github_app_data(account)
+            assert is_installation_data(refreshed_app)
+            github_app = refreshed_app
+
+        self._raise_for_installation_status(status)
+
         installation_id = github_app.installation_id
-        cache_key = make_cache_key([
-            'github-app-installation-token',
-            str(account.pk),
-            str(installation_id),
-        ])
+        cache_key = self._make_installation_token_cache_key(
+            account, installation_id)
 
         token = cache.get(cache_key)
 
         if token is not None:
             return token
 
-        # The app credentials (including the private key) are stored once on a
-        # separate hidden app-record account. The installation account
-        # references it by primary key. Minting runs through that account's
-        # client, which authenticates as the app.
+        app_client = self._get_app_client(account, github_app)
+
+        try:
+            token, expires_at = app_client._mint_installation_token(
+                installation_id)
+        except HostingServiceAPIError as e:
+            if e.http_code not in {403, 404}:
+                raise
+
+            # GitHub refuses to mint tokens for a suspended installation
+            # (403) and cannot find a removed one (404), so this is where a
+            # missed suspend or uninstall webhook first surfaces. Ask GitHub
+            # for the installation's actual state rather than trusting the
+            # code alone (a 403 can also mean rate limiting), and record it.
+            try:
+                status = self.refresh_installation_status(account)
+            except Exception as refresh_error:
+                logger.warning('Unable to check the status of GitHub App '
+                               'installation account %s: %s',
+                               account.pk, refresh_error)
+
+                raise e
+
+            self._raise_for_installation_status(status)
+
+            # The installation exists and is not suspended, under a possibly
+            # new installation ID. Mint against the refreshed ID.
+            refreshed_app = get_github_app_data(account)
+            assert is_installation_data(refreshed_app)
+            github_app = refreshed_app
+            installation_id = github_app.installation_id
+            cache_key = self._make_installation_token_cache_key(
+                account, installation_id)
+
+            token, expires_at = app_client._mint_installation_token(
+                installation_id)
+
+        cache.set(cache_key, token,
+                  timeout=self._get_token_cache_timeout(expires_at))
+
+        return token
+
+    @staticmethod
+    def _make_installation_token_cache_key(
+        account: HostingServiceAccount,
+        installation_id: Any,
+    ) -> str:
+        """Return the cache key for an installation's access token.
+
+        Version Added:
+            9.0
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The installation account the token belongs to.
+
+            installation_id (int):
+                The installation ID the token was minted for.
+
+        Returns:
+            str:
+            The cache key.
+        """
+        return make_cache_key([
+            'github-app-installation-token',
+            str(account.pk),
+            str(installation_id),
+        ])
+
+    @staticmethod
+    def _raise_for_installation_status(
+        status: InstallationStatus | None,
+    ) -> None:
+        """Raise an error if an installation status is not active.
+
+        Version Added:
+            9.0
+
+        Args:
+            status (reviewboard.hostingsvcs.github.accounts.
+                    InstallationStatus):
+                The installation status to check.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                The installation is suspended or removed on GitHub.
+        """
+        if status == InstallationStatus.REMOVED:
+            raise HostingServiceError(_(
+                'This GitHub App installation was removed on GitHub. '
+                'Reinstall the app to restore the connection.'
+            ))
+        elif status == InstallationStatus.SUSPENDED:
+            raise HostingServiceError(_(
+                'This GitHub App installation is suspended on GitHub. '
+                'Unsuspend it to restore the connection.'
+            ))
+
+    def _get_app_client(
+        self,
+        account: HostingServiceAccount,
+        github_app: GitHubAppInstallationData,
+    ) -> GitHubClient:
+        """Return a client for an installation's app-record account.
+
+        The app credentials (including the private key) are stored once on a
+        separate hidden app-record account. The installation account
+        references it by primary key. App-authenticated requests, such as
+        minting installation tokens, run through that account's client.
+
+        Version Added:
+            9.0
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The installation account.
+
+            github_app (reviewboard.hostingsvcs.github.accounts.
+                        GitHubAppInstallationData):
+                The ``github_app`` data stored on the installation account.
+
+        Returns:
+            GitHubClient:
+            The client for the app-record account.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                The app-record account could not be found.
+        """
         try:
             app_account = HostingServiceAccount.objects.get(
                 pk=github_app.app_account_id)
@@ -840,16 +1150,168 @@ class GitHubClient(HostingServiceClient['GitHub']):
                 'Services.'
             ))
 
-        app_client = app_account.service.client
-        assert isinstance(app_client, GitHubClient)
+        client = app_account.service.client
+        assert isinstance(client, GitHubClient)
 
-        token, expires_at = app_client._mint_installation_token(
-            installation_id)
+        return client
 
-        cache.set(cache_key, token,
-                  timeout=self._get_token_cache_timeout(expires_at))
+    def refresh_installation_status(
+        self,
+        account: HostingServiceAccount,
+    ) -> InstallationStatus:
+        """Sync an installation account's stored status with GitHub.
 
-        return token
+        Webhook deliveries are not reliable, so the stored status can drift
+        from GitHub's actual state in either direction. This asks GitHub for
+        the installation's current state and records it.
+
+        If the stored installation ID no longer exists on GitHub, the app's
+        installations are searched for one on the same owner before
+        concluding the app was removed. A reinstall performed directly on
+        GitHub issues a new installation ID, and adopting it here heals the
+        connection without going back through the install flow.
+
+        Version Added:
+            9.0
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The installation account to check.
+
+        Returns:
+            str:
+            The new installation status.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                The installation state could not be determined. The stored
+                status is left untouched.
+        """
+        app_data = get_github_app_data(account)
+        assert is_installation_data(app_data)
+
+        installation_id = app_data.installation_id
+        app_client = self._get_app_client(account, app_data)
+
+        info: (api.InstallationResponse | None) = None
+        new_installation_id: (int | None) = None
+
+        if installation_id:
+            try:
+                info = app_client.get_installation_info(installation_id)
+            except HostingServiceAPIError as e:
+                if e.http_code != 404:
+                    raise
+
+        if info is None:
+            info = app_client.find_installation_for_owner(
+                app_data.owner_id)
+
+            if info is not None and info.id:
+                new_installation_id = info.id
+
+        if info is None:
+            status = InstallationStatus.REMOVED
+        elif info.suspended_at:
+            status = InstallationStatus.SUSPENDED
+        else:
+            status = InstallationStatus.ACTIVE
+
+        set_installation_status(account, status,
+                                installation_id=new_installation_id)
+
+        return status
+
+    def _refresh_stale_installation_status(
+        self,
+        account: HostingServiceAccount,
+    ) -> InstallationStatus | None:
+        """Refresh an installation's status, debounced and non-raising.
+
+        This is the automatic variant of
+        :py:meth:`refresh_installation_status`, used on request paths where a
+        failure to check must not mask the original problem. It checks GitHub
+        at most once per minute per account, and returns the stored status
+        when the check is skipped or fails.
+
+        Version Added:
+            9.0
+
+        Args:
+            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The installation account to check.
+
+        Returns:
+            str:
+            The installation status.
+        """
+        cache_key = make_cache_key([
+            'github-app-status-check',
+            str(account.pk),
+        ])
+
+        app_data = get_github_app_data(account)
+
+        if not is_installation_data(app_data):
+            return None
+
+        if not cache.add(cache_key, True,
+                         timeout=_STATUS_CHECK_DEBOUNCE_SECS):
+            return app_data.status
+
+        try:
+            return self.refresh_installation_status(account)
+        except Exception as e:
+            logger.warning('Unable to check the status of GitHub App '
+                           'installation account %s: %s',
+                           account.pk, e)
+
+            return app_data.status
+
+    def find_installation_for_owner(
+        self,
+        owner_id: int | None,
+    ) -> api.InstallationResponse | None:
+        """Return the app's installation on an owner, if there is one.
+
+        This must be called on the client for the hidden app-record account,
+        which authenticates as the app. It scans the app's installations for
+        one on the given user or organization, matched by the owner's stable
+        numeric ID.
+
+        Version Added:
+            9.0
+
+        Args:
+            owner_id (int):
+                The stable numeric ID of the user or organization, or
+                ``None`` if unknown.
+
+        Returns:
+            reviewboard.hostingsvcs.github.api.InstallationResponse:
+            The matching installation, or ``None`` if the app is not
+            installed on the owner or the owner ID is unknown.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                An error occurred while talking to GitHub.
+        """
+        if not owner_id:
+            return None
+
+        api_url = self.hosting_service.get_api_url(self.account.hosting_url)
+
+        paginator = self._api_get_paginated(
+            url=f'{api_url}app/installations',
+            result_type=TypeAdapter(list[api.InstallationResponse]),
+            per_page=100,
+            repository=None)
+
+        for installation in paginator.iter_items():
+            if installation.account.id == owner_id:
+                return installation
+
+        return None
 
     def _get_token_cache_timeout(
         self,

@@ -6,7 +6,7 @@ import logging
 import uuid
 from importlib import import_module
 from time import time
-from typing import Any, ClassVar, Final, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 from urllib.parse import quote
 
 from django.contrib.auth.models import User
@@ -25,7 +25,11 @@ from housekeeping import deprecate_non_keyword_only_args
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+    SENTINEL_BUG_TRACKER_SERVICE_NAME,
+)
 from reviewboard.scmtools import scmtools_registry
 from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -38,6 +42,7 @@ from reviewboard.site.models import LocalSite
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
+    from typing import Any, ClassVar, Final
 
     from django.contrib.auth.models import AnonymousUser
     from django.http import HttpRequest
@@ -228,6 +233,23 @@ class Repository(models.Model):
         blank=True,
         help_text=_("This should be the full path to a bug in the bug tracker "
                     "for this repository, using '%s' in place of the bug ID."))
+
+    #: The bug tracker that bare bug IDs on this repository belong to.
+    #:
+    #: This is used by the legacy ``bugs_closed`` field and by bug
+    #: references in text fields. It does not control which bug trackers
+    #: are available. That is determined by each tracker's scoping.
+    #:
+    #: Version Added:
+    #:     9.0
+    default_bug_tracker = models.ForeignKey(
+        ConfiguredBugTracker,
+        on_delete=models.PROTECT,
+        related_name='+',
+        verbose_name=_('Default bug tracker'),
+        blank=True,
+        null=True)
+
     encoding = models.CharField(
         max_length=32,
         blank=True,
@@ -455,6 +477,48 @@ class Repository(models.Model):
             return bug_tracker_cls(HostingServiceAccount())
 
         return None
+
+    def get_default_bug_tracker(self) -> ConfiguredBugTracker | None:
+        """Return the bug tracker acting as this repository's default.
+
+        This is the explicitly assigned default bug tracker when one is
+        set. Without one, a single enabled bug tracker configured for
+        all review requests acts as the default, as long as this
+        repository has no bug trackers of its own attached.
+
+        Version Added:
+            9.0
+
+        Returns:
+            reviewboard.hostingsvcs.models.ConfiguredBugTracker:
+            The effective default bug tracker, or ``None`` if there is
+            no explicit default and no single site-wide tracker to
+            imply one from.
+        """
+        if self.default_bug_tracker is not None:
+            return self.default_bug_tracker
+
+        if not hasattr(self, '_implied_default_bug_tracker'):
+            implied: (ConfiguredBugTracker | None) = None
+
+            if not self.bug_trackers.exists():
+                candidates = list(
+                    ConfiguredBugTracker.objects
+                    .filter(
+                        enabled=True,
+                        apply_to=ConfiguredBugTracker.APPLY_TO_ALL,
+                        local_site=self.local_site_id)
+                    .exclude(
+                        service_name=SENTINEL_BUG_TRACKER_SERVICE_NAME)
+                    [:2]
+                )
+
+                if len(candidates) == 1:
+                    implied = candidates[0]
+
+            self._implied_default_bug_tracker = implied
+
+        return self._implied_default_bug_tracker
 
     @property
     def supports_post_commit(self) -> bool:

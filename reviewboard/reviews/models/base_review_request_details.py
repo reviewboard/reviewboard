@@ -6,14 +6,22 @@ from collections.abc import Iterator
 from typing import TYPE_CHECKING, cast
 
 from django.db import models
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
 from djblets.db.fields import JSONField
 
 from reviewboard.attachments.models import FileAttachmentHistory
+from reviewboard.hostingsvcs.models import SENTINEL_BUG_TRACKER_SERVICE_NAME
+from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY
 from reviewboard.reviews.models.default_reviewer import DefaultReviewer
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from django.db.models import QuerySet
+
     from reviewboard.attachments.models import FileAttachmentSequence
+    from reviewboard.reviews.models.bug import Bug
     from reviewboard.reviews.models.screenshot import Screenshot
 
 
@@ -51,11 +59,24 @@ class BaseReviewRequestDetails(models.Model):
         raise NotImplementedError
 
     def get_bug_list(self):
-        """Returns a list of bugs associated with this review request."""
-        if self.bugs_closed == '':
-            return []
+        """Returns a list of bugs associated with this review request.
 
-        bugs = list(set(re.split(r'[, ]+', self.bugs_closed)))
+        Version Changed:
+            9.0:
+            For review requests whose bugs have been migrated to
+            :py:class:`~reviewboard.reviews.models.bug.Bug` relations,
+            this derives the list from the bugs linked to the default
+            bug tracker (and any unattributed bugs). The stored
+            ``bugs_closed`` string is only read for unmigrated review
+            requests.
+        """
+        if (self.extra_data or {}).get(BUGS_MIGRATED_KEY):
+            bugs = list(set(self._get_legacy_visible_bugs()
+                            .values_list('bug_id', flat=True)))
+        elif self.bugs_closed == '':
+            return []
+        else:
+            bugs = list(set(re.split(r'[, ]+', self.bugs_closed)))
 
         # First try a numeric sort, to show the best results for the majority
         # case of bug trackers with numeric IDs.  If that fails, sort
@@ -66,6 +87,32 @@ class BaseReviewRequestDetails(models.Model):
             bugs.sort()
 
         return bugs
+
+    def _get_legacy_visible_bugs(self) -> QuerySet[Bug]:
+        """Return linked bugs visible through the legacy bugs_closed view.
+
+        These are the bugs attributed to the repository's default bug
+        tracker, plus any unattributed (sentinel) bugs. Bugs linked to
+        other trackers have no legacy equivalent and are excluded.
+
+        Version Added:
+            9.0
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The queryset of matching bugs.
+        """
+        q = Q(bug_tracker__service_name=SENTINEL_BUG_TRACKER_SERVICE_NAME)
+
+        repository = self.repository
+
+        if repository is not None:
+            default_bug_tracker = repository.get_default_bug_tracker()
+
+            if default_bug_tracker is not None:
+                q |= Q(bug_tracker=default_bug_tracker.pk)
+
+        return self.bugs.filter(q)
 
     def get_screenshots(self) -> Iterator[Screenshot]:
         """Return a generator for all active screenshots.

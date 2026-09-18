@@ -347,11 +347,16 @@ class CodebaseHQ(BaseHostingService[CodebaseHQClient]):
     hosting_service_id = 'codebasehq'
     name = 'Codebase HQ'
 
+    auth_form = CodebaseHQAuthForm
+    # TODO: This service currently doesn't implement BaseBugTracker, but once
+    # it does, uncomment this:
+    # bugs_in_repo = True
     form = CodebaseHQForm
     needs_authorization = True
     supported_scmtools = ['Git', 'Subversion', 'Mercurial']
     supports_bug_trackers = True
     supports_repositories = True
+    _logo_image = 'rb/images/services/codebase.svg'
 
     bug_tracker_field = (
         'https://%(domain)s.codebasehq.com/projects/'

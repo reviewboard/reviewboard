@@ -29,19 +29,36 @@ SUPPORTED_LANGUAGES: set[SupportedLanguage] = set(get_args(SupportedLanguage))
 
 #: Overrides for specific languages.
 #:
-#: There are some filenames that have multiple possible languages where the one
-#: that appears first in the list isn't ideal. This provides overrides to
-#: select the most likely one.
+#: Some file suffixes have multiple possible languages. This selects the
+#: correct or most likely one. Ambiguous suffixes without an override are
+#: not matched to any language, so that content-based detection can decide
+#: instead.
 #:
 #: Version Added:
 #:     9.0
 # TODO: make this configurable the way we do with Pygments lexers.
 LANGUAGE_OVERRIDES: Mapping[str, SupportedLanguage] = {
+    '.csv': 'csv',
+    '.dtd': 'dtd',
     '.h': 'c',
+    '.hcl': 'hcl',
     '.js': 'javascript',
+    '.md': 'markdown',
+    '.ml': 'ocaml',
+    '.mli': 'ocaml_interface',
+    '.psv': 'psv',
+    '.rng': 'xml',
     '.scm': 'scheme',
+    '.svg': 'xml',
+    '.tf': 'terraform',
     '.ts': 'typescript',
+    '.tsv': 'tsv',
+    '.tsx': 'tsx',
     '.xml': 'xml',
+    '.xsd': 'xml',
+    '.xsl': 'xml',
+    '.xslt': 'xml',
+    'tfvars': 'terraform',
 }
 
 
@@ -179,7 +196,15 @@ def get_language_name_for_file(
 
     for suffix, languages in FILE_SUFFIX_TO_LANGUAGES.items():
         if filename.endswith(suffix):
-            return LANGUAGE_OVERRIDES.get(suffix, languages[0])
+            if suffix in LANGUAGE_OVERRIDES:
+                return LANGUAGE_OVERRIDES[suffix]
+            elif len(languages) == 1:
+                return languages[0]
+            else:
+                # The suffix is ambiguous and there's no override.
+                # Return None so content-based detection (Pygments) can
+                # decide, rather than guessing wrong and blocking it.
+                return None
 
     return None
 

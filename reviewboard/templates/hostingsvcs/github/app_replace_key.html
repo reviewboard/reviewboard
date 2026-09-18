@@ -1,0 +1,35 @@
+{% extends "siteconfig/settings.html" %}
+{% load i18n %}
+
+{% block field_sets %}
+<fieldset class="rb-c-form-fieldset">
+ <h3>{% trans "To rotate the GitHub App private key:" %}</h3>
+ <ol>
+  <li>
+{%  blocktrans %}
+   Open the <a href="{{github_app_settings_url}}" target="_blank"
+   rel="noopener noreferrer">GitHub App Settings</a> and select
+   <strong>Generate a private key</strong>.
+{%  endblocktrans %}
+  </li>
+  <li>
+   Upload the resulting <code>.pem</code> file here.
+  </li>
+ </ol>
+
+ <div class="rb-c-form-fieldset__fields">
+{%  for field in form %}
+{%   include "djblets_forms/form_field.html" %}
+{%  endfor %}
+ </div>
+</fieldset>
+{% endblock %}
+
+{% block submit_row_buttons %}
+<div class="rb-c-form__actions-primary">
+ <input type="submit" class="ink-c-button -is-primary"
+        value="{% trans 'Update private key' %}">
+ <a href="{% url "connected-services-list" %}"
+    class="ink-c-button">{% trans "Cancel" %}</a>
+</div>
+{% endblock %}

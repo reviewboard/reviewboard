@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from django import forms
+from django.core.exceptions import ValidationError
 from django.utils.text import format_lazy
 from django.utils.translation import gettext_lazy as _
 
@@ -21,6 +22,7 @@ from reviewboard.hostingsvcs.base.forms import (
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
+    from typing import Final
 
     from typelets.django.strings import StrOrPromise
 
@@ -131,3 +133,65 @@ class GitHubPrivateOrgForm(BaseHostingServiceRepositoryForm):
                     '<code>&lt;repo_name&gt;</code> in '
                     '<code>http://github.com/&lt;org_name&gt;/'
                     '&lt;repo_name&gt;/</code>'))
+
+
+class GitHubAppReplaceKeyForm(forms.Form):
+    """Form for replacing a GitHub App's private key.
+
+    This is used to recover from a private key that GitHub can no longer
+    validate, such as after the key is regenerated and the old one revoked on
+    the GitHub side.
+
+    Version Added:
+        9.0
+    """
+
+    #: The largest private key file that will be read, in bytes.
+    #:
+    #: A PEM-encoded RSA private key is a few kilobytes. This is generous
+    #: enough for any real key, and rejects an unrelated file before its
+    #: contents are read into memory.
+    MAX_PRIVATE_KEY_SIZE: Final[int] = 64 * 1024
+
+    private_key = forms.FileField(
+        label=_('Private key file'),
+        required=True,
+        widget=forms.FileInput(attrs={'accept': '.pem'}),
+        help_text=_(
+            'The <code>.pem</code> file that was saved when the new private '
+            'key was generated.'
+        ))
+
+    def clean_private_key(self) -> str:
+        """Return the PEM contents of the uploaded private key file.
+
+        This only checks that the file is small enough to be a private key
+        and that it is text. Whether the contents are a usable RSA key is
+        checked when the key is stored.
+
+        Returns:
+            str:
+            The contents of the file, with surrounding whitespace stripped.
+
+        Raises:
+            django.core.exceptions.ValidationError:
+                The file was too large to be a private key, or was not text.
+        """
+        uploaded_file = self.cleaned_data['private_key']
+
+        if uploaded_file.size > self.MAX_PRIVATE_KEY_SIZE:
+            raise ValidationError(
+                _('This file is too large to be a private key. Upload the '
+                  '.pem file that GitHub downloaded.'))
+
+        try:
+            return uploaded_file.read().decode('utf-8').strip()
+        except UnicodeDecodeError:
+            raise ValidationError(
+                _('This file is not a PEM-encoded private key. Upload the '
+                  '.pem file that GitHub downloaded.'))
+
+    class Meta:
+        """Metadata for the form."""
+
+        title = _('Rotate GitHub App private key')

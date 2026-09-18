@@ -1,0 +1,56 @@
+{% load i18n %}
+
+<h1>{% trans "Create GitHub App" %}</h1>
+
+<p>
+{% blocktrans %}
+ Connecting through a GitHub App lets Review Board access only the repositories
+ you choose, using fine-grained, read-only permissions. You install the app on
+ your user account or organization and pick the repositories it can see.
+{% endblocktrans %}
+</p>
+
+<p>
+{% blocktrans %}
+ Review the details below. When you continue, GitHub will ask you to confirm.
+ No app is created until you approve it on GitHub.
+{% endblocktrans %}
+</p>
+
+<table id="github-app-manifest-details">
+ <tr>
+  <th>{% trans "Application name" %}</th>
+  <td>{{app_name}}</td>
+ </tr>
+ <tr>
+  <th>{% trans "Review Board server" %}</th>
+  <td><code>{{server_url}}</code></td>
+ </tr>
+ <tr>
+  <th>{% trans "Permissions" %}</th>
+  <td>
+   <ul>
+{% for permission in permissions %}
+    <li><strong>{{permission.name}}</strong>: {{permission.access}}</li>
+{% endfor %}
+   </ul>
+  </td>
+ </tr>
+ <tr>
+  <th>{% trans "Subscribed events" %}</th>
+  <td>
+   <ul>
+{% for event in events %}
+    <li>{{event}}</li>
+{% endfor %}
+   </ul>
+  </td>
+ </tr>
+</table>
+
+<form id="github-app-manifest-form" method="post"
+      action="{{github_new_app_url}}?state={{state}}"
+      data-wizard-action-label="{% trans 'Create GitHub App' %}"
+      data-wizard-action-icon="ink-i-external-link">
+ <input type="hidden" name="manifest" value="{{manifest_json}}">
+</form>

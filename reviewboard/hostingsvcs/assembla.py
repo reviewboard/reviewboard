@@ -68,11 +68,15 @@ class Assembla(BaseHostingService):
     hosting_service_id = 'assembla'
     name = 'Assembla'
 
+    # TODO: This service currently doesn't implement BaseBugTracker, but once
+    # it does, uncomment this:
+    # bugs_in_repo = True
     form = AssemblaForm
     needs_authorization = True
     supported_scmtools = ['Perforce', 'Subversion']
     supports_bug_trackers = True
     supports_repositories = True
+    _logo_image = 'rb/images/services/assembla.svg'
 
     bug_tracker_field = (
         'https://www.assembla.com/spaces/%(assembla_project_id)s/'

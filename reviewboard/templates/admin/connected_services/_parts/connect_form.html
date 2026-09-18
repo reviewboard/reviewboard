@@ -1,7 +1,8 @@
 {% load i18n %}
 
-<div class="rb-c-admin-cs-connect">
+<div class="rb-c-admin-cs-connect"{% if wizard_title %} data-wizard-title="{{wizard_title}}"{% endif %}>
  <form class="rb-c-admin-cs-connect__form" method="post"
+       {% if wizard_action_label %}data-wizard-action-label="{{wizard_action_label}}"{% endif %}
        data-service-id="{{hosting_service_id}}">
 {% if form.non_field_errors %}
   <div class="rb-c-form-field__errors">

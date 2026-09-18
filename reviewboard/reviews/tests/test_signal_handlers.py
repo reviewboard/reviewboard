@@ -112,6 +112,10 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
                 'where': Q(reviewrequestdraft__in=[draft]),
             },
             {
+                'model': ReviewRequestDraft.bugs.through,
+                'where': Q(reviewrequestdraft__in=[draft]),
+            },
+            {
                 'join_types': {
                     'reviews_reviewrequestdraft_file_attachments':
                         'INNER JOIN',
@@ -355,6 +359,10 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
                 'where': Q(reviewrequestdraft__in=[draft]),
             },
             {
+                'model': ReviewRequestDraft.bugs.through,
+                'where': Q(reviewrequestdraft__in=[draft]),
+            },
+            {
                 'join_types': {
                     'reviews_reviewrequestdraft_file_attachments':
                         'INNER JOIN',
@@ -495,12 +503,12 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
         """
         self.spy_on(_on_review_request_draft_deleted)
 
-        # 13 queries:
+        # 14 queries:
         #
-        #   1-7. Fetch review request draft info and relations
-        #  8-12. Delete the change description
-        #    13. Delete the review request draft
-        with self.assertNumQueries(13):
+        #   1-8. Fetch review request draft info and relations
+        #  9-13. Delete the change description
+        #    14. Delete the review request draft
+        with self.assertNumQueries(14):
             self.draft.delete()
 
         self.assertSpyCalled(_on_review_request_draft_deleted)
@@ -517,12 +525,12 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
         self.draft.changedesc = changedesc
         self.draft.save()
 
-        # 13 queries:
+        # 14 queries:
         #
-        #  1-7. Fetch review request draft info and relations
-        # 8-12. Delete the change description
-        #   13. Delete the review request draft
-        with self.assertNumQueries(13):
+        #  1-8. Fetch review request draft info and relations
+        # 9-13. Delete the change description
+        #   14. Delete the review request draft
+        with self.assertNumQueries(14):
             self.draft.delete()
 
         self.assertNotIn(changedesc, ChangeDescription.objects.all())
@@ -578,6 +586,10 @@ class OnReviewRequestDraftDeletedTests(kgb.SpyAgency, TestCase):
             },
             {
                 'model': ReviewRequestDraft.depends_on.through,
+                'where': Q(reviewrequestdraft__in=[draft]),
+            },
+            {
+                'model': ReviewRequestDraft.bugs.through,
                 'where': Q(reviewrequestdraft__in=[draft]),
             },
             {
@@ -797,14 +809,14 @@ class OnReviewRequestDeletedTests(kgb.SpyAgency, TestCase):
 
         self.assertEqual(ChangeDescription.objects.count(), 1)
 
-        # 36 queries:
+        # 37 queries:
         #
         #  1-11. Update profiles and counts.
-        # 12-29. Fetch review request and related object data.
-        # 30-31. Delete change description and relation.
-        # 32-35. Delete other related data.
-        #    36. Delete review request.
-        with self.assertNumQueries(36):
+        # 12-30. Fetch review request and related object data.
+        # 31-32. Delete change description and relation.
+        # 33-36. Delete other related data.
+        #    37. Delete review request.
+        with self.assertNumQueries(37):
             review_request.delete()
 
         self.assertSpyCalled(_on_review_request_deleted)
@@ -825,15 +837,15 @@ class OnReviewRequestDeletedTests(kgb.SpyAgency, TestCase):
 
         self.assertEqual(DiffSetHistory.objects.count(), 1)
 
-        # 35 queries:
+        # 36 queries:
         #
         #  1-11. Update profiles and counts.
-        # 12-31. Fetch review request and related object data.
-        #    32. Set diffset_history relation to NULL.
-        #    33. Delete diffset history.
-        #    34. Delete diffsets.
-        #    35. Delete review request.
-        with self.assertNumQueries(35):
+        # 12-32. Fetch review request and related object data.
+        #    33. Set diffset_history relation to NULL.
+        #    34. Delete diffset history.
+        #    35. Delete diffsets.
+        #    36. Delete review request.
+        with self.assertNumQueries(36):
             review_request.delete()
 
         self.assertSpyCalled(_on_review_request_deleted)
@@ -856,17 +868,17 @@ class OnReviewRequestDeletedTests(kgb.SpyAgency, TestCase):
         self.assertEqual(review_request.file_attachments_count, 1)
         self.assertEqual(review_request.inactive_file_attachments_count, 1)
 
-        # 51 queries:
+        # 52 queries:
         #
         #  1-11. Update profiles and counts.
-        # 12-35. Fetch review request and related object data.
-        # 36-39. Remove file attachment and file attachment history relations.
-        #    40. Delete file attachments.
-        # 41-44. Perform file attachment relation bookkeeping.
-        # 45-47. Delete diffset history.
-        # 48-50. Clean up file attachment relations.
-        #    51. Delete review request.
-        with self.assertNumQueries(51):
+        # 12-36. Fetch review request and related object data.
+        # 37-40. Remove file attachment and file attachment history relations.
+        #    41. Delete file attachments.
+        # 42-45. Perform file attachment relation bookkeeping.
+        # 46-48. Delete diffset history.
+        # 49-51. Clean up file attachment relations.
+        #    52. Delete review request.
+        with self.assertNumQueries(52):
             review_request.delete()
 
         self.assertSpyCalled(_on_review_request_deleted)
@@ -888,16 +900,16 @@ class OnReviewRequestDeletedTests(kgb.SpyAgency, TestCase):
         self.assertEqual(review_request.screenshots_count, 1)
         self.assertEqual(review_request.inactive_screenshots_count, 1)
 
-        # 51 queries:
+        # 49 queries:
         #
         #  1-11. Update profiles and counts.
-        # 12-35. Fetch review request and related object data.
-        # 36-41. Remove screenshot relations.
-        #    42. Delete screenshots.
-        # 43-45. Delete diffset history.
-        # 46-47. Clean up screenshot relations..
-        #    48. Delete review request.
-        with self.assertNumQueries(48):
+        # 12-36. Fetch review request and related object data.
+        # 37-42. Remove screenshot relations.
+        #    43. Delete screenshots.
+        # 44-46. Delete diffset history.
+        # 47-48. Clean up screenshot relations..
+        #    49. Delete review request.
+        with self.assertNumQueries(49):
             review_request.delete()
 
         self.assertSpyCalled(_on_review_request_deleted)

@@ -40,6 +40,7 @@ User Accounts
    reviewboard.accounts.backends.registry
    reviewboard.accounts.backends.standard
    reviewboard.accounts.backends.x509
+   reviewboard.accounts.conditions
    reviewboard.accounts.decorators
    reviewboard.accounts.errors
    reviewboard.accounts.forms.auth
@@ -52,6 +53,11 @@ User Accounts
    reviewboard.accounts.pages
    reviewboard.accounts.privacy
    reviewboard.accounts.service_accounts
+   reviewboard.accounts.sso.backends
+   reviewboard.accounts.sso.backends.base
+   reviewboard.accounts.sso.backends.registry
+   reviewboard.accounts.sso.backends.saml.sso_backend
+   reviewboard.accounts.sso.errors
    reviewboard.accounts.templatetags.accounts
    reviewboard.accounts.testing
    reviewboard.accounts.testing.queries
@@ -220,6 +226,7 @@ Hosting Service Integration
    reviewboard.hostingsvcs.base
    reviewboard.hostingsvcs.base.bug_tracker
    reviewboard.hostingsvcs.base.client
+   reviewboard.hostingsvcs.base.connect_ui
    reviewboard.hostingsvcs.base.forms
    reviewboard.hostingsvcs.base.hosting_service
    reviewboard.hostingsvcs.base.http

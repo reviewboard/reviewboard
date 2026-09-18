@@ -7,7 +7,9 @@ from typing import TYPE_CHECKING
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
+from housekeeping import deprecate_non_keyword_only_args
 
+from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
@@ -15,6 +17,7 @@ from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
 
 if TYPE_CHECKING:
     from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
+    from reviewboard.hostingsvcs.models import ConfiguredBugTracker
     from reviewboard.scmtools.models import Repository
 
 
@@ -47,24 +50,41 @@ class Bugzilla(BaseHostingService, BaseBugTracker):
     hosting_service_id = 'bugzilla'
     name = 'Bugzilla'
 
+    bug_tracker_label = _('Bugzilla Bugs')
     form = BugzillaForm
+    supports_bug_info = True
     supports_bug_trackers = True
+    _logo_image = 'rb/images/services/bugzilla.svg'
 
     bug_tracker_field = '%(bugzilla_url)s/show_bug.cgi?id=%%s'
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
     def get_bug_info_uncached(
         self,
-        repository: Repository,
+        *,
+        repository: (Repository | None) = None,
         bug_id: str,
+        config: (ConfiguredBugTracker | None) = None,
     ) -> BugInfo:
         """Return the information for the specified bug.
 
+        Version Changed:
+            9.0:
+            Added the new ``config`` argument and made arguments keyword-only.
+
         Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository object.
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository object, for legacy repository-based calls.
 
             bug_id (str):
                 The ID of the bug to fetch.
+
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker,
+                    optional):
+                The bug tracker configuration.
+
+                Version Added:
+                    9.0
 
         Returns:
             reviewboard.hostingsvcs.base.bug_tracker.BugInfo:
@@ -80,7 +100,17 @@ class Bugzilla(BaseHostingService, BaseBugTracker):
             'status': '',
         }
 
-        bugzilla_url = repository.extra_data['bug_tracker-bugzilla_url']
+        if config is not None:
+            bugzilla_url = config.settings.get('bugzilla_url')
+        elif repository is not None:
+            bugzilla_url = repository.extra_data.get(
+                'bug_tracker-bugzilla_url')
+        else:
+            bugzilla_url = None
+
+        if not bugzilla_url:
+            return result
+
         url = f'{bugzilla_url}/rest/bug/{bug_id}'
 
         try:

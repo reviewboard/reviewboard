@@ -19,7 +19,10 @@ from reviewboard.treesitter.core import (
     get_queries,
 )
 from reviewboard.treesitter.debug import DEBUG_TREESITTER
-from reviewboard.treesitter.language import SUPPORTED_LANGUAGES
+from reviewboard.treesitter.language import (
+    SUPPORTED_LANGUAGES,
+    get_language_name_for_info_string,
+)
 from reviewboard.treesitter.predicates import create_predicate_handler
 
 if TYPE_CHECKING:
@@ -686,9 +689,10 @@ def highlight(
 
     captures = _highlight_tree(tree, tree.root_node, language_name)
 
-    if not captures:
-        return None
-
+    # Note that we can't bail out yet if there are no captures. The
+    # capture list depends on HIGHLIGHT_IGNORE, which grows as unmapped
+    # capture names are discovered, so it can be empty for files whose
+    # injections would still produce highlighting.
     chained_captures = [captures]
 
     injections_queries = get_queries(language_name, 'injections.scm')
@@ -699,6 +703,7 @@ def highlight(
         predicate_handler = create_predicate_handler(query=injections_query)
         cursor = tree_sitter.QueryCursor(injections_query)
         matches = cursor.matches(tree.root_node, predicate_handler)
+        directive_settings = predicate_handler.directive_settings
 
         injection_ranges: defaultdict[
             SupportedLanguage,
@@ -722,23 +727,48 @@ def highlight(
 
                 matched_lang = language = language_text.decode()
             else:
+                language_node = None
                 matched_lang = None
-
-            offsets = settings.get('offset.injection.content')
 
             for node in nodes:
                 injection_lang = matched_lang
 
-                # Other queries may use set! or gsub! to store the language in
-                # the pattern settings.
-                if not injection_lang:
-                    injection_lang = settings.get('injection.language')
+                # Queries may use set! to store the language in the pattern
+                # settings, or gsub! to transform the captured language (for
+                # example, "text/javascript" into "javascript"). Prefer the
+                # stored value whenever the captured one is missing or
+                # unsupported.
+                if (not injection_lang or
+                    injection_lang not in SUPPORTED_LANGUAGES):
+                    stored_lang = None
+
+                    if language_node is not None:
+                        # gsub! stores per-node results, since one pattern
+                        # can match several times with different languages.
+                        stored_lang = directive_settings.get(
+                            f'injection.language:{language_node.id}')
+
+                    injection_lang = (stored_lang or
+                                      settings.get('injection.language') or
+                                      injection_lang)
+
+                if (injection_lang is not None and
+                    injection_lang not in SUPPORTED_LANGUAGES):
+                    # Resolve aliases such as Markdown fence info strings
+                    # (```js, ```py, ```Python) to supported language names.
+                    injection_lang = get_language_name_for_info_string(
+                        injection_lang)
 
                 if (injection_lang is None or
                     injection_lang not in SUPPORTED_LANGUAGES):
                     continue
 
                 node_range = node.range
+
+                # offset! stores per-node deltas, since one pattern can
+                # match several times.
+                offsets = directive_settings.get(
+                    f'offset.injection.content:{node.id}')
 
                 if offsets:
                     if line_start_offsets is None:
@@ -765,5 +795,11 @@ def highlight(
     nodes_by_line = _get_nodes_by_line(itertools.chain(*chained_captures),
                                        lines)
     events_by_line = _get_events_by_line(nodes_by_line)
+
+    if not any(events_by_line):
+        # No captures mapped to a highlight class, so nothing was
+        # highlighted. Return None so callers can fall back to another
+        # highlighter.
+        return None
 
     return _apply_events(lines, events_by_line)

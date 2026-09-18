@@ -38,5 +38,6 @@ class Trac(BaseHostingService):
 
     form = TracForm
     supports_bug_trackers = True
+    _logo_image = 'rb/images/services/trac.svg'
 
     bug_tracker_field = '%(trac_url)s/ticket/%%s'

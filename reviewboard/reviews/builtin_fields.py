@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from itertools import chain
 from typing import Any, Generic, Iterable, TYPE_CHECKING, cast
 
+from django.contrib.auth.models import AnonymousUser
 from django.db import models
 from django.template.loader import get_template, render_to_string
 from django.urls import NoReverseMatch
@@ -19,6 +20,7 @@ from reviewboard.accounts.models import User
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
 from reviewboard.diffviewer.models import DiffCommit, DiffSet
+from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.reviews.fields import (BaseCommaEditableField,
                                         BaseEditableField,
                                         BaseReviewRequestField,
@@ -28,14 +30,17 @@ from reviewboard.reviews.fields import (BaseCommaEditableField,
 from reviewboard.reviews.models import (Group, ReviewRequest,
                                         ReviewRequestDraft,
                                         Screenshot)
+from reviewboard.reviews.models.bug import sort_bug_ids
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
+    from django.http import HttpRequest
     from django.utils.safestring import SafeString
     from djblets.webapi.responses import WebAPIResponsePayload
+    from typelets.django.strings import StrOrPromise
 
     from reviewboard.changedescs.models import ChangeDescription
     from reviewboard.reviews.detail import ReviewRequestPageData
@@ -830,6 +835,172 @@ class BugsField(BuiltinFieldMixin[Sequence[str]],
             pass
 
         return bug_url
+
+
+class TrackedBugsField(BaseCommaEditableField[str]):
+    """A per-tracker Bugs field on a review request.
+
+    One instance exists per bug tracker available on the review request.
+    The field reads and displays the bugs linked to its tracker through
+    the ``bugs`` relation. The field for the repository's default bug
+    tracker also covers unattributed bugs and unmigrated legacy
+    ``bugs_closed`` data.
+
+    Instances are built dynamically by
+    :py:meth:`InformationFieldSet.build_fields` and are not registered
+    field classes.
+
+    Version Added:
+        9.0
+    """
+
+    one_line_per_change_entry = False
+
+    #: The class name for the JavaScript view representing this field.
+    js_view_class = \
+        'RB.ReviewRequestFields.CommaSeparatedValuesTextFieldView'
+
+    def __init__(
+        self,
+        review_request_details: BaseReviewRequestDetails,
+        request: (HttpRequest | None) = None,
+        *,
+        tracker: (ConfiguredBugTracker | None),
+        field_id: (str | None) = None,
+        label: (StrOrPromise | None) = None,
+        is_default: bool = False,
+        usable: bool = False,
+        editable: bool = False,
+    ) -> None:
+        """Initialize the field.
+
+        Args:
+            review_request_details (BaseReviewRequestDetails):
+                The review request or draft.
+
+            request (django.http.HttpRequest, optional):
+                The current HTTP request.
+
+            tracker (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker this field covers. This may be ``None``
+                only when rendering a change entry for a tracker that no
+                longer exists.
+
+            field_id (str, optional):
+                An explicit field ID. Defaults to ``bugs:<tracker id>``.
+
+            label (str, optional):
+                An explicit label. Defaults to the tracker's name.
+
+            is_default (bool, optional):
+                Whether this tracker is the repository's default bug
+                tracker. The default tracker's field also covers
+                unattributed and legacy bugs.
+
+            usable (bool, optional):
+                Whether the acting user passes the tracker's user
+                conditions. Without this, bugs render as plain IDs.
+
+            editable (bool, optional):
+                Whether the acting user may edit this field.
+        """
+        super().__init__(review_request_details, request=request)
+
+        if field_id is None:
+            assert tracker is not None
+            field_id = f'bugs:{tracker.pk}'
+
+        if label is None:
+            assert tracker is not None
+            label = tracker.name
+
+        self.tracker = tracker
+        self.field_id = field_id
+        self.label = label
+        self.is_default = is_default
+        self.usable = usable
+        self.is_editable = editable
+
+    def load_value(
+        self,
+        review_request_details: BaseReviewRequestDetails,
+    ) -> Sequence[str]:
+        """Load a value from the review request or draft.
+
+        Args:
+            review_request_details (BaseReviewRequestDetails):
+                The review request or draft.
+
+        Returns:
+            list of str:
+            The bug IDs linked to this field's tracker.
+        """
+        if self.is_default:
+            # This includes unattributed bugs, and reads the legacy
+            # string for unmigrated review requests.
+            return review_request_details.get_bug_list()
+
+        if self.tracker is None:
+            return []
+
+        return sort_bug_ids(
+            set(
+                review_request_details.bugs
+                .filter(bug_tracker=self.tracker)
+                .values_list('bug_id', flat=True)
+            ),
+            tracker=self.tracker)
+
+    def render_item(
+        self,
+        item: str,
+    ) -> SafeString:
+        """Render an item from the list.
+
+        Args:
+            item (str):
+                The bug ID to render.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered item.
+        """
+        bug_url = None
+
+        if self.usable and self.tracker is not None:
+            try:
+                bug_url = self.tracker.get_bug_url(item)
+            except Exception as e:
+                logger.warning('Error generating bug URL for bug %s on '
+                               'bug tracker %s: %s',
+                               item, self.tracker.pk, e)
+
+        if bug_url:
+            return format_html('<a class="bug" href="{url}">{id}</a>',
+                               url=bug_url,
+                               id=item)
+        else:
+            return escape(item)
+
+    def render_change_entry_item_html(
+        self,
+        info: object,
+        item: tuple[str, str, int],
+    ) -> SafeString:
+        """Render an item for change description HTML.
+
+        Args:
+            info (dict):
+                A dictionary describing how the field has changed.
+
+            item (object):
+                The value of the item.
+
+        Returns:
+            django.utils.safestring.SafeString:
+            The rendered change entry.
+        """
+        return self.render_item(item[0])
 
 
 class DependsOnField(BuiltinFieldMixin[Sequence[ReviewRequest]],
@@ -1926,6 +2097,123 @@ class InformationFieldSet(BaseReviewRequestFieldSet):
         ChangeField,
         CommitField,
     ]
+
+    def build_fields(self) -> Sequence[BaseReviewRequestField]:
+        """Return new fields for use in this fieldset instance.
+
+        When bug trackers apply to the review request, the static Bugs
+        field is replaced with one :py:class:`TrackedBugsField` per
+        tracker:
+
+        * One editable field per tracker available to the acting user.
+        * The repository's default bug tracker, even when not otherwise
+          available (read-only if the user fails its conditions).
+        * A read-only field for any tracker with bugs linked to this
+          review request that is not otherwise available, so linked data
+          always renders.
+
+        Unattributed bugs render in the default tracker's field. Without
+        a default tracker, the legacy Bugs field is kept for them.
+
+        Version Added:
+            9.0
+
+        Returns:
+            list of BaseReviewRequestField:
+            The list of new field instances.
+        """
+        fields = super().build_fields()
+        request = self.request
+
+        review_request_details = self.review_request_details
+        review_request = review_request_details.get_review_request()
+
+        if request is not None and request.user.is_authenticated:
+            user = request.user
+        else:
+            user = AnonymousUser()
+
+        try:
+            available = ConfiguredBugTracker.objects.for_review_request(
+                review_request, user=user, request=request)
+        except Exception as e:
+            logger.exception('Error looking up bug trackers for review '
+                             'request %s: %s',
+                             review_request.display_id, e)
+            return fields
+
+        available_pks = {
+            tracker.pk
+            for tracker in available
+        }
+
+        repository = review_request.repository
+        default_bug_tracker = None
+
+        if repository is not None:
+            default_bug_tracker = repository.default_bug_tracker
+
+        # Order the trackers: the default first, then the remaining
+        # available trackers, then any linked-but-unavailable ones.
+        trackers: list[ConfiguredBugTracker] = []
+        seen_pks: set[int] = set()
+
+        if default_bug_tracker is not None:
+            trackers.append(default_bug_tracker)
+            seen_pks.add(default_bug_tracker.pk)
+
+        for tracker in available:
+            if tracker.pk not in seen_pks:
+                trackers.append(tracker)
+                seen_pks.add(tracker.pk)
+
+        linked_trackers = ConfiguredBugTracker.objects.with_linked_bugs(
+            review_request_details, request=request)
+
+        for tracker in linked_trackers:
+            if tracker.pk not in seen_pks:
+                trackers.append(tracker)
+                seen_pks.add(tracker.pk)
+
+        if not trackers:
+            return fields
+
+        tracker_fields: list[BaseReviewRequestField] = []
+
+        for tracker in trackers:
+            is_default = (default_bug_tracker is not None and
+                          tracker.pk == default_bug_tracker.pk)
+            usable = tracker.is_usable_by(user, request=request)
+            editable = (usable and
+                        (tracker.pk in available_pks or is_default))
+
+            tracker_fields.append(TrackedBugsField(
+                review_request_details,
+                request=request,
+                tracker=tracker,
+                is_default=is_default,
+                usable=usable,
+                editable=editable))
+
+        result: list[BaseReviewRequestField] = []
+        replaced = False
+
+        for field in fields:
+            if isinstance(field, BugsField):
+                if default_bug_tracker is None:
+                    # Keep the legacy field to display unattributed and
+                    # legacy bugs.
+                    result.append(field)
+
+                result += tracker_fields
+                replaced = True
+            else:
+                result.append(field)
+
+        if not replaced:
+            result += tracker_fields
+
+        return result
 
 
 class ReviewersFieldSet(BaseReviewRequestFieldSet):

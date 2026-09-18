@@ -14,8 +14,10 @@ from urllib.parse import quote as urlquote, urljoin, urlparse
 from django.template.loader import render_to_string
 from django.urls import path
 from django.utils.translation import gettext_lazy as _
+from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import build_server_url, get_server_url
+from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import HostingServiceError
@@ -33,6 +35,7 @@ if TYPE_CHECKING:
     from django.utils.safestring import SafeString
 
     from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
+    from reviewboard.hostingsvcs.models import ConfiguredBugTracker
     from reviewboard.scmtools.core import Branch, Commit
     from reviewboard.scmtools.models import Repository
 
@@ -50,16 +53,20 @@ class Forgejo(BaseHostingService[ForgejoClient], BaseBugTracker):
     hosting_service_id = 'forgejo'
     name = _('Forgejo')
 
+    bug_tracker_label = _('Forgejo Issues')
+    bugs_in_repo = True
     client_class = ForgejoClient
     form = ForgejoForm
     has_repository_hook_instructions = True
     needs_authorization = True
     self_hosted = True
     supported_scmtools = ['Git']
+    supports_bug_info = True
     supports_bug_trackers = True
     supports_post_commit = True
     supports_repositories = True
     supports_two_factor_auth = True
+    _logo_image = 'rb/images/services/forgejo.svg'
 
     bug_tracker_field = \
         '%(hosting_url)s/%(repository_owner)s/%(repository_name)s/issues/%%s'
@@ -331,24 +338,51 @@ class Forgejo(BaseHostingService[ForgejoClient], BaseBugTracker):
             repository=repository,
             revision=revision)
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
     def get_bug_info_uncached(
         self,
-        repository: Repository,
+        *,
+        repository: (Repository | None) = None,
         bug_id: str,
+        config: (ConfiguredBugTracker | None) = None,
     ) -> BugInfo:
         """Return the information for the specified bug
 
+        Forgejo issues are in-repo. Configuration-based calls resolve the
+        repository from the configuration's scoped repository.
+
+        Version Changed:
+            9.0:
+            Added the new ``config`` argument and made arguments keyword-only.
+
         Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository object.
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository object, for legacy repository-based calls.
 
             bug_id (str):
                 The ID of the bug to fetch.
+
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker,
+                    optional):
+                The bug tracker configuration.
+
+                Version Added:
+                    9.0
 
         Returns:
             reviewboard.hostingsvcs.bugtracker.BugInfo:
             Information about the bug.
         """
+        if repository is None and config is not None:
+            repository = config.repositories.first()
+
+        if repository is None:
+            return {
+                'summary': '',
+                'description': '',
+                'status': '',
+            }
+
         return self.client.get_bug_info(
             hosting_url=self.account.hosting_url,
             repository=repository,

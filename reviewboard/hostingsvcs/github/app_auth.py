@@ -22,7 +22,10 @@ from typing import TYPE_CHECKING
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 
-from reviewboard.scmtools.crypto_utils import decrypt_password
+from reviewboard.scmtools.crypto_utils import (
+    decrypt_password,
+    encrypt_password,
+)
 
 if TYPE_CHECKING:
     from reviewboard.hostingsvcs.github.accounts import GitHubAppRecordData
@@ -86,6 +89,50 @@ def load_app_private_key(
     """
     return base64.b64decode(
         decrypt_password(github_app.private_key)).decode('utf-8')
+
+
+def encrypt_app_private_key(
+    private_key_pem: str,
+) -> str:
+    """Validate a PEM private key and return its encrypted form.
+
+    This is the inverse of :py:func:`load_app_private_key`. The key is checked
+    to be a usable RSA private key before it is stored, so a bad paste is
+    caught at entry rather than when the next app JWT is signed. The PEM is
+    Base64-encoded before encryption because
+    :py:func:`~reviewboard.scmtools.crypto_utils.encrypt_password` is paired
+    with a decrypt that rejects multi-line content.
+
+    Version Added:
+        9.0
+
+    Args:
+        private_key_pem (str):
+            The PEM private key to store.
+
+    Returns:
+        str:
+        The encrypted, storage-ready private key.
+
+    Raises:
+        ValueError:
+            The value is not a valid RSA PEM private key.
+    """
+    try:
+        key = serialization.load_pem_private_key(
+            private_key_pem.encode('utf-8'),
+            password=None)
+    except (ValueError, TypeError) as e:
+        raise ValueError(
+            'The private key is not a valid PEM private key.'
+        ) from e
+
+    if not isinstance(key, rsa.RSAPrivateKey):
+        raise ValueError('The private key must be an RSA private key.')
+
+    return encrypt_password(
+        base64.b64encode(private_key_pem.encode('utf-8'))
+        .decode('ascii'))
 
 
 def build_app_jwt(

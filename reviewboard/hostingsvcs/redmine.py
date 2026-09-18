@@ -29,5 +29,6 @@ class Redmine(BaseHostingService):
 
     form = RedmineForm
     supports_bug_trackers = True
+    _logo_image = 'rb/images/services/redmine.svg'
 
     bug_tracker_field = '%(redmine_url)s/issues/%%s'

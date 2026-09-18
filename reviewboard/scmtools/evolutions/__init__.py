@@ -17,4 +17,5 @@ SEQUENCE = [
     'repository_raw_password',
     'repository_name_length_255',
     'repository_scmtool_id',
+    'repository_default_bug_tracker',
 ]

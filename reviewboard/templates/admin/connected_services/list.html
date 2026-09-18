@@ -6,6 +6,42 @@
 
 {% block content %}
 <div id="content-main" class="rb-c-admin-cs-list">
+{%  if attention_items %}
+ <div class="ink-c-alert rb-c-admin-cs-list__attention"
+      role="status" data-type="error">
+  <div class="ink-c-alert__content">
+   <h3 class="ink-c-alert__heading">
+{%   blocktrans count counter=attention_items|length %}
+    {{counter}} connection needs attention
+{%   plural %}
+    {{counter}} connections need attention
+{%   endblocktrans %}
+   </h3>
+   <div class="ink-c-alert__body">
+    <ul class="rb-c-admin-cs-list__attention-items">
+{%   for item in attention_items %}
+     <li class="rb-c-admin-cs-list__attention-item">
+      <span class="rb-c-admin-cs-list__attention-detail">
+{%    blocktrans with service=item.service_name account=item.account_label detail=item.message %}{{service}} — {{account}}: {{detail}}{% endblocktrans %}
+      </span>
+{%    if item.action %}
+      <span class="rb-c-admin-cs-list__attention-fix"
+            data-attention-fix
+            data-account-id="{{item.account_id}}"
+            data-service-id="{{item.service_id}}">
+       <button type="button" class="ink-c-button">
+        <span class="ink-c-button__label">{{item.action.label}}</span>
+       </button>
+       <script type="application/json">{{item.action|json_dumps}}</script>
+      </span>
+{%    endif %}
+     </li>
+{%   endfor %}
+    </ul>
+   </div>
+  </div>
+ </div>
+{%  endif %}
  <div class="rb-c-admin-cs-list__header">
   <div class="ink-c-button-group" role="group" aria-orientation="horizontal">
 {%  comment %}
@@ -32,49 +68,17 @@
 {{block.super}}
 <script>
 RB.PageManager.ready(function() {
-    const button = document.getElementById('rb-connect-service-button');
-    const services = {{available_services|json_dumps}};
-    const connectURLTemplate =
-        "{% url 'connected-services-connect' service_id='__SERVICE_ID__' %}";
-
-    function openWizard(initialConnectURL) {
-        const wizard = new RB.Admin.ConnectServiceWizardView({
-            connectURLTemplate: connectURLTemplate,
-            csrfToken: "{{csrf_token|escapejs}}",
-            initialConnectURL: initialConnectURL,
-            services: services,
-        });
-
-        wizard.render();
-        wizard.open();
-    }
-
-    button.addEventListener('click', function() {
-        openWizard();
-    });
-
-{%  if auto_connect_url %}
-    /*
-     * A connect flow asked us to finish in the wizard (such as returning from
-     * a GitHub App installation). Open it on that step. The URL is built by
-     * the server, not taken from a query parameter, so it is safe to load.
-     */
-    openWizard("{{auto_connect_url|escapejs}}");
-{%  endif %}
-
-    /*
-     * Service entries can deep-link to a specific connect step (such as the
-     * GitHub App creation page). Open these in the wizard instead of
-     * navigating to the bare fragment.
-     */
-    document.addEventListener('click', function(e) {
-        const link = e.target.closest('[data-wizard-connect-url]');
-
-        if (link) {
-            e.preventDefault();
-            openWizard(link.getAttribute('data-wizard-connect-url'));
-        }
-    });
+    new RB.Admin.ConnectedServicesView({
+        el: document.querySelector('.rb-c-admin-cs-list'),
+        autoConnectURL: {{auto_connect_url|json_dumps}},
+        connectURLTemplate:
+            "{% url 'connected-services-connect' service_id='__SERVICE_ID__' %}",
+        csrfToken: "{{csrf_token|escapejs}}",
+        repositoriesPerPage: {{repositories_per_page}},
+        repositoriesURLTemplate:
+            "{% url 'connected-services-repositories' service_id='__SERVICE_ID__' %}",
+        services: {{available_services|json_dumps}},
+    }).render();
 });
 </script>
 {% endblock admin_scripts_post %}

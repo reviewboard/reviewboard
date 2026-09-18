@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 152 152" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linecap:square;stroke-linejoin:round;">
+    <g id="Bug" transform="matrix(1,0,0,1,20.118206,0.399695)">
+        <path id="Wing" d="M20.832,66.213C25.025,72.362 28.037,87.109 25.166,97.609C18.772,94.492 10.937,89.575 7.394,84.065C2.409,76.755 1.326,68.906 4.686,64.443C8.045,59.98 15.848,58.903 20.832,66.213Z" style="fill:rgb(255,251,211);stroke:rgb(153,153,137);stroke-width:1px;"/>
+        <g id="Right-Hands" transform="matrix(1,0,0,1,95,61)">
+            <path id="Right-Hand-3" d="M0.702,32.944C1.193,32.13 12.123,32.345 12.582,33.177C13.041,34.009 7.39,43.367 6.44,43.349" style="fill:rgb(252,233,79);stroke:rgb(97,77,0);stroke-width:1.58px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+            <path id="Right-Hand-2" d="M2.813,17.113C3.304,16.299 14.234,16.513 14.693,17.346C15.152,18.178 9.501,27.536 8.551,27.517" style="fill:rgb(252,233,79);stroke:rgb(97,77,0);stroke-width:1.58px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+            <path id="Right-Hand-1" d="M4.188,1.05C4.627,0.207 15.549,-0.268 16.059,0.533C16.57,1.335 11.521,11.031 10.571,11.072" style="fill:rgb(252,233,79);stroke:rgb(97,77,0);stroke-width:1.58px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+        </g>
+        <g id="Body" transform="matrix(1,0,0,1,0,14)">
+            <path id="Tail" d="M58.868,101.567C44.225,96.993 40.389,105.78 34.976,109.959C26.748,116.311 17.896,117.007 9.981,111.87C4.195,108.114 2.174,107.705 0.816,110.101C-0.661,112.707 3.214,120.242 7.79,123.825C11.894,127.038 18.109,130.111 22.274,131.267C39.345,136.005 75.888,136.592 86.847,129.545C87.145,129.353 87.438,129.17 87.687,128.95C87.908,128.754 88.415,128.312 88.704,128.061C91.333,125.783 81.5,108.637 58.868,101.567Z" style="fill:rgb(242,219,3);stroke:rgb(88,70,0);stroke-width:1.5px;stroke-linecap:round;stroke-linejoin:miter;"/>
+            <path id="Body-Fill" d="M89.046,127.712C102.042,115.293 109.484,31.702 106.232,21.573C97.216,-6.513 44.936,-4.362 21.57,18.112C12.747,26.598 10.033,64.322 37.183,112.122" style="fill:url(#_Linear1);stroke:rgb(151,151,151);stroke-width:1.5px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+            <path id="Body-Outline" d="M89.046,127.712C102.042,115.293 109.484,31.702 106.232,21.572C97.216,-6.513 44.936,-4.363 21.57,18.112C12.747,26.598 10.033,64.322 37.183,112.122" style="fill:none;stroke:rgb(88,70,0);stroke-width:1.5px;"/>
+            <path id="Underbelly" d="M88.704,127.061C87.077,124.401 83.308,119.782 75.097,119.428C66.326,119.051 54.117,123.372 40.867,127.328C33.306,129.584 20.761,130.051 22.274,130.471C39.345,135.209 75.888,135.593 86.847,128.545" style="fill:rgb(254,244,155);fill-opacity:0.55;"/>
+        </g>
+        <g id="Mouth" transform="matrix(1,0,0,1,51,74)">
+            <path d="M36.47,2.52C18.39,7.701 3.203,1.773 3.203,1.773C3.203,1.773 11.719,28.395 19.988,28.464C28.278,28.534 30.762,22.806 36.47,2.52Z" style="fill:rgb(229,71,71);stroke:black;stroke-width:1.06px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+            <path id="Tongue" d="M30.995,18.357C28.079,25.359 25.302,28.048 19.996,28.004C15.133,27.963 10.599,18.94 7.347,11.348C9.335,10.936 11.083,10.507 13.334,10.507C22.245,10.507 29.514,13.709 30.995,18.357Z" style="fill:rgb(248,101,101);"/>
+            <path id="Right-Tooth" d="M27.655,4.45C27.803,3.878 33.647,3.101 34.007,3.606C34.367,4.111 32.666,10.692 32.158,10.759C31.65,10.827 27.507,5.022 27.655,4.45Z" style="fill:white;stroke:black;stroke-width:1.1px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+            <path id="Left-Tooth" d="M12.944,4.17C12.796,3.598 6.952,2.821 6.592,3.326C6.232,3.831 7.933,10.412 8.441,10.479C8.949,10.547 13.092,4.742 12.944,4.17Z" style="fill:white;stroke:black;stroke-width:1.1px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+            <path id="Upper-Lip" d="M0.591,0.251C0.591,0.251 20.771,9.814 39.455,0.811" style="fill:none;stroke:black;stroke-width:1.06px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+        </g>
+        <g id="Left-Hands" transform="matrix(1,0,0,1,27,61)">
+            <path id="Left-Hand-3" d="M15.437,32.944C14.946,32.13 4.016,32.345 3.557,33.177C3.098,34.009 8.749,43.367 9.699,43.349" style="fill:none;stroke:rgb(95,76,0);stroke-width:1.58px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+            <path id="Left-Hand-2" d="M13.326,17.113C12.835,16.299 1.905,16.513 1.446,17.346C0.987,18.178 6.638,27.536 7.588,27.517" style="fill:none;stroke:rgb(95,76,0);stroke-width:1.58px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+            <path id="Left-Hand-1" d="M11.951,1.05C11.512,0.207 0.59,-0.268 0.08,0.533C-0.431,1.335 4.618,11.031 5.568,11.072" style="fill:none;stroke:rgb(95,76,0);stroke-width:1.58px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+        </g>
+        <g id="Eyes" transform="matrix(1,0,0,1,41,37)">
+            <g id="Left-Eye">
+                <path id="Shadow" d="M0.865,19.808C1.413,26.232 5.785,31.307 10.551,31.051C15.316,30.795 18.788,25.298 18.24,18.874C17.693,12.45 13.321,7.374 8.555,7.63C3.789,7.887 0.318,13.384 0.865,19.808Z" style="fill-opacity:0.23;"/>
+                <path id="Eyeball" d="M2.978,15.861C3.546,23.947 7.934,30.326 12.699,29.991C17.464,29.656 20.918,22.727 20.349,14.641C19.781,6.555 15.393,0.177 10.628,0.511C5.863,0.846 2.41,7.775 2.978,15.861Z"/>
+                <path id="Shine" d="M8.821,7.987C8.821,10.159 10.608,11.945 12.779,11.945C14.95,11.945 16.737,10.159 16.737,7.987C16.737,5.816 14.95,4.03 12.779,4.03C10.608,4.03 8.821,5.816 8.821,7.987Z" style="fill:white;"/>
+            </g>
+            <g id="Right-Eye" transform="matrix(1,0,0,1,35,0)">
+                <path id="Shadow1" serif:id="Shadow" d="M0.694,19.808C1.242,26.232 5.614,31.307 10.38,31.051C15.146,30.795 18.617,25.298 18.069,18.874C17.522,12.45 13.15,7.374 8.384,7.63C3.618,7.887 0.147,13.384 0.694,19.808Z" style="fill-opacity:0.23;"/>
+                <path id="Eyeball1" serif:id="Eyeball" d="M2.805,15.839C3.353,23.926 7.725,30.316 12.491,29.993C17.256,29.671 20.727,22.75 20.18,14.663C19.633,6.576 15.261,0.186 10.495,0.509C5.729,0.831 2.258,7.752 2.805,15.839Z"/>
+                <path id="Shine1" serif:id="Shine" d="M8.123,8.515C8.123,10.686 9.909,12.473 12.081,12.473C14.252,12.473 16.038,10.686 16.038,8.515C16.038,6.344 14.252,4.557 12.081,4.557C9.909,4.557 8.123,6.344 8.123,8.515Z" style="fill:white;"/>
+            </g>
+        </g>
+        <g id="Eyebrows" transform="matrix(1,0,0,1,39,25)">
+            <path id="Right-Eyebrow" d="M59.371,16.029C59.371,16.029 57.26,0.198 46.178,0.726" style="fill:none;stroke:black;stroke-opacity:0.43;stroke-width:1.06px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+            <path id="Left-Eyebrow" d="M0.795,16.029C0.795,16.029 2.906,0.198 13.988,0.726" style="fill:none;stroke:black;stroke-opacity:0.43;stroke-width:1.06px;stroke-linecap:butt;stroke-linejoin:miter;"/>
+        </g>
+        <g id="Antennae" transform="matrix(1,0,0,1,42,0)">
+            <g id="Right-Antennae" transform="matrix(1,0,0,1,36,0)">
+                <path id="Antennae1" serif:id="Antennae" d="M4.497,9.513C2.887,10.669 1.736,13.37 1.177,14.93C0.736,16.163 1.01,17.972 1.147,18.877" style="fill:none;stroke:rgb(71,71,71);stroke-width:1.5px;stroke-linecap:round;"/>
+                <path id="Ball" d="M5.449,0.807C2.753,2.111 1.64,5.391 2.964,8.129C4.288,10.866 7.552,12.031 10.247,10.727C12.942,9.423 14.055,6.142 12.731,3.405C11.407,0.667 8.144,-0.497 5.449,0.807Z" style="fill:rgb(227,95,95);stroke:rgb(87,26,26);stroke-width:1px;"/>
+                <path id="Shine2" serif:id="Shine" d="M9.487,2.369C10.727,2.369 11.735,3.376 11.735,4.617C11.735,5.857 10.727,6.864 9.487,6.864C8.246,6.864 7.239,5.857 7.239,4.617C7.239,3.376 8.246,2.369 9.487,2.369Z" style="fill:white;fill-opacity:0.16;"/>
+            </g>
+            <g id="Left-Antennae" transform="matrix(1,0,0,1,0,1)">
+                <path id="Antennae2" serif:id="Antennae" d="M9.767,9.624C11.433,10.779 12.672,13.412 13.262,15.071C13.766,16.486 13.462,18.547 13.31,19.578" style="fill:none;stroke:rgb(71,71,71);stroke-width:1.5px;stroke-linecap:round;"/>
+                <path id="Ball1" serif:id="Ball" d="M8.622,0.836C11.397,2.132 12.599,5.438 11.303,8.214C10.007,10.99 6.701,12.191 3.925,10.895C1.149,9.599 -0.052,6.293 1.244,3.518C2.54,0.742 5.846,-0.46 8.622,0.836Z" style="fill:rgb(227,95,95);stroke:rgb(87,26,26);stroke-width:1px;"/>
+                <path id="Shine3" serif:id="Shine" d="M7.662,2.369C8.903,2.369 9.91,3.376 9.91,4.617C9.91,5.857 8.903,6.864 7.662,6.864C6.422,6.864 5.415,5.857 5.415,4.617C5.415,3.376 6.422,2.369 7.662,2.369Z" style="fill:white;fill-opacity:0.16;"/>
+            </g>
+        </g>
+    </g>
+    <defs>
+        <linearGradient id="_Linear1" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(-32.9556,40.0653,-40.0653,-32.9556,67.3018,49.5379)"><stop offset="0" style="stop-color:rgb(252,233,79);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(242,219,4);stop-opacity:1"/></linearGradient>
+    </defs>
+</svg>

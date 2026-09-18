@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING
 from reviewboard.treesitter.debug import DEBUG_TREESITTER
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Mapping, Sequence
+    from collections.abc import Callable, Mapping, MutableMapping, Sequence
     from typing import Literal, TypeAlias
 
     import tree_sitter
@@ -23,6 +23,14 @@ if TYPE_CHECKING:
 
     PredicateCaptures: TypeAlias = Mapping[str, Sequence[tree_sitter.Node]]
 
+    #: Storage for results computed by query directives.
+    #:
+    #: Keys are in ``<name>:<node id>`` form.
+    #:
+    #: Version Added:
+    #:     9.0
+    DirectiveSettings: TypeAlias = MutableMapping[str, str]
+
 
 logger = logging.getLogger(__name__)
 
@@ -30,8 +38,7 @@ logger = logging.getLogger(__name__)
 def _any_contains_predicate(
     args: PredicateArgs,
     captures: PredicateCaptures,
-    pattern_index: int,
-    query: tree_sitter.Query,
+    settings: DirectiveSettings,
 ) -> bool:
     """Handle the 'any-contains?' predicate.
 
@@ -47,11 +54,8 @@ def _any_contains_predicate(
         captures (PredicateCaptures):
             The captured nodes.
 
-        pattern_index (int):
-            The pattern index from the query.
-
-        query (tree_sitter.Query):
-            The query object to store settings in.
+        settings (DirectiveSettings):
+            Storage for directive results.
 
     Returns:
         bool:
@@ -89,8 +93,7 @@ def _any_contains_predicate(
 def _contains_predicate(
     args: PredicateArgs,
     captures: PredicateCaptures,
-    pattern_index: int,
-    query: tree_sitter.Query,
+    settings: DirectiveSettings,
 ) -> bool:
     """Handle the 'contains?' predicate.
 
@@ -106,11 +109,8 @@ def _contains_predicate(
         captures (PredicateCaptures):
             The captured nodes.
 
-        pattern_index (int):
-            The pattern index from the query.
-
-        query (tree_sitter.Query):
-            The query object to store settings in.
+        settings (DirectiveSettings):
+            Storage for directive results.
 
     Returns:
         bool:
@@ -148,13 +148,12 @@ def _contains_predicate(
 def _gsub_directive(
     args: PredicateArgs,
     captures: PredicateCaptures,
-    pattern_index: int,
-    query: tree_sitter.Query,
+    settings: DirectiveSettings,
 ) -> bool:
     """Handle the 'gsub!' directive.
 
     Applies regex substitution to captured node text and stores the result
-    in the query's pattern settings.
+    in the directive settings, keyed by the captured node.
 
     Version Added:
         9.0
@@ -166,11 +165,8 @@ def _gsub_directive(
         captures (PredicateCaptures):
             The captured nodes.
 
-        pattern_index (int):
-            The pattern index from the query.
-
-        query (tree_sitter.Query):
-            The query object to store settings in.
+        settings (DirectiveSettings):
+            Storage for directive results.
 
     Returns:
         bool:
@@ -204,9 +200,9 @@ def _gsub_directive(
         # If regex fails, just use original text
         transformed_text = text
 
-    # Store in query pattern settings
-    settings = query.pattern_settings(pattern_index)
-    settings[capture_id] = transformed_text
+    # Store the result keyed by node, since one pattern can match several
+    # times with different results.
+    settings[f'{capture_id}:{node.id}'] = transformed_text
 
     return True
 
@@ -214,8 +210,7 @@ def _gsub_directive(
 def _make_range_directive(
     args: PredicateArgs,
     captures: PredicateCaptures,
-    pattern_index: int,
-    query: tree_sitter.Query,
+    settings: DirectiveSettings,
 ) -> bool:
     """Handle the 'make-range!' directive.
 
@@ -234,11 +229,8 @@ def _make_range_directive(
         captures (PredicateCaptures):
             The captured nodes.
 
-        pattern_index (int):
-            The pattern index from the query.
-
-        query (tree_sitter.Query):
-            The query object to store settings in.
+        settings (DirectiveSettings):
+            Storage for directive results.
 
     Returns:
         bool:
@@ -250,18 +242,17 @@ def _make_range_directive(
 def _offset_directive(
     args: PredicateArgs,
     captures: PredicateCaptures,
-    pattern_index: int,
-    query: tree_sitter.Query,
+    settings: DirectiveSettings,
 ) -> bool:
     """Handle the 'offset!' directive.
 
     This stores (row, column) deltas to apply to a capture's range,
     matching nvim's semantics of adding each delta to the corresponding
-    range component. The deltas are stored in the query's pattern settings
-    under an ``offset.<capture name>`` key, as a space-separated string of
-    ``start_row start_col end_row end_col``. Consumers that build ranges
-    from captured nodes apply them (see the injection handling in
-    :py:mod:`reviewboard.treesitter.highlight`).
+    range component. The deltas are stored in the directive settings
+    under an ``offset.<capture name>:<node id>`` key, as a space-separated
+    string of ``start_row start_col end_row end_col``. Consumers that
+    build ranges from captured nodes apply them (see the injection
+    handling in :py:mod:`reviewboard.treesitter.highlight`).
 
     Version Added:
         9.0
@@ -273,11 +264,8 @@ def _offset_directive(
         captures (PredicateCaptures):
             The captured nodes.
 
-        pattern_index (int):
-            The pattern index from the query.
-
-        query (tree_sitter.Query):
-            The query object to store settings in.
+        settings (DirectiveSettings):
+            Storage for directive results.
 
     Returns:
         bool:
@@ -287,6 +275,11 @@ def _offset_directive(
         return True
 
     capture_id = args[0][0]
+    nodes = captures.get(capture_id)
+
+    if not nodes:
+        return True
+
     deltas = ['0'] * 4
 
     for i, (value, arg_type) in enumerate(args[1:5]):
@@ -300,8 +293,12 @@ def _offset_directive(
 
         deltas[i] = value
 
-    settings = query.pattern_settings(pattern_index)
-    settings[f'offset.{capture_id}'] = ' '.join(deltas)
+    deltas_str = ' '.join(deltas)
+
+    # Store the deltas keyed by node, since one pattern can match several
+    # times.
+    for node in nodes:
+        settings[f'offset.{capture_id}:{node.id}'] = deltas_str
 
     return True
 
@@ -309,8 +306,7 @@ def _offset_directive(
 def _has_ancestor_predicate(
     args: PredicateArgs,
     captures: PredicateCaptures,
-    pattern_index: int,
-    query: tree_sitter.Query,
+    settings: DirectiveSettings,
 ) -> bool:
     """Handle the 'has-ancestor?' predicate.
 
@@ -327,11 +323,8 @@ def _has_ancestor_predicate(
         captures (PredicateCaptures):
             The captured nodes.
 
-        pattern_index (int):
-            The pattern index from the query.
-
-        query (tree_sitter.Query):
-            The query object to store settings in.
+        settings (DirectiveSettings):
+            Storage for directive results.
 
     Returns:
         bool:
@@ -363,8 +356,7 @@ def _has_ancestor_predicate(
 def _has_parent_predicate(
     args: PredicateArgs,
     captures: PredicateCaptures,
-    pattern_index: int,
-    query: tree_sitter.Query,
+    settings: DirectiveSettings,
 ) -> bool:
     """Handle the 'has-parent?' predicate.
 
@@ -381,11 +373,8 @@ def _has_parent_predicate(
         captures (PredicateCaptures):
             The captured nodes.
 
-        pattern_index (int):
-            The pattern index from the query.
-
-        query (tree_sitter.Query):
-            The query object to store settings in.
+        settings (DirectiveSettings):
+            Storage for directive results.
 
     Returns:
         bool:
@@ -413,8 +402,7 @@ def _has_parent_predicate(
 def _not_has_ancestor_predicate(
     args: PredicateArgs,
     captures: PredicateCaptures,
-    pattern_index: int,
-    query: tree_sitter.Query,
+    settings: DirectiveSettings,
 ) -> bool:
     """Handle the 'not-has-ancestor?' predicate.
 
@@ -430,24 +418,20 @@ def _not_has_ancestor_predicate(
         captures (PredicateCaptures):
             The captured nodes.
 
-        pattern_index (int):
-            The pattern index from the query.
-
-        query (tree_sitter.Query):
-            The query object to store settings in.
+        settings (DirectiveSettings):
+            Storage for directive results.
 
     Returns:
         bool:
         Whether the predicate matches.
     """
-    return not _has_ancestor_predicate(args, captures, pattern_index, query)
+    return not _has_ancestor_predicate(args, captures, settings)
 
 
 def _not_has_parent_predicate(
     args: PredicateArgs,
     captures: PredicateCaptures,
-    pattern_index: int,
-    query: tree_sitter.Query,
+    settings: DirectiveSettings,
 ) -> bool:
     """Handle the 'not-has-parent?' predicate.
 
@@ -464,17 +448,14 @@ def _not_has_parent_predicate(
         captures (PredicateCaptures):
             The captured nodes.
 
-        pattern_index (int):
-            The pattern index from the query.
-
-        query (tree_sitter.Query):
-            The query object to store settings in.
+        settings (DirectiveSettings):
+            Storage for directive results.
 
     Returns:
         bool:
         Whether the predicate matches.
     """
-    return not _has_parent_predicate(args, captures, pattern_index, query)
+    return not _has_parent_predicate(args, captures, settings)
 
 
 #: Registry of predicate handlers.
@@ -483,7 +464,7 @@ def _not_has_parent_predicate(
 #:     9.0
 PREDICATE_HANDLERS: Mapping[
     str,
-    Callable[[PredicateArgs, PredicateCaptures, int, tree_sitter.Query], bool]
+    Callable[[PredicateArgs, PredicateCaptures, DirectiveSettings], bool]
 ] = {
     'any-contains?': _any_contains_predicate,
     'contains?': _contains_predicate,
@@ -497,23 +478,48 @@ PREDICATE_HANDLERS: Mapping[
 }
 
 
-def create_predicate_handler(
-    query: tree_sitter.Query,
-) -> tree_sitter.QueryPredicate:
-    """Create a predicate handler function with captured context.
+class PredicateHandler:
+    """A handler for custom Tree Sitter query predicates and directives.
+
+    This dispatches predicates that py-tree-sitter doesn't handle natively
+    to their handler functions, and owns the storage for results computed
+    by directives such as ``gsub!`` and ``offset!``.
+
+    py-tree-sitter passes each predicate's position within its pattern as
+    the ``pattern_index`` argument, not the actual pattern index, so
+    directive results cannot be reliably stored in the query's per-pattern
+    settings. They are stored in :py:attr:`directive_settings` instead,
+    keyed by ``<name>:<node id>``.
 
     Version Added:
         9.0
-
-    Args:
-        query (tree_sitter.Query):
-            Query object for accessing pattern settings.
-
-    Returns:
-        tree_sitter.QueryPredicate:
-        A predicate handler function.
     """
-    def handle_predicate(
+
+    ######################
+    # Instance variables #
+    ######################
+
+    #: The results stored by query directives.
+    directive_settings: DirectiveSettings
+
+    #: The query this handler was created for.
+    query: tree_sitter.Query
+
+    def __init__(
+        self,
+        query: tree_sitter.Query,
+    ) -> None:
+        """Initialize the handler.
+
+        Args:
+            query (tree_sitter.Query):
+                The query to handle predicates for.
+        """
+        self.query = query
+        self.directive_settings = {}
+
+    def __call__(
+        self,
         predicate: str,
         args: PredicateArgs,
         pattern_index: int,
@@ -529,7 +535,8 @@ def create_predicate_handler(
                 The predicate arguments.
 
             pattern_index (int):
-                The pattern index from the query.
+                The predicate's position within its pattern. Despite the
+                name, this is not the pattern index.
 
             captures (PredicateCaptures):
                 The captured nodes.
@@ -549,6 +556,23 @@ def create_predicate_handler(
 
             return False
 
-        return handler(args, captures, pattern_index, query)
+        return handler(args, captures, self.directive_settings)
 
-    return handle_predicate
+
+def create_predicate_handler(
+    query: tree_sitter.Query,
+) -> PredicateHandler:
+    """Create a predicate handler with captured context.
+
+    Version Added:
+        9.0
+
+    Args:
+        query (tree_sitter.Query):
+            The query to handle predicates for.
+
+    Returns:
+        PredicateHandler:
+        The predicate handler.
+    """
+    return PredicateHandler(query=query)

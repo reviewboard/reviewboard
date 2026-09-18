@@ -25,6 +25,9 @@ class SourceForge(BaseHostingService):
     hosting_service_id = 'sourceforge'
     name = 'SourceForge'
 
+    # TODO: This service currently doesn't implement BaseBugTracker, but once
+    # it does, uncomment this:
+    # bugs_in_repo = True
     form = SourceForgeForm
     supported_scmtools = ['Bazaar', 'CVS', 'Mercurial', 'Subversion']
     supports_bug_trackers = True

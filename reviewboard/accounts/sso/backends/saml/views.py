@@ -27,7 +27,6 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.generic.base import View
 from djblets.cache.backend import make_cache_key
 from djblets.db.query import get_object_or_none
-from djblets.siteconfig.models import SiteConfiguration
 from djblets.util.decorators import cached_property
 try:
     from onelogin.saml2.auth import OneLogin_Saml2_Auth
@@ -43,7 +42,6 @@ except ImportError:
 from reviewboard.accounts.errors import LoginNotAllowedError
 from reviewboard.accounts.models import LinkedAccount
 from reviewboard.accounts.sso.backends.saml.forms import SAMLLinkUserForm
-from reviewboard.accounts.sso.backends.saml.settings import get_saml2_settings
 from reviewboard.accounts.sso.users import (find_suggested_username,
                                             find_user_for_sso_user_id)
 from reviewboard.accounts.sso.views import BaseSSOView
@@ -51,6 +49,8 @@ from reviewboard.admin.server import get_server_url
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
+    from typing import Any
+
     from django.http import HttpRequest
 
 
@@ -136,9 +136,10 @@ class SAMLViewMixin(View):
         """
         if self._saml_auth is None:
             assert OneLogin_Saml2_Auth is not None
+            assert self.sso_backend is not None
             self._saml_auth = OneLogin_Saml2_Auth(
                 self.get_saml_request(request),
-                get_saml2_settings())
+                self.sso_backend.get_saml2_settings())
 
         return self._saml_auth
 
@@ -256,6 +257,9 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
             django.http.HttpResponse:
             The response to send back to the client.
         """
+        sso_backend = self.sso_backend
+        assert sso_backend is not None
+
         auth = self.get_saml_auth(request)
         session = request.session
 
@@ -286,15 +290,17 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
         # workflow.
         session.pop('AuthNRequestID', None)
 
-        linked_account = get_object_or_none(LinkedAccount,
-                                            service_id='sso:saml',
-                                            service_user_id=auth.get_nameid())
+        sso_id = auth.get_nameid()
+        linked_account = get_object_or_none(
+            LinkedAccount,
+            service_id=sso_backend.linked_account_service_id,
+            service_user_id=sso_id)
 
         if linked_account:
             user = linked_account.user
 
             try:
-                self.sso_backend.login_user(request, user)
+                sso_backend.login_user(request, user)
             except LoginNotAllowedError:
                 return render(request=request,
                               template_name='permission_denied.html',
@@ -302,12 +308,9 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
 
             return HttpResponseRedirect(self.success_url)
         else:
-            username = auth.get_nameid()
-
-            siteconfig = SiteConfiguration.objects.get_current()
-            attr_email = siteconfig.get('saml_attr_email')
-            attr_firstname = siteconfig.get('saml_attr_firstname')
-            attr_lastname = siteconfig.get('saml_attr_lastname')
+            attr_email = sso_backend.get_setting('attr_email')
+            attr_firstname = sso_backend.get_setting('attr_firstname')
+            attr_lastname = sso_backend.get_setting('attr_lastname')
 
             try:
                 email = self._get_user_attr_value(auth, attr_email)
@@ -321,14 +324,29 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
                                               % e,
                                               content_type='text/plain')
 
+            user_attrs = auth.get_attributes()
+
+            try:
+                username = sso_backend.get_username_for_sso_id(sso_id,
+                                                               user_attrs)
+            except LoginNotAllowedError:
+                logger.info('SAML: Login not allowed for SSO user "%s" on '
+                            'backend "%s"',
+                            sso_id, sso_backend.backend_id,
+                            extra={'request': request})
+                return render(request=request,
+                              template_name='permission_denied.html',
+                              status=403)
+
             request.session['sso'] = {
                 'user_data': {
-                    'id': username,
+                    'id': sso_id,
+                    'username': username,
                     'first_name': first_name,
                     'last_name': last_name,
                     'email': email,
                 },
-                'raw_user_attrs': auth.get_attributes(),
+                'raw_user_attrs': user_attrs,
                 'session_index': auth.get_session_index(),
             }
 
@@ -357,16 +375,18 @@ class SAMLACSView(SAMLViewMixin, BaseSSOView):
         if value and isinstance(value, list):
             return value[0]
 
-        siteconfig = SiteConfiguration.objects.get_current()
-        attr_firstname = siteconfig.get('saml_attr_firstname')
-        attr_lastname = siteconfig.get('saml_attr_lastname')
+        sso_backend = self.sso_backend
+        assert sso_backend is not None
+
+        attr_firstname = sso_backend.get_setting('attr_firstname')
+        attr_lastname = sso_backend.get_setting('attr_lastname')
 
         # Some identity providers only allow setting the full name, not
         # separate first and last. In this case, we need to fake it by
         # splitting.
         if key in (attr_firstname, attr_lastname):
             try:
-                attr_fullname = siteconfig.get('saml_attr_fullname')
+                attr_fullname = sso_backend.get_setting('attr_fullname')
                 fullname = self._get_user_attr_value(auth, attr_fullname)
             except KeyError:
                 # Reraise with the original key name so that this fallback
@@ -443,7 +463,10 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
         """
         self._sso_user_data = \
             self.request.session.get('sso', {}).get('user_data')
-        self._sso_data_username = self._sso_user_data.get('id')
+
+        # Sessions created before 9.0 only have the ID.
+        self._sso_data_username = (self._sso_user_data.get('username') or
+                                   self._sso_user_data.get('id'))
         self._sso_data_email = self._sso_user_data.get('email')
         computed_username = find_suggested_username(self._sso_data_email)
         self._provision_username = self._sso_data_username or computed_username
@@ -485,9 +508,10 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
         elif self._mode == self.Mode.CONNECT_WITH_LOGIN:
             return ['accounts/sso/link-user-login.html']
         elif self._mode == self.Mode.PROVISION:
-            siteconfig = SiteConfiguration.objects.get_current()
+            assert self.sso_backend is not None
 
-            if siteconfig.get('saml_automatically_provision_users', True):
+            if self.sso_backend.get_setting('automatically_provision_users',
+                                            True):
                 return ['accounts/sso/link-user-provision.html']
             else:
                 return ['accounts/sso/link-user-provision-disabled.html']
@@ -511,6 +535,21 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
         initial['provision'] = (self._mode == self.Mode.PROVISION)
 
         return initial
+
+    def get_form_kwargs(self) -> dict[str, Any]:
+        """Return the keyword arguments for the form.
+
+        Version Added:
+            9.0
+
+        Returns:
+            dict:
+            The keyword arguments to pass to the form.
+        """
+        kwargs = super().get_form_kwargs()
+        kwargs['sso_backend'] = self.sso_backend
+
+        return kwargs
 
     def get_context_data(self, **kwargs):
         """Return additional context data for rendering the template.
@@ -551,9 +590,10 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
             return HttpResponseRedirect(
                 local_site_reverse('login', request=request))
 
-        siteconfig = SiteConfiguration.objects.get_current()
+        assert self.sso_backend is not None
 
-        if self._sso_user and not siteconfig.get('saml_require_login_to_link'):
+        if (self._sso_user and
+            not self.sso_backend.get_setting('require_login_to_link')):
             return self.link_user(self._sso_user)
 
         return super(SAMLLinkUserView, self).get(request, *args, **kwargs)
@@ -610,16 +650,19 @@ class SAMLLinkUserView(SAMLViewMixin, BaseSSOView, LoginView):
             django.http.HttpResponse:
             A redirect to the success URL, or an error page.
         """
+        sso_backend = self.sso_backend
+        assert sso_backend is not None
+
         sso_id = self._sso_user_data.get('id')
 
         logger.info('SAML: Linking SSO user "%s" to Review Board user "%s"',
                     sso_id, user.username, extra={'request': self.request})
 
         user.linked_accounts.create(
-            service_id='sso:saml',
+            service_id=sso_backend.linked_account_service_id,
             service_user_id=sso_id)
 
-        self.sso_backend.login_user(self.request, user)
+        sso_backend.login_user(self.request, user)
 
         return HttpResponseRedirect(self.get_success_url())
 
@@ -677,8 +720,9 @@ class SAMLMetadataView(SAMLViewMixin, BaseSSOView):
                 Keyword arguments from the URL definition.
         """
         assert OneLogin_Saml2_Settings is not None
+        assert self.sso_backend is not None
         saml_settings = OneLogin_Saml2_Settings(
-            get_saml2_settings(),
+            self.sso_backend.get_saml2_settings(),
             sp_validation_only=True)
 
         metadata = saml_settings.get_sp_metadata()

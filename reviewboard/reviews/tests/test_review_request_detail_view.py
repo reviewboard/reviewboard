@@ -24,23 +24,139 @@ from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.extensions.base import Extension, get_extension_manager
 from reviewboard.hostingsvcs.github import GitHub
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+    SENTINEL_BUG_TRACKER_SERVICE_NAME,
+)
 from reviewboard.reviews.detail import InitialStatusUpdatesEntry, ReviewEntry
 from reviewboard.reviews.fields import get_review_request_fieldsets
-from reviewboard.reviews.models import (Comment,
-                                        GeneralComment,
-                                        Group,
-                                        Review,
-                                        ReviewRequest,
-                                        ReviewRequestDraft,
-                                        Screenshot,
-                                        StatusUpdate)
+from reviewboard.reviews.models import (
+    Bug,
+    Comment,
+    GeneralComment,
+    Group,
+    Review,
+    ReviewRequest,
+    ReviewRequestDraft,
+    Screenshot,
+    StatusUpdate,
+)
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
     from django_assert_queries.query_comparator import ExpectedQueries
+
+    from reviewboard.reviews.models.base_review_request_details import (
+        BaseReviewRequestDetails,
+    )
+    from reviewboard.scmtools.models import Repository
+
+
+def get_bug_tracker_field_equeries(
+    review_request_details: BaseReviewRequestDetails,
+    *,
+    repository: (Repository | None) = None,
+) -> ExpectedQueries:
+    """Return expected queries for building the bug tracker fields.
+
+    The information fieldset builds one field per bug tracker, which
+    requires looking up the trackers available for the review request and
+    the trackers with bugs already linked to it. Both lookups are cached
+    on the HTTP request, so these queries are only expected once per
+    review request or draft.
+
+    Version Added:
+        9.0
+
+    Args:
+        review_request_details (BaseReviewRequestDetails):
+            The review request or draft the fields are built for.
+
+        repository (reviewboard.scmtools.models.Repository, optional):
+            The review request's repository, if any.
+
+    Returns:
+        list of dict:
+        The list of expected queries.
+    """
+    equeries: ExpectedQueries = []
+
+    if repository is None:
+        equeries.append({
+            'distinct': True,
+            'model': ConfiguredBugTracker,
+            'order_by': ('pk',),
+            'tables': {'hostingsvcs_configuredbugtracker'},
+            'where': (
+                Q(enabled=True) &
+                Q(local_site=None) &
+                Q(apply_to__in=[ConfiguredBugTracker.APPLY_TO_ALL,
+                                ConfiguredBugTracker.APPLY_TO_NO_REPOS])
+            ),
+        })
+    else:
+        equeries.append({
+            'distinct': True,
+            'join_types': {
+                'hostingsvcs_configuredbugtracker_repositories':
+                    'LEFT OUTER JOIN',
+            },
+            'model': ConfiguredBugTracker,
+            'num_joins': 1,
+            'order_by': ('pk',),
+            'tables': {
+                'hostingsvcs_configuredbugtracker',
+                'hostingsvcs_configuredbugtracker_repositories',
+            },
+            'where': (
+                Q(enabled=True) &
+                Q(local_site=None) &
+                (Q(apply_to=ConfiguredBugTracker.APPLY_TO_ALL) |
+                 (Q(apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS) &
+                  Q(repositories=repository)))
+            ),
+        })
+
+    if isinstance(review_request_details, ReviewRequestDraft):
+        bugs_table = 'reviews_reviewrequestdraft_bugs'
+        bugs_q = Q(drafts__id=review_request_details.pk)
+    else:
+        bugs_table = 'reviews_reviewrequest_bugs'
+        bugs_q = Q(review_requests__id=review_request_details.pk)
+
+    equeries.append({
+        'distinct': True,
+        'join_types': {
+            'reviews_bug': 'INNER JOIN',
+        },
+        'model': ConfiguredBugTracker,
+        'num_joins': 1,
+        'subqueries': [
+            {
+                'join_types': {
+                    bugs_table: 'INNER JOIN',
+                },
+                'model': Bug,
+                'num_joins': 1,
+                'tables': {
+                    'reviews_bug',
+                    bugs_table,
+                },
+                'where': bugs_q,
+            },
+        ],
+        'tables': {
+            'hostingsvcs_configuredbugtracker',
+            'reviews_bug',
+        },
+        'where': (Q(bugs__in=review_request_details.bugs.all()) &
+                  ~Q(service_name=SENTINEL_BUG_TRACKER_SERVICE_NAME)),
+    })
+
+    return equeries
 
 
 class ReviewRequestDetailViewTests(SpyAgency, TestCase):
@@ -184,6 +300,8 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'model': Trophy,
                 'where': Q(review_request=review_request),
             },
+            *get_bug_tracker_field_equeries(review_request,
+                                            repository=repository),
             {
                 'model': Profile,
                 'where': Q(user=doc),
@@ -449,6 +567,8 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'model': Trophy,
                 'where': Q(review_request=review_request),
             },
+            *get_bug_tracker_field_equeries(review_request,
+                                            repository=repository),
             {
                 'model': Profile,
                 'where': Q(user=admin),
@@ -707,6 +827,8 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'model': Trophy,
                 'where': Q(review_request=review_request),
             },
+            *get_bug_tracker_field_equeries(review_request,
+                                            repository=repository),
             {
                 'model': Profile,
                 'where': Q(user=user1),
@@ -896,6 +1018,8 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
         review.publish()
 
         self.client.login(username='doc', password='doc')
+
+        draft = ReviewRequestDraft.objects.get(review_request=review_request)
 
         # Prime the caches.
         profile = user1.get_profile()
@@ -1162,6 +1286,7 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(review_request=review_request),
             },
             *get_user_permissions_equeries(user=user1),
+            *get_bug_tracker_field_equeries(draft, repository=repository),
             {
                 'model': Profile,
                 'where': Q(user=user1),
@@ -1307,6 +1432,8 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
         review.publish()
 
         self.client.login(username='doc', password='doc')
+
+        draft = ReviewRequestDraft.objects.get(review_request=review_request)
 
         # Prime the caches.
         LocalSite.objects.has_local_sites()
@@ -1479,6 +1606,7 @@ class ReviewRequestDetailViewTests(SpyAgency, TestCase):
                 'where': Q(review_request=review_request),
             },
             *get_user_permissions_equeries(user=user1),
+            *get_bug_tracker_field_equeries(draft),
             {
                 'model': Profile,
                 'where': Q(user=user1),

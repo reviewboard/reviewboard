@@ -18,6 +18,7 @@ from reviewboard.treesitter.language import (
 )
 from reviewboard.treesitter.query_utils import (
     apply_edits,
+    filter_query_patterns,
     get_gsub_edits,
     get_lua_match_edits,
     get_query_language,
@@ -114,6 +115,28 @@ if not DEBUG_TREESITTER:
             reason=f'{language} has known broken injections'))
         for language in sorted(BROKEN_INJECTION_LANGUAGES)
     ]
+
+
+@pytest.mark.parametrize('language', sorted(SUPPORTED_LANGUAGES))
+def test_load_interesting_lines_queries(
+    language: SupportedLanguage,
+) -> None:
+    """Test loading interesting lines queries.
+
+    Args:
+        language (str):
+            The language to load queries for.
+    """
+    queries = get_queries(language, 'interesting_lines.scm')
+
+    if queries is None:
+        pytest.skip(f'No interesting lines queries for {language}')
+
+    tree_sitter.Query(get_language(language), queries)
+
+    assert ('function.outer' in queries or
+            'class.outer' in queries), \
+        f'{language} queries have no useful captures'
 
 
 @pytest.mark.parametrize('language', [
@@ -374,4 +397,81 @@ def test_gsub_edits_backref_conversion() -> None:
     assert result == (
         b'\n((identifier) @name\n'
         b' (#gsub! @name "(?s)(.*)" "\\\\1"))\n'
+    )
+
+
+def test_filter_query_patterns() -> None:
+    """Test filtering query patterns by capture name."""
+    content = dedent("""
+        ; a function
+        (function_definition) @function.outer
+
+        ; a parameter
+        (parameters
+          (identifier) @parameter.inner)
+
+        (class_definition) @class.outer
+    """).encode()
+
+    result = filter_query_patterns(
+        content,
+        keep_captures={'class.outer', 'function.outer'})
+
+    assert result == (
+        b'; a function\n'
+        b'(function_definition) @function.outer\n'
+        b'\n'
+        b'(class_definition) @class.outer'
+    )
+
+
+def test_filter_query_patterns_with_drop_node_types() -> None:
+    """Test filtering query patterns by outermost node type."""
+    content = dedent("""
+        (decorated_definition
+          (function_definition)) @function.outer
+
+        (function_definition) @function.outer
+    """).encode()
+
+    result = filter_query_patterns(
+        content,
+        keep_captures={'function.outer'},
+        drop_node_types={'decorated_definition'})
+
+    assert result == b'(function_definition) @function.outer'
+
+
+def test_filter_query_patterns_dedupes() -> None:
+    """Test filtering query patterns with duplicate patterns."""
+    content = dedent("""
+        (function_definition) @function.outer
+
+        (function_definition) @function.outer
+    """).encode()
+
+    result = filter_query_patterns(
+        content,
+        keep_captures={'function.outer'})
+
+    assert result == b'(function_definition) @function.outer'
+
+
+def test_filter_query_patterns_grouping() -> None:
+    """Test filtering query patterns with groupings and predicates."""
+    content = dedent("""
+        ((function_definition) @function.outer
+         (#eq? @function.outer "test"))
+
+        ((comment) @comment.outer
+         (#offset! @comment.outer 0 2 0 0))
+    """).encode()
+
+    result = filter_query_patterns(
+        content,
+        keep_captures={'function.outer'})
+
+    assert result == (
+        b'((function_definition) @function.outer\n'
+        b' (#eq? @function.outer "test"))'
     )

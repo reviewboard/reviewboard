@@ -81,13 +81,15 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
             return HttpResponseNotFound(
                 _('Unable to find bug tracker service'))
 
-        if not isinstance(bug_tracker, BaseBugTracker):
+        if not bug_tracker.supports_bug_info:
             return HttpResponseNotFound(
                 _('Bug tracker %s does not support metadata')
                 % bug_tracker.name)
 
         self.bug_id = bug_id
-        self.bug_info = bug_tracker.get_bug_info(repository, bug_id)
+        self.bug_info = bug_tracker.get_bug_info(
+            repository=repository,
+            bug_id=bug_id)
 
         if (not self.bug_info.get('summary') and
             not self.bug_info.get('description')):

@@ -14,8 +14,10 @@ from djblets.db.fields import ModificationTimestampField, RelationCounterField
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
+from reviewboard.hostingsvcs.models import SENTINEL_BUG_TRACKER_SERVICE_NAME
 from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.fields import get_review_request_fields
+from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY, Bug, sort_bug_ids
 from reviewboard.reviews.models.group import Group
 from reviewboard.reviews.models.base_review_request_details import \
     BaseReviewRequestDetails
@@ -120,6 +122,11 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                                         blank=True,
                                         verbose_name=_('Dependencies'),
                                         related_name='draft_blocks')
+
+    bugs = models.ManyToManyField('reviews.Bug',
+                                  blank=True,
+                                  verbose_name=_('Bugs'),
+                                  related_name='drafts')
 
     screenshots_count = RelationCounterField(
         'screenshots',
@@ -311,6 +318,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
 
         if draft_is_new:
             rels_to_update = [
+                ('bugs', 'bug_id', 'reviewrequest_id'),
                 ('depends_on', 'to_reviewrequest_id', 'from_reviewrequest_id'),
                 ('target_groups', 'group_id', 'reviewrequest_id'),
                 ('target_people', 'user_id', 'reviewrequest_id'),
@@ -643,8 +651,13 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             modified_fields.append('branch')
 
         if changeset.bugs_closed:
-            self.bugs_closed = ','.join(changeset.bugs_closed)
-            modified_fields.append('bugs_closed')
+            # Attribute the parsed bug IDs to the repository's default bug
+            # tracker. The stored string is not written for migrated review
+            # requests.
+            Bug.objects.sync_legacy_bug_list(
+                review_request_details=self,
+                bug_ids=changeset.bugs_closed)
+            modified_fields.append('extra_data')
 
         if changeset.extra_data:
             if self.extra_data is None:
@@ -722,7 +735,22 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
         """
         changedesc = self.changedesc
 
+        draft_bugs_migrated = \
+            bool((self.extra_data or {}).get(BUGS_MIGRATED_KEY))
+        review_request_bugs_migrated = \
+            bool((review_request.extra_data or {}).get(BUGS_MIGRATED_KEY))
+        legacy_bugs_overwritten = (
+            not draft_bugs_migrated and
+            review_request_bugs_migrated and
+            review_request.get_bug_list() != self.get_bug_list())
+
         for field_cls in get_review_request_fields():
+            if (field_cls.field_id == 'bugs_closed' and
+                draft_bugs_migrated):
+                # Migrated bugs are copied through their relations below,
+                # never back into the stored string.
+                continue
+
             field = field_cls(review_request)
 
             if field.can_record_change_entry:
@@ -735,6 +763,15 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                     if changedesc:
                         field.record_change_entry(changedesc,
                                                   old_value, new_value)
+
+        if draft_bugs_migrated:
+            self._copy_bugs_to_review_request(review_request, changedesc)
+        elif legacy_bugs_overwritten:
+            # A string-driven draft overwrote the bugs of a migrated
+            # review request. Revert the review request to string-driven
+            # behavior so the fresh string is read. The relations will be
+            # re-synced if it migrates again.
+            review_request.extra_data.pop(BUGS_MIGRATED_KEY, None)
 
         # Screenshots and file attachments are a bit special. The list of
         # associated items can change, but so can captions within each.
@@ -774,6 +811,83 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
             draft_models_active_count=self.file_attachments_count,
             draft_models_inactive=self.inactive_file_attachments,
             draft_models_inactive_count=self.inactive_file_attachments_count)
+
+    def _copy_bugs_to_review_request(
+        self,
+        review_request: ReviewRequest,
+        changedesc: (ChangeDescription | None),
+    ) -> None:
+        """Copy migrated bug relations to the review request.
+
+        This records a change entry per affected bug tracker (under
+        ``bugs:<id>`` keys, with a label snapshot), plus a legacy
+        ``bugs_closed`` entry when the default tracker's view changed.
+        It then syncs the review request's bug relations from the draft
+        and marks the review request as migrated.
+
+        Version Added:
+            9.0
+
+        Args:
+            review_request (ReviewRequest):
+                The review request to copy the bugs to.
+
+            changedesc (reviewboard.changedescs.models.ChangeDescription):
+                The change description to record entries in, if any.
+        """
+        # Compute the legacy views before any syncing.
+        old_legacy_bugs = review_request.get_bug_list()
+        new_legacy_bugs = self.get_bug_list()
+
+        if changedesc is not None:
+            trackers = {}
+            old_bug_map: dict[int, set[str]] = {}
+            new_bug_map: dict[int, set[str]] = {}
+
+            for bug_map, details in ((old_bug_map, review_request),
+                                     (new_bug_map, self)):
+                for bug in details.bugs.select_related('bug_tracker'):
+                    tracker = bug.bug_tracker
+
+                    if (tracker.service_name ==
+                        SENTINEL_BUG_TRACKER_SERVICE_NAME):
+                        # Unattributed bugs only surface through the
+                        # legacy entry.
+                        continue
+
+                    trackers[tracker.pk] = tracker
+                    bug_map.setdefault(tracker.pk, set()).add(bug.bug_id)
+
+            for tracker_pk, tracker in sorted(trackers.items()):
+                old_ids = sort_bug_ids(old_bug_map.get(tracker_pk, set()),
+                                       tracker=tracker)
+                new_ids = sort_bug_ids(new_bug_map.get(tracker_pk, set()),
+                                       tracker=tracker)
+
+                if old_ids != new_ids:
+                    field_key = f'bugs:{tracker_pk}'
+                    changedesc.record_field_change(field=field_key,
+                                                   old_value=old_ids,
+                                                   new_value=new_ids)
+
+                    # Snapshot the label so history renders even if the
+                    # tracker later goes away.
+                    changedesc.fields_changed[field_key]['label'] = \
+                        str(tracker.name)
+
+            if old_legacy_bugs != new_legacy_bugs:
+                # Keep the legacy entry for old rendering code and API
+                # consumers.
+                changedesc.record_field_change(field='bugs_closed',
+                                               old_value=old_legacy_bugs,
+                                               new_value=new_legacy_bugs)
+
+        review_request.bugs.set(self.bugs.all())
+
+        if review_request.extra_data is None:
+            review_request.extra_data = {}
+
+        review_request.extra_data[BUGS_MIGRATED_KEY] = True
 
     def _copy_attachments_to_review_request(
         self,

@@ -408,6 +408,11 @@ class ReviewRequest(BaseReviewRequestDetails):
                                         verbose_name=_('Dependencies'),
                                         related_name='blocks')
 
+    bugs = models.ManyToManyField('reviews.Bug',
+                                  blank=True,
+                                  verbose_name=_('Bugs'),
+                                  related_name='review_requests')
+
     # Review-related information
 
     # The timestamp representing the last public activity of a review.

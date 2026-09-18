@@ -69,6 +69,10 @@ Review Workflow Hooks
   Adds new condition choices (for defining rules in integration
   configurations).
 
+:ref:`user-condition-choices-hook`:
+  Adds new condition choices that match against the acting user (for
+  defining access control rules).
+
 
 File Type Review Hooks
 ----------------------
@@ -98,6 +102,10 @@ Integration With Third-Party Tools Hooks
 
 :ref:`auth-backend-hook`:
   Adds a new authentication backend for logging in to Review Board.
+
+:ref:`sso-backend-hook`:
+  Adds a new single sign-on backend for logging in through an external
+  identity provider.
 
 :ref:`service-account-hook`:
   Adds a service account, which represents special users intended for
@@ -260,8 +268,10 @@ Deprecated Hooks
    scmtool-hook
    service-account-hook
    signal-hook
+   sso-backend-hook
    template-hook
    url-hook
+   user-condition-choices-hook
    user-details-provider-hook
    user-infobox-hook
    user-page-sidebar-items-hook

@@ -1,0 +1,53 @@
+{% load i18n %}
+
+<h1 data-wizard-title="{% trans 'Connected to GitHub' %}"
+    data-wizard-title-icon="{{service_logo}}">
+{% blocktrans %}
+ The GitHub app has been installed for {{owner_login}}.
+{% endblocktrans %}
+</h1>
+
+{% if verification_failed %}
+<p>
+{%  blocktrans %}
+ We couldn't check which repositories this app can access right now. You can
+ configure repositories from the connected services list.
+{%  endblocktrans %}
+</p>
+{% elif repositories %}
+<p>
+{%  blocktrans %}
+ The following repositories are currently connected to
+ <strong>{{owner_login}}</strong> using a Personal Access Token. You can
+ move them onto the new app-based connection now.
+{%  endblocktrans %}
+</p>
+
+<form method="post" action="{{form_action}}"
+      id="github-repo-reassign-account-form"
+      class="rb-c-form"
+      data-wizard-action-label="{% trans 'Reassign selected repositories' %}"
+      data-wizard-cancel-label="{% trans 'Skip' %}">
+ {% csrf_token %}
+ <input type="hidden" name="account_id"
+        value="{{installation_account.pk}}">
+
+{%  for repository in repositories %}
+ <div class="rb-c-form-field -has-input-first">
+  <input type="checkbox" name="repositories"
+         id="repository-{{repository.pk}}"
+         value="{{repository.pk}}" checked>
+  <label for="repository-{{repository.pk}}"
+         class="rb-c-form-field__label">
+   {{repository.name}}
+  </label>
+ </div>
+{%  endfor %}
+</form>
+{% else %}
+<p>
+{%  blocktrans %}
+ There are no Personal Access Token repositories to move onto this connection.
+{%  endblocktrans %}
+</p>
+{% endif %}

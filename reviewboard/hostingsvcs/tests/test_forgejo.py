@@ -669,7 +669,8 @@ class ForgejoTests(ForgejoTestCase):
 
         with self.setup_http_test(http_request_func=handler,
                                   expected_http_calls=1):
-            bug_info = service.get_bug_info_uncached(repository, '123')
+            bug_info = service.get_bug_info_uncached(repository=repository,
+                                                     bug_id='123')
 
         self.assertEqual(bug_info, {
             'description':
@@ -699,7 +700,8 @@ class ForgejoTests(ForgejoTestCase):
 
         with self.setup_http_test(http_request_func=handler,
                                   expected_http_calls=1):
-            bug_info = service.get_bug_info_uncached(repository, '999')
+            bug_info = service.get_bug_info_uncached(repository=repository,
+                                                     bug_id='999')
 
         self.assertEqual(bug_info, {
             'description': '',
@@ -726,7 +728,8 @@ class ForgejoTests(ForgejoTestCase):
 
         with self.setup_http_test(http_request_func=handler,
                                   expected_http_calls=1):
-            bug_info = service.get_bug_info_uncached(repository, '456')
+            bug_info = service.get_bug_info_uncached(repository=repository,
+                                                     bug_id='456')
 
         self.assertEqual(bug_info, {
             'description': '',

@@ -26,8 +26,10 @@ from reviewboard.extensions.hooks.auth_backend import AuthBackendHook
 from reviewboard.extensions.hooks.avatar_service import AvatarServiceHook
 from reviewboard.extensions.hooks.comment_detail_display import \
     CommentDetailDisplayHook
-from reviewboard.extensions.hooks.conditions import \
-    ReviewRequestConditionChoicesHook
+from reviewboard.extensions.hooks.conditions import (
+    ReviewRequestConditionChoicesHook,
+    UserConditionChoicesHook,
+)
 from reviewboard.extensions.hooks.dashboard import (DashboardColumnsHook,
                                                     DashboardSidebarItemsHook,
                                                     DataGridSidebarItemsHook,
@@ -51,6 +53,7 @@ from reviewboard.extensions.hooks.review_request_approval import \
     ReviewRequestApprovalHook
 from reviewboard.extensions.hooks.review_ui import ReviewUIHook
 from reviewboard.extensions.hooks.scmtool import SCMToolHook
+from reviewboard.extensions.hooks.sso_backend import SSOBackendHook
 from reviewboard.extensions.hooks.user_infobox import UserInfoboxHook
 from reviewboard.extensions.hooks.users import (ServiceAccountHook,
                                                 UserDetailsProviderHook)
@@ -96,10 +99,12 @@ __all__ = [
     'ReviewRequestPublishedEmailHook',
     'ReviewUIHook',
     'SCMToolHook',
+    'SSOBackendHook',
     'ServiceAccountHook',
     'SignalHook',
     'TemplateHook',
     'URLHook',
+    'UserConditionChoicesHook',
     'UserDetailsProviderHook',
     'UserInfoboxHook',
     'UserPageSidebarItemsHook',

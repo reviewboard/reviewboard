@@ -48,7 +48,7 @@ def _django_db_helper() -> None:  # pyright:ignore[reportUnusedFunction]
     ('%x', '[A-Fa-f0-9]'),
     ('%c', r'[\x00-\x1F\x7F]'),
     ('%p', r'[!"#$%&\'()*+,\-./:;<=>?@[\\\]^_`{|}~]'),
-    ('%z', r'\x00]'),
+    ('%z', r'\x00'),
     ('%A', '[^A-Za-z]'),
     ('%D', r'\D'),
     ('%S', r'\S'),
@@ -142,7 +142,6 @@ def test_escaped_special_chars(
     ('test123', 'test123'),
     ('hello_world', 'hello_world'),
     ('file.txt', '(?s)file.txt'),
-    ('test-file', 'test-file'),
     ('test@example.com', '(?s)test@example.com'),
 ])
 def test_literal_characters(
@@ -400,12 +399,42 @@ def test_real_patterns_from_queries(
     assert result == expected
 
 
-@pytest.mark.parametrize('lua_pattern', [
-    # Unsupported non-greedy quantifier
-    'test*-',
-    'test+-',
-    'test?-',
+@pytest.mark.parametrize(('lua_pattern', 'expected'), [
+    # Non-greedy quantifier after single characters and classes.
+    ('a-b', 'a*?b'),
+    ('test-file', 'test*?file'),
+    ('.-', '(?s).*?'),
+    ('%s-', r'\s*?'),
+    ('%d-x', r'\d*?x'),
+    ('[abc]-x', '[abc]*?x'),
 
+    # "-" with no item to quantify is a literal in Lua.
+    ('-abc', '-abc'),
+    ('^-', '^-'),
+    ('a*-', 'a*-'),
+    ('a+-', 'a+-'),
+    ('a?-', 'a?-'),
+    ('a--', 'a*?-'),
+    ('(a)-', '(a)-'),
+])
+def test_non_greedy_quantifier(
+    lua_pattern: str,
+    expected: str,
+) -> None:
+    """Test Lua non-greedy "-" quantifier translation.
+
+    Args:
+        lua_pattern (str):
+            The Lua pattern to test.
+
+        expected (str):
+            The expected value for the converted regex.
+    """
+    result = lua_pattern_to_python(lua_pattern)
+    assert result == expected
+
+
+@pytest.mark.parametrize('lua_pattern', [
     # Unterminated character class
     '[abc',
     '[',
@@ -416,6 +445,10 @@ def test_real_patterns_from_queries(
     'test%b[]',
     'test%b<>',
     'test%b%{%}',
+
+    # Unsupported frontier pattern
+    '%f[%w]word',
+    'test%f[%s]',
 ])
 def test_error_cases(
     lua_pattern: str,
@@ -712,6 +745,7 @@ def test_basic_character_class(
     ('%C', '^\\x00-\\x1F\\x7F'),
     ('%P', '^!"#$%&\\\'()*+,\\-./:;<=>?@[\\\\\\]^_`{|}~'),
     ('%Z', '^\\x00'),
+    ('%z', '\\x00'),
     ('%%', '%'),
     ('%d%s', '\\d\\s'),
     ('a%db', 'a\\db'),

@@ -7,13 +7,16 @@ from typing import TYPE_CHECKING
 
 from django import forms
 from django.utils.translation import gettext_lazy as _
+from housekeeping import deprecate_non_keyword_only_args
 
+from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 if TYPE_CHECKING:
     from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
+    from reviewboard.hostingsvcs.models import ConfiguredBugTracker
     from reviewboard.scmtools.models import Repository
 
 
@@ -41,25 +44,42 @@ class Splat(BaseHostingService, BaseBugTracker):
     hosting_service_id = 'splat'
     name = 'Splat'
 
+    bug_tracker_label = _('Splat Tickets')
     form = SplatForm
+    supports_bug_info = True
     supports_bug_trackers = True
+    _logo_image = 'rb/images/services/splat.svg'
 
     bug_tracker_field = \
         'https://hellosplat.com/s/%(splat_org_name)s/tickets/%%s/'
 
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
     def get_bug_info_uncached(
         self,
-        repository: Repository,
+        *,
+        repository: (Repository | None) = None,
         bug_id: str,
+        config: (ConfiguredBugTracker | None) = None,
     ) -> BugInfo:
         """Return the information for the specified bug.
 
+        Version Changed:
+            9.0:
+            Added the new ``config`` argument and made arguments keyword-only.
+
         Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository object.
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository object, for legacy repository-based calls.
 
             bug_id (str):
                 The ID of the bug to fetch.
+
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker,
+                    optional):
+                The bug tracker configuration.
+
+                Version Added:
+                    9.0
 
         Returns:
             reviewboard.hostingsvcs.base.bug_tracker.BugInfo:
@@ -68,11 +88,20 @@ class Splat(BaseHostingService, BaseBugTracker):
         result: BugInfo = {
             'summary': '',
             'description': '',
-            'description_text_format': '',
+            'description_text_format': 'plain',
             'status': '',
         }
 
-        org_name = repository.extra_data['bug_tracker-splat_org_name']
+        if config is not None:
+            org_name = config.settings.get('splat_org_name')
+        elif repository is not None:
+            org_name = repository.extra_data.get('bug_tracker-splat_org_name')
+        else:
+            org_name = None
+
+        if not org_name:
+            return result
+
         url = (
             f'https://hellosplat.com/api/orgs/{org_name}/tickets/{bug_id}/'
             f'?only-fields=status,summary,text,text_format'

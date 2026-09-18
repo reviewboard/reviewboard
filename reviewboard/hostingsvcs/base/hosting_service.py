@@ -13,20 +13,20 @@ from collections.abc import Mapping
 from typing import Any, Generic, TYPE_CHECKING
 from urllib.parse import urlparse
 
-from django.template.loader import render_to_string
 from django.utils.functional import classproperty
-from django.utils.safestring import mark_safe
-from django.utils.translation import gettext_lazy as _, ngettext
+from django.utils.translation import gettext_lazy as _
 from housekeeping import deprecate_non_keyword_only_args
 from typing_extensions import TypedDict, TypeVar
 
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
+from reviewboard.hostingsvcs.base.connect_ui import BaseHostingServiceConnectUI
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
     from typing import ClassVar
 
+    from django.db.models import Model
     from django.http import HttpRequest
     from django.urls import _AnyURL
     from django.utils.safestring import SafeString
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from typing_extensions import NotRequired, TypeAlias
 
     from reviewboard.hostingsvcs.base.forms import (
+        BaseBugTrackerConfigForm,
         BaseHostingServiceAuthForm,
         BaseHostingServiceRepositoryForm)
     from reviewboard.hostingsvcs.base.paginator import BasePaginator
@@ -143,7 +144,9 @@ class BaseHostingService(Generic[THostingServiceClient]):
 
     Version Changed:
         9.0:
-        Made this class generic for the hosting service client.
+        * Made this class generic for the hosting service client.
+        * Added :py:attr:`supports_bug_info` and
+          :py:attr:`supports_bug_search`.
 
     Version Changed:
         6.0:
@@ -152,24 +155,12 @@ class BaseHostingService(Generic[THostingServiceClient]):
           renamed from ``HostingService`` to ``BaseHostingService``.
     """
 
-    #: The template to use for rendering the services list entry.
+    #: The type for the connect UI for this hosting service.
     #:
     #: Version Added:
     #:     9.0
-    connected_services_list_entry_template: ClassVar[str] = \
-        'admin/connected_services/_parts/list_entry_hosting_service.html'
-
-    #: The template to use for rendering the connect UI.
-    #:
-    #: This is the per-service step of the "Connect a service" flow. The
-    #: default template renders the service's authentication form. Services
-    #: that need to offer additional or alternative connection methods can
-    #: override this template or :py:meth:`render_connect_ui`.
-    #:
-    #: Version Added:
-    #:     9.0
-    connect_ui_template: ClassVar[str] = \
-        'admin/connected_services/_parts/connect_form.html'
+    connect_ui_cls: type[BaseHostingServiceConnectUI] = \
+        BaseHostingServiceConnectUI
 
     #: The unique ID of the hosting service.
     #:
@@ -201,6 +192,23 @@ class BaseHostingService(Generic[THostingServiceClient]):
     #: Type:
     #:     list
     plans: ClassVar[Sequence[tuple[str, HostingServicePlan]] | None] = None
+
+    #: Whether :py:meth:`get_bug_info` returns real metadata.
+    #:
+    #: This enables infobox support, replacing older
+    #: ``isinstance(service, BaseBugTracker)`` checks.
+    #:
+    #: Version Added:
+    #:     9.0
+    supports_bug_info: ClassVar[bool] = False
+
+    #: Whether :py:meth:`search_bugs` is implemented.
+    #:
+    #: This enables typeahead search in bug fields.
+    #:
+    #: Version Added:
+    #:     9.0
+    supports_bug_search: ClassVar[bool] = False
 
     #: Whether this service supports bug trackers.
     #:
@@ -381,6 +389,21 @@ class BaseHostingService(Generic[THostingServiceClient]):
     #:     type
     form: ClassVar[type[BaseHostingServiceRepositoryForm] | None] = None
 
+    #: The form for a standalone bug tracker configuration's settings.
+    #:
+    #: Services supporting standalone bug tracker configurations set this to
+    #: provide service-specific settings fields. Services without one offer no
+    #: extra settings.
+    #:
+    #: Version Added:
+    #:     9.0
+    #:
+    #: Type:
+    #:     type
+    bug_tracker_config_form: ClassVar[
+        type[BaseBugTrackerConfigForm] | None
+    ] = None
+
     #: Templated values to set for model repository fields.
     #:
     #: Each key corresponds to a SCMTool ID or name, and each value to a
@@ -438,6 +461,12 @@ class BaseHostingService(Generic[THostingServiceClient]):
     #:     list of str
     visible_scmtools: ClassVar[Sequence[str] | None] = None
 
+    #: The connect UI for this hosting service.
+    #:
+    #: Version Added:
+    #:     9.0
+    _connect_ui: ClassVar[BaseHostingServiceConnectUI | None] = None
+
     #: The static files path to a logo image (SVG) for the service.
     #:
     #: Version Added:
@@ -468,6 +497,20 @@ class BaseHostingService(Generic[THostingServiceClient]):
         self.account = account
 
         self.client = self.client_class(self)  # type:ignore
+
+    @classproperty
+    def connect_ui(
+        cls,  # noqa: N805
+    ) -> BaseHostingServiceConnectUI:
+        """The connect UI object for this hosting service.
+
+        Version Added:
+            9.0
+        """
+        if cls._connect_ui is None:
+            cls._connect_ui = cls.connect_ui_cls(cls)  # type:ignore
+
+        return cls._connect_ui
 
     @classproperty
     def logo_image(
@@ -1075,7 +1118,7 @@ class BaseHostingService(Generic[THostingServiceClient]):
         return (
             plan is not None and
             ('%(hosting_account_username)s' in
-             cls.get_field(plan, 'bug_tracker_field', ''))
+             (cls.get_field(plan, 'bug_tracker_field', '') or ''))
         )
 
     @classmethod
@@ -1159,199 +1202,32 @@ class BaseHostingService(Generic[THostingServiceClient]):
         return getattr(cls, name, default)
 
     @classmethod
-    def render_connected_services_list_entry(
+    def get_protected_objects_for_account_deletion(
         cls,
-        request: HttpRequest,
         accounts: Sequence[HostingServiceAccount],
-    ) -> SafeString:
-        """Render the services list entry for this hosting service.
+    ) -> Sequence[Model]:
+        """Return objects that must not be orphaned by deleting accounts.
+
+        This lets a service report state that depends on an account but that
+        the database does not protect, such as a reference stored in JSON data
+        rather than as a foreign key. The admin refuses to delete the accounts
+        while anything is returned, and names what is in the way, the same as
+        it does for a protected foreign key.
+
+        The accounts being deleted are passed together so that a service can
+        ignore dependencies that are themselves going away. The default
+        implementation returns nothing.
 
         Version Added:
             9.0
 
         Args:
-            request (django.http.HttpRequest):
-                The HTTP request from the client.
-
             accounts (list of
                       reviewboard.hostingsvcs.models.HostingServiceAccount):
-                The accounts for this hosting service.
+                The accounts of this service that are being deleted.
 
         Returns:
-            django.utils.safestring.SafeString:
-            The rendered entry for the connected services list page.
+            list of django.db.models.Model:
+            The objects blocking the deletion.
         """
-        return mark_safe(render_to_string(
-            cls.connected_services_list_entry_template,
-            cls.make_connected_services_list_entry_context(
-                request, accounts),
-            request=request))
-
-    @classmethod
-    def make_connected_services_list_entry_context(
-        cls,
-        request: HttpRequest,
-        accounts: Sequence[HostingServiceAccount],
-    ) -> dict[str, Any]:
-        """Return template context for rendering the services list entry.
-
-        Version Added:
-            9.0
-
-        Args:
-            request (django.http.HttpRequest):
-                The HTTP request from the client.
-
-            accounts (list of
-                      reviewboard.hostingsvcs.models.HostingServiceAccount):
-                The accounts for this hosting service.
-
-        Returns:
-            dict:
-            Template context to use when rendering the entry.
-        """
-        # TODO: create a central enum for these and let each hosting service
-        # mark what they are?
-        if cls.supports_repositories:
-            service_type = _('Source hosting')
-        elif cls.supports_bug_trackers:
-            service_type = _('Issue tracking')
-        else:
-            service_type = None
-
-        return {
-            'service_name': cls.name,
-            'service_logo': cls.logo_image,
-            'service_type': service_type,
-            'accounts_data': [
-                {
-                    'account': account,
-                    'detail':
-                        cls.get_connected_services_list_account_detail(
-                            account),
-                }
-                for account in accounts
-            ],
-        }
-
-    @classmethod
-    def get_connected_services_list_account_detail(
-        cls,
-        account: HostingServiceAccount,
-    ) -> str | None:
-        """Return a detail string describing an account in the admin list.
-
-        This is shown beside the account in the "Connected Services" page.
-        Services that support repositories show the number of repositories
-        associated with the account. Other services currently show nothing.
-
-        Version Added:
-            9.0
-
-        Args:
-            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
-                The account to describe. This is expected to be annotated
-                with a ``repository_count`` attribute (see
-                :py:class:`reviewboard.admin.views.ConnectedServicesListView`).
-
-        Returns:
-            str:
-            The detail string, or ``None`` if there is nothing to show.
-        """
-        if not cls.supports_repositories:
-            return None
-
-        count = getattr(account, 'repository_count', 0)
-
-        return (
-            ngettext('{count} repository',
-                     '{count} repositories',
-                     count)
-            .format(count=count)
-        )
-
-    @classmethod
-    def get_auth_form_class(cls) -> type[BaseHostingServiceAuthForm]:
-        """Return the authentication form class for this service.
-
-        This returns the service's :py:attr:`auth_form`, falling back to
-        the default :py:class:`~reviewboard.hostingsvcs.base.forms.
-        BaseHostingServiceAuthForm` if one is not set.
-
-        Version Added:
-            9.0
-
-        Returns:
-            type:
-            The authentication form class to use for this service.
-        """
-        from reviewboard.hostingsvcs.base.forms import \
-            BaseHostingServiceAuthForm
-
-        return cls.auth_form or BaseHostingServiceAuthForm
-
-    @classmethod
-    def render_connect_ui(
-        cls,
-        request: HttpRequest,
-        *,
-        form: (BaseHostingServiceAuthForm | None) = None,
-    ) -> SafeString:
-        """Render the connect UI for this hosting service.
-
-        This is the per-service step of the "Connect a service" flow. The
-        default implementation renders the service's authentication form.
-        Services can override this method (or :py:attr:`connect_ui_template`)
-        to offer additional or alternative connection methods.
-
-        Version Added:
-            9.0
-
-        Args:
-            request (django.http.HttpRequest):
-                The HTTP request from the client.
-
-            form (BaseHostingServiceAuthForm, optional):
-                The authentication form to render. If not provided, a new
-                unbound form will be created.
-
-        Returns:
-            django.utils.safestring.SafeString:
-            The rendered connect UI.
-        """
-        if form is None:
-            form = cls.get_auth_form_class()(hosting_service_cls=cls,
-                                             local_site=request.local_site)
-
-        return mark_safe(render_to_string(
-            cls.connect_ui_template,
-            cls.make_connect_ui_context(request, form=form),
-            request=request))
-
-    @classmethod
-    def make_connect_ui_context(
-        cls,
-        request: HttpRequest,
-        *,
-        form: BaseHostingServiceAuthForm,
-    ) -> dict[str, Any]:
-        """Return template context for rendering the connect UI.
-
-        Version Added:
-            9.0
-
-        Args:
-            request (django.http.HttpRequest):
-                The HTTP request from the client.
-
-            form (BaseHostingServiceAuthForm):
-                The authentication form to render.
-
-        Returns:
-            dict:
-            Template context to use when rendering the connect UI.
-        """
-        return {
-            'form': form,
-            'hosting_service_id': cls.hosting_service_id,
-        }
+        return []

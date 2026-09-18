@@ -1,23 +1,45 @@
 """An interface to a bug tracker.
 
 Version Changed:
+    9.0:
+    Reworked around
+    :py:class:`~reviewboard.hostingsvcs.models.ConfiguredBugTracker`
+    configurations, adding labels, capability flags, URL generation, and
+    search.
+
+Version Changed:
     8.0:
     Renamed this module from ``reviewboard.hostingsvcs.bugtracker``.
 """
 
 from __future__ import annotations
 
+import inspect
+import logging
 from typing import TYPE_CHECKING, TypedDict
 
+from django.utils.translation import gettext_lazy as _
 from djblets.cache.backend import cache_memoize
+from housekeeping import deprecate_non_keyword_only_args
+
+from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from typing import ClassVar, Literal
+    from typing import Any, ClassVar, Literal
 
+    from typelets.django.strings import StrOrPromise
     from typing_extensions import NotRequired
 
+    from reviewboard.hostingsvcs.models import ConfiguredBugTracker
     from reviewboard.scmtools.models import Repository
+
+
+logger = logging.getLogger(__name__)
+
+
+#: Cached signature styles for get_bug_info_uncached overrides.
+_bug_info_style_cache: dict[type, bool] = {}
 
 
 class BugInfo(TypedDict):
@@ -40,11 +62,48 @@ class BugInfo(TypedDict):
     status: str
 
 
+class BugSearchResult(TypedDict):
+    """A result from a bug tracker search.
+
+    Version Added:
+        9.0
+    """
+
+    #: The ID of the bug on the tracker.
+    bug_id: str
+
+    #: A one-line summary of the bug.
+    summary: str
+
+    #: The bug's status.
+    status: NotRequired[str]
+
+    #: Whether the bug is closed.
+    closed: NotRequired[bool]
+
+    #: The public URL for the bug.
+    url: NotRequired[str]
+
+
 class BaseBugTracker:
     """An interface to a bug tracker.
 
     Bug tracker subclasses are used to enable interaction with different
     bug trackers.
+
+    Subclasses should implement :py:meth:`get_bug_info_uncached` with the
+    ``config``-based keyword signature. During the deprecation period,
+    overrides using the legacy ``(repository, bug_id)`` signature keep
+    working for repository-based calls, but are treated as having no bug
+    info support when called with only a
+    :py:class:`~reviewboard.hostingsvcs.models.ConfiguredBugTracker`
+    configuration.
+
+    Version Changed:
+        9.0:
+        * Added :py:attr:`bug_tracker_label`, :py:attr:`bugs_in_repo`,
+          :py:meth:`get_bug_url` and :py:meth:`search_bugs`.
+        * Reworked the info methods around bug tracker configurations.
 
     Version Changed:
         8.0:
@@ -55,10 +114,64 @@ class BaseBugTracker:
     #: The name of the bug tracker
     name: ClassVar[str | None] = None
 
+    #: The default label for review request fields and UI.
+    #:
+    #: This can be overridden per-configuration through
+    #: :py:attr:`ConfiguredBugTracker.name
+    #: <reviewboard.hostingsvcs.models.ConfiguredBugTracker.name>`.
+    #:
+    #: Version Added:
+    #:     9.0
+    bug_tracker_label: ClassVar[StrOrPromise] = _('Bugs')
+
+    #: Whether the bug tracker operates in-repo.
+    #:
+    #: In-repo bug trackers (such as GitHub or Forgejo issues) are tied
+    #: to a repository on the hosting service. They are configured inside
+    #: the repository configuration, not through Connected Services.
+    #:
+    #: Version Added:
+    #:     9.0
+    bugs_in_repo: ClassVar[bool] = False
+
+    def get_bug_id_sort_key(
+        self,
+        *,
+        bug_id: str,
+    ) -> tuple[Any, ...] | None:
+        """Return a sort key for a bug ID.
+
+        Services can override this to control how bug IDs on their trackers
+        are ordered for display. For example, a service whose IDs combine a
+        project key and a number can sort on the two parts rather than on the
+        raw string.
+
+        Keys must compare against each other, so an override must return
+        tuples of a consistent shape for every ID it accepts. Returning
+        ``None`` marks the ID as having no custom key; if any ID in a list has
+        no key, the whole list falls back to the default ordering (numeric
+        when every ID is numeric, alphabetical otherwise).
+
+        Version Added:
+            9.0
+
+        Args:
+            bug_id (str):
+                The ID of the bug.
+
+        Returns:
+            tuple:
+            The sort key, or ``None`` to use the default ordering.
+        """
+        return None
+
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
     def get_bug_info(
         self,
-        repository: Repository,
+        *,
+        repository: (Repository | None) = None,
         bug_id: str,
+        config: (ConfiguredBugTracker | None) = None,
     ) -> BugInfo:
         """Return the information for the specified bug.
 
@@ -68,37 +181,114 @@ class BaseBugTracker:
         bug trackers and make things seem fast after the first infobox load,
         but is still a short enough time to give relatively fresh data.
 
+        Callers should pass ``config`` (and ``bug_id``) as keyword
+        arguments. The positional ``repository`` form is deprecated. When
+        only a repository is given, the repository's default bug tracker
+        configuration is used when available.
+
+        Version Changed:
+            9.0:
+            - Added the ``config`` argument.
+            - Made arguments keyword-only.
+            - Made ``repository`` optional.
+
         Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository object.
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository object, for legacy calls.
 
             bug_id (str):
                 The ID of the bug to fetch.
+
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker,
+                    optional):
+                The bug tracker configuration.
+
+                Version Added:
+                    9.0
 
         Returns:
             BugInfo:
             Information about the bug.
         """
-        return cache_memoize(self.make_bug_cache_key(repository, bug_id),
-                             lambda: self.get_bug_info_uncached(repository,
-                                                                bug_id),
-                             expiration=60)
+        if config is None and repository is not None:
+            config = repository.get_default_bug_tracker()
 
+        if self._uses_legacy_bug_info_signature():
+            RemovedInReviewBoard11_0Warning.warn(
+                f'{type(self).__name__}.get_bug_info_uncached() does '
+                f'not include a config argument. This will be required in '
+                f'Review Board 11.'
+            )
+
+            if repository is not None:
+                # Legacy repository-based call into a legacy override.
+                # This path is byte-identical to Review Board 8.
+                return cache_memoize(
+                    self.make_bug_cache_key(repository, bug_id),
+                    lambda: self.get_bug_info_uncached(repository, bug_id),
+                    expiration=60)
+            else:
+                # A configuration-only call cannot be dispatched to a
+                # legacy override. Never fabricate a repository. The
+                # caller gets no info.
+                return {
+                    'summary': '',
+                    'description': '',
+                    'status': '',
+                }
+
+        if config is not None and config.pk is not None:
+            cache_key = self.make_bug_cache_key_for_config(config, bug_id)
+        elif repository is not None:
+            cache_key = self.make_bug_cache_key(repository, bug_id)
+        else:
+            cache_key = None
+
+        if cache_key is None:
+            return self.get_bug_info_uncached(bug_id=bug_id,
+                                              config=config,
+                                              repository=repository)
+
+        return cache_memoize(
+            cache_key,
+            lambda: self.get_bug_info_uncached(bug_id=bug_id,
+                                               config=config,
+                                               repository=repository),
+            expiration=60)
+
+    @deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
     def get_bug_info_uncached(
         self,
-        repository: Repository,
+        *,
+        repository: (Repository | None) = None,
         bug_id: str,
+        config: (ConfiguredBugTracker | None) = None,
     ) -> BugInfo:
         """Return the information for the specified bug.
 
-        This should be implemented by subclasses.
+        This should be implemented by subclasses using the keyword-only
+        signature. Implementations should read settings and credentials from
+        ``config``. The ``repository`` argument is only provided for legacy
+        repository-based calls, where no configuration may exist yet.
+
+        Version Changed:
+            9.0:
+            - Made arguments keyword-only.
+            - Added the ``config`` argument.
 
         Args:
-            repository (reviewboard.scmtools.models.Repository):
-                The repository object.
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository object, for legacy calls.
 
             bug_id (str):
                 The ID of the bug to fetch.
+
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker,
+                    optional):
+                The bug tracker configuration.
+
+                Version Added:
+                    9.0
 
         Returns:
             BugInfo:
@@ -110,12 +300,92 @@ class BaseBugTracker:
             'status': '',
         }
 
+    def get_bug_url(
+        self,
+        *,
+        config: ConfiguredBugTracker,
+        bug_id: str,
+    ) -> str | None:
+        """Return the public URL for a bug.
+
+        The default implementation formats the service's ``bug_tracker_field``
+        template using the configuration's settings. This absorbs the legacy
+        ``Repository.bug_tracker`` template expansion.
+
+        Version Added:
+            9.0
+
+        Args:
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker configuration.
+
+            bug_id (str):
+                The ID of the bug.
+
+        Returns:
+            str:
+            The URL for the bug, or ``None`` if one cannot be generated.
+        """
+        settings = config.settings or {}
+
+        try:
+            # get_bug_tracker_field() is provided by BaseHostingService,
+            # which bug tracker services mix this class into.
+            template = self.get_bug_tracker_field(  # type: ignore
+                settings.get('plan'),
+                settings)
+        except Exception:
+            return None
+
+        if template and '%s' in template:
+            return template % bug_id
+
+        return None
+
+    def search_bugs(
+        self,
+        *,
+        config: ConfiguredBugTracker,
+        query: str,
+        limit: int = 25,
+    ) -> Sequence[BugSearchResult]:
+        """Return bugs matching a search query.
+
+        This powers typeahead search in bug fields. It is only called when
+        :py:attr:`supports_bug_search` is set.
+
+        There is no acting-user argument. Authentication is per-config through
+        the configuration's account. Access control checks happen in the
+        calling endpoint, not here.
+
+        Version Added:
+            9.0
+
+        Args:
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker configuration.
+
+            query (str):
+                The search query.
+
+            limit (int, optional):
+                The maximum number of results to return.
+
+        Returns:
+            list of BugSearchResult:
+            The matching bugs.
+        """
+        return []
+
     def make_bug_cache_key(
         self,
         repository: Repository,
         bug_id: str,
     ) -> str | Sequence[str]:
         """Return a key to use when caching fetched bug information.
+
+        This is the legacy repository-based cache key. Configuration
+        -based calls use :py:meth:`make_bug_cache_key_for_config`.
 
         Version Changed:
             8.0:
@@ -140,3 +410,59 @@ class BaseBugTracker:
             'bug',
             bug_id,
         ]
+
+    def make_bug_cache_key_for_config(
+        self,
+        config: ConfiguredBugTracker,
+        bug_id: str,
+    ) -> Sequence[str]:
+        """Return a cache key for bug information on a configuration.
+
+        Version Added:
+            9.0
+
+        Args:
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker configuration.
+
+            bug_id (str):
+                The ID of the bug.
+
+        Returns:
+            list of str:
+            A key to use for the cache.
+        """
+        return [
+            'bug-tracker',
+            str(config.pk),
+            'bug',
+            bug_id,
+        ]
+
+    def _uses_legacy_bug_info_signature(self) -> bool:
+        """Return whether get_bug_info_uncached uses the legacy signature.
+
+        Legacy overrides take ``(repository, bug_id)`` and have no
+        ``config`` argument.
+
+        Returns:
+            bool:
+            ``True`` if the subclass overrides
+            :py:meth:`get_bug_info_uncached` with the legacy signature.
+        """
+        cls = type(self)
+
+        try:
+            return _bug_info_style_cache[cls]
+        except KeyError:
+            pass
+
+        try:
+            sig = inspect.signature(cls.get_bug_info_uncached)
+            legacy = 'config' not in sig.parameters
+        except (TypeError, ValueError):
+            legacy = False
+
+        _bug_info_style_cache[cls] = legacy
+
+        return legacy

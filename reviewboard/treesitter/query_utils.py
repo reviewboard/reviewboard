@@ -18,7 +18,7 @@ from tree_sitter_language_pack import get_language, get_parser
 from reviewboard.treesitter.lua_patterns import lua_pattern_to_python
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator
+    from collections.abc import Collection, Iterable, Iterator
     from typing import TypeAlias
 
 
@@ -359,6 +359,155 @@ def apply_standard_query_edits(
     )
 
     return apply_edits(queries, edits)
+
+
+@lru_cache(maxsize=1)
+def get_all_captures_query() -> tree_sitter.Query:
+    """Return a query for finding all captures.
+
+    Version Added:
+        9.0
+
+    Returns:
+        tree_sitter.Query:
+        The query object.
+    """
+    return tree_sitter.Query(
+        get_query_language(),
+        '(capture) @_capture')
+
+
+def _get_pattern_root_name(
+    node: tree_sitter.Node,
+) -> str | None:
+    """Return the name of the root node matched by a pattern.
+
+    This unwraps groupings to find the outermost node that the pattern
+    matches in the target language.
+
+    Version Added:
+        9.0
+
+    Args:
+        node (tree_sitter.Node):
+            A top-level pattern node in a parsed query file.
+
+    Returns:
+        str:
+        The node name, or ``None`` if the pattern does not match a single
+        named node.
+    """
+    groupings = {'named_node', 'grouping', 'list', 'anonymous_node'}
+
+    while node.type == 'grouping':
+        inner = None
+
+        for child in node.named_children:
+            if child.type in groupings:
+                inner = child
+                break
+
+        if inner is None:
+            return None
+
+        node = inner
+
+    if node.type == 'named_node':
+        name_node = node.child_by_field_name('name')
+
+        if name_node is not None and name_node.text is not None:
+            return name_node.text.decode()
+
+    return None
+
+
+def filter_query_patterns(
+    queries: bytes,
+    *,
+    keep_captures: Collection[str],
+    drop_node_types: Collection[str] = (),
+) -> bytes:
+    """Filter queries down to patterns using the given captures.
+
+    This keeps only top-level patterns that contain at least one capture in
+    ``keep_captures``, dropping all other patterns along with any comments
+    immediately preceding them. Duplicate patterns (which can result from
+    ``; inherits:`` resolution pulling in the same parent twice) are also
+    dropped.
+
+    Patterns whose outermost matched node is in ``drop_node_types`` are
+    dropped even if they use a wanted capture. This is used to drop wrapper
+    patterns (such as Python's ``decorated_definition``) where an inner
+    pattern already captures the interesting node.
+
+    Version Added:
+        9.0
+
+    Args:
+        queries (bytes):
+            The queries content to filter.
+
+        keep_captures (collection of str):
+            The capture names (without the leading ``@``) that mark a
+            pattern to keep.
+
+        drop_node_types (collection of str, optional):
+            Names of outermost matched nodes whose patterns should be
+            dropped regardless of captures.
+
+    Returns:
+        bytes:
+        The filtered query content.
+    """
+    parser = get_parser('query')
+    tree = parser.parse(queries)
+
+    captures_query = get_all_captures_query()
+
+    edits: list[QueryEdit] = []
+    pending_comment_edits: list[QueryEdit] = []
+    seen_patterns: set[bytes] = set()
+
+    for node in tree.root_node.named_children:
+        if node.type == 'comment':
+            pending_comment_edits.append((node.start_byte, node.end_byte,
+                                          b''))
+            continue
+
+        cursor = tree_sitter.QueryCursor(captures_query)
+        captures = cursor.captures(node)
+
+        capture_names = {
+            capture_node.text.decode().removeprefix('@')
+            for capture_node in captures.get('_capture', [])
+            if capture_node.text is not None
+        }
+
+        pattern_text = node.text or b''
+
+        keep = (
+            pattern_text not in seen_patterns and
+            _get_pattern_root_name(node) not in drop_node_types and
+            any(
+                name in keep_captures
+                for name in capture_names
+            )
+        )
+
+        seen_patterns.add(pattern_text)
+
+        if not keep:
+            edits += pending_comment_edits
+            edits.append((node.start_byte, node.end_byte, b''))
+
+        pending_comment_edits = []
+
+    # Trailing comments no longer describe anything that follows them.
+    edits += pending_comment_edits
+
+    result = apply_edits(queries, edits)
+
+    return re.sub(rb'\n{3,}', b'\n\n', result).strip()
 
 
 def get_all_predicate_names(

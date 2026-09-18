@@ -240,6 +240,7 @@ class Beanstalk(BaseHostingService):
     supported_scmtools = ['Git', 'Subversion']
     supports_bug_trackers = False
     supports_repositories = True
+    _logo_image = 'rb/images/services/beanstalk.svg'
 
     repository_fields = {
         'Git': {

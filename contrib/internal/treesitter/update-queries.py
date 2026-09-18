@@ -13,7 +13,7 @@ import logging
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import NamedTuple, TYPE_CHECKING
 
 import tree_sitter
 from tqdm import tqdm
@@ -22,21 +22,76 @@ from tree_sitter_language_pack import get_language, get_parser
 from reviewboard.treesitter.language import SUPPORTED_LANGUAGES
 from reviewboard.treesitter.query_utils import (
     apply_standard_query_edits,
+    filter_query_patterns,
     get_all_predicate_names,
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Callable, Mapping, Sequence
+    from typing import TypeAlias
 
     from typelets.json import JSONDict
 
     from reviewboard.treesitter.language import SupportedLanguage
 
+    #: A transform to apply to queries before validation and writing.
+    #:
+    #: This takes the language name and the raw queries content, and
+    #: returns the transformed content.
+    #:
+    #: Version Added:
+    #:     9.0
+    _QueryTransform: TypeAlias = Callable[[SupportedLanguage, bytes], bytes]
+
 
 logger = logging.getLogger(__name__)
 
 
+#: The Git URL for the nvim-treesitter repository.
+#:
+#: Version Added:
+#:     9.0
+NVIM_TREESITTER_URL = \
+    'https://github.com/nvim-treesitter/nvim-treesitter.git'
+
+#: The Git URL for the nvim-treesitter-textobjects repository.
+#:
+#: Version Added:
+#:     9.0
+TEXTOBJECTS_URL = \
+    'https://github.com/nvim-treesitter/nvim-treesitter-textobjects.git'
+
+
+#: The textobjects captures used for interesting lines.
+#:
+#: Version Added:
+#:     9.0
+INTERESTING_LINES_CAPTURES = {
+    'class.outer',
+    'function.outer',
+}
+
+
+#: Outermost node types to drop from interesting_lines.scm, per language.
+#:
+#: These are wrapper patterns where an inner pattern already captures the
+#: definition itself, and capturing the wrapper would yield the wrong
+#: header line.
+#:
+#: Version Added:
+#:     9.0
+INTERESTING_LINES_DROP_NODE_TYPES: Mapping[SupportedLanguage, set[str]] = {
+    # A decorated definition starts at the first decorator line. The plain
+    # function_definition/class_definition patterns already match inside
+    # decorated_definition, yielding the def/class line as the header.
+    'python': {'decorated_definition'},
+}
+
+
 #: Languages for which we have custom queries.
+#:
+#: Version Added:
+#:     9.0
 EXCLUDED_LANGUAGES: set[SupportedLanguage] = {
     # The HTML queries in nvim-treesitter are extremely inefficient, and don't
     # buy us anything. We have custom ones based on the tree-sitter-html
@@ -66,10 +121,75 @@ EXCLUDED_LANGUAGES: set[SupportedLanguage] = {
 
 
 #: Directory names for languages where nvim-treesitter uses a different name.
+#:
+#: Version Added:
+#:     9.0
 LANGUAGE_DIR_NAMES: Mapping[str, str] = {
     'csharp': 'c_sharp',
     'embeddedtemplate': 'embedded_template',
 }
+
+
+class QueryFileSource(NamedTuple):
+    """A source for a vendored query file.
+
+    Each source describes one query file to read from an upstream
+    repository, along with the output filename and an optional transform.
+
+    Version Added:
+        9.0
+    """
+
+    #: The path to the upstream Git repository checkout.
+    repo_path: Path
+
+    #: The path to the queries directory within the checkout.
+    queries_path: Path
+
+    #: The Git URL to record in the lock file.
+    source_url: str
+
+    #: The current revision of the checkout.
+    main_revision: str
+
+    #: The name of the query file in the upstream repository.
+    input_filename: str
+
+    #: The name of the query file to write.
+    output_filename: str
+
+    #: A transform to apply before validation and writing.
+    transform: (_QueryTransform | None) = None
+
+
+def make_interesting_lines_queries(
+    language: SupportedLanguage,
+    queries: bytes,
+) -> bytes:
+    """Transform textobjects queries into interesting lines queries.
+
+    This keeps only the patterns capturing definitions that we want to show
+    as headers in diffs.
+
+    Version Added:
+        9.0
+
+    Args:
+        language (str):
+            The name of the language being processed.
+
+        queries (bytes):
+            The textobjects queries content.
+
+    Returns:
+        bytes:
+        The filtered queries content.
+    """
+    return filter_query_patterns(
+        queries,
+        keep_captures=INTERESTING_LINES_CAPTURES,
+        drop_node_types=INTERESTING_LINES_DROP_NODE_TYPES.get(
+            language, set()))
 
 
 #: Storage for all predicates across all files.
@@ -77,10 +197,16 @@ LANGUAGE_DIR_NAMES: Mapping[str, str] = {
 #: This is used to show a warning if query files contain a predicate that we
 #: don't have implemented in
 #: :py:func:`reviewboard.treesitter.highlight.predicate_handler`.
+#:
+#: Version Added:
+#:     9.0
 all_predicates: set[str] = set()
 
 
 #: Directory for queries files.
+#:
+#: Version Added:
+#:     9.0
 queries_dir = \
     Path(__file__).parents[3] / 'reviewboard' / 'treesitter' / 'queries'
 
@@ -88,15 +214,18 @@ queries_dir = \
 def get_git_revision(
     repo_path: Path,
 ) -> str:
-    """Get the current git revision from the given repository.
+    """Get the current Git revision from the given repository.
+
+    Version Added:
+        9.0
 
     Args:
         repo_path (pathlib.Path):
-            The path to the git repository.
+            The path to the Git repository.
 
     Returns:
         str:
-        The current git revision hash.
+        The current Git revision hash.
     """
     result = subprocess.run(
         ['git', 'rev-parse', 'HEAD'],
@@ -116,6 +245,9 @@ def write_lock_file(
     This function loads the existing lock file (if it exists) and merges
     the new data into it, only overwriting keys that are present in the
     new lock_data. This allows queries from other packages to be preserved.
+
+    Version Added:
+        9.0
 
     Args:
         lock_data (dict):
@@ -148,6 +280,9 @@ def validate_queries_with_grammar(
 ) -> bool:
     """Validate that queries work with the available grammar version.
 
+    Version Added:
+        9.0
+
     Args:
         language (str):
             The language name.
@@ -175,9 +310,12 @@ def get_file_commit_history(
 ) -> list[str]:
     """Get the commit history for a specific file.
 
+    Version Added:
+        9.0
+
     Args:
         repo_path (pathlib.Path):
-            The path to the git repository.
+            The path to the Git repository.
 
         file_path (pathlib.Path):
             The path to the file within the repository.
@@ -216,9 +354,12 @@ def get_file_at_commit(
 ) -> bytes | None:
     """Get the content of a file at a specific commit.
 
+    Version Added:
+        9.0
+
     Args:
         repo_path (pathlib.Path):
-            The path to the git repository.
+            The path to the Git repository.
 
         file_path (str):
             The relative path to the file within the repository.
@@ -255,9 +396,12 @@ def read_queries(
 ) -> bytes | None:
     """Read queries for a language.
 
+    Version Added:
+        9.0
+
     Args:
         repo_path (pathlib.Path):
-            The path to the nvim-treesitter git repository.
+            The path to the nvim-treesitter Git repository.
 
         queries_path (pathlib.Path):
             The path to the nvim-treesitter queries directory.
@@ -343,15 +487,19 @@ def read_queries_with_fallback(
     filename: str,
     query_parser: tree_sitter.Parser,
     verbose: bool,
+    transform: (_QueryTransform | None) = None,
 ) -> tuple[bytes | None, str | None]:
     """Read queries with fallback to older commits if validation fails.
 
+    Version Added:
+        9.0
+
     Args:
         repo_path (pathlib.Path):
-            The path to the nvim-treesitter git repository.
+            The path to the upstream Git repository.
 
         queries_path (pathlib.Path):
-            The path to the nvim-treesitter queries directory.
+            The path to the upstream queries directory.
 
         language (str):
             The name of the language to process.
@@ -364,6 +512,10 @@ def read_queries_with_fallback(
 
         verbose (bool):
             Whether to use verbose output.
+
+        transform (callable, optional):
+            A transform to apply to the queries before validation, so that
+            grammar validation covers what we will actually ship.
 
     Returns:
         tuple:
@@ -387,6 +539,12 @@ def read_queries_with_fallback(
 
     if not queries:
         return None, None
+
+    if transform is not None:
+        queries = transform(language, queries)
+
+        if not queries:
+            return None, None
 
     queries = apply_standard_query_edits(queries)
 
@@ -430,6 +588,12 @@ def read_queries_with_fallback(
             # This should never happen.
             assert queries is not None
 
+            if transform is not None:
+                queries = transform(language, queries)
+
+                if not queries:
+                    continue
+
             queries = apply_standard_query_edits(queries)
 
             if validate_queries_with_grammar(language, queries):
@@ -465,6 +629,9 @@ def find_predicate_names(
     query files include predicates or directives which are not implemented in
     our code.
 
+    Version Added:
+        9.0
+
     Args:
         parser (tree_sitter.Parser):
             The Tree Sitter parser for queries files.
@@ -481,29 +648,24 @@ def find_predicate_names(
 def process_language(
     *,
     query_parser: tree_sitter.Parser,
-    repo_path: Path,
-    queries_path: Path,
+    sources: Sequence[QueryFileSource],
     language: SupportedLanguage,
-    main_revision: str,
     verbose: bool,
 ) -> dict[str, dict[str, str]]:
     """Process a language.
+
+    Version Added:
+        9.0
 
     Args:
         query_parser (tree_sitter.Parser):
             The Tree Sitter parser for queries files.
 
-        repo_path (pathlib.Path):
-            The path to the nvim-treesitter git repository.
-
-        queries_path (pathlib.Path):
-            The path to the nvim-treesitter queries directory.
+        sources (list of QueryFileSource):
+            The query files to vendor for the language.
 
         language (str):
             The name of the language to process.
-
-        main_revision (str):
-            The main nvim-treesitter revision.
 
         verbose (bool):
             Whether to use verbose output.
@@ -519,22 +681,23 @@ def process_language(
 
     file_info = {}
 
-    for filename in ['highlights.scm', 'injections.scm']:
+    for source in sources:
         if verbose:
-            print(f'Processing {language}/{filename}')
+            print(f'Processing {language}/{source.input_filename}')
 
         queries, commit_hash = read_queries_with_fallback(
-            repo_path=repo_path,
-            queries_path=queries_path,
+            repo_path=source.repo_path,
+            queries_path=source.queries_path,
             language=language,
-            filename=filename,
+            filename=source.input_filename,
             query_parser=query_parser,
-            verbose=verbose)
+            verbose=verbose,
+            transform=source.transform)
 
         if queries:
             find_predicate_names(query_parser, queries)
 
-            output_file = output_dir / filename
+            output_file = output_dir / source.output_filename
 
             with output_file.open('wb') as f:
                 f.write(queries)
@@ -543,11 +706,16 @@ def process_language(
                     f.write(b'\n')
 
             # Record file info with package and commit
-            file_key = f'{language}/{filename}'
+            file_key = f'{language}/{source.output_filename}'
+
+            if commit_hash:
+                commit = commit_hash
+            else:
+                commit = source.main_revision
+
             file_info[file_key] = {
-                'source':
-                    'https://github.com/nvim-treesitter/nvim-treesitter.git',
-                'commit': commit_hash if commit_hash else main_revision
+                'commit': commit,
+                'source': source.source_url,
             }
         elif verbose:
             print('    ✗ No queries found')
@@ -563,6 +731,9 @@ def parse_arguments(
 ) -> argparse.Namespace:
     """Parse the command-line arguments and return the results.
 
+    Version Added:
+        9.0
+
     Args:
         args (list of bytes):
             The arguments to parse.
@@ -577,6 +748,7 @@ def parse_arguments(
     )
 
     parser.add_argument('nvim_treesitter_checkout')
+    parser.add_argument('textobjects_checkout')
     parser.add_argument('-l', '--language', action='append', dest='languages')
     parser.add_argument('-v', '--verbose', action='store_true')
 
@@ -590,9 +762,13 @@ def main() -> None:
     nvim_treesitter_path = Path(args.nvim_treesitter_checkout)
     queries_path = nvim_treesitter_path / 'runtime' / 'queries'
 
-    if not queries_path.exists():
-        logger.error(f'Path {queries_path} does not exist')
-        sys.exit(1)
+    textobjects_path = Path(args.textobjects_checkout)
+    textobjects_queries_path = textobjects_path / 'queries'
+
+    for path in (queries_path, textobjects_queries_path):
+        if not path.exists():
+            logger.error('Path %s does not exist', path)
+            sys.exit(1)
 
     query_parser = get_parser('query')
 
@@ -610,17 +786,43 @@ def main() -> None:
     else:
         languages = SUPPORTED_LANGUAGES - EXCLUDED_LANGUAGES
 
-    # Get the git revision first, as we need it for processing
+    # Get the Git revisions first, as we need them for processing
     try:
         main_revision = get_git_revision(nvim_treesitter_path)
+        textobjects_revision = get_git_revision(textobjects_path)
     except subprocess.CalledProcessError as e:
-        logger.error('Failed to get git revision: %s', e)
+        logger.error('Failed to get Git revision: %s', e)
         sys.exit(1)
+
+    sources = [
+        QueryFileSource(
+            repo_path=nvim_treesitter_path,
+            queries_path=queries_path,
+            source_url=NVIM_TREESITTER_URL,
+            main_revision=main_revision,
+            input_filename='highlights.scm',
+            output_filename='highlights.scm'),
+        QueryFileSource(
+            repo_path=nvim_treesitter_path,
+            queries_path=queries_path,
+            source_url=NVIM_TREESITTER_URL,
+            main_revision=main_revision,
+            input_filename='injections.scm',
+            output_filename='injections.scm'),
+        QueryFileSource(
+            repo_path=textobjects_path,
+            queries_path=textobjects_queries_path,
+            source_url=TEXTOBJECTS_URL,
+            main_revision=textobjects_revision,
+            input_filename='textobjects.scm',
+            output_filename='interesting_lines.scm',
+            transform=make_interesting_lines_queries),
+    ]
 
     # Track all processed files with their package and commit info
     lock_data: JSONDict = {}
 
-    print('Processing query files from nvim-treesitter...')
+    print('Processing query files...')
 
     t = tqdm(
         sorted(languages),
@@ -638,10 +840,8 @@ def main() -> None:
 
         file_info = process_language(
             query_parser=query_parser,
-            repo_path=nvim_treesitter_path,
-            queries_path=queries_path,
+            sources=sources,
             language=language,
-            main_revision=main_revision,
             verbose=verbose,
         )
 
@@ -661,12 +861,14 @@ def main() -> None:
         'has-parent',
         'is-not',
         'is',
+        'make-range',
         'match',
         'not-any-of',
         'not-eq',
         'not-has-ancestor',
         'not-has-parent',
         'not-match',
+        'offset',
         'set',
     }
 
@@ -684,10 +886,11 @@ def main() -> None:
         )
 
     # Report fallback commit usage
+    main_revisions = {main_revision, textobjects_revision}
     fallback_files = {
         file_path: info
         for file_path, info in lock_data.items()
-        if info['commit'] != main_revision
+        if info['commit'] not in main_revisions
     }
 
     if fallback_files:
