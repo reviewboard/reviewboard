@@ -15,6 +15,7 @@
 *.orig
 *.pyc
 *.rej
+*.tox
 
 # Files
 .coverage
