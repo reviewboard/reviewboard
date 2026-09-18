@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from reviewboard.hostingsvcs.base import BaseHostingService
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+)
 from reviewboard.reviews.models import ReviewRequest
 from reviewboard.scmtools.models import Repository
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -51,6 +54,56 @@ def get_archived_review_request_item_url(username, object_id,
         local_site_name=local_site_name,
         username=username,
         review_request_id=object_id)
+
+
+#
+# BugTrackerResource
+#
+def get_bug_tracker_list_url(
+    local_site_name: (str | None) = None,
+) -> str:
+    """Return the URL for the bug tracker list resource.
+
+    Version Added:
+        9.0
+
+    Args:
+        local_site_name (str, optional):
+            The name of the Local Site, if any.
+
+    Returns:
+        str:
+        The URL.
+    """
+    return resources.bug_tracker.get_list_url(
+        local_site_name=local_site_name)
+
+
+def get_bug_tracker_item_url(
+    bug_tracker_or_id: ConfiguredBugTracker | int,
+    local_site_name: (str | None) = None,
+) -> str:
+    """Return the URL for a bug tracker item resource.
+
+    Version Added:
+        9.0
+
+    Args:
+        bug_tracker_or_id (reviewboard.hostingsvcs.models.ConfiguredBugTracker
+                           or int):
+            The bug tracker, or its ID.
+
+        local_site_name (str, optional):
+            The name of the Local Site, if any.
+
+    Returns:
+        str:
+        The URL.
+    """
+    return resources.bug_tracker.get_item_url(
+        local_site_name=local_site_name,
+        bug_tracker_id=_normalize_id(bug_tracker_or_id,
+                                     ConfiguredBugTracker))
 
 
 #

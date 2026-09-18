@@ -9,7 +9,10 @@ from oauth2_provider.models import AccessToken
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffCommit, DiffSet, FileDiff
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+)
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import (Comment,
@@ -47,6 +50,7 @@ class Resources(ResourcesRegistry):
         """Register all the resource model associations."""
         register_resource_for_model(AccessToken, self.oauth_token)
         register_resource_for_model(Application, self.oauth_app)
+        register_resource_for_model(ConfiguredBugTracker, self.bug_tracker)
         register_resource_for_model(ChangeDescription, self.change)
         register_resource_for_model(
             Comment,

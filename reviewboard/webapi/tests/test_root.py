@@ -122,6 +122,9 @@ class ResourceTests(BaseWebAPITestCase, metaclass=BasicTestsMetaclass):
             'archived_review_requests':
                 'http://testserver/api/users/{username}/'
                 'archived-review-requests/',
+            'bug_tracker':
+                'http://testserver/api/bug-trackers/{bug_tracker_id}/',
+            'bug_trackers': 'http://testserver/api/bug-trackers/',
             'commit_validation': 'http://testserver/api/validation/commits/',
             'default_reviewer':
                 'http://testserver/api/default-reviewers/'
