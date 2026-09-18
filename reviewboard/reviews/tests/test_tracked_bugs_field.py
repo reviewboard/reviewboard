@@ -10,10 +10,7 @@ from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from django.test.client import RequestFactory
-from djblets.conditions import Condition, ConditionSet
 
-from reviewboard.accounts.conditions import UserInGroupChoice
-from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.reviews.builtin_fields import (BugsField,
                                                 InformationFieldSet,
                                                 TrackedBugsField)
@@ -83,8 +80,8 @@ class InformationFieldSetBuildFieldsTests(TestCase):
         """Testing build_fields with an available tracker"""
         review_request = self.create_review_request()
 
-        tracker = ConfiguredBugTracker.objects.create(name='My Tracker',
-                                                      service_name='splat')
+        tracker = self.create_bug_tracker(name='My Tracker',
+                                          service_name='splat')
 
         fields = self._build_fields(review_request)
 
@@ -117,8 +114,8 @@ class InformationFieldSetBuildFieldsTests(TestCase):
         repository = self.create_repository()
         review_request = self.create_review_request(repository=repository)
 
-        tracker = ConfiguredBugTracker.objects.create(name='Default Tracker',
-                                                      service_name='splat')
+        tracker = self.create_bug_tracker(name='Default Tracker',
+                                          service_name='splat')
         repository.default_bug_tracker = tracker
         repository.save(update_fields=('default_bug_tracker',))
 
@@ -147,17 +144,10 @@ class InformationFieldSetBuildFieldsTests(TestCase):
 
         group = self.create_review_group(name='limited-group')
 
-        choice = UserInGroupChoice()
-        condition_set = ConditionSet(ConditionSet.MODE_ALL, [
-            Condition(choice,
-                      choice.get_operator('contains-any'),
-                      [group]),
-        ])
-
-        ConfiguredBugTracker.objects.create(
+        self.create_bug_tracker(
             name='Limited Tracker',
             service_name='splat',
-            user_conditions=condition_set.serialize())
+            limit_to_groups=[group])
 
         fields = self._build_fields(review_request)
 
@@ -177,9 +167,9 @@ class InformationFieldSetBuildFieldsTests(TestCase):
         """
         review_request = self.create_review_request()
 
-        tracker = ConfiguredBugTracker.objects.create(name='Old Tracker',
-                                                      service_name='splat',
-                                                      enabled=False)
+        tracker = self.create_bug_tracker(name='Old Tracker',
+                                          service_name='splat',
+                                          enabled=False)
         bug = Bug.objects.create(bug_tracker=tracker, bug_id='123')
         review_request.bugs.add(bug)
 
@@ -211,9 +201,9 @@ class TrackedBugsFieldTests(TestCase):
         """Testing TrackedBugsField.load_value from linked bugs"""
         review_request = self.create_review_request()
 
-        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                      service_name='splat')
-        other_tracker = ConfiguredBugTracker.objects.create(
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
+        other_tracker = self.create_bug_tracker(
             name='Other Tracker',
             service_name='splat')
 
@@ -237,8 +227,8 @@ class TrackedBugsFieldTests(TestCase):
         review_request.bugs_closed = '5,3'
         review_request.save(update_fields=('bugs_closed',))
 
-        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                      service_name='splat')
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
         repository.default_bug_tracker = tracker
         repository.save(update_fields=('default_bug_tracker',))
 
@@ -254,12 +244,7 @@ class TrackedBugsFieldTests(TestCase):
         """
         review_request = self.create_review_request()
 
-        tracker = ConfiguredBugTracker.objects.create(
-            name='Tracker',
-            service_name='custom-bug-tracker',
-            settings={
-                'url_template': 'https://bugs.example.com/%s',
-            })
+        tracker = self.create_bug_tracker(name='Tracker')
 
         field = TrackedBugsField(review_request, tracker=tracker,
                                  usable=True)
@@ -274,12 +259,7 @@ class TrackedBugsFieldTests(TestCase):
         """
         review_request = self.create_review_request()
 
-        tracker = ConfiguredBugTracker.objects.create(
-            name='Tracker',
-            service_name='custom-bug-tracker',
-            settings={
-                'url_template': 'https://bugs.example.com/%s',
-            })
+        tracker = self.create_bug_tracker(name='Tracker')
 
         field = TrackedBugsField(review_request, tracker=tracker,
                                  usable=False)

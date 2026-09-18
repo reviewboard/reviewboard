@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.custom_bug_tracker import CustomBugTracker
-from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.testing import TestCase
 
 
@@ -28,7 +27,7 @@ class CustomBugTrackerTests(TestCase):
 
     def test_get_bug_url(self) -> None:
         """Testing CustomBugTracker.get_bug_url with a %s template"""
-        config = ConfiguredBugTracker.objects.create(
+        config = self.create_bug_tracker(
             name='Tracker',
             service_name='custom-bug-tracker',
             settings={
@@ -40,7 +39,7 @@ class CustomBugTrackerTests(TestCase):
 
     def test_get_bug_url_without_placeholder(self) -> None:
         """Testing CustomBugTracker.get_bug_url without a %s placeholder"""
-        config = ConfiguredBugTracker.objects.create(
+        config = self.create_bug_tracker(
             name='Tracker',
             service_name='custom-bug-tracker',
             settings={
@@ -51,9 +50,7 @@ class CustomBugTrackerTests(TestCase):
 
     def test_get_bug_url_without_template(self) -> None:
         """Testing CustomBugTracker.get_bug_url without a template"""
-        config = ConfiguredBugTracker.objects.create(
-            name='Tracker',
-            service_name='custom-bug-tracker')
+        config = self.create_bug_tracker(settings={})
 
         self.assertIsNone(config.get_bug_url('123'))
 

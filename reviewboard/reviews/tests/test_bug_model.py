@@ -30,9 +30,7 @@ class BugTests(TestCase):
         """Set up the test case."""
         super().setUp()
 
-        self.bug_tracker = ConfiguredBugTracker.objects.create(
-            name='Tracker',
-            service_name='splat')
+        self.bug_tracker = self.create_bug_tracker()
 
     def test_unique_together(self) -> None:
         """Testing Bug uniqueness on (bug_tracker, bug_id)"""
@@ -42,9 +40,7 @@ class BugTests(TestCase):
             Bug.objects.create(bug_tracker=self.bug_tracker,
                                bug_id='123')
 
-        other_tracker = ConfiguredBugTracker.objects.create(
-            name='Other Tracker',
-            service_name='splat')
+        other_tracker = self.create_bug_tracker(name='Other Tracker')
 
         # The same ID on another tracker is a distinct bug.
         Bug.objects.create(bug_tracker=other_tracker, bug_id='123')
@@ -102,7 +98,7 @@ class SortBugIDsTests(kgb.SpyAgency, TestCase):
 
     def test_with_tracker_service_keys(self) -> None:
         """Testing sort_bug_ids with a service providing sort keys"""
-        tracker = ConfiguredBugTracker.objects.create(
+        tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat')
 
@@ -130,7 +126,7 @@ class SortBugIDsTests(kgb.SpyAgency, TestCase):
 
     def test_with_partial_service_keys(self) -> None:
         """Testing sort_bug_ids falls back when any ID has no key"""
-        tracker = ConfiguredBugTracker.objects.create(
+        tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat')
 
@@ -161,7 +157,7 @@ class SortBugIDsTests(kgb.SpyAgency, TestCase):
 
     def test_with_missing_service(self) -> None:
         """Testing sort_bug_ids with an unregistered service"""
-        tracker = ConfiguredBugTracker.objects.create(
+        tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='xxx-unknown')
 

@@ -47,9 +47,9 @@ class GetBugListCompatTests(TestCase):
         repository = self.create_repository()
         review_request = self.create_review_request(repository=repository)
 
-        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                      service_name='splat')
-        other_tracker = ConfiguredBugTracker.objects.create(
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
+        other_tracker = self.create_bug_tracker(
             name='Other',
             service_name='splat')
         repository.default_bug_tracker = tracker
@@ -79,8 +79,8 @@ class GetBugListCompatTests(TestCase):
         """
         review_request = self.create_review_request()
 
-        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                      service_name='splat')
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
         sentinel = ConfiguredBugTracker.objects.get_sentinel()
 
         for bug_tracker, bug_id in ((tracker, '10'),
@@ -139,8 +139,8 @@ class LegacyBugWriteCompatTests(TestCase):
             submitter='doc',
             publish=True)
 
-        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                      service_name='splat')
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
         repository.default_bug_tracker = tracker
         repository.save(update_fields=('default_bug_tracker',))
 
@@ -212,8 +212,8 @@ class PublishBugsCompatTests(TestCase):
             target_people=[self.create_user(username='reviewer')],
             publish=True)
 
-        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                      service_name='splat')
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
         repository.default_bug_tracker = tracker
         repository.save(update_fields=('default_bug_tracker',))
 
@@ -223,7 +223,7 @@ class PublishBugsCompatTests(TestCase):
         """Testing publishing a draft with migrated bugs"""
         review_request, tracker = self._create_published_review_request()
 
-        other_tracker = ConfiguredBugTracker.objects.create(
+        other_tracker = self.create_bug_tracker(
             name='Other Tracker',
             service_name='splat')
 
