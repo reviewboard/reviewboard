@@ -292,7 +292,21 @@ class ReviewRequestResource(MarkdownFieldsMixin,
                 'type': StringFieldType,
             },
             'description': 'The list of bugs closed or referenced by this '
-                           'change.',
+                           'change, on the default bug tracker. This field is '
+                           'deprecated. Callers should use the new ``bugs`` '
+                           'field instead.',
+            'deprecated_in': '9.0',
+        },
+        'bugs': {
+            'type': ListFieldType,
+            'items': {
+                'type': DictFieldType,
+            },
+            'description': 'The list of bugs linked to this review '
+                           'request, across all bug trackers. Each entry '
+                           'has ``id`` and ``tracker`` keys, plus ``url`` '
+                           'and ``summary`` when available.',
+            'added_in': '9.0',
         },
         'branch': {
             'type': StringFieldType,

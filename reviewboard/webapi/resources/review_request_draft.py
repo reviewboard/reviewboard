@@ -18,18 +18,22 @@ from djblets.webapi.errors import (DOES_NOT_EXIST,
                                    INVALID_FORM_DATA,
                                    NOT_LOGGED_IN,
                                    PERMISSION_DENIED)
-from djblets.webapi.fields import (BooleanFieldType,
-                                   ChoiceFieldType,
-                                   DateTimeFieldType,
-                                   DictFieldType,
-                                   IntFieldType,
-                                   ResourceFieldType,
-                                   ResourceListFieldType,
-                                   StringFieldType)
+from djblets.webapi.fields import (
+    BooleanFieldType,
+    ChoiceFieldType,
+    DateTimeFieldType,
+    DictFieldType,
+    IntFieldType,
+    ListFieldType,
+    ResourceFieldType,
+    ResourceListFieldType,
+    StringFieldType,
+)
 
 from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.hostingsvcs.errors import HostingServiceError
+from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.reviews.builtin_fields import BuiltinFieldMixin
 from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.fields import (get_review_request_fields,
@@ -40,6 +44,7 @@ from reviewboard.reviews.models import (
     ReviewRequest,
     ReviewRequestDraft,
 )
+from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY
 from reviewboard.scmtools.errors import (InvalidChangeNumberError,
                                          SCMError)
 from reviewboard.webapi.base import ImportExtraDataError, WebAPIResource
@@ -59,6 +64,7 @@ from reviewboard.webapi.resources import resources
 if TYPE_CHECKING:
     from django.db.models import QuerySet
     from django.http import HttpRequest
+    from djblets.webapi.resources.base import WebAPIResourceHandlerResult
 
 
 logger = logging.getLogger(__name__)
@@ -114,7 +120,21 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin,
         'bugs_closed': {
             'type': StringFieldType,
             'description': 'The new list of bugs closed or referenced by this '
-                           'change.',
+                           'change, on the default bug tracker. This field is '
+                           'deprecated. Callers should use the new ``bugs`` '
+                           'field instead.',
+            'deprecated_in': '9.0',
+        },
+        'bugs': {
+            'type': ListFieldType,
+            'items': {
+                'type': DictFieldType,
+            },
+            'description': 'The list of bugs linked to this draft, across '
+                           'all bug trackers. Each entry has ``id`` and '
+                           '``tracker`` keys, plus ``url`` and ``summary`` '
+                           'when available.',
+            'added_in': '9.0',
         },
         'depends_on': {
             'type': ResourceListFieldType,
@@ -227,7 +247,20 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin,
         },
         'bugs_closed': {
             'type': StringFieldType,
-            'description': 'A comma-separated list of bug IDs.',
+            'description': 'A comma-separated list of bug IDs, for the '
+                           'default bug tracker. This field is deprecated. '
+                           'Callers should use the new ``bugs`` field '
+                           'instead.',
+            'deprecated_in': '9.0',
+        },
+        'bugs': {
+            'type': StringFieldType,
+            'description': "A comma-separated list of bugs, each in the "
+                           "form of either ``<bug-id>`` or "
+                           "``<bug-tracker-id>:<bug-id>``. Bug IDs without a "
+                           "tracker ID are attributed to the repository's "
+                           "default bug tracker.",
+            'added_in': '9.0',
         },
         'commit_id': {
             'type': StringFieldType,
@@ -488,24 +521,27 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin,
         optional=CREATE_UPDATE_OPTIONAL_FIELDS,
         allow_unknown=True
     )
-    def update(self,
-               request,
-               local_site_name=None,
-               branch=None,
-               bugs_closed=None,
-               changedescription=None,
-               commit_id=None,
-               depends_on=None,
-               submitter=None,
-               summary=None,
-               target_groups=None,
-               target_people=None,
-               update_from_commit_id=False,
-               trivial=None,
-               publish_as_owner=False,
-               extra_fields={},
-               *args,
-               **kwargs):
+    def update(
+        self,
+        request: HttpRequest,
+        local_site_name: (str | None) = None,
+        branch: (str | None) = None,
+        bugs: (str | None) = None,
+        bugs_closed: (str | None) = None,
+        changedescription: (str | None) = None,
+        commit_id: (str | None) = None,
+        depends_on: (str | None) = None,
+        submitter: (str | None) = None,
+        summary: (str | None) = None,
+        target_groups: (str | None) = None,
+        target_people: (str | None) = None,
+        update_from_commit_id: bool = False,
+        trivial: (bool | None) = None,
+        publish_as_owner: bool = False,
+        extra_fields={},
+        *args,
+        **kwargs,
+    ) -> WebAPIResourceHandlerResult:
         """Updates a draft of a review request.
 
         This will update the draft with the newly provided data.
@@ -595,6 +631,24 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin,
         # Check for a new value for branch.
         if branch is not None:
             new_draft_values['branch'] = branch
+
+        # Check for a new value for bugs.
+        if bugs is not None:
+            try:
+                self._update_draft_bugs(draft,
+                                        bugs_value=bugs,
+                                        user=request.user,
+                                        request=request)
+            except PermissionError:
+                return self.get_no_access_error(request)
+            except ValueError as e:
+                return INVALID_FORM_DATA, {
+                    'fields': {
+                        'bugs': [str(e)],
+                    },
+                }
+
+            draft_update_fields.add('extra_data')
 
         # Check for a new value for bugs_closed:
         if bugs_closed is not None:
@@ -1146,6 +1200,163 @@ class ReviewRequestDraftResource(MarkdownFieldsMixin,
                 ]
 
         return users, missing_usernames
+
+    def _update_draft_bugs(
+        self,
+        draft: ReviewRequestDraft,
+        *,
+        bugs_value: str,
+        user: User,
+        request: (HttpRequest | None) = None,
+    ) -> None:
+        """Update a draft's bug links from an API payload.
+
+        The payload is a comma-separated list of either ``<bug-id>`` or
+        ``<bug-tracker-id>:<bug-id>`` tokens. Bug IDs without a tracker ID
+        are attributed to the repository's default bug tracker, or left
+        unattributed if one is not set.
+
+        Version Added:
+            9.0
+
+        Args:
+            draft (reviewboard.reviews.models.ReviewRequestDraft):
+                The draft to update.
+
+            bugs_value (str):
+                The raw payload value.
+
+            user (django.contrib.auth.models.User):
+                The user performing the update.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client.
+
+        Raises:
+            reviewboard.reviews.errors.PermissionError:
+                The ``bugs_value`` argument included bugs with a tracker ID
+                that the user does not have access to.
+
+            ValueError:
+                The ``bugs_value`` argument contained invalid data.
+        """
+        review_request = draft.get_review_request()
+        repository = draft.repository
+
+        if repository is not None:
+            default_bug_tracker = repository.get_default_bug_tracker()
+        else:
+            default_bug_tracker = None
+
+        available = {
+            tracker.pk: tracker
+            for tracker in ConfiguredBugTracker.objects.for_review_request(
+                review_request,
+                user=user,
+                request=request)
+        }
+
+        # Parse the payload into per-tracker sets of bug IDs. None keys mean
+        # unattributed bugs that have no default tracker available.
+        new_bug_map: dict[int | None, set[str]] = {}
+
+        for token in bugs_value.split(','):
+            token = token.strip().lstrip('#')
+
+            if not token:
+                continue
+
+            tracker_pk: (int | None) = None
+            bug_id = token
+
+            if ':' in token:
+                tracker_part, bug_id = token.split(':', 1)
+
+                try:
+                    tracker_pk = int(tracker_part)
+                except ValueError:
+                    raise ValueError(
+                        f'{token!r} is not a valid bug entry')
+
+                if not bug_id:
+                    raise ValueError(
+                        f'{token!r} is not a valid bug entry')
+
+                if tracker_pk not in available:
+                    tracker_exists = (
+                        ConfiguredBugTracker.objects.filter(
+                            pk=tracker_pk,
+                            enabled=True)
+                        .exists()
+                    )
+
+                    if tracker_exists:
+                        raise PermissionError()
+                    else:
+                        raise ValueError(
+                            f'{tracker_pk} is not a valid bug tracker ID')
+            elif default_bug_tracker is not None:
+                if default_bug_tracker.pk not in available:
+                    raise PermissionError()
+
+                tracker_pk = default_bug_tracker.pk
+
+            new_bug_map.setdefault(tracker_pk, set()).add(bug_id)
+
+        # The writable scope (the keys of tracker_map) is every tracker the
+        # user passes conditions for, plus unattributed bugs. Links outside
+        # this scope are preserved.
+        sentinel = ConfiguredBugTracker.objects.get_sentinel()
+
+        tracker_map = dict(available)
+        tracker_map[sentinel.pk] = sentinel
+
+        resolved_bug_map: dict[int, set[str]] = {}
+
+        for tracker_pk, bug_ids in new_bug_map.items():
+            if tracker_pk is None:
+                tracker_pk = sentinel.pk
+
+            assert tracker_pk is not None
+
+            resolved_bug_map[tracker_pk] = bug_ids
+
+        current_bugs = list(draft.bugs.select_related('bug_tracker'))
+
+        empty_set: set[str] = set()
+
+        removed_bugs = [
+            bug
+            for bug in current_bugs
+            if (bug.bug_tracker_id in tracker_map and
+                bug.bug_id not in resolved_bug_map.get(bug.bug_tracker_id,
+                                                       empty_set))
+        ]
+
+        if removed_bugs:
+            draft.bugs.remove(*removed_bugs)
+
+        current_ids = {
+            (bug.bug_tracker_id, bug.bug_id)
+            for bug in current_bugs
+        }
+
+        added_bugs = [
+            Bug.objects.get_or_create_bug(
+                bug_tracker=tracker_map[tracker_pk],
+                bug_id=bug_id)
+            for tracker_pk, bug_ids in sorted(resolved_bug_map.items())
+            for bug_id in sorted(bug_ids)
+            if (tracker_pk, bug_id) not in current_ids
+        ]
+
+        if added_bugs:
+            draft.bugs.add(*added_bugs)
+
+        if draft.extra_data is None:
+            draft.extra_data = {}
+
+        draft.extra_data[BUGS_MIGRATED_KEY] = True
 
 
 review_request_draft_resource = ReviewRequestDraftResource()
