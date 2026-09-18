@@ -25,10 +25,13 @@ from reviewboard.admin.server import build_server_url
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.features import dvcs_feature
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.reviews.models import (BaseComment,
-                                        Group,
-                                        ReviewRequest,
-                                        ReviewRequestDraft)
+from reviewboard.reviews.models import (
+    BaseComment,
+    Bug,
+    Group,
+    ReviewRequest,
+    ReviewRequestDraft,
+)
 from reviewboard.reviews.signals import (review_request_closing,
                                          review_request_publishing,
                                          review_request_reopening)
@@ -862,6 +865,65 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
                          review_request.display_id)
         self.assertEqual(rsp['review_requests'][0]['branch'],
                          review_request.branch)
+
+    def test_get_with_bug(self) -> None:
+        """Testing the GET review-requests/?bug= API"""
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
+
+        self.create_review_request(publish=True)
+        review_request = self.create_review_request(publish=True)
+        review_request.bugs.add(Bug.objects.get_or_create_bug(
+            bug_tracker=tracker,
+            bug_id='42'))
+
+        rsp = self.api_get(
+            get_review_request_list_url(),
+            {
+                'bug': '42',
+            },
+            expected_mimetype=review_request_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 1)
+        self.assertEqual(rsp['review_requests'][0]['id'],
+                         review_request.display_id)
+
+    def test_get_with_bug_and_bug_tracker(self) -> None:
+        """Testing the GET review-requests/?bug=&bug-tracker= API"""
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
+        other_tracker = self.create_bug_tracker(name='Other Tracker',
+                                                service_name='splat')
+
+        review_request = self.create_review_request(publish=True)
+        review_request.bugs.add(Bug.objects.get_or_create_bug(
+            bug_tracker=tracker,
+            bug_id='42'))
+
+        rsp = self.api_get(
+            get_review_request_list_url(),
+            {
+                'bug': '42',
+                'bug-tracker': tracker.pk,
+            },
+            expected_mimetype=review_request_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(len(rsp['review_requests']), 1)
+        self.assertEqual(rsp['review_requests'][0]['id'],
+                         review_request.display_id)
+
+        rsp = self.api_get(
+            get_review_request_list_url(),
+            {
+                'bug': '42',
+                'bug-tracker': other_tracker.pk,
+            },
+            expected_mimetype=review_request_list_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+        self.assertEqual(rsp['review_requests'], [])
 
     @add_fixtures(['test_scmtools'])
     @webapi_test_template

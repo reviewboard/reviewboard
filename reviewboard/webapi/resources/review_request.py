@@ -455,6 +455,16 @@ class ReviewRequestResource(MarkdownFieldsMixin,
             if 'repository' in request.GET:
                 q = q & Q(repository=int(request.GET.get('repository')))
 
+            if 'bug' in request.GET:
+                q = q & Q(bugs__bug_id=request.GET.get('bug'))
+
+                if 'bug-tracker' in request.GET:
+                    try:
+                        q = q & Q(bugs__bug_tracker=int(
+                            request.GET.get('bug-tracker')))
+                    except (TypeError, ValueError):
+                        pass
+
             commit_q = Q()
             if 'changenum' in request.GET:
                 try:
@@ -1187,6 +1197,18 @@ class ReviewRequestResource(MarkdownFieldsMixin,
                                "against the review request's "
                                "``last_updated`` field. This must be a valid "
                                ":term:`date/time format`.",
+            },
+            'bug': {
+                'type': StringFieldType,
+                'description': 'The ID of a bug that the review requests '
+                               'must be linked to.',
+                'added_in': '9.0',
+            },
+            'bug-tracker': {
+                'type': IntFieldType,
+                'description': 'The ID of the bug tracker to filter the '
+                               '``bug`` argument by.',
+                'added_in': '9.0',
             },
             'from-user': {
                 'type': StringFieldType,
