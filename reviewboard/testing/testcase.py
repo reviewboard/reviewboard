@@ -24,6 +24,7 @@ from django.http import HttpRequest, HttpResponse
 from django.test.client import RequestFactory
 from django.urls import ResolverMatch
 from django.utils.timezone import now
+from djblets.conditions import Condition, ConditionSet
 from djblets.registries.errors import AlreadyRegisteredError, ItemLookupError
 from djblets.secrets.token_generators import token_generator_registry
 from housekeeping import func_deprecated
@@ -37,6 +38,7 @@ from typing_extensions import assert_type
 import reviewboard.scmtools
 from reviewboard import initialize
 from reviewboard.accounts.backends.standard import StandardAuthBackend
+from reviewboard.accounts.conditions import UserInGroupChoice
 from reviewboard.accounts.models import LocalSiteProfile, ReviewRequestVisit
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.attachments.models import (FileAttachment,
@@ -51,6 +53,7 @@ from reviewboard.deprecation import (
 from reviewboard.diffviewer.differ import DiffCompatVersion
 from reviewboard.diffviewer.models import (DiffCommit, DiffSet, DiffSetHistory,
                                            FileDiff)
+from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import (Comment,
@@ -2865,6 +2868,90 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
             webhook.save(update_fields=['extra_data'])
 
         return webhook
+
+    def create_bug_tracker(
+        self,
+        *,
+        name: str = 'Test Bug Tracker',
+        service_name: str = 'custom-bug-tracker',
+        with_local_site: bool = False,
+        local_site: (LocalSite | None) = None,
+        settings: (JSONDict | None) = None,
+        limit_to_groups: (Sequence[Group] | None) = None,
+        **kwargs,
+    ) -> ConfiguredBugTracker:
+        """Create a configured bug tracker for testing.
+
+        The bug tracker may optionally be attached to a Local Site. It's
+        also populated with default data that can be overridden by the
+        caller.
+
+        By default, this creates a custom bug tracker with a URL template
+        of ``https://bugs.example.com/%s``.
+
+        Version Added:
+            9.0
+
+        Args:
+            name (str, optional):
+                The display name of the bug tracker.
+
+            service_name (str, optional):
+                The ID of the hosting service providing the bug tracker.
+
+            with_local_site (bool, optional):
+                Whether to create the bug tracker using a Local Site. This
+                will choose one based on :py:attr:`local_site_name`.
+
+                If ``local_site`` is provided, this argument is ignored.
+
+            local_site (reviewboard.site.models.LocalSite, optional):
+                The explicit Local Site to attach.
+
+            settings (dict, optional):
+                Settings for the bug tracker. If not provided, and the
+                service is ``custom-bug-tracker``, a default URL template
+                will be set.
+
+            limit_to_groups (list of reviewboard.reviews.models.Group,
+                             optional):
+                Review groups to limit the bug tracker to. If provided, the
+                bug tracker will only be usable by members of these groups.
+
+            **kwargs (dict):
+                Additional fields to set on the bug tracker.
+
+        Returns:
+            reviewboard.hostingsvcs.models.ConfiguredBugTracker:
+            The new bug tracker.
+        """
+        if not local_site and with_local_site:
+            local_site = self.get_local_site(name=self.local_site_name)
+
+        if settings is None:
+            if service_name == 'custom-bug-tracker':
+                settings = {
+                    'url_template': 'https://bugs.example.com/%s',
+                }
+            else:
+                settings = {}
+
+        if limit_to_groups:
+            choice = UserInGroupChoice()
+            condition_set = ConditionSet(ConditionSet.MODE_ALL, [
+                Condition(choice,
+                          choice.get_operator('contains-any'),
+                          list(limit_to_groups)),
+            ])
+
+            kwargs['user_conditions'] = condition_set.serialize()
+
+        return ConfiguredBugTracker.objects.create(
+            name=name,
+            service_name=service_name,
+            local_site=local_site,
+            settings=settings,
+            **kwargs)
 
     def create_oauth_application(
         self,
