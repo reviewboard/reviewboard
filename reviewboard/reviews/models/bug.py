@@ -19,10 +19,7 @@ from djblets.db.fields import JSONField
 from reviewboard.hostingsvcs.base import BaseHostingService
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
-from reviewboard.hostingsvcs.models import (
-    ConfiguredBugTracker,
-    SENTINEL_BUG_TRACKER_SERVICE_NAME,
-)
+from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
@@ -103,7 +100,7 @@ def sort_bug_ids(
     if tracker is not None:
         service = None
 
-        if tracker.service_name != SENTINEL_BUG_TRACKER_SERVICE_NAME:
+        if not tracker.is_sentinel:
             try:
                 service = tracker.service
             except MissingHostingServiceError:
