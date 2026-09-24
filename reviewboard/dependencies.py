@@ -74,16 +74,6 @@ rbintegrations_version = '~=5.0.1'
 #:     8.0
 base_package_dependencies: _DependencyMap = {
     'bleach': '>=6.1.0,<7',
-    'cryptography': [
-        {
-            'version': '~=47.0.0',
-            'python': '=="3.8"',
-        },
-        {
-            'version': '~=49.0.0',
-            'python': '>="3.9"',
-        },
-    ],
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
     'django_evolution': '>=3.0a0.dev0,==3.*',
@@ -99,23 +89,6 @@ base_package_dependencies: _DependencyMap = {
     'pydantic': '~=2.10',
     'pydiffx': '~=1.1',
     'Pygments': '~=2.19.2',
-
-    # While we don't directly use pyOpenSSL, we do use cryptography, and
-    # older versions of pyOpenSSL can break a system badly with newer
-    # cryptography (impacting pip as well). So we pin a compatible version.
-    #
-    # This must match cryptography compatibility.
-    'pyOpenSSL': [
-        {
-            'version': '~=26.1.0',
-            'python': '=="3.8"',
-        },
-        {
-            'version': '~=26.3.0',
-            'python': '>="3.9"',
-        },
-    ],
-
     'pymdown-extensions': '~=10.21',
     'pymemcache': '',
 
