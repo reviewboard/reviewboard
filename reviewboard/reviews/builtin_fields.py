@@ -20,6 +20,7 @@ from reviewboard.accounts.models import User
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.diffutils import get_sorted_filediffs
 from reviewboard.diffviewer.models import DiffCommit, DiffSet
+from reviewboard.hostingsvcs.base import BaseHostingService
 from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.reviews.fields import (BaseCommaEditableField,
                                         BaseEditableField,
@@ -993,6 +994,12 @@ class TrackedBugsField(BaseCommaEditableField[str]):
 
             if bug_url:
                 attrs['bug-url-template'] = bug_url
+
+            service = tracker.service
+            assert isinstance(service, BaseHostingService)
+
+            if service.supports_bug_search:
+                attrs['supports-bug-search'] = '1'
         else:
             attrs['can-view-bugs'] = ''
 

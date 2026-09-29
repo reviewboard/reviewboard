@@ -459,12 +459,17 @@ suite('rb/views/reviewRequestFieldViews', function() {
             const $el = $('<div>')
                 .attr('id', 'field_bugs:1')
                 .data({
+                    'bug-search-url': options.searchURL || '',
                     'bug-tracker-id': 1,
                     'bug-url-template':
                         '/r/1/bug-trackers/1/bugs/--bug_id--/',
                     'can-view-bugs': options.canView !== false ? '1' : '',
                 })
                 .text(options.text || '');
+
+            if (options.editable) {
+                $el.addClass('editable');
+            }
 
             const view = new TrackedBugsFieldView({
                 el: $el,
@@ -514,6 +519,132 @@ suite('rb/views/reviewRequestFieldViews', function() {
 
                 expect(field.$el.find('a').length).toBe(0);
                 expect(field.$el.text()).toBe('12, 34');
+            });
+        });
+
+        describe('Editing', function() {
+            beforeEach(function() {
+                editor.set('editable', true);
+            });
+
+            function sendKey(
+                inputEl: HTMLInputElement,
+                key: string,
+            ) {
+                inputEl.dispatchEvent(new KeyboardEvent('keydown', {
+                    bubbles: true,
+                    cancelable: true,
+                    key: key,
+                }));
+            }
+
+            it('Enter tokenizes typed text without saving', function() {
+                field = buildField({
+                    editable: true,
+                    searchURL: '/api/bug-searches/',
+                    text: '12',
+                });
+                field.render();
+
+                spyOn(editor, 'setDraftField').and.resolveTo();
+
+                const inlineEditor = field.inlineEditorView;
+                inlineEditor.startEdit();
+
+                const comboBox = inlineEditor.comboBox;
+                const inputEl = comboBox.textField.inputEl;
+
+                inputEl.value = 'ENG-5';
+                sendKey(inputEl, 'Enter');
+
+                expect(comboBox.textField.value).toBe('');
+                expect(inlineEditor.getBugsValue()).toBe('12, ENG-5');
+                expect(editor.setDraftField).not.toHaveBeenCalled();
+
+                /* A second Enter, with nothing typed, saves. */
+                sendKey(inputEl, 'Enter');
+
+                expect(editor.setDraftField).toHaveBeenCalled();
+            });
+
+            it('Comma tokenizes typed text', function() {
+                field = buildField({
+                    editable: true,
+                    searchURL: '/api/bug-searches/',
+                    text: '12',
+                });
+                field.render();
+
+                const inlineEditor = field.inlineEditorView;
+                inlineEditor.startEdit();
+
+                const comboBox = inlineEditor.comboBox;
+                const inputEl = comboBox.textField.inputEl;
+
+                inputEl.value = '34';
+                sendKey(inputEl, ',');
+
+                expect(comboBox.textField.value).toBe('');
+                expect(inlineEditor.getBugsValue()).toBe('12, 34');
+            });
+
+            it('Backspace moves the last chip into the field', function() {
+                field = buildField({
+                    editable: true,
+                    searchURL: '/api/bug-searches/',
+                    text: '12, 34',
+                });
+                field.render();
+
+                const inlineEditor = field.inlineEditorView;
+                inlineEditor.startEdit();
+
+                const comboBox = inlineEditor.comboBox;
+                const inputEl = comboBox.textField.inputEl;
+
+                sendKey(inputEl, 'Backspace');
+
+                expect(comboBox.textField.value).toBe('34');
+                expect(inlineEditor.getBugsValue()).toBe('12, 34');
+
+                /* The restored text is editable like any typed text. */
+                inputEl.value = '345';
+                sendKey(inputEl, 'Enter');
+
+                expect(inlineEditor.getBugsValue()).toBe('12, 345');
+            });
+
+            it('Reopening the editor clears typed text', function() {
+                field = buildField({
+                    editable: true,
+                    searchURL: '/api/bug-searches/',
+                    text: '12, 34',
+                });
+                field.render();
+
+                const inlineEditor = field.inlineEditorView;
+                expect(inlineEditor.comboBox).not.toBeNull();
+
+                inlineEditor.startEdit();
+
+                /*
+                 * Simulate a bug ID typed but not accepted as a token,
+                 * with the suggestions pop-up it would have opened.
+                 */
+                inlineEditor.comboBox.textField.value = '56';
+                inlineEditor.comboBox.open();
+                expect(inlineEditor.getBugsValue()).toBe('12, 34, 56');
+                expect(inlineEditor.comboBox.isOpen).toBeTrue();
+
+                /* The typed text makes the editor dirty. */
+                spyOn(window, 'confirm').and.returnValue(true);
+
+                inlineEditor.cancel();
+                inlineEditor.startEdit();
+
+                expect(inlineEditor.comboBox.textField.value).toBe('');
+                expect(inlineEditor.comboBox.isOpen).toBeFalse();
+                expect(inlineEditor.getBugsValue()).toBe('12, 34');
             });
         });
 
