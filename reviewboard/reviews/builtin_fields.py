@@ -2151,7 +2151,7 @@ class InformationFieldSet(BaseReviewRequestFieldSet):
         default_bug_tracker = None
 
         if repository is not None:
-            default_bug_tracker = repository.default_bug_tracker
+            default_bug_tracker = repository.get_default_bug_tracker()
 
         # Order the trackers: the default first, then the remaining
         # available trackers, then any linked-but-unavailable ones.

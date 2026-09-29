@@ -75,16 +75,18 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
             return HttpResponseNotFound(
                 _('Review Request does not have an associated repository'))
 
-        bug_tracker = repository.bug_tracker_service
+        default_bug_tracker = repository.get_default_bug_tracker()
 
-        if not bug_tracker:
+        if default_bug_tracker is None:
             return HttpResponseNotFound(
                 _('Unable to find bug tracker service'))
 
-        if not bug_tracker.supports_bug_info:
+        bug_tracker = default_bug_tracker.service
+
+        if not isinstance(bug_tracker, BaseBugTracker):
             return HttpResponseNotFound(
-                _('Bug tracker %s does not support metadata')
-                % bug_tracker.name)
+                _('Bug tracker {} does not support metadata')
+                .format(bug_tracker.name))
 
         self.bug_id = bug_id
         self.bug_info = bug_tracker.get_bug_info(
@@ -94,11 +96,10 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
         if (not self.bug_info.get('summary') and
             not self.bug_info.get('description')):
             return HttpResponseNotFound(
-                _('No bug metadata found for bug %(bug_id)s on bug tracker '
-                  '%(bug_tracker)s') % {
-                    'bug_id': bug_id,
-                    'bug_tracker': bug_tracker.name,
-                })
+                _(
+                    'No bug metadata found for bug {bug_id} on bug tracker '
+                    '{bug_tracker}'
+                ).format(bug_id=bug_id, bug_tracker=bug_tracker.name))
 
         return super().get(request, **kwargs)
 
