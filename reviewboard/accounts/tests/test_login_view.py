@@ -52,9 +52,12 @@ class LoginViewTests(TestCase):
 
         self.assertEqual(context['client_name'], 'TestClient')
         self.assertEqual(context['client_url'], 'http://localhost:8080/test/')
-        self.assertEqual(context['next'],
-                         (f'{client_login_url}?client-name=TestClient'
-                          '&client-url=http://localhost:8080/test/'))
+        self.assertEqual(
+            context['next'],
+            (
+                f'{client_login_url}?client-name=TestClient'
+                f'&client-url=http%3A%2F%2Flocalhost%3A8080%2Ftest%2F'
+            ))
 
     def test_get_client_web_login_with_redirect(self) -> None:
         """Testing LoginView GET with the client web login flow encodes
@@ -80,9 +83,61 @@ class LoginViewTests(TestCase):
         self.assertEqual(context['client_url'], 'http://localhost:8080/test/')
         self.assertEqual(
             context['next'],
-            (f'{client_login_url}?client-name=TestClient'
-             '&client-url=http://localhost:8080/test/'
-             '&next=http%3A//localhost%3A8080/page%3Ffoo%3D1'))
+            (
+                f'{client_login_url}?client-name=TestClient'
+                f'&client-url=http%3A%2F%2Flocalhost%3A8080%2Ftest%2F'
+                f'&next=http%3A%2F%2Flocalhost%3A8080%2Fpage%3Ffoo%3D1'
+            ))
+
+    def test_get_client_web_login_with_unsafe_redirect(self) -> None:
+        """Testing LoginView GET with the client web login flow drops a
+        redirect URL pointing to a host that isn't allowed
+        """
+        settings = {
+            'client_web_login': True,
+        }
+        client_login_url = local_site_reverse('client-login')
+
+        with self.siteconfig_settings(settings):
+            rsp = self.client.get(
+                local_site_reverse('login'),
+                {
+                    'client-name': 'TestClient',
+                    'client-url': 'http://localhost:8080/test/',
+                    'next': 'http://unsafe-site/page?foo=1',
+                })
+
+        context = rsp.context
+
+        self.assertEqual(
+            context['next'],
+            (
+                f'{client_login_url}?client-name=TestClient'
+                f'&client-url=http%3A%2F%2Flocalhost%3A8080%2Ftest%2F'
+            ))
+
+    def test_get_client_web_login_with_invalid_client_url(self) -> None:
+        """Testing LoginView GET ignores the client web login flow when the
+        client URL has an invalid port
+        """
+        settings = {
+            'client_web_login': True,
+        }
+
+        with self.siteconfig_settings(settings):
+            rsp = self.client.get(
+                local_site_reverse('login'),
+                {
+                    'client-name': 'TestClient',
+                    'client-url': 'http://localhost:blah/test/',
+                })
+
+        self.assertEqual(rsp.status_code, 200)
+
+        context = rsp.context
+
+        self.assertNotIn('client_name', context)
+        self.assertNotIn('client_url', context)
 
     def test_get_client_web_login_logged_in(self) -> None:
         """Testing LoginView GET redirects to the client web login
@@ -94,10 +149,11 @@ class LoginViewTests(TestCase):
         }
         client_login_confirm_url = local_site_reverse('client-login-confirm')
 
-        self.client.login(username='doc', password='doc')
+        client = self.client
+        client.login(username='doc', password='doc')
 
         with self.siteconfig_settings(settings):
-            rsp = self.client.get(
+            rsp = client.get(
                 local_site_reverse('login'),
                 {
                     'client-name': 'TestClient',
@@ -106,8 +162,11 @@ class LoginViewTests(TestCase):
 
         self.assertRedirects(
             rsp,
-            (f'{client_login_confirm_url}?client-name=TestClient'
-             '&client-url=http://localhost:8080/test/'))
+            (
+                f'{client_login_confirm_url}?client-name=TestClient'
+                f'&client-url=http%3A%2F%2Flocalhost%3A8080%2Ftest%2F'
+            ),
+            fetch_redirect_response=False)
 
     def test_get_client_web_login_false(self) -> None:
         """Testing LoginView GET does not set the redirect field to the
