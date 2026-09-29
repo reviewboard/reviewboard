@@ -857,8 +857,7 @@ class TrackedBugsField(BaseCommaEditableField[str]):
     one_line_per_change_entry = False
 
     #: The class name for the JavaScript view representing this field.
-    js_view_class = \
-        'RB.ReviewRequestFields.CommaSeparatedValuesTextFieldView'
+    js_view_class = 'RB.ReviewRequestFields.TrackedBugsFieldView'
 
     def __init__(
         self,
@@ -950,6 +949,54 @@ class TrackedBugsField(BaseCommaEditableField[str]):
                 .values_list('bug_id', flat=True)
             ),
             tracker=self.tracker)
+
+    def get_css_classes(self) -> set[str]:
+        """Return the set of CSS classes to apply to the element.
+
+        Read-only instances drop the editable classes.
+
+        Returns:
+            set of str:
+            A set of the CSS classes to apply.
+        """
+        css_classes = super().get_css_classes()
+
+        if not self.is_editable:
+            css_classes.discard('editable')
+            css_classes.discard('comma-editable')
+
+        return css_classes
+
+    def get_data_attributes(self) -> dict[str, Any]:
+        """Return any data attributes to include in the element.
+
+        These carry the tracker ID, capability flags, and the local bug
+        URL template used by the JavaScript view.
+
+        Returns:
+            dict:
+            The data attributes to include in the element.
+        """
+        attrs = super().get_data_attributes()
+
+        tracker = self.tracker
+
+        if tracker is None:
+            return attrs
+
+        attrs['bug-tracker-id'] = tracker.pk
+
+        if self.usable:
+            attrs['can-view-bugs'] = '1'
+
+            bug_url = self._get_local_bug_url('--bug_id--')
+
+            if bug_url:
+                attrs['bug-url-template'] = bug_url
+        else:
+            attrs['can-view-bugs'] = ''
+
+        return attrs
 
     def render_item(
         self,

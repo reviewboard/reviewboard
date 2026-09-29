@@ -8,6 +8,9 @@ import {
     type ResourceLink,
 } from 'reviewboard/common/resources/models/baseResourceModel';
 import {
+    type DraftReviewRequestBug,
+} from 'reviewboard/common/resources/models/draftReviewRequestModel';
+import {
     type ReviewGroupResourceData,
 } from 'reviewboard/common/resources/models/reviewGroupModel';
 import {
@@ -964,6 +967,237 @@ export class BugsFieldView extends CommaSeparatedValuesTextFieldView {
         } else {
             this.$el.text(data.join(', '));
         }
+    }
+}
+
+
+/**
+ * A per-tracker "Bugs" field.
+ *
+ * One instance exists per bug tracker on the review request. Edits for all
+ * trackers are saved through the draft's ``bugs`` API field.
+ *
+ * Version Added:
+ *     9.0
+ */
+@spina
+export class TrackedBugsFieldView extends CommaSeparatedValuesTextFieldView {
+    static useExtraData = false;
+
+    /** All tracked bug field views on the page. */
+    static instances: TrackedBugsFieldView[] = [];
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The ID of the bug tracker this field covers. */
+    bugTrackerID: number = null;
+
+    /** The local URL template for bugs, with a --bug_id-- placeholder. */
+    bugURLTemplate: string = null;
+
+    /** Whether the user may view bug links and infoboxes. */
+    canViewBugs = false;
+
+    /** The current bug IDs shown in the field. */
+    #bugIDs: string[] = [];
+
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (BaseFieldViewOptions):
+     *         Options for the view.
+     */
+    initialize(options: BaseFieldViewOptions) {
+        super.initialize(options);
+
+        const $el = this.$el;
+
+        this.bugTrackerID = parseInt($el.data('bug-tracker-id'), 10) || null;
+        this.bugURLTemplate = $el.data('bug-url-template') || null;
+        this.canViewBugs = !!$el.data('can-view-bugs');
+        this.#bugIDs = this._loadBugIDs();
+
+        TrackedBugsFieldView.instances.push(this);
+    }
+
+    /**
+     * Remove the view.
+     *
+     * Returns:
+     *     TrackedBugsFieldView:
+     *     This object, for chaining.
+     */
+    remove(): this {
+        const instances = TrackedBugsFieldView.instances;
+        const index = instances.indexOf(this);
+
+        if (index !== -1) {
+            instances.splice(index, 1);
+        }
+
+        return super.remove();
+    }
+
+    /**
+     * Render the view.
+     */
+    protected onInitialRender() {
+        super.onInitialRender();
+
+        if (this.canViewBugs) {
+            this.$el.find('.bug').bug_infobox();
+        }
+    }
+
+    /**
+     * Load the current value for the field.
+     *
+     * Returns:
+     *     Array of string:
+     *     The current bug IDs.
+     */
+    _loadValue(): unknown {
+        return this.#bugIDs;
+    }
+
+    /**
+     * Save a new value for the field.
+     *
+     * This combines the edited bug IDs with the bugs on every other tracked
+     * bug field, and saves the combined state through the draft's ``bugs``
+     * field.
+     *
+     * Args:
+     *     value (string):
+     *         The new comma-separated bug IDs for this field's tracker.
+     *
+     *     options (object):
+     *         Options for the save operation.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
+     */
+    _saveValue(
+        value: unknown,
+        options: SetDraftFieldOptions = {},
+    ): Promise<void> {
+        const bugIDs = _.uniq(this.#parseBugList((value as string) || ''));
+
+        /*
+         * Sort for display, matching the server's normalization
+         * (numeric where every ID is numeric, alphabetical otherwise),
+         * so the field shows the same order it will after a reload.
+         */
+        if (bugIDs.every(bugID => /^\d+$/.test(bugID))) {
+            bugIDs.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+        } else {
+            bugIDs.sort();
+        }
+
+        this.#bugIDs = bugIDs;
+
+        const tokens: string[] = [];
+
+        for (const view of TrackedBugsFieldView.instances) {
+            if (view.model !== this.model || view.bugTrackerID === null) {
+                continue;
+            }
+
+            for (const bugID of view.#bugIDs) {
+                tokens.push(`${view.bugTrackerID}:${bugID}`);
+            }
+        }
+
+        return this.model.setDraftField(
+            'bugs',
+            tokens.join(','),
+            _.defaults({
+                jsonFieldName: 'bugs',
+                useExtraData: false,
+            }, options))
+            .then(() => this.#adoptDraftBugOrder());
+    }
+
+    /**
+     * Adopt the saved draft's ordering of this field's bugs.
+     *
+     * The saved draft orders each tracker's bugs for display, using the
+     * tracker service's ordering. This replaces the locally-sorted IDs
+     * with that ordering, so the field shows the same order it will
+     * after a reload.
+     *
+     * Version Added:
+     *     9.0
+     */
+    #adoptDraftBugOrder() {
+        const draft = this.model.get('reviewRequest').draft;
+        const entries = draft.get('bugs') as DraftReviewRequestBug[];
+
+        if (entries && entries.length > 0) {
+            this.#bugIDs = entries
+                .filter(entry => entry.tracker === this.bugTrackerID)
+                .map(entry => entry.id);
+        }
+    }
+
+    /**
+     * Format the value into the field.
+     *
+     * Args:
+     *     data (Array):
+     *         The new value of the field.
+     */
+    formatValue(data: string[]) {
+        data = data || [];
+
+        if (this.canViewBugs && this.bugURLTemplate) {
+            this.$el
+                .empty()
+                .append(this._urlizeList<string>(data, {
+                    cssClass: 'bug',
+                    makeItemURL: item => this.bugURLTemplate.replace(
+                        '--bug_id--', item),
+                }))
+                .find('.bug').bug_infobox();
+        } else {
+            this.$el.text(data.join(', '));
+        }
+    }
+
+    /**
+     * Return the bug IDs currently rendered in the field.
+     *
+     * This is called before the view renders, to seed the field's value
+     * from the server-rendered content.
+     *
+     * Version Added:
+     *     9.0
+     *
+     * Returns:
+     *     Array of string:
+     *     The bug IDs shown in the field.
+     */
+    protected _loadBugIDs(): string[] {
+        return this.#parseBugList(this.$el.text());
+    }
+
+    /**
+     * Parse a comma-separated list of bug IDs.
+     *
+     * Args:
+     *     value (string):
+     *         The value to parse.
+     *
+     * Returns:
+     *     Array of string:
+     *     The parsed bug IDs.
+     */
+    #parseBugList(value: string): string[] {
+        return (value || '').split(/[, ]+/).filter(bugID => !!bugID);
     }
 }
 
