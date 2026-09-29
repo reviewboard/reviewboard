@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from django.contrib.auth.models import User
     from django.db.models import QuerySet
     from django.http import HttpRequest
+    from typelets.django.auth import AnyUser
 
     from reviewboard.hostingsvcs.models import (
         ConfiguredBugTracker,
@@ -143,7 +144,7 @@ class ConfiguredBugTrackerManager(Manager['ConfiguredBugTracker']):
         self,
         review_request: ReviewRequest,
         *,
-        user: User,
+        user: AnyUser,
         request: (HttpRequest | None) = None,
     ) -> Sequence[ConfiguredBugTracker]:
         """Return the bug trackers available for a review request and user.
