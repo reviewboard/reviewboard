@@ -968,12 +968,7 @@ class TrackedBugsField(BaseCommaEditableField[str]):
         bug_url = None
 
         if self.usable and self.tracker is not None:
-            try:
-                bug_url = self.tracker.get_bug_url(item)
-            except Exception as e:
-                logger.warning('Error generating bug URL for bug %s on '
-                               'bug tracker %s: %s',
-                               item, self.tracker.pk, e)
+            bug_url = self._get_local_bug_url(item)
 
         if bug_url:
             return format_html('<a class="bug" href="{url}">{id}</a>',
@@ -1001,6 +996,40 @@ class TrackedBugsField(BaseCommaEditableField[str]):
             The rendered change entry.
         """
         return self.render_item(item[0])
+
+    def _get_local_bug_url(
+        self,
+        bug_id: str,
+    ) -> str | None:
+        """Return the local redirect URL for a bug on this tracker.
+
+        Args:
+            bug_id (str):
+                The ID of the bug, or a placeholder.
+
+        Returns:
+            str:
+            The URL, or ``None`` if one could not be generated.
+        """
+        tracker = self.tracker
+
+        if tracker is None:
+            return None
+
+        review_request_details = self.review_request_details
+        review_request = review_request_details.get_review_request()
+        local_site_name: (str | None) = None
+
+        if review_request.local_site:
+            local_site_name = review_request.local_site.name
+
+        try:
+            return local_site_reverse(
+                'bug_tracker_bug_url',
+                local_site_name=local_site_name,
+                args=[review_request.display_id, tracker.pk, bug_id])
+        except NoReverseMatch:
+            return None
 
 
 class DependsOnField(BuiltinFieldMixin[Sequence[ReviewRequest]],

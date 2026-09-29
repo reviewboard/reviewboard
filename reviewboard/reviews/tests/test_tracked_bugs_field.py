@@ -246,12 +246,15 @@ class TrackedBugsFieldTests(TestCase):
 
         tracker = self.create_bug_tracker(name='Tracker')
 
-        field = TrackedBugsField(review_request, tracker=tracker,
-                                 usable=True)
+        field = TrackedBugsField(review_request, tracker=tracker, usable=True)
 
+        # Bugs link through the local tracker-qualified redirect, which also
+        # powers the hover infobox.
+        expected_url = (f'/r/{review_request.display_id}/'
+                        f'bug-trackers/{tracker.pk}/bugs/123/')
         self.assertEqual(
             field.render_item('123'),
-            '<a class="bug" href="https://bugs.example.com/123">123</a>')
+            f'<a class="bug" href="{expected_url}">123</a>')
 
     def test_render_item_with_unusable_tracker(self) -> None:
         """Testing TrackedBugsField.render_item renders plain IDs for
@@ -261,7 +264,6 @@ class TrackedBugsFieldTests(TestCase):
 
         tracker = self.create_bug_tracker(name='Tracker')
 
-        field = TrackedBugsField(review_request, tracker=tracker,
-                                 usable=False)
+        field = TrackedBugsField(review_request, tracker=tracker, usable=False)
 
         self.assertEqual(field.render_item('123'), '123')
