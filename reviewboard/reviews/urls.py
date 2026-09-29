@@ -139,6 +139,11 @@ review_request_urls = [
             r'bugs/(?P<bug_id>[\w\.-]+)/',
             include(tracked_bugs_urls)),
 
+    # Bug metadata on a specific bug tracker
+    path('bug-trackers/<int:bug_tracker_id>/bug-info/',
+         views.TrackedBugInfoView.as_view(),
+         name='bug_tracker_bug_info'),
+
     # Review Request infobox
     path('infobox/',
          views.ReviewRequestInfoboxView.as_view(),
