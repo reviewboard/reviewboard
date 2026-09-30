@@ -20,8 +20,6 @@ from reviewboard.extensions.hooks.actions import (
     ReviewRequestActionHook,
     ReviewRequestDropdownActionHook)
 from reviewboard.extensions.hooks.admin_widget import AdminWidgetHook
-from reviewboard.extensions.hooks.api_extra_data_access import \
-    APIExtraDataAccessHook
 from reviewboard.extensions.hooks.auth_backend import AuthBackendHook
 from reviewboard.extensions.hooks.avatar_service import AvatarServiceHook
 from reviewboard.extensions.hooks.comment_detail_display import \
@@ -57,8 +55,10 @@ from reviewboard.extensions.hooks.sso_backend import SSOBackendHook
 from reviewboard.extensions.hooks.user_infobox import UserInfoboxHook
 from reviewboard.extensions.hooks.users import (ServiceAccountHook,
                                                 UserDetailsProviderHook)
-from reviewboard.extensions.hooks.webapi_capabilities import \
-    WebAPICapabilitiesHook
+from reviewboard.extensions.hooks.webapi import (
+    APIExtraDataAccessHook,
+    WebAPICapabilitiesHook,
+)
 
 
 __all__ = [
