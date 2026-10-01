@@ -159,7 +159,10 @@ class Review(models.Model):
                 not (self.body_bottom or
                      self.has_comments(only_issues=False)))
 
-    def can_user_revoke_ship_it(self, user):
+    def can_user_revoke_ship_it(
+        self,
+        user: User,
+    ) -> bool:
         """Return whether a given user can revoke a Ship It.
 
         Args:
@@ -171,16 +174,42 @@ class Review(models.Model):
             ``True`` if the user has permissions to revoke a Ship It.
             ``False`` if they don't.
         """
-        return (user.is_authenticated and
-                self.public and
-                (user.pk == self.user_id or
-                 user.is_superuser or
-                 (self.review_request.local_site and
-                  self.review_request.local_site.admins.filter(
-                      pk=user.pk).exists())) and
-                self.review_request.is_accessible_by(user))
+        # First, check for basic access permissions.
+        if not user.is_authenticated or not self.public:
+            # The user does not have basic access to the review.
+            return False
 
-    def revoke_ship_it(self, user):
+        review_request = self.review_request
+
+        # Next, check if the user owns the review or is an admin.
+        if user.pk != self.user_id and not user.is_superuser:
+            # This isn't the user who owns the change, or a server admin. So
+            # next, check if this is on a Local Site and the user is a
+            # Local Site admin.
+            #
+            # If there's no Local Site, then we know the user can't revoke
+            # the Ship It!
+            local_site = review_request.local_site
+
+            if local_site is None or not local_site.is_mutable_by(user=user):
+                # The user doesn't have permission to modify this review.
+                return False
+
+        # And finally, check if the review request is accessible, in case
+        # the user owns the review but has been removed from any ACLs
+        # involving the review request.
+        if not review_request.is_accessible_by(user):
+            # The user no longer has access to the review request, so they
+            # can't revoke the Ship It!
+            return False
+
+        # The user can revoke the Ship It!
+        return True
+
+    def revoke_ship_it(
+        self,
+        user: User,
+    ) -> None:
         """Revoke the Ship It status on this review.
 
         The Ship It status will be removed, and the
@@ -201,6 +230,8 @@ class Review(models.Model):
         """
         if not self.ship_it:
             raise RevokeShipItError('This review is not marked Ship It!')
+
+        review_request = self.review_request
 
         # This may raise a RevokeShipItError.
         try:
@@ -230,10 +261,9 @@ class Review(models.Model):
 
         self.save(update_fields=update_fields)
 
-        self.review_request.decrement_shipit_count()
-        self.review_request.last_review_activity_timestamp = timezone.now()
-        self.review_request.save(
-            update_fields=['last_review_activity_timestamp'])
+        review_request.decrement_shipit_count()
+        review_request.last_review_activity_timestamp = timezone.now()
+        review_request.save(update_fields=['last_review_activity_timestamp'])
 
         try:
             review_ship_it_revoked.send(sender=self.__class__,
