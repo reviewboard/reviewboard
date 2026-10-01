@@ -56,6 +56,7 @@ if TYPE_CHECKING:
     from djblets.util.symbols import Unsettable
 
     from reviewboard.attachments.models import FileAttachmentSequence
+    from reviewboard.reviews.approval import ReviewRequestApproval
     from reviewboard.reviews.models import (Review,
                                             ReviewRequestDraft)
 
@@ -469,6 +470,12 @@ class ReviewRequest(BaseReviewRequestDetails):
     # Instance variables #
     ######################
 
+    #: Cached approval state for the review request.
+    #:
+    #: Version Added:
+    #:     9.0
+    _approval: ReviewRequestApproval
+
     #: The cached list of diffsets associated with this review request.
     #:
     #: This is purely internal and should never be accessed directly by any
@@ -618,10 +625,7 @@ class ReviewRequest(BaseReviewRequestDetails):
             * :ref:`ReviewRequestApprovalHook Developer Guide
               <review-request-approval-hook>`
         """
-        if not hasattr(self, '_approved'):
-            self._calculate_approval()
-
-        return self._approved
+        return self.get_approval()['approved']
 
     @property
     def approval_failure(self) -> str | None:
@@ -638,10 +642,12 @@ class ReviewRequest(BaseReviewRequestDetails):
             * :ref:`ReviewRequestApprovalHook Developer Guide
               <review-request-approval-hook>`
         """
-        if not hasattr(self, '_approval_failure'):
-            self._calculate_approval()
+        approval = self.get_approval()
 
-        return self._approval_failure
+        if not approval['approved']:
+            return approval.get('reason')
+
+        return None
 
     @property
     def owner(self) -> User:
@@ -752,6 +758,87 @@ class ReviewRequest(BaseReviewRequestDetails):
             return self.id
 
     display_id = property(get_display_id)
+
+    def get_approval(self) -> ReviewRequestApproval:
+        """Return the approval state for the review request.
+
+        On a default installation, a review request is approved if it has
+        at least one Ship It! and no open or unverified issues.
+
+        Extensions may customize approval by providing their own
+        :py:class:`~reviewboard.extensions.hooks.ReviewRequestApprovalHook`.
+
+        .. seealso::
+
+            * :ref:`ReviewRequestApprovalHook Developer Guide
+              <review-request-approval-hook>`
+
+        Version Added:
+            9.0
+
+        Returns:
+            reviewboard.reviews.approval.ReviewRequestApproval:
+            The calculated approval state.
+        """
+        approval = getattr(self, '_approval', None)
+
+        if approval is None:
+            from reviewboard.extensions.hooks import ReviewRequestApprovalHook
+
+            approval = {
+                'approved': True,
+                'reason': None,
+            }
+
+            # Perform some default checks to set an initial approval state.
+            # These can be augmented or replaced by hooks.
+            if self.shipit_count == 0:
+                approval = {
+                    'approved': False,
+                    'reason': (
+                        'The review request has not been marked "Ship It!"'
+                    ),
+                }
+            elif self.issue_open_count > 0:
+                approval = {
+                    'approved': False,
+                    'reason': 'The review request has open issues.',
+                }
+            elif self.issue_verifying_count > 0:
+                approval = {
+                    'approved': False,
+                    'reason': 'The review request has unverified issues.',
+                }
+
+            for hook in ReviewRequestApprovalHook.hooks:
+                try:
+                    new_approval = hook.get_approval(
+                        prev_approval=approval,
+                        review_request=self,
+                    )
+
+                    # If the approval state didn't change but the new
+                    # approval reason wasn't set, inherit from the previous
+                    # approval.
+                    if ('reason' not in new_approval and
+                        approval['approved'] == new_approval['approved']):
+                        # Inherit the reason, if it's set.
+                        new_approval['reason'] = approval.get('reason')
+
+                    approval = new_approval
+                except NotImplementedError:
+                    # The hook didn't implement approval checks.
+                    pass
+                except Exception as e:
+                    logger.exception(
+                        'Error when running ReviewRequestApprovalHook.'
+                        'get_approval function in extension "%s": %s',
+                        hook.extension.id, e,
+                    )
+
+            self._approval = approval
+
+        return approval
 
     def get_new_reviews(
         self,
@@ -2136,48 +2223,6 @@ class ReviewRequest(BaseReviewRequestDetails):
                 profile__starred_review_requests=self,
                 local_site=self.local_site))
 
-    def _calculate_approval(self) -> None:
-        """Calculate the approval information for the review request."""
-        from reviewboard.extensions.hooks import ReviewRequestApprovalHook
-
-        approved = True
-        failure = None
-
-        if self.shipit_count == 0:
-            approved = False
-            failure = 'The review request has not been marked "Ship It!"'
-        elif self.issue_open_count > 0:
-            approved = False
-            failure = 'The review request has open issues.'
-        elif self.issue_verifying_count > 0:
-            approved = False
-            failure = 'The review request has unverified issues.'
-
-        for hook in ReviewRequestApprovalHook.hooks:
-            try:
-                result = hook.is_approved(self, approved, failure)
-
-                if isinstance(result, tuple):
-                    approved, failure = result
-                elif isinstance(result, bool):
-                    approved = result
-                else:
-                    raise ValueError('%r returned an invalid value %r from '
-                                     'is_approved'
-                                     % (hook, result))
-
-                if approved:
-                    failure = None
-            except Exception as e:
-                extension = hook.extension
-                logger.exception(
-                    'Error when running ReviewRequestApprovalHook.'
-                    'is_approved function in extension "%s": %s',
-                    extension.id, e)
-
-        self._approval_failure = failure
-        self._approved = approved
-
     def get_review_request(self) -> ReviewRequest:
         """Return this review request.
 
@@ -2198,6 +2243,7 @@ class ReviewRequest(BaseReviewRequestDetails):
 
         * :py:attr:`approval_failure`
         * :py:attr:`approved`
+        * :py:meth:`get_approval`
         * :py:meth:`get_blocks`
         * :py:meth:`get_diffsets`
         * :py:meth:`get_draft`
@@ -2209,8 +2255,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         """
         d = self.__dict__
 
-        for key in ('_approval_failure',
-                    '_approved',
+        for key in ('_approval',
                     '_blocks',
                     '_diffsets',
                     '_diffsets_with_filediffs',

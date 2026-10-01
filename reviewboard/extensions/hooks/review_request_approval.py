@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING
 
 from djblets.extensions.hooks import ExtensionHook, ExtensionHookPoint
 
 if TYPE_CHECKING:
+    from reviewboard.reviews.approval import ReviewRequestApproval
     from reviewboard.reviews.models import ReviewRequest
+
+
+logger = logging.getLogger(__name__)
 
 
 class ReviewRequestApprovalHook(ExtensionHook, metaclass=ExtensionHookPoint):
@@ -19,9 +24,87 @@ class ReviewRequestApprovalHook(ExtensionHook, metaclass=ExtensionHookPoint):
 
     .. seealso::
 
-        * :ref:`ReviewRequestApprovalHook Developer Guide
-          <review-request-approval-hook>`
+       * :ref:`ReviewRequestApprovalHook Developer Guide
+         <review-request-approval-hook>`
     """
+
+    def get_approval(
+        self,
+        *,
+        review_request: ReviewRequest,
+        prev_approval: ReviewRequestApproval,
+    ) -> ReviewRequestApproval:
+        """Return an approval decision for a review request.
+
+        Subclasses can augment or replace the previous approval decision.
+        Following hooks may override this decision.
+
+        Either ``prev_approval`` or a brand-new dictionary must be returned.
+        This dictionary is owned by the caller and may be changed, so don't
+        reuse dictionaries.
+
+        The default implementation supports legacy :py:meth:`is_approved`
+        implementations. New subclasses should override this method.
+
+        Version Added:
+            9.0
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request being checked for approval.
+
+            prev_approval (reviewboard.reviews.approval.ReviewRequestApproval):
+                The approval decision from Review Board or a previous hook.
+
+        Returns:
+            reviewboard.reviews.approval.ReviewRequestApproval:
+            The approval decision.
+
+        Raises:
+            NotImplementedError:
+                Neither approval method is implemented.
+        """
+        approval: ReviewRequestApproval
+
+        try:
+            result = self.is_approved(
+                review_request,
+                prev_approval['approved'],
+                prev_approval.get('reason'),
+            )
+
+            if isinstance(result, tuple):
+                approved, failure = result
+            elif isinstance(result, bool):
+                approved = result
+                failure = prev_approval.get('reason')
+            else:
+                raise ValueError(
+                    f'{self!r} returned an invalid value {result!r} '
+                    f'from is_approved'
+                )
+
+            if approved:
+                failure = None
+
+            approval = {
+                'approved': approved,
+                'reason': failure,
+            }
+        except NotImplementedError:
+            # Neither method was implemented, so just raise a straight
+            # NotImplementedError. We want to flag this function as not
+            # implemented, not the legacy one, so we're not re-raising.
+            raise NotImplementedError
+        except Exception as e:
+            logger.exception(
+                'Error when running ReviewRequestApprovalHook.'
+                'is_approved function in extension "%s": %s',
+                self.extension.id, e,
+            )
+            approval = prev_approval
+
+        return approval
 
     def is_approved(
         self,
@@ -44,6 +127,12 @@ class ReviewRequestApprovalHook(ExtensionHook, metaclass=ExtensionHookPoint):
         state is False). This is, however, fully up to the hook.
 
         The approval decision may be overridden by any following hooks.
+
+        Version Changed:
+            9.0:
+            This is soft-deprecated. Implementations can still use it, but
+            it may be deprecated and scheduled for removal in an upcoming
+            release.
 
         Args:
             review_request (reviewboard.reviews.models.review_request.

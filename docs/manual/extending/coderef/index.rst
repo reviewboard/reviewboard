@@ -307,6 +307,7 @@ Review Requests and Reviews
    :toctree: python
 
    reviewboard.reviews.actions
+   reviewboard.reviews.approval
    reviewboard.reviews.builtin_fields
    reviewboard.reviews.chunk_generators
    reviewboard.reviews.conditions
