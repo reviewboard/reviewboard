@@ -26,6 +26,7 @@ from reviewboard.attachments.models import (FileAttachment,
                                             FileAttachmentHistory)
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet, DiffSetHistory
+from reviewboard.reviews.approval import get_default_review_request_approval
 from reviewboard.reviews.errors import (PermissionError,
                                         PublishError)
 from reviewboard.reviews.features import diff_acls_feature
@@ -783,58 +784,7 @@ class ReviewRequest(BaseReviewRequestDetails):
         approval = getattr(self, '_approval', None)
 
         if approval is None:
-            from reviewboard.extensions.hooks import ReviewRequestApprovalHook
-
-            approval = {
-                'approved': True,
-                'reason': None,
-            }
-
-            # Perform some default checks to set an initial approval state.
-            # These can be augmented or replaced by hooks.
-            if self.shipit_count == 0:
-                approval = {
-                    'approved': False,
-                    'reason': (
-                        'The review request has not been marked "Ship It!"'
-                    ),
-                }
-            elif self.issue_open_count > 0:
-                approval = {
-                    'approved': False,
-                    'reason': 'The review request has open issues.',
-                }
-            elif self.issue_verifying_count > 0:
-                approval = {
-                    'approved': False,
-                    'reason': 'The review request has unverified issues.',
-                }
-
-            for hook in ReviewRequestApprovalHook.hooks:
-                try:
-                    new_approval = hook.get_approval(
-                        prev_approval=approval,
-                        review_request=self,
-                    )
-
-                    # If the approval state didn't change but the new
-                    # approval reason wasn't set, inherit from the previous
-                    # approval.
-                    if ('reason' not in new_approval and
-                        approval['approved'] == new_approval['approved']):
-                        # Inherit the reason, if it's set.
-                        new_approval['reason'] = approval.get('reason')
-
-                    approval = new_approval
-                except NotImplementedError:
-                    # The hook didn't implement approval checks.
-                    pass
-                except Exception as e:
-                    logger.exception(
-                        'Error when running ReviewRequestApprovalHook.'
-                        'get_approval function in extension "%s": %s',
-                        hook.extension.id, e,
-                    )
+            approval = get_default_review_request_approval(self)
 
             self._approval = approval
 

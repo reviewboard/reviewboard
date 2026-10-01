@@ -1664,8 +1664,8 @@ class ApprovalTests(ExtensionHookTestCaseMixin, kgb.SpyAgency, TestCase):
             'reason': None,
         })
 
-    def test_get_approval_with_modern_hook(self) -> None:
-        """Testing ReviewRequest.get_approval with a modern hook"""
+    def test_get_approval_with_hook(self) -> None:
+        """Testing ReviewRequest.get_approval with hooks"""
         class MyApprovalHook(ReviewRequestApprovalHook):
             def get_approval(
                 _self,
@@ -1694,113 +1694,8 @@ class ApprovalTests(ExtensionHookTestCaseMixin, kgb.SpyAgency, TestCase):
                 'reason': 'Approved!',
             })
 
-    def test_get_approval_with_modern_hook_without_reason_approved_unchanged(
-        self,
-    ) -> None:
-        """Testing ReviewRequest.get_approval with a hook not overriding a
-        reason and approved unchanged
-        """
-        class MyApprovalHook(ReviewRequestApprovalHook):
-            def get_approval(
-                _self,
-                *,
-                review_request: ReviewRequest,
-                prev_approval: ReviewRequestApproval,
-            ) -> ReviewRequestApproval:
-                self.assertEqual(prev_approval, {
-                    'approved': False,
-                    'reason': (
-                        'The review request has not been marked "Ship It!"'
-                    ),
-                })
-
-                return {
-                    'approved': False,
-                }
-
-        self._setup_hook(MyApprovalHook)
-
-        with self.assertNoLogs():
-            self.assertEqual(self.review_request.get_approval(), {
-                'approved': False,
-                'reason': 'The review request has not been marked "Ship It!"',
-            })
-
-    def test_get_approval_with_hook_exception(self) -> None:
-        """Testing ReviewRequest.get_approval with a hook exception"""
-        class MyApprovalHook(ReviewRequestApprovalHook):
-            def get_approval(
-                _self,
-                *,
-                review_request: ReviewRequest,
-                prev_approval: ReviewRequestApproval,
-            ) -> ReviewRequestApproval:
-                raise Exception('oh no')
-
-        self._setup_hook(MyApprovalHook)
-
-        with self.assertLogs() as logs:
-            self.assertEqual(self.review_request.get_approval(), {
-                'approved': False,
-                'reason': 'The review request has not been marked "Ship It!"',
-            })
-
-        self.assertEqual(len(logs.output), 1)
-        self.assertTrue(logs.output[0].startswith(
-            'ERROR:reviewboard.reviews.models.review_request:'
-            'Error when running ReviewRequestApprovalHook.get_approval '
-            'function in extension '
-            '"reviewboard.extensions.tests.testcases.DummyExtension": oh no'
-            '\n'
-            'Traceback'
-        ))
-
-    def test_get_approval_with_modern_hook_without_reason_approved_changed(
-        self,
-    ) -> None:
-        """Testing ReviewRequest.get_approval with a hook not overriding a
-        reason and approved changed
-        """
-        class MyApprovalHook(ReviewRequestApprovalHook):
-            def get_approval(
-                _self,
-                *,
-                review_request: ReviewRequest,
-                prev_approval: ReviewRequestApproval,
-            ) -> ReviewRequestApproval:
-                self.assertEqual(prev_approval, {
-                    'approved': False,
-                    'reason': (
-                        'The review request has not been marked "Ship It!"'
-                    ),
-                })
-
-                return {
-                    'approved': True,
-                }
-
-        self._setup_hook(MyApprovalHook)
-
-        with self.assertNoLogs():
-            self.assertEqual(self.review_request.get_approval(), {
-                'approved': True,
-            })
-
-    def test_get_approval_with_unimplemented_hook(self) -> None:
-        """Testing ReviewRequest.get_approval with unimplemented hook"""
-        class MyApprovalHook(ReviewRequestApprovalHook):
-            pass
-
-        self._setup_hook(MyApprovalHook)
-
-        with self.assertNoLogs():
-            self.assertEqual(self.review_request.get_approval(), {
-                'approved': False,
-                'reason': 'The review request has not been marked "Ship It!"',
-            })
-
     def test_get_approval_with_hook_caching(self) -> None:
-        """Testing ReviewRequest.get_approval caches results"""
+        """Testing ReviewRequest.get_approval with hooks caches results"""
         class MyApprovalHook(ReviewRequestApprovalHook):
             def get_approval(
                 _self,
@@ -1833,122 +1728,6 @@ class ApprovalTests(ExtensionHookTestCaseMixin, kgb.SpyAgency, TestCase):
         approval2 = review_request.get_approval()
         self.assertIsNot(approval2, approval)
         self.assertEqual(approval2, approval)
-
-    def test_get_approval_with_legacy_hook_tuple(self) -> None:
-        """Testing ReviewRequest.get_approval with legacy hook tuple result"""
-        class MyApprovalHook(ReviewRequestApprovalHook):
-            def is_approved(
-                _self,
-                review_request: ReviewRequest,
-                prev_approved: bool,
-                prev_failure: str | None,
-            ) -> tuple[bool, str]:
-                self.assertFalse(prev_approved)
-                self.assertEqual(
-                    prev_failure,
-                    'The review request has not been marked "Ship It!"',
-                )
-
-                return False, 'Nope.'
-
-        self._setup_hook(MyApprovalHook)
-
-        with self.assertNoLogs():
-            self.assertEqual(self.review_request.get_approval(), {
-                'approved': False,
-                'reason': 'Nope.',
-            })
-
-    def test_get_approval_with_legacy_hook_bool_true(self) -> None:
-        """Testing ReviewRequest.get_approval with legacy hook True result"""
-        class MyApprovalHook(ReviewRequestApprovalHook):
-            def is_approved(
-                _self,
-                review_request: ReviewRequest,
-                prev_approved: bool,
-                prev_failure: str | None,
-            ) -> bool:
-                self.assertFalse(prev_approved)
-                self.assertEqual(
-                    prev_failure,
-                    'The review request has not been marked "Ship It!"',
-                )
-
-                return True
-
-        self._setup_hook(MyApprovalHook)
-
-        with self.assertNoLogs():
-            self.assertEqual(self.review_request.get_approval(), {
-                'approved': True,
-                'reason': None,
-            })
-
-    def test_get_approval_with_legacy_hook_bool_false(self) -> None:
-        """Testing ReviewRequest.get_approval with legacy hook False result"""
-        class MyApprovalHook(ReviewRequestApprovalHook):
-            def is_approved(
-                _self,
-                review_request: ReviewRequest,
-                prev_approved: bool,
-                prev_failure: str | None,
-            ) -> bool:
-                self.assertFalse(prev_approved)
-                self.assertEqual(
-                    prev_failure,
-                    'The review request has not been marked "Ship It!"',
-                )
-
-                return False
-
-        self._setup_hook(MyApprovalHook)
-
-        with self.assertNoLogs():
-            self.assertEqual(self.review_request.get_approval(), {
-                'approved': False,
-                'reason': 'The review request has not been marked "Ship It!"',
-            })
-
-    def test_get_approval_with_legacy_hook_invalid_result(self) -> None:
-        """Testing ReviewRequest.get_approval with legacy hook and invalid
-        result
-        """
-        class MyApprovalHook(ReviewRequestApprovalHook):
-            def is_approved(
-                _self,
-                review_request: ReviewRequest,
-                prev_approved: bool,
-                prev_failure: str | None,
-            ) -> bool:
-                self.assertFalse(prev_approved)
-                self.assertEqual(
-                    prev_failure,
-                    'The review request has not been marked "Ship It!"',
-                )
-
-                return 'xxx'  # type: ignore
-
-            def __repr__(self) -> str:
-                return '<MyApprovalHook>'
-
-        self._setup_hook(MyApprovalHook)
-
-        with self.assertLogs() as logs:
-            self.assertEqual(self.review_request.get_approval(), {
-                'approved': False,
-                'reason': 'The review request has not been marked "Ship It!"',
-            })
-
-        self.assertEqual(len(logs.output), 1)
-        self.assertTrue(logs.output[0].startswith(
-            'ERROR:reviewboard.extensions.hooks.review_request_approval:'
-            'Error when running ReviewRequestApprovalHook.is_approved '
-            'function in extension '
-            '"reviewboard.extensions.tests.testcases.DummyExtension": '
-            '<MyApprovalHook> returned an invalid value \'xxx\' from '
-            'is_approved\n'
-            'Traceback'
-        ))
 
     def test_approved(self) -> None:
         """Testing ReviewRequest.approved delegates to get_approval"""
