@@ -11,6 +11,7 @@ import {
     DialogView,
     craft,
     paint,
+    showErrorDialog,
 } from '@beanbag/ink';
 import {
     type EventsHash,
@@ -48,14 +49,26 @@ import {
 } from 'reviewboard/ui';
 
 
-const POLICY_READ_WRITE = 'rw';
-const POLICY_READ_ONLY = 'ro';
 const POLICY_CUSTOM = 'custom';
-const POLICY_LABELS = {
-    [POLICY_CUSTOM]: _`Custom`,
-    [POLICY_READ_ONLY]: _`Read-only`,
-    [POLICY_READ_WRITE]: _`Full access`,
-};
+const POLICY_CUSTOM_LABEL = _`Custom`;
+
+
+/**
+ * An API token policy available for selection.
+ *
+ * Version Added:
+ *     9.0
+ */
+interface APITokenPolicy {
+    /** The unique ID of the token policy. */
+    id: string;
+
+    /** The display name of the token policy. */
+    name: string;
+
+    /** The token policy document. */
+    policyDoc: object;
+}
 
 
 /**
@@ -68,7 +81,8 @@ interface APITokenItemAttrs extends ResourceListItemAttrs<APIToken> {
     /**
      * The type of policy.
      *
-     * This is one of POLICY_READ_WRITE, POLICY_READ_ONLY, or POLICY_CUSTOM.
+     * This is the ID of one of the server-provided policies, or
+     * POLICY_CUSTOM.
      */
     policyType: string;
 
@@ -95,7 +109,7 @@ class APITokenItem extends ConfigFormsResourceListItem<
     static defaults: Result<Partial<APITokenItemAttrs>> = {
         lastUsed: null,
         localSiteName: null,
-        policyType: POLICY_READ_WRITE,
+        policyType: 'read-write',
         showRemove: true,
     };
 
@@ -134,20 +148,24 @@ class APITokenItem extends ConfigFormsResourceListItem<
 
         this.on('change:policyType', this._onPolicyTypeChanged, this);
 
-        const policy = this.get('policy') || {};
-        const policyType = this._guessPolicyType(policy);
+        const collection = this.collection;
+        const policies = collection.policies;
+        const policiesMap = collection.policiesMap;
+        const policyDoc = this.get('policy') || {};
+        const policyType = this._guessPolicyType(policyDoc);
 
         this.#policyMenuAction = {
             children: [
-                this._makePolicyAction(POLICY_READ_WRITE),
-                this._makePolicyAction(POLICY_READ_ONLY),
+                ...policies.map(tokenPolicy => this._makePolicyAction(
+                    tokenPolicy.id,
+                )),
                 this._makePolicyAction(POLICY_CUSTOM, {
                     dispatchOnClick: true,
                     id: 'policy-custom',
                 }),
             ],
             id: 'policy',
-            label: POLICY_LABELS[policyType],
+            label: policiesMap[policyType].name,
         };
         this.actions.unshift(this.#policyMenuAction);
 
@@ -200,16 +218,48 @@ class APITokenItem extends ConfigFormsResourceListItem<
     /**
      * Set the provided policy on the token and save it.
      *
+     * Version Changed:
+     *     9.0:
+     *     * The promise now resolves to a boolean indicating if saving was
+     *       successful.
+     *
+     *     * Errors are now handled by this function, rather than the caller.
+     *
      * Args:
      *     policy (object):
      *         The new policy for the token.
      *
      * Returns:
-     *     Promise:
-     *     A promise which resolves when the operation is complete.
+     *     Promise<boolean>:
+     *     A promise which resolves when the operation is complete. The
+     *     result of the promise will be a boolean indicating if the save
+     *     completed.
      */
-    savePolicy(policy: string) {
-        return this._saveAttribute('policy', policy);
+    async savePolicy(
+        policy: object,
+    ): Promise<boolean> {
+        try {
+            await this._saveAttribute('policy', policy);
+
+            return true;
+        } catch (e) {
+            const rsp = e?.xhr?.errorPayload;
+
+            if (rsp?.err?.type === 'request-field-error') {
+                const policyError = rsp?.fields?.policy;
+
+                if (policyError) {
+                    e = policyError;
+                }
+            }
+
+            showErrorDialog({
+                error: e,
+                title: _`Error setting the token policy`,
+            });
+
+            return false;
+        }
     }
 
     /**
@@ -243,27 +293,26 @@ class APITokenItem extends ConfigFormsResourceListItem<
     /**
      * Guess the policy type for a given policy definition.
      *
-     * This compares the policy against the built-in versions that
-     * RB.APIToken provides. If one of them matches, the appropriate
-     * policy type will be returned. Otherwise, this assumes it's a
-     * custom policy.
+     * This compares the policy against the server-provided policies.
+     * If one of them matches, its ID will be returned. Otherwise, this
+     * assumes it's a custom policy.
      *
      * Args:
-     *     policy (object):
-     *         A policy object.
+     *     policyDoc (object):
+     *         A policy document.
      *
      * Returns:
      *     string:
-     *     The policy type enumeration corresponding to the policy.
+     *     The policy type that was matched.
      */
-    _guessPolicyType(policy: unknown) {
-        if (_.isEqual(policy, APIToken.defaultPolicies.readOnly)) {
-            return POLICY_READ_ONLY;
-        } else if (_.isEqual(policy, APIToken.defaultPolicies.readWrite)) {
-            return POLICY_READ_WRITE;
-        } else {
-            return POLICY_CUSTOM;
+    _guessPolicyType(policyDoc: unknown) {
+        for (const tokenPolicy of this.collection.policies) {
+            if (_.isEqual(policyDoc, tokenPolicy.policyDoc)) {
+                return tokenPolicy.id;
+            }
         }
+
+        return POLICY_CUSTOM;
     }
 
     /**
@@ -285,7 +334,7 @@ class APITokenItem extends ConfigFormsResourceListItem<
         options?: Partial<ListItemAction>,
     ) {
         return _.defaults({
-            label: POLICY_LABELS[policyType],
+            label: this.collection.policiesMap[policyType].name,
             name: 'policy-type',
             propName: 'policyType',
             radioValue: policyType,
@@ -301,27 +350,30 @@ class APITokenItem extends ConfigFormsResourceListItem<
      *
      * Then, if not using a custom policy, the built-in policy definition
      * matching the selected policy will be saved to the server.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the type change.
      */
-    _onPolicyTypeChanged() {
+    async _onPolicyTypeChanged() {
         const policyType = this.get('policyType');
+        const policy = this.collection.policiesMap[policyType];
 
-        this.#policyMenuAction.label = POLICY_LABELS[policyType];
+        console.assert(policy);
+
+        this.#policyMenuAction.label = policy.name;
         this.trigger('actionsChanged');
 
-        let newPolicy = null;
+        if (policyType !== POLICY_CUSTOM) {
+            const policyDoc = policy.policyDoc;
 
-        if (policyType === POLICY_READ_ONLY) {
-            newPolicy = APIToken.defaultPolicies.readOnly;
-        } else if (policyType === POLICY_READ_WRITE) {
-            newPolicy = APIToken.defaultPolicies.readWrite;
-        } else {
-            return;
-        }
+            if (!_.isEqual(policyDoc, this.get('policy'))) {
+                const prevPolicyType = this.previous('policyType');
 
-        console.assert(newPolicy !== null);
-
-        if (!_.isEqual(newPolicy, this.get('policy'))) {
-            this.savePolicy(newPolicy);
+                if (!await this.savePolicy(policyDoc)) {
+                    this.set('policyType', prevPolicyType);
+                }
+            }
         }
     }
 }
@@ -336,6 +388,14 @@ class APITokenItem extends ConfigFormsResourceListItem<
 interface APITokenItemCollectionOptions {
     /** The URL prefix to use for the local site, if present. */
     localSitePrefix: string;
+
+    /**
+     * The list of token policies available for new and existing tokens.
+     *
+     * Version Added:
+     *     9.0
+     */
+    policies: APITokenPolicy[];
 }
 
 
@@ -361,6 +421,22 @@ class APITokenItemCollection extends BaseCollection<
     localSitePrefix: string;
 
     /**
+     * The list of token policies available for new and existing tokens.
+     *
+     * Version Added:
+     *     9.0
+     */
+    policies: APITokenPolicy[];
+
+    /**
+     * A map of token policy IDs to instances.
+     *
+     * Version Added:
+     *     9.0
+     */
+    policiesMap: Record<string, APITokenPolicy>;
+
+    /**
      * Initialize the collection.
      *
      * Args:
@@ -373,12 +449,39 @@ class APITokenItemCollection extends BaseCollection<
      * Option Args:
      *     localSitePrefix (string):
      *         The URL prefix for the current local site, if any.
+     *
+     *     policies (Array of APITokenPolicy):
+     *         The list of token policies available for new and existing
+     *         tokens.
+     *
+     *         Version Added:
+     *             9.0
      */
     initialize(
         models: APITokenItem[],
         options: APITokenItemCollectionOptions,
     ) {
         this.localSitePrefix = options.localSitePrefix;
+
+        const policies = options.policies;
+        const policiesMap: Record<string, APITokenPolicy> = {};
+
+        for (const policy of policies) {
+            policiesMap[policy.id] = policy;
+        }
+
+        /*
+         * Add the custom policy to the map, since it will be used for
+         * much of the UI building. Adding it here simplifies a lot.
+         */
+        policiesMap[POLICY_CUSTOM] = {
+            id: POLICY_CUSTOM,
+            name: POLICY_CUSTOM_LABEL,
+            policyDoc: APIToken.defaultPolicies.custom,
+        };
+
+        this.policies = policies;
+        this.policiesMap = policiesMap;
     }
 }
 
@@ -585,20 +688,13 @@ class PolicyEditorView extends DialogView<
             }
         }
 
-        try {
-            await this.model.savePolicy(policy);
+        const model = this.model;
 
-            this.model.set('policyType', POLICY_CUSTOM);
+        if (await model.savePolicy(policy)) {
+            model.set('policyType', POLICY_CUSTOM);
 
             if (closeOnSave) {
                 this.remove();
-            }
-        } catch (err) {
-            if (err.xhr.errorPayload.err.code === 105 &&
-                err.xhr.errorPayload.fields.policy) {
-                alert(err.xhr.errorPayload.fields.policy);
-            } else {
-                alert(err.xhr.errorPayload.err.msg);
             }
         }
     }
@@ -970,6 +1066,14 @@ interface SiteAPITokensViewOptions {
 
     /** The URL prefix of the local site, if any. */
     localSitePrefix: string;
+
+    /**
+     * The list of token policies available for new and existing tokens.
+     *
+     * Version Added:
+     *     9.0
+     */
+    policies: APITokenPolicy[];
 }
 
 
@@ -1046,6 +1150,7 @@ class SiteAPITokensView extends BaseView<
 
         this.collection = new APITokenItemCollection(options.apiTokens, {
             localSitePrefix: this.localSitePrefix,
+            policies: options.policies,
         });
 
         this.apiTokensList = new ConfigFormsList({}, {
@@ -1124,6 +1229,14 @@ export interface APITokensViewOptions {
             localSitePrefix: string;
         };
     };
+
+    /**
+     * The list of token policies available for new and existing tokens.
+     *
+     * Version Added:
+     *     9.0
+     */
+    policies: APITokenPolicy[];
 }
 
 
@@ -1161,6 +1274,14 @@ export class APITokensView extends BaseView<
     #apiTokenViews: SiteAPITokensView[] = [];
 
     /**
+     * The list of token policies available for new and existing tokens.
+     *
+     * Version Added:
+     *     9.0
+     */
+    #policies: APITokenPolicy[];
+
+    /**
      * Initialize the view.
      *
      * Args:
@@ -1169,6 +1290,7 @@ export class APITokensView extends BaseView<
      */
     initialize(options: APITokensViewOptions) {
         this.apiTokens = options.apiTokens;
+        this.#policies = options.policies;
     }
 
     /**
@@ -1179,6 +1301,7 @@ export class APITokensView extends BaseView<
     protected onRender() {
         this.$el.html(APITokensView.template());
 
+        const policies = this.#policies;
         const $listsContainer = this.$('.api-tokens-list');
 
         for (const [localSiteName, info] of Object.entries(this.apiTokens)) {
@@ -1186,6 +1309,7 @@ export class APITokensView extends BaseView<
                 apiTokens: info.tokens,
                 localSiteName: localSiteName,
                 localSitePrefix: info.localSitePrefix,
+                policies: policies,
             });
 
             view.$el.appendTo($listsContainer);

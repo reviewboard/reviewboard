@@ -10,6 +10,7 @@ Version Added:
 from __future__ import annotations
 
 from djblets.extensions.hooks import (
+    BaseRegistryMultiItemHook,
     ExtensionHook,
     ExtensionHookPoint,
 )
@@ -18,6 +19,10 @@ from djblets.registries.errors import ItemLookupError
 from reviewboard.webapi.server_info import (
     register_webapi_capabilities,
     unregister_webapi_capabilities,
+)
+from reviewboard.webapi.token_policies import (
+    BaseWebAPITokenPolicy,
+    webapi_token_policies,
 )
 
 
@@ -146,3 +151,16 @@ class WebAPICapabilitiesHook(ExtensionHook, metaclass=ExtensionHookPoint):
         This will unregister each of the capabilities from the API.
         """
         unregister_webapi_capabilities(self.extension.id)
+
+
+class WebAPITokenPoliciesHook(
+    BaseRegistryMultiItemHook[type[BaseWebAPITokenPolicy]],
+    metaclass=ExtensionHookPoint,
+):
+    """Hook for registering new API token policies.
+
+    Version Added:
+        9.0
+    """
+
+    registry = webapi_token_policies

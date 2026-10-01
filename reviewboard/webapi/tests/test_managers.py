@@ -143,6 +143,23 @@ class WebAPITokenManagerTests(kgb.SpyAgency, TestCase):
             },
         })
 
+    def test_get_or_create_client_token_with_create_unset_policy(
+        self,
+    ) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token creates a
+        token with an empty policy when default_policy is not set
+        """
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=self.user,
+        )
+
+        self.assertTrue(created)
+        self.assertEqual(client_token.policy, {})
+
+        client_token.refresh_from_db()
+        self.assertEqual(client_token.policy, {})
+
     def test_get_or_create_client_token_with_create_local_site(self) -> None:
         """Testing WebAPITokenManager.get_or_create_client_token creates a
         token with a provided Local Site
@@ -252,6 +269,164 @@ class WebAPITokenManagerTests(kgb.SpyAgency, TestCase):
 
         self.assertFalse(created)
         self.assertEqual(token, client_token)
+
+    def test_get_or_create_client_token_with_existing_policy_mismatch(
+        self,
+    ) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token creates a
+        new client token when an existing client token has a different policy
+        """
+        existing_token = WebAPIToken.objects.generate_token(
+            extra_data={
+                'client_name': 'Test',
+            },
+            token_generator_id=self.token_generator_id,
+            token_info=self.token_info,
+            user=self.user,
+        )
+
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=self.user,
+            default_policy={
+                'resources': {
+                    '*': {
+                        'allow': [],
+                        'block': ['*'],
+                    },
+                },
+            },
+        )
+
+        self.assertNotEqual(existing_token, client_token)
+        self.assertTrue(created)
+        self.assertEqual(client_token.policy, {
+            'resources': {
+                '*': {
+                    'allow': [],
+                    'block': ['*'],
+                },
+            },
+        })
+
+    def test_get_or_create_client_token_with_existing_matching_policy(
+        self,
+    ) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token returns an
+        existing client token when its policy matches default_policy
+        """
+        policy = {
+            'resources': {
+                '*': {
+                    'allow': [],
+                    'block': ['*'],
+                },
+            },
+        }
+
+        existing_token = WebAPIToken.objects.generate_token(
+            extra_data={
+                'client_name': 'Test',
+            },
+            policy=policy,
+            token_generator_id=self.token_generator_id,
+            token_info=self.token_info,
+            user=self.user,
+        )
+
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=self.user,
+            default_policy=policy,
+        )
+
+        self.assertEqual(existing_token, client_token)
+        self.assertFalse(created)
+
+    def test_get_or_create_client_token_with_existing_empty_and_none_policy(
+        self,
+    ) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token returns an
+        existing client token with an empty policy when default_policy=None
+        """
+        existing_token = WebAPIToken.objects.generate_token(
+            extra_data={
+                'client_name': 'Test',
+            },
+            policy={},
+            token_generator_id=self.token_generator_id,
+            token_info=self.token_info,
+            user=self.user,
+        )
+
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=self.user,
+            default_policy=None,
+        )
+
+        self.assertEqual(existing_token, client_token)
+        self.assertFalse(created)
+
+    def test_get_or_create_client_token_with_existing_empty_policy(
+        self,
+    ) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token returns an
+        existing client token with an empty policy when default_policy={}
+        """
+        existing_token = WebAPIToken.objects.generate_token(
+            extra_data={
+                'client_name': 'Test',
+            },
+            policy={},
+            token_generator_id=self.token_generator_id,
+            token_info=self.token_info,
+            user=self.user,
+        )
+
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=self.user,
+            default_policy={},
+        )
+
+        self.assertEqual(existing_token, client_token)
+        self.assertFalse(created)
+
+    def test_get_or_create_client_token_with_existing_null_policy(
+        self,
+    ) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token returns an
+        existing client token with a NULL policy in the database when
+        default_policy is not set
+        """
+        existing_token = self._create_null_policy_client_token()
+
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=self.user,
+        )
+
+        self.assertEqual(existing_token, client_token)
+        self.assertFalse(created)
+
+    def test_get_or_create_client_token_with_existing_null_and_empty_policy(
+        self,
+    ) -> None:
+        """Testing WebAPITokenManager.get_or_create_client_token returns an
+        existing client token with a NULL policy in the database when
+        default_policy={}
+        """
+        existing_token = self._create_null_policy_client_token()
+
+        client_token, created = WebAPIToken.objects.get_or_create_client_token(
+            client_name='Test',
+            user=self.user,
+            default_policy={},
+        )
+
+        self.assertEqual(existing_token, client_token)
+        self.assertFalse(created)
 
     def test_get_or_create_client_token_with_existing_ignore_deprecated(
         self,
@@ -472,3 +647,31 @@ class WebAPITokenManagerTests(kgb.SpyAgency, TestCase):
         self.assertEqual(token.extra_data['client_name'], client_name)
         self.assertEqual(token.note, note)
         self.assertEqual(token.expires, expires)
+
+    def _create_null_policy_client_token(self) -> WebAPIToken:
+        """Create a client token with a NULL policy in the database.
+
+        This simulates an older token that was stored without any policy.
+
+        Version Added:
+            9.0
+
+        Returns:
+            reviewboard.webapi.models.WebAPIToken:
+            The new token.
+        """
+        token = WebAPIToken.objects.generate_token(
+            extra_data={
+                'client_name': 'Test',
+            },
+            token_generator_id=self.token_generator_id,
+            token_info=self.token_info,
+            user=self.user,
+        )
+
+        WebAPIToken.objects.filter(pk=token.pk).update(policy=None)
+
+        # Make sure this loads back as an empty policy.
+        self.assertEqual(WebAPIToken.objects.get(pk=token.pk).policy, {})
+
+        return token

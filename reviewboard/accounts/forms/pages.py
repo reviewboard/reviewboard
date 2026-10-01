@@ -31,6 +31,7 @@ from reviewboard.reviews.models import Group
 from reviewboard.site.models import LocalSite
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.themes.ui.registry import ui_theme_registry
+from reviewboard.webapi.token_policies import webapi_token_policies
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -329,6 +330,14 @@ class APITokensForm(AccountPageForm):
 
         return {
             'apiTokens': serialized_api_tokens,
+            'policies': [
+                {
+                    'id': token_policy.token_policy_id,
+                    'name': token_policy.name,
+                    'policyDoc': token_policy.default_token_policy_doc,
+                }
+                for token_policy in webapi_token_policies
+            ],
         }
 
     def _serialize_api_tokens(self, local_site, api_tokens):

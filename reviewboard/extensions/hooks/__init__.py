@@ -58,6 +58,7 @@ from reviewboard.extensions.hooks.users import (ServiceAccountHook,
 from reviewboard.extensions.hooks.webapi import (
     APIExtraDataAccessHook,
     WebAPICapabilitiesHook,
+    WebAPITokenPoliciesHook,
 )
 
 
@@ -109,4 +110,5 @@ __all__ = [
     'UserInfoboxHook',
     'UserPageSidebarItemsHook',
     'WebAPICapabilitiesHook',
+    'WebAPITokenPoliciesHook',
 ]

@@ -473,6 +473,7 @@ Web API
    reviewboard.webapi.mixins
    reviewboard.webapi.models
    reviewboard.webapi.server_info
+   reviewboard.webapi.token_policies
    reviewboard.webapi.testing
    reviewboard.webapi.testing.queries
    reviewboard.webapi.tests.base
