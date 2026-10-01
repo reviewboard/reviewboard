@@ -7,8 +7,13 @@ import {
     type ComponentChild,
     type DialogViewOpenOptions,
     type DialogViewOptions,
+    type MenuButtonView,
     DialogSize,
     DialogView,
+    MenuItem,
+    MenuItemType,
+    MenuItemsCollection,
+    MenuItemsRadioGroup,
     craft,
     paint,
     showConfirmDialog,
@@ -27,7 +32,6 @@ import {
     ConfigFormsListItemView,
     ConfigFormsListView,
 } from 'djblets/configForms';
-import { type ListItemAction } from 'djblets/configForms/models/listItemModel';
 import {
     type ListItemViewRenderContext,
 } from 'djblets/configForms/views/listItemView';
@@ -87,6 +91,14 @@ interface APITokenItemAttrs extends ResourceListItemAttrs<APIToken> {
      */
     policyType: string;
 
+    /**
+     * Whether the token policy is currently being saved.
+     *
+     * Version Added:
+     *     9.0
+     */
+    isSavingPolicy: boolean;
+
     /** The date and time of last use for the token. */
     lastUsed: string | null;
 
@@ -98,7 +110,7 @@ interface APITokenItemAttrs extends ResourceListItemAttrs<APIToken> {
 /**
  * Represents an API token in the list.
  *
- * This provides actions for editing the policy type for the token and
+ * This tracks the policy type for the token, and provides an action for
  * removing the token.
  */
 @spina
@@ -108,6 +120,7 @@ class APITokenItem extends ConfigFormsResourceListItem<
     APITokenItemAttrs
 > {
     static defaults: Result<Partial<APITokenItemAttrs>> = {
+        isSavingPolicy: false,
         lastUsed: null,
         localSiteName: null,
         policyType: 'read-write',
@@ -135,40 +148,31 @@ class APITokenItem extends ConfigFormsResourceListItem<
     /** The collection that owns the item. */
     collection: APITokenItemCollection;
 
-    /** The policy menu. */
-    #policyMenuAction: ListItemAction;
+    /**
+     * The last custom policy used for this token.
+     *
+     * This lets the user switch to a built-in policy and back again without
+     * losing their custom policy while the page is still open.
+     *
+     * Version Added:
+     *     9.0
+     */
+    #lastCustomPolicy: (object | null) = null;
 
     /**
      * Initialize the item.
      *
-     * This computes the type of policy used, for display, and builds the
-     * policy actions menu.
+     * This computes the type of policy used, for display.
      */
     initialize(attributes?: Partial<APITokenItemAttrs>) {
         super.initialize(attributes);
 
-        this.on('change:policyType', this._onPolicyTypeChanged, this);
-
-        const collection = this.collection;
-        const policies = collection.policies;
-        const policiesMap = collection.policiesMap;
         const policyDoc = this.get('policy') || {};
         const policyType = this._guessPolicyType(policyDoc);
 
-        this.#policyMenuAction = {
-            children: [
-                ...policies.map(tokenPolicy => this._makePolicyAction(
-                    tokenPolicy.id,
-                )),
-                this._makePolicyAction(POLICY_CUSTOM, {
-                    dispatchOnClick: true,
-                    id: 'policy-custom',
-                }),
-            ],
-            id: 'policy',
-            label: policiesMap[policyType].name,
-        };
-        this.actions.unshift(this.#policyMenuAction);
+        if (policyType === POLICY_CUSTOM) {
+            this.#lastCustomPolicy = policyDoc;
+        }
 
         this.set('policyType', policyType);
     }
@@ -239,11 +243,18 @@ class APITokenItem extends ConfigFormsResourceListItem<
     async savePolicy(
         policy: object,
     ): Promise<boolean> {
+        const prevPolicy = this.get('policy');
+
+        this.set('isSavingPolicy', true);
+
         try {
             await this._saveAttribute('policy', policy);
 
             return true;
         } catch (e) {
+            /* Restore the previous policy. */
+            this.resource.set('policy', prevPolicy);
+
             const rsp = e?.xhr?.errorPayload;
 
             if (rsp?.err?.type === 'request-field-error') {
@@ -260,7 +271,106 @@ class APITokenItem extends ConfigFormsResourceListItem<
             });
 
             return false;
+        } finally {
+            this.set('isSavingPolicy', false);
         }
+    }
+
+    /**
+     * Set the token to one of the built-in policies and save it.
+     *
+     * If the token was using a custom policy, it will be preserved in case
+     * the user switches back. This only lasts while the page is open.
+     *
+     * Version Added:
+     *     9.0
+     *
+     * Args:
+     *     policyType (string):
+     *         The ID of the built-in policy to use.
+     *
+     * Returns:
+     *     Promise<boolean>:
+     *     A promise which resolves to whether the policy type was saved.
+     */
+    async setPolicyType(
+        policyType: string,
+    ): Promise<boolean> {
+        console.assert(policyType !== POLICY_CUSTOM);
+
+        /* Check first if the policy document has changed. */
+        const policyDoc = this.collection.policiesMap[policyType].policyDoc;
+
+        if (_.isEqual(policyDoc, this.get('policy'))) {
+            /* The policy didn't change. Consider this a success. */
+            this.set('policyType', policyType);
+
+            return true;
+        }
+
+        if (this.get('policyType') === POLICY_CUSTOM) {
+            /*
+             * The previous policy was a custom policy. Store it locally
+             * in case the user switches back.
+             */
+            this.#lastCustomPolicy = this.get('policy');
+        }
+
+        /* Save the policy. */
+        const saved = await this.savePolicy(policyDoc);
+
+        if (saved) {
+            /* This was successful, so update to the new policy type. */
+            this.set('policyType', policyType);
+        }
+
+        return saved;
+    }
+
+    /**
+     * Save a custom policy for the token.
+     *
+     * Version Added:
+     *     9.0
+     *
+     * Args:
+     *     policy (object):
+     *         The custom policy document.
+     *
+     * Returns:
+     *     Promise<boolean>:
+     *     A promise which resolves to whether the policy was saved.
+     */
+    async saveCustomPolicy(
+        policy: object,
+    ): Promise<boolean> {
+        const saved = await this.savePolicy(policy);
+
+        if (saved) {
+            this.#lastCustomPolicy = policy;
+            this.set('policyType', POLICY_CUSTOM);
+        }
+
+        return saved;
+    }
+
+    /**
+     * Return the custom policy to show in the policy editor.
+     *
+     * This will be the last custom policy used for this token, or the
+     * default custom policy if there isn't one.
+     *
+     * Version Added:
+     *     9.0
+     *
+     * Returns:
+     *     object:
+     *     The custom policy document.
+     */
+    getCustomPolicy(): object {
+        return this.#lastCustomPolicy ||
+               this.get('policy') ||
+               APIToken.defaultPolicies.custom;
     }
 
     /**
@@ -314,68 +424,6 @@ class APITokenItem extends ConfigFormsResourceListItem<
         }
 
         return POLICY_CUSTOM;
-    }
-
-    /**
-     * Create and return an action for the policy menu.
-     *
-     * This takes a policy type and any options to include with the
-     * action definition. It will then return a suitable action,
-     * for display in the policy menu.
-     *
-     * Args:
-     *     policyType (string):
-     *         The policy type to create.
-     *
-     *     options (object):
-     *         Additional options to include in the new action definition.
-     */
-    _makePolicyAction(
-        policyType: string,
-        options?: Partial<ListItemAction>,
-    ) {
-        return _.defaults({
-            label: this.collection.policiesMap[policyType].name,
-            name: 'policy-type',
-            propName: 'policyType',
-            radioValue: policyType,
-            type: 'radio',
-        }, options);
-    }
-
-    /**
-     * Handler for when the policy type changes.
-     *
-     * This will set the policy menu's label to that of the selected
-     * policy and rebuild the menu.
-     *
-     * Then, if not using a custom policy, the built-in policy definition
-     * matching the selected policy will be saved to the server.
-     *
-     * Returns:
-     *     Promise<void>:
-     *     The promise for the type change.
-     */
-    async _onPolicyTypeChanged() {
-        const policyType = this.get('policyType');
-        const policy = this.collection.policiesMap[policyType];
-
-        console.assert(policy);
-
-        this.#policyMenuAction.label = policy.name;
-        this.trigger('actionsChanged');
-
-        if (policyType !== POLICY_CUSTOM) {
-            const policyDoc = policy.policyDoc;
-
-            if (!_.isEqual(policyDoc, this.get('policy'))) {
-                const prevPolicyType = this.previous('policyType');
-
-                if (!await this.savePolicy(policyDoc)) {
-                    this.set('policyType', prevPolicyType);
-                }
-            }
-        }
     }
 }
 
@@ -488,22 +536,6 @@ class APITokenItemCollection extends BaseCollection<
 
 
 /**
- * Options for the PolicyEditorView.
- *
- * Version Added:
- *     9.0
- */
-interface PolicyEditorViewOptions extends DialogViewOptions {
-    /**
-     * The previous policy type.
-     *
-     * This is used when restoring the value after the edit has been cancelled.
-     */
-    prevPolicyType: string;
-}
-
-
-/**
  * Provides an editor for constructing or modifying a custom policy definition.
  *
  * This renders as a modal dialog with a CodeMirror editor inside of it. The
@@ -511,10 +543,7 @@ interface PolicyEditorViewOptions extends DialogViewOptions {
  * lintian checking. Only valid policy payloads can be saved to the server.
  */
 @spina
-class PolicyEditorView extends DialogView<
-    APITokenItem,
-    PolicyEditorViewOptions
-> {
+class PolicyEditorView extends DialogView<APITokenItem> {
     static id = 'custom_policy_editor';
     static title = _`Custom Token Access Policy`;
 
@@ -524,9 +553,6 @@ class PolicyEditorView extends DialogView<
 
     /** The CodeMirror instance. */
     #codeMirror: CodeMirror.Editor = null;
-
-    /** The previous policy type to restore if the edit is cancelled. */
-    #prevPolicyType: string;
 
     /** The policy editor <textarea> element. */
     #textarea: HTMLTextAreaElement = null;
@@ -538,15 +564,13 @@ class PolicyEditorView extends DialogView<
      * Initialize the editor.
      *
      * Args:
-     *     options (PolicyEditorViewOptions):
+     *     options (DialogViewOptions):
      *         Additional options for view construction.
      */
-    initialize(options: Partial<PolicyEditorViewOptions>) {
+    initialize(options: Partial<DialogViewOptions>) {
         super.initialize(_.defaults(options, {
             size: DialogSize.LARGE,
         }));
-
-        this.#prevPolicyType = options.prevPolicyType;
     }
 
     /**
@@ -586,12 +610,7 @@ class PolicyEditorView extends DialogView<
      */
     protected renderBody(): ComponentChild | ComponentChild[] {
         const manualURL = `${MANUAL_URL}webapi/2.0/api-token-policy/`;
-
-        let policy = this.model.get('policy');
-
-        if (_.isEmpty(policy)) {
-            policy = APIToken.defaultPolicies.custom;
-        }
+        const policy = this.model.getCustomPolicy();
 
         this.#textarea = paint<HTMLTextAreaElement>`
             <textarea>${JSON.stringify(policy, null, '  ')}</textarea>
@@ -656,11 +675,8 @@ class PolicyEditorView extends DialogView<
 
     /**
      * Cancel the editor.
-     *
-     * The previously-selected policy type will be set on the model.
      */
     cancel() {
-        this.model.set('policyType', this.#prevPolicyType);
         this.remove();
     }
 
@@ -681,7 +697,10 @@ class PolicyEditorView extends DialogView<
             policy = JSON.parse(policyStr);
         } catch (e) {
             if (e instanceof SyntaxError) {
-                alert(_`There is a syntax error in your policy: ${e}`);
+                showErrorDialog({
+                    error: e,
+                    title: _`Syntax error in your policy`,
+                });
 
                 return;
             } else {
@@ -689,11 +708,11 @@ class PolicyEditorView extends DialogView<
             }
         }
 
-        const model = this.model;
-
-        if (await model.savePolicy(policy)) {
-            model.set('policyType', POLICY_CUSTOM);
-
+        if (await this.model.saveCustomPolicy(policy)) {
+            /*
+             * The save was successful. Check if the user requested to close
+             * the dialog.
+             */
             if (closeOnSave) {
                 this.remove();
             }
@@ -778,7 +797,9 @@ class APITokenItemView extends ConfigFormsListItemView<APITokenItem> {
          <% } %>
         </div>
         <div class="rb-c-config-api-tokens__actions"></div>
-        <span class="rb-c-config-api-tokens__note"></span>
+        <div class="rb-c-config-api-tokens__note-field">
+         <span class="rb-c-config-api-tokens__note"></span>
+        </div>
     `);
 
     static events: EventsHash = {
@@ -787,7 +808,6 @@ class APITokenItemView extends ConfigFormsListItemView<APITokenItem> {
 
     static actionHandlers: EventsHash = {
         'delete': '_onRemoveClicked',
-        'policy-custom': '_onCustomPolicyClicked',
     };
 
     /**********************
@@ -804,12 +824,40 @@ class APITokenItemView extends ConfigFormsListItemView<APITokenItem> {
     #$tokenState: JQuery = null;
 
     /**
+     * The menu button for choosing a token policy.
+     *
+     * Version Added:
+     *     9.0
+     */
+    #policyMenuButton: MenuButtonView = null;
+
+    /**
+     * A mapping of built-in policy IDs to their menu items.
+     *
+     * Version Added:
+     *     9.0
+     */
+    #policyMenuItems = new Map<string, MenuItem>();
+
+    /**
+     * The radio group for the built-in policy menu items.
+     *
+     * Version Added:
+     *     9.0
+     */
+    #policyRadioGroup: MenuItemsRadioGroup = null;
+
+    /**
      * Initialize the view.
      */
     initialize() {
-        this.listenTo(this.model.resource, 'change:expires',
-                      this._updateExpires);
-        this.listenTo(this.model.resource, 'change:note', this._updateNote);
+        const model = this.model;
+        const resource = model.resource;
+
+        this.listenTo(resource, 'change:expires', this._updateExpires);
+        this.listenTo(resource, 'change:note', this._updateNote);
+        this.listenTo(model, 'change:policyType', this.#updatePolicyMenu);
+        this.listenTo(model, 'change:isSavingPolicy', this.#updatePolicyBusy);
     }
 
     /**
@@ -817,6 +865,8 @@ class APITokenItemView extends ConfigFormsListItemView<APITokenItem> {
      */
     protected onRender() {
         super.onRender();
+
+        this.#renderPolicyMenu();
 
         this.#$tokenState = this.$('.rb-c-config-api-tokens__token-state');
         this.#$expires = this.#$tokenState
@@ -915,6 +965,162 @@ class APITokenItemView extends ConfigFormsListItemView<APITokenItem> {
     }
 
     /**
+     * Render the menu button for choosing a token policy.
+     *
+     * Each built-in policy will be shown as a radio item. A separate
+     * "Custom policy..." is shown last, which will show the policy editor
+     * when clicked.
+     *
+     * Version Added:
+     *     9.0
+     */
+    #renderPolicyMenu() {
+        const cid = this.cid;
+        const policyMenuItems = this.#policyMenuItems;
+        const radioGroup = new MenuItemsRadioGroup();
+
+        policyMenuItems.clear();
+
+        let maxLabelLen = POLICY_CUSTOM_LABEL.length;
+
+        const policyItems = this.model.collection.policies.map(
+            tokenPolicy => {
+                const policyID = tokenPolicy.id;
+                const policyName = tokenPolicy.name;
+                const menuItem = new MenuItem({
+                    id: `api-token-${cid}-policy-${policyID}`,
+                    label: policyName,
+                    onClick: () => this.#onPolicySelected(policyID),
+                    radioGroup: radioGroup,
+                    type: MenuItemType.RADIO_ITEM,
+                });
+
+                policyMenuItems.set(policyID, menuItem);
+
+                maxLabelLen = Math.max(maxLabelLen, policyName.length);
+
+                return menuItem;
+            });
+
+        const menuItems = new MenuItemsCollection([
+            ...policyItems,
+            {
+                type: MenuItemType.SEPARATOR,
+            },
+            {
+                id: `api-token-${cid}-policy-custom`,
+                label: _`Custom policy...`,
+                onClick: () => this.#openPolicyEditor(),
+            },
+        ]);
+
+        this.#policyRadioGroup = radioGroup;
+        this.#policyMenuButton = craft<MenuButtonView>`
+            <Ink.MenuButton
+              class="rb-c-config-api-tokens__policy-menu"
+              menuAriaLabel=${_`Token access policy`}
+              menuItems=${menuItems}
+              />
+        `;
+
+        /*
+         * Set a minimum width for the menu button so it doesn't resize when
+         * the option changes. We're using ch units, which is going to give
+         * a bit more width than we need, but it'll be fine.
+         */
+        const policyMenuButtonEl = this.#policyMenuButton.el;
+        policyMenuButtonEl.style.setProperty(
+            '--rb-c-config-api-tokens-policy-label-min-width',
+            `${maxLabelLen}ch`,
+        );
+
+        this.$spinnerParent.prepend(policyMenuButtonEl);
+
+        this.#updatePolicyMenu();
+        this.#updatePolicyBusy();
+    }
+
+    /**
+     * Update the policy menu to reflect the token's policy type.
+     *
+     * This sets the label on the menu button and checks the matching
+     * built-in policy, if any.
+     *
+     * Version Added:
+     *     9.0
+     */
+    #updatePolicyMenu() {
+        const model = this.model;
+        const policyType = model.get('policyType');
+        const menuItem = this.#policyMenuItems.get(policyType);
+
+        /* Set the label on the policy. */
+        this.#policyMenuButton.label =
+            model.collection.policiesMap[policyType].name;
+
+        /*
+         * If it's a radio button, mark it checked. Otherwise (if it's custom),
+         * uncheck the previous one.
+         */
+        if (menuItem) {
+            menuItem.set('checked', true);
+        } else {
+            this.#policyRadioGroup.checkedMenuItem?.set('checked', false);
+        }
+    }
+
+    /**
+     * Update the busy state of the policy menu button.
+     *
+     * Version Added:
+     *     9.0
+     */
+    #updatePolicyBusy() {
+        this.#policyMenuButton.busy = this.model.get('isSavingPolicy');
+    }
+
+    /**
+     * Handle selecting a built-in policy from the menu.
+     *
+     * If saving fails, the menu will go back to showing the token's current
+     * policy.
+     *
+     * Version Added:
+     *     9.0
+     *
+     * Args:
+     *     policyType (string):
+     *         The ID of the selected policy.
+     *
+     * Returns:
+     *     Promise<void>:
+     *     The promise for the operation.
+     */
+    async #onPolicySelected(
+        policyType: string,
+    ): Promise<void> {
+        if (!await this.model.setPolicyType(policyType)) {
+            this.#updatePolicyMenu();
+        }
+    }
+
+    /**
+     * Open the policy editor.
+     *
+     * This lets the user write a custom policy for the token.
+     *
+     * Version Added:
+     *     9.0
+     */
+    #openPolicyEditor() {
+        const view = new PolicyEditorView({
+            model: this.model,
+        });
+        view.render();
+        view.open();
+    }
+
+    /**
      * Update the displayed expiration date.
      */
     _updateExpires() {
@@ -957,47 +1163,6 @@ class APITokenItemView extends ConfigFormsListItemView<APITokenItem> {
         const token = this.$('.rb-c-config-api-tokens__value input')
             .val() as string;
         await navigator.clipboard.writeText(token);
-    }
-
-    /**
-     * Handler for when the "Custom" policy action is clicked.
-     *
-     * This displays the policy editor, allowing the user to edit a
-     * custom policy for the token.
-     *
-     * The previously selected policy type is passed along to the editor,
-     * so that the editor can revert to it if the user cancels.
-     *
-     * Args:
-     *     e (Event):
-     *         The event.
-     */
-    _onCustomPolicyClicked(e: Event){
-        e.preventDefault();
-        e.stopPropagation();
-
-        /*
-         * The drop-down menu doesn't automatically close in this case, even if
-         * we don't swallow the event. This is kind of an ugly experience
-         * because after the user closes the policy editor dialog, the menu
-         * will still be open.
-         *
-         * Ideally we'd fix this inside the ConfigFormsListItemView, but the
-         * way that action menus are done is very ugly, and it's all in need of
-         * a rewrite to use Ink anyway.
-         *
-         * For now, just artificially trigger a click on the document, which
-         * will be caught by the handler in
-         * ConfigFormsListItemView._showActionDropdown, and remove the menu.
-         */
-        $(document).trigger('click');
-
-        const view = new PolicyEditorView({
-            model: this.model,
-            prevPolicyType: this.model.get('policyType'),
-        });
-        view.render();
-        view.open();
     }
 
     /**

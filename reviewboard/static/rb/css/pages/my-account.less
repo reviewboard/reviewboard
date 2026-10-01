@@ -36,12 +36,48 @@
    *       <p class="rb-c-config-api-tokens__usage">...</p>
    *      </div>
    *      <div class="rb-c-config-api-tokens__actions"></div>
-   *      <span class="rb-c-config-api-tokens__note"></span>
+   *      <div class="rb-c-config-api-tokens__note-field">...</div>
    *     </div>
    */
   .rb-c-config-api-tokens {
+    li.djblets-c-config-forms-list__item {
+      /* Remove the clipping on the list item so the menu can show. */
+      overflow: visible;
+    }
+
     &__actions {
       white-space: nowrap;
+    }
+
+    /**
+     * The menu button for choosing a token policy.
+     *
+     * This matches the size of the other item actions (such as Remove).
+     *
+     * Version Added:
+     *     9.0
+     *
+     * Structure:
+     *     <div class="ink-c-menu-button rb-c-config-api-tokens__policy-menu">
+     *      ...
+     *     </div>
+     */
+    &__policy-menu {
+      @_list-vars: #djblets-ns-config-forms.list();
+
+      margin-left: var(--ink-u-spacing-std);
+      margin-right: @_list-vars[@item-action-spacing];
+
+      .ink-c-button {
+        --ink-c-button-font-size: @_list-vars[@item-action-font-size];
+        --ink-c-button-padding-horiz: @_list-vars[@item-action-padding-horiz];
+        --ink-c-button-padding-vert: @_list-vars[@item-action-padding-vert];
+      }
+
+      .ink-c-menu-button__dropdown-button .ink-c-button__label {
+        min-width: var(--rb-c-config-api-tokens-policy-label-min-width);
+        text-align: right;
+      }
     }
 
     /**
@@ -64,6 +100,7 @@
 
     &__info {
       line-height: 0;
+      text-wrap: wrap;
     }
 
     &__main {
@@ -74,10 +111,30 @@
 
     &__note {
       color: #888;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
 
       &.empty {
         color: #CCC;
         font-style: italic;
+      }
+    }
+
+    /**
+     * Container for the note text and editor.
+     *
+     * Structure:
+     *     <div class="rb-c-config-api-tokens__note-field">
+     *      <span class="rb-c-config-api-tokens__note">...</span>
+     *     </div>
+     */
+    &__note-field {
+      align-items: center;
+      display: flex;
+
+      .rb-c-inline-editor {
+        flex-grow: 1;
       }
     }
 
@@ -146,16 +203,6 @@
     .js-copy-token {
       font-size: 120%;
       cursor: pointer;
-    }
-
-    .config-forms-list-action-label-policy-custom {
-      color: var(--ink-p-link-fg);
-      cursor: pointer;
-      text-decoration: underline;
-    }
-
-    .config-forms-list-action-policy {
-      text-align: right;
     }
 
     .rb-icon {
