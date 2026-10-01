@@ -11,6 +11,7 @@ import {
     DialogView,
     craft,
     paint,
+    showConfirmDialog,
     showErrorDialog,
 } from '@beanbag/ink';
 import {
@@ -1006,47 +1007,29 @@ class APITokenItemView extends ConfigFormsListItemView<APITokenItem> {
      * the server.
      */
     _onRemoveClicked() {
-        const onRemoveClicked = async () => {
-            confirmButton.busy = true;
-            cancelButton.disabled = true;
+        showConfirmDialog({
+            title: _`Are you sure you want to remove this token?`,
 
-            await this.model.resource.destroy();
-
-            dialog.close();
-        }
-
-        const cancelButton = craft<ButtonView>`
-            <Ink.Button onClick=${() => dialog.close()}>
-             ${_`Cancel`}
-            </Ink.Button>
-        `;
-        const confirmButton = craft<ButtonView>`
-            <Ink.Button type="danger" onClick=${() => onRemoveClicked()}>
-             ${_`Remove`}
-            </Ink.Button>
-        `;
-
-        const dialog = craft<DialogView>`
-            <Ink.Dialog
-                onClose=${() => dialog.remove()}
-                title=${_`Are you sure you want to remove this token?`}>
-             <Ink.Dialog.Body>
-              <p>
-               ${_`
+            body: _`
                 After removing this token, any clients which are configured
                 to use it will no longer be able to authenticate.
-               `}
-              </p>
-             </>
-             <Ink.Dialog.PrimaryActions>
-              ${cancelButton}
-              ${confirmButton}
-             </>
-            </>
-        `;
+            `,
+            confirmButtonText: _`Remove`,
+            isDangerous: true,
 
-        dialog.render();
-        dialog.open();
+            onConfirm: async () => {
+                try {
+                    await this.model.resource.destroy();
+                } catch (e) {
+                    showErrorDialog({
+                        error: e,
+                        title: _`Error removing the token`,
+                    });
+
+                    return false;
+                }
+            },
+        });
     }
 }
 
