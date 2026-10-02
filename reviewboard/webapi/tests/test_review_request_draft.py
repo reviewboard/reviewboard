@@ -17,11 +17,17 @@ from kgb import SpyAgency
 from reviewboard.accounts.backends import AuthBackend, StandardAuthBackend
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.features import dvcs_feature
+from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.reviews.fields import (BaseEditableField,
                                         BaseTextAreaField,
                                         BaseReviewRequestField,
                                         get_review_request_fieldset)
-from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+from reviewboard.reviews.models import (
+    Bug,
+    ReviewRequest,
+    ReviewRequestDraft,
+)
+from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY
 from reviewboard.reviews.signals import (review_request_published,
                                          review_request_publishing)
 from reviewboard.webapi.errors import (COMMIT_ID_ALREADY_EXISTS,
@@ -768,6 +774,252 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
         self.assertFalse(ChangeDescription.save.called)
         self.assertTrue(ReviewRequestDraft.save.last_called_with(
             update_fields=['extra_data', 'last_updated']))
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_with_bugs(self) -> None:
+        """Testing the PUT <URL> API with bugs field and bare IDs"""
+        review_request, tracker = \
+            self._create_review_request_with_bug_tracker()
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'bugs': '4,2',
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.assertTrue(draft.extra_data.get(BUGS_MIGRATED_KEY))
+        self.assertEqual(
+            list(draft.bugs.values_list('bug_id', 'bug_tracker')),
+            [
+                ('2', tracker.pk),
+                ('4', tracker.pk),
+            ])
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_with_bugs_and_tracker_ids(self) -> None:
+        """Testing the PUT <URL> API with bugs field and tracker-qualified
+        IDs
+        """
+        review_request, tracker = \
+            self._create_review_request_with_bug_tracker()
+        other_tracker = self.create_bug_tracker(name='Other Tracker',
+                                                service_name='splat')
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'bugs': f'4,{other_tracker.pk}:XYZ-1',
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.assertEqual(
+            list(draft.bugs.values_list('bug_id', 'bug_tracker')),
+            [
+                ('4', tracker.pk),
+                ('XYZ-1', other_tracker.pk),
+            ])
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_with_bugs_replaces_usable_tracker_links(self) -> None:
+        """Testing the PUT <URL> API with bugs field replaces links on
+        every bug tracker the user can use
+        """
+        review_request, tracker = \
+            self._create_review_request_with_bug_tracker()
+        other_tracker = self.create_bug_tracker(name='Other Tracker',
+                                                service_name='splat')
+
+        draft = ReviewRequestDraft.create(review_request)
+        draft.bugs.add(
+            Bug.objects.get_or_create_bug(bug_tracker=tracker,
+                                          bug_id='1'),
+            Bug.objects.get_or_create_bug(bug_tracker=other_tracker,
+                                          bug_id='2'))
+        draft.extra_data[BUGS_MIGRATED_KEY] = True
+        draft.save(update_fields=('extra_data',))
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'bugs': '3',
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        # Both trackers are usable, so the payload replaced both scopes:
+        # bug 3 on the default tracker, and nothing elsewhere.
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.assertEqual(
+            list(draft.bugs.values_list('bug_id', 'bug_tracker')),
+            [('3', tracker.pk)])
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_with_bugs_preserves_unusable_tracker_links(self) -> None:
+        """Testing the PUT <URL> API with bugs field preserves links on
+        bug trackers the user cannot use
+        """
+        review_request, tracker = \
+            self._create_review_request_with_bug_tracker()
+        limited_tracker = self.create_bug_tracker(
+            name='Limited Tracker',
+            service_name='splat',
+            limit_to_groups=[self.create_review_group()])
+
+        # Simulate a link added by an authorized user.
+        draft = ReviewRequestDraft.create(review_request)
+        draft.bugs.add(Bug.objects.get_or_create_bug(
+            bug_tracker=limited_tracker,
+            bug_id='SECRET-1'))
+        draft.extra_data[BUGS_MIGRATED_KEY] = True
+        draft.save(update_fields=('extra_data',))
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'bugs': '3',
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        # The link on the limited tracker was neither stripped nor
+        # replaced.
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.assertEqual(
+            list(draft.bugs.values_list('bug_id', 'bug_tracker')),
+            [
+                ('SECRET-1', limited_tracker.pk),
+                ('3', tracker.pk),
+            ])
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_with_bugs_and_unusable_tracker(self) -> None:
+        """Testing the PUT <URL> API with bugs field naming a bug tracker
+        the user cannot use
+        """
+        review_request, _tracker = \
+            self._create_review_request_with_bug_tracker()
+        limited_tracker = self.create_bug_tracker(
+            name='Limited Tracker',
+            service_name='splat',
+            limit_to_groups=[self.create_review_group()])
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'bugs': f'{limited_tracker.pk}:1',
+            },
+            expected_status=403)
+
+        self.assertEqual(rsp, {
+            'stat': 'fail',
+            'err': {
+                'code': PERMISSION_DENIED.code,
+                'msg': PERMISSION_DENIED.msg,
+                'type': PERMISSION_DENIED.error_type,
+            },
+        })
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_with_bugs_and_invalid_tracker(self) -> None:
+        """Testing the PUT <URL> API with bugs field naming an unknown bug
+        tracker
+        """
+        review_request, _tracker = \
+            self._create_review_request_with_bug_tracker()
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'bugs': '99999:1',
+            },
+            expected_status=400)
+
+        self.assertEqual(rsp, {
+            'stat': 'fail',
+            'err': {
+                'code': INVALID_FORM_DATA.code,
+                'msg': INVALID_FORM_DATA.msg,
+                'type': INVALID_FORM_DATA.error_type,
+            },
+            'fields': {
+                'bugs': ['99999 is not a valid bug tracker ID'],
+            },
+        })
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_with_bugs_and_no_default_tracker(self) -> None:
+        """Testing the PUT <URL> API with bugs field and bare IDs without a
+        default bug tracker leaves bugs unattributed
+        """
+        review_request, _tracker = \
+            self._create_review_request_with_bug_tracker()
+
+        repository = review_request.repository
+        repository.default_bug_tracker = None
+        repository.save(update_fields=('default_bug_tracker',))
+
+        # A second site-wide tracker keeps the remaining one from acting
+        # as an implied default.
+        self.create_bug_tracker(name='Other Tracker',
+                                service_name='splat')
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'bugs': '7',
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        sentinel = ConfiguredBugTracker.objects.get_sentinel()
+        self.assertEqual(
+            list(draft.bugs.values_list('bug_id', 'bug_tracker')),
+            [('7', sentinel.pk)])
+
+    @add_fixtures(['test_scmtools'])
+    @webapi_test_template
+    def test_put_with_bugs_and_implied_default_tracker(self) -> None:
+        """Testing the PUT <URL> API with bugs field and bare IDs attributes
+        bugs to a single site-wide tracker acting as the implied default
+        """
+        review_request, tracker = \
+            self._create_review_request_with_bug_tracker()
+
+        repository = review_request.repository
+        repository.default_bug_tracker = None
+        repository.save(update_fields=('default_bug_tracker',))
+
+        rsp = self.api_put(
+            get_review_request_draft_url(review_request),
+            {
+                'bugs': '7',
+            },
+            expected_mimetype=review_request_draft_item_mimetype)
+
+        self.assertEqual(rsp['stat'], 'ok')
+
+        draft = ReviewRequestDraft.objects.get(pk=rsp['draft']['id'])
+        self.assertEqual(
+            list(draft.bugs.values_list('bug_id', 'bug_tracker')),
+            [('7', tracker.pk)])
 
     @webapi_test_template
     def test_put_with_changedescription(self):
@@ -2312,3 +2564,34 @@ class ResourceTests(SpyAgency, ExtraDataListMixin, ExtraDataItemMixin,
 
         self.assertEqual(rsp['stat'], 'ok')
         self.assertTrue(rsp['draft']['description'], 'New description')
+
+    def _create_review_request_with_bug_tracker(
+        self,
+    ) -> tuple[ReviewRequest, ConfiguredBugTracker]:
+        """Create a review request whose repository has a default bug tracker.
+
+        Version Added:
+            9.0
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (reviewboard.reviews.models.ReviewRequest):
+                    The review request.
+
+                1 (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                    The default bug tracker.
+        """
+        repository = self.create_repository()
+        tracker = self.create_bug_tracker(name='Default Tracker',
+                                          service_name='splat')
+        repository.default_bug_tracker = tracker
+        repository.save(update_fields=('default_bug_tracker',))
+
+        review_request = self.create_review_request(repository=repository,
+                                                    submitter=self.user,
+                                                    publish=True)
+
+        return review_request, tracker

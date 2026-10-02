@@ -74,9 +74,11 @@ export class ClientLoginPageView extends PageView<
     ClientLoginPageViewOptions
 > {
     static contentTemplate = _.template(dedent`
-        <h1><%- header %></h1>
-        <p><%- message %><span id="redirect-counter"><%- count %></span></p>`
-    );
+        <div class="auth-section">
+         <h1><%- header %></h1>
+         <p><%- message %><span id="redirect-counter"><%- count %></span></p>
+        </div>
+    `);
 
     /**********************
      * Instance variables *

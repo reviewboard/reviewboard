@@ -5,21 +5,86 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from django.http import (HttpRequest,
-                         HttpResponse,
-                         HttpResponseNotFound)
+from django.http import (
+    HttpRequest,
+    HttpResponse,
+    HttpResponseForbidden,
+    HttpResponseNotFound,
+)
 from django.utils.html import escape, strip_tags
 from django.utils.safestring import SafeString, mark_safe
 from django.utils.translation import gettext_lazy as _
 from django.views.generic.base import TemplateView, View
 
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
+from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    SENTINEL_BUG_TRACKER_SERVICE_NAME,
+)
 from reviewboard.reviews.markdown_utils import render_markdown
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
     from typing import Any
+
+    from reviewboard.reviews.models import ReviewRequest
+
+
+def _resolve_bug_tracker(
+    request: HttpRequest,
+    review_request: ReviewRequest,
+    bug_tracker_id: int,
+) -> tuple[ConfiguredBugTracker | None, HttpResponse | None]:
+    """Resolve a bug tracker for a tracker-qualified bug view.
+
+    This checks the tracker's existence and enabled state, the Local
+    Site, and the requesting user's conditions.
+
+    Version Added:
+        9.0
+
+    Args:
+        request (django.http.HttpRequest):
+            The HTTP request from the client.
+
+        review_request (reviewboard.reviews.models.ReviewRequest):
+            The review request the bug is viewed on.
+
+        bug_tracker_id (int):
+            The ID of the bug tracker.
+
+    Returns:
+        tuple:
+        A 2-tuple of:
+
+        Tuple:
+            0 (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker. If an error occurred, this will be ``None``.
+
+            1 (django.http.HttpResponse):
+                An error response. If the tracker resolved, this will be
+                ``None``.
+    """
+    bug_tracker = (
+        ConfiguredBugTracker.objects
+        .filter(pk=bug_tracker_id,
+                enabled=True,
+                local_site=review_request.local_site_id)
+        .exclude(service_name=SENTINEL_BUG_TRACKER_SERVICE_NAME)
+        .first()
+    )
+
+    if bug_tracker is None:
+        return None, HttpResponseNotFound(
+            _('Unable to find bug tracker'))
+
+    if not bug_tracker.is_usable_by(request.user, request=request):
+        return None, HttpResponseForbidden(
+            _('You do not have access to this bug tracker'))
+
+    return bug_tracker, None
 
 
 class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
@@ -69,36 +134,68 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
         """
         request = self.request
         review_request = self.review_request
-        repository = review_request.repository
-
-        if not repository:
-            return HttpResponseNotFound(
-                _('Review Request does not have an associated repository'))
-
-        bug_tracker = repository.bug_tracker_service
-
-        if not bug_tracker:
-            return HttpResponseNotFound(
-                _('Unable to find bug tracker service'))
-
-        if not bug_tracker.supports_bug_info:
-            return HttpResponseNotFound(
-                _('Bug tracker %s does not support metadata')
-                % bug_tracker.name)
+        bug_tracker_id = kwargs.pop('bug_tracker_id', None)
 
         self.bug_id = bug_id
-        self.bug_info = bug_tracker.get_bug_info(
-            repository=repository,
-            bug_id=bug_id)
+        self.bug_tracker_id = bug_tracker_id
+
+        if bug_tracker_id is not None:
+            # This is the tracker-qualified route.
+            tracker, error_response = _resolve_bug_tracker(
+                request, review_request, bug_tracker_id)
+
+            if error_response is not None:
+                return error_response
+
+            if tracker is None:
+                return HttpResponseNotFound(
+                    _('Unable to find bug tracker with ID {}')
+                    .format(bug_tracker_id))
+
+            service = tracker.service
+            assert isinstance(service, BaseHostingService)
+
+            if not service.supports_bug_info:
+                return HttpResponseNotFound(
+                    _('Bug tracker {} does not support metadata')
+                    .format(tracker.name))
+
+            self.bug_info = service.get_bug_info(config=tracker,
+                                                 bug_id=bug_id)
+            bug_tracker_name = tracker.name
+        else:
+            repository = review_request.repository
+
+            if not repository:
+                return HttpResponseNotFound(
+                    _('Review Request does not have an associated '
+                      'repository'))
+
+            default_bug_tracker = repository.get_default_bug_tracker()
+
+            if default_bug_tracker is None:
+                return HttpResponseNotFound(
+                    _('Unable to find bug tracker service'))
+
+            bug_tracker = default_bug_tracker.service
+
+            if not isinstance(bug_tracker, BaseBugTracker):
+                return HttpResponseNotFound(
+                    _('Bug tracker {} does not support metadata')
+                    .format(bug_tracker.name))
+
+            self.bug_info = bug_tracker.get_bug_info(
+                repository=repository,
+                bug_id=bug_id)
+            bug_tracker_name = bug_tracker.name
 
         if (not self.bug_info.get('summary') and
             not self.bug_info.get('description')):
             return HttpResponseNotFound(
-                _('No bug metadata found for bug %(bug_id)s on bug tracker '
-                  '%(bug_tracker)s') % {
-                    'bug_id': bug_id,
-                    'bug_tracker': bug_tracker.name,
-                })
+                _(
+                    'No bug metadata found for bug {bug_id} on bug tracker '
+                    '{bug_tracker}'
+                ).format(bug_id=bug_id, bug_tracker=bug_tracker_name))
 
         return super().get(request, **kwargs)
 
@@ -121,10 +218,17 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
         description = self.normalize_text(self.bug_info['description'],
                                           description_text_format)
 
-        bug_url = local_site_reverse(
-            'bug_url',
-            local_site=self.local_site,
-            args=[self.review_request.display_id, self.bug_id])
+        if (bug_tracker_id := self.bug_tracker_id) is not None:
+            bug_url = local_site_reverse(
+                'bug_tracker_bug_url',
+                local_site=self.local_site,
+                args=[self.review_request.display_id, bug_tracker_id,
+                      self.bug_id])
+        else:
+            bug_url = local_site_reverse(
+                'bug_url',
+                local_site=self.local_site,
+                args=[self.review_request.display_id, self.bug_id])
 
         context_data = super().get_context_data(**kwargs)
         context_data.update({
@@ -216,6 +320,30 @@ class BugURLRedirectView(ReviewRequestViewMixin, View):
             django.http.HttpResponse:
             The HTTP response redirecting the client.
         """
+        bug_tracker_id = kwargs.get('bug_tracker_id')
+
+        if bug_tracker_id is not None:
+            # This is the tracker-qualified route.
+            tracker, error_response = _resolve_bug_tracker(
+                request, self.review_request, bug_tracker_id)
+
+            if error_response is not None:
+                return error_response
+
+            bug_url = tracker.get_bug_url(bug_id)
+
+            if not bug_url:
+                return HttpResponseNotFound(
+                    _('The bug tracker does not have a URL for this bug'))
+
+            # Need to create a custom HttpResponse because a non-HTTP url
+            # scheme will cause HttpResponseRedirect to fail with a
+            # "Disallowed Redirect".
+            response = HttpResponse(status=302)
+            response['Location'] = bug_url
+
+            return response
+
         repository = self.review_request.repository
 
         if not repository:

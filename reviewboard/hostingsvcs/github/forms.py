@@ -22,9 +22,11 @@ from reviewboard.hostingsvcs.base.forms import (
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
-    from typing import Final
+    from typing import ClassVar, Final
 
     from typelets.django.strings import StrOrPromise
+
+    from reviewboard.scmtools.models import Repository
 
 
 class GitHubAuthForm(BaseHostingServiceAuthForm):
@@ -59,8 +61,74 @@ class GitHubAuthForm(BaseHostingServiceAuthForm):
         }
 
 
-class GitHubPublicForm(BaseHostingServiceRepositoryForm):
+class GitHubRepositoryForm(BaseHostingServiceRepositoryForm):
+    """Base sub-form for GitHub repository plans.
+
+    On save, this resolves the repository's owner and name from the
+    plan-specific fields and stores them under canonical ``github_owner``
+    and ``github_repo_name`` keys in the repository's ``extra_data``.
+    Consumers read these through :py:meth:`GitHub.get_repository_ids()
+    <reviewboard.hostingsvcs.github.service.GitHub.get_repository_ids>`.
+
+    Version Added:
+        9.0
+    """
+
+    #: The name of the form field holding the repository owner.
+    #:
+    #: ``None`` means the owner is the linked account's username.
+    owner_field: ClassVar[str | None] = None
+
+    #: The name of the form field holding the repository name.
+    repo_name_field: ClassVar[str]
+
+    def save(
+        self,
+        repository: (Repository | None) = None,
+        **kwargs,
+    ) -> None:
+        """Save information from the form back to the repository.
+
+        In addition to the plan-specific fields, this writes the resolved
+        owner and repository name to the canonical ``github_owner`` and
+        ``github_repo_name`` keys in the repository's ``extra_data``.
+
+        Args:
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository being saved.
+
+            **kwargs (dict):
+                Additional keyword arguments to pass to the parent method.
+        """
+        super().save(repository=repository, **kwargs)
+
+        if self.prefix:
+            # This instance is configuring a legacy bug tracker, not the
+            # repository itself. Its fields don't describe the repository,
+            # so the canonical keys must not be written.
+            return
+
+        if repository is None:
+            repository = self.repository
+            assert repository is not None
+
+        owner_field = self.owner_field
+
+        if owner_field is None:
+            owner = repository.hosting_account.username
+        else:
+            owner = self.cleaned_data[owner_field]
+
+        repository.extra_data.update({
+            'github_owner': owner,
+            'github_repo_name': self.cleaned_data[self.repo_name_field],
+        })
+
+
+class GitHubPublicForm(GitHubRepositoryForm):
     """Sub-form for public repositories owned by a user."""
+
+    repo_name_field = 'github_public_repo_name'
 
     github_public_repo_name = forms.CharField(
         label=_('Repository name'),
@@ -73,8 +141,10 @@ class GitHubPublicForm(BaseHostingServiceRepositoryForm):
                     '&lt;repo_name&gt;/</code>'))
 
 
-class GitHubPrivateForm(BaseHostingServiceRepositoryForm):
+class GitHubPrivateForm(GitHubRepositoryForm):
     """Sub-form for private repositories owned by a user."""
+
+    repo_name_field = 'github_private_repo_name'
 
     github_private_repo_name = forms.CharField(
         label=_('Repository name'),
@@ -87,8 +157,11 @@ class GitHubPrivateForm(BaseHostingServiceRepositoryForm):
                     '&lt;repo_name&gt;/</code>'))
 
 
-class GitHubPublicOrgForm(BaseHostingServiceRepositoryForm):
+class GitHubPublicOrgForm(GitHubRepositoryForm):
     """Sub-form for public repositories owned by an organization."""
+
+    owner_field = 'github_public_org_name'
+    repo_name_field = 'github_public_org_repo_name'
 
     github_public_org_name = forms.CharField(
         label=_('Organization name'),
@@ -111,8 +184,11 @@ class GitHubPublicOrgForm(BaseHostingServiceRepositoryForm):
                     '&lt;repo_name&gt;/</code>'))
 
 
-class GitHubPrivateOrgForm(BaseHostingServiceRepositoryForm):
+class GitHubPrivateOrgForm(GitHubRepositoryForm):
     """Sub-form for private repositories owned by an organization."""
+
+    owner_field = 'github_private_org_name'
+    repo_name_field = 'github_private_org_repo_name'
 
     github_private_org_name = forms.CharField(
         label=_('Organization name'),

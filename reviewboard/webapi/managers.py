@@ -65,6 +65,17 @@ class WebAPITokenManager(DjbletsWebAPITokenManager):
         can be increased for longer-running operations.
 
         Version Changed:
+            9.0:
+            * An existing token is now only reused if its policy matches
+              ``default_policy``. Previously, any active token for the
+              client would be reused regardless of policy, which could
+              hand back a full-access token to a caller requesting a
+              restricted one (or vice versa).
+
+              For the purposes of comparison, an empty policy is considered
+              equivalent to an unset policy.
+
+        Version Changed:
             8.1:
             * By default, tokens with less than 5 minutes of validity left
               are excluded.
@@ -146,6 +157,11 @@ class WebAPITokenManager(DjbletsWebAPITokenManager):
         if min_validity_secs > 0:
             valid_until += datetime.timedelta(seconds=min_validity_secs)
 
+        if default_policy is UNSET:
+            policy = None
+        else:
+            policy = default_policy
+
         tokens: QuerySet[WebAPIToken] = (
             self.filter(
                 Q(user=user) &
@@ -157,10 +173,14 @@ class WebAPITokenManager(DjbletsWebAPITokenManager):
             .order_by(F('expires').desc(nulls_first=True))
         )
 
+        norm_policy = policy or None
+
         for token in tokens:
             if (token.extra_data.get('client_name') == client_name and
-                (not ignore_deprecated or not token.is_deprecated())):
-                # This is an active token. Return it as-is.
+                (not ignore_deprecated or not token.is_deprecated()) and
+                norm_policy == (token.policy or None)):
+                # This is an active token with a matching policy. Return
+                # it as-is.
                 return token, False
 
         if expires is UNSET:
@@ -172,11 +192,6 @@ class WebAPITokenManager(DjbletsWebAPITokenManager):
                            datetime.timedelta(days=expire_amount))
             else:
                 expires = None
-
-        if default_policy is UNSET:
-            policy = None
-        else:
-            policy = default_policy
 
         extra_data: JSONDict = {}
 

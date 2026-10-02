@@ -22,7 +22,10 @@ from djblets.log import log_timed
 from djblets.util.decorators import cached_property
 from housekeeping import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
+from reviewboard.deprecation import (
+    RemovedInReviewBoard10_0Warning,
+    RemovedInReviewBoard11_0Warning,
+)
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.models import (
@@ -201,6 +204,19 @@ class Repository(models.Model):
     #: This is used to indicate whether a stored password is in encrypted
     #: form or plain text form.
     ENCRYPTED_PASSWORD_PREFIX: Final[str] = '\t'
+
+    #: Fields that can carry legacy hosting-based bug tracker settings.
+    #:
+    #: A save limited to fields outside this set skips the hosting bug
+    #: tracker sync.
+    #:
+    #: Version Added:
+    #:     9.0
+    _BUG_TRACKER_HOSTING_FIELDS: Final[frozenset[str]] = frozenset({
+        'bug_tracker',
+        'extra_data',
+        'hosting_account',
+    })
 
     name = models.CharField(_('Name'), max_length=255)
     path = models.CharField(_('Path'), max_length=255)
@@ -1214,6 +1230,12 @@ class Repository(models.Model):
         This will perform any data normalization needed, and then save the
         repository to the database.
 
+        The legacy ``bug_tracker`` URL template and
+        :py:attr:`default_bug_tracker` are kept in sync, so the two
+        never diverge in either direction. Legacy hosting-based bug
+        tracker settings in ``extra_data`` are synced to a
+        configuration after the save.
+
         Args:
             **kwargs (dict):
                 Keyword arguments to pass to the parent method.
@@ -1223,7 +1245,146 @@ class Repository(models.Model):
         if self.hooks_uuid == '':
             self.hooks_uuid = None
 
-        return super().save(*args, **kwargs)
+        update_fields = kwargs.get('update_fields')
+        extra_update_fields = self._sync_bug_tracker_fields(update_fields)
+
+        if extra_update_fields and update_fields is not None:
+            kwargs['update_fields'] = \
+                set(update_fields) | extra_update_fields
+
+        super().save(*args, **kwargs)
+
+        # A sync on a brand-new repository defers linking it to its
+        # configuration until the repository has an ID.
+        if getattr(self, '_bug_tracker_scope_pending', False):
+            self._bug_tracker_scope_pending = False
+            default_bug_tracker = self.default_bug_tracker
+
+            if default_bug_tracker is not None:
+                default_bug_tracker.repositories.add(self)
+
+        # Hosting-based legacy settings are synced after the save, since
+        # their configurations are scoped to the repository's ID.
+        if (update_fields is None or
+            not self._BUG_TRACKER_HOSTING_FIELDS.isdisjoint(update_fields)):
+            self._sync_hosting_bug_tracker()
+
+    def _sync_hosting_bug_tracker(self) -> None:
+        """Sync the default bug tracker from legacy hosting settings.
+
+        A repository saved with ``bug_tracker_use_hosting`` or
+        ``bug_tracker_type`` in ``extra_data`` gets or creates the
+        matching configuration and has it assigned as the default. This
+        must run after the save, since the configuration is scoped to
+        the repository's ID.
+
+        Version Added:
+            9.0
+        """
+        from reviewboard.hostingsvcs.bug_tracker_migration import \
+            sync_default_bug_tracker_from_hosting
+
+        try:
+            sync_default_bug_tracker_from_hosting(self)
+        except Exception as e:
+            logger.warning('Error syncing the default bug tracker from '
+                           'legacy hosting settings for repository %s: %s',
+                           self.pk, e)
+
+    def _sync_bug_tracker_fields(
+        self,
+        update_fields: Sequence[str] | None,
+    ) -> set[str]:
+        """Sync the legacy bug tracker URL and the default bug tracker.
+
+        A direct write to the legacy ``bug_tracker`` URL template gets
+        or creates a matching custom configuration and assigns it as
+        the default (an empty value clears it). Otherwise, an assigned
+        default regenerates the legacy template so older consumers keep
+        working.
+
+        Version Added:
+            9.0
+
+        Args:
+            update_fields (list of str):
+                The fields being saved, if a limited set was given.
+
+        Returns:
+            set of str:
+            Any additional fields that must be saved.
+        """
+        # The repository form composes and writes the legacy field
+        # itself. That write is not deprecated, but must still sync.
+        suppress_deprecation = self.__dict__.pop(
+            '_suppress_bug_tracker_deprecation', False)
+
+        if (update_fields is not None and
+            'bug_tracker' not in update_fields and
+            'default_bug_tracker' not in update_fields):
+            return set()
+
+        try:
+            if self.pk is not None:
+                old_values = (
+                    Repository.objects
+                    .filter(pk=self.pk)
+                    .values_list('bug_tracker', 'default_bug_tracker_id')
+                    .first()
+                )
+            else:
+                old_values = None
+
+            if old_values is None:
+                old_values = ('', None)
+
+            old_bug_tracker, old_default_id = old_values
+
+            bug_tracker_changed = (
+                self.bug_tracker != (old_bug_tracker or '') and
+                (update_fields is None or
+                 'bug_tracker' in update_fields))
+
+            # An explicit default bug tracker assignment in the same
+            # save wins over a legacy URL write.
+            default_assigned = (
+                self.default_bug_tracker_id is not None and
+                self.default_bug_tracker_id != old_default_id and
+                (update_fields is None or
+                 'default_bug_tracker' in update_fields))
+
+            if bug_tracker_changed and not default_assigned:
+                # The legacy URL template was written directly. Sync the
+                # default bug tracker from it.
+                from reviewboard.hostingsvcs.bug_tracker_migration import \
+                    sync_default_bug_tracker_from_url
+
+                if not suppress_deprecation:
+                    RemovedInReviewBoard11_0Warning.warn(
+                        'Directly writing Repository.bug_tracker is '
+                        'deprecated and will be removed in Review Board 11. '
+                        'Assign Repository.default_bug_tracker instead.')
+
+                sync_default_bug_tracker_from_url(self)
+
+                return {'default_bug_tracker'}
+            elif default_assigned:
+                # Regenerate the legacy template from the newly-assigned
+                # default bug tracker, for older consumers. A save that
+                # changes neither field must leave both alone.
+                bug_tracker_url = \
+                    self.default_bug_tracker.get_bug_url('%s') or ''
+
+                if bug_tracker_url != self.bug_tracker:
+                    self.bug_tracker = bug_tracker_url
+
+                    return {'bug_tracker'}
+        except Exception as e:
+            logger.warning('Error syncing bug tracker fields for '
+                           'repository %s: %s',
+                           self.pk, e)
+
+        return set()
 
     def clean(self) -> None:
         """Clean method for checking null unique_together constraints.

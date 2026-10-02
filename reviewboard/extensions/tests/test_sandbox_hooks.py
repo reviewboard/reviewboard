@@ -40,11 +40,6 @@ class SandboxFileDiffACLTestHook(FileDiffACLHook):
         raise Exception
 
 
-class SandboxReviewRequestApprovalTestHook(ReviewRequestApprovalHook):
-    def is_approved(self, review_request, prev_approved, prev_failure):
-        raise Exception
-
-
 class SandboxNavigationBarTestHook(NavigationBarHook):
     def get_entries(self, context):
         raise Exception
@@ -172,13 +167,6 @@ class SandboxTests(BaseExtensionHookTestCase):
                                author_name=author_name),
 
         review_request._are_diffs_accessible_by(self.user)
-
-    def test_is_approved_sandbox(self):
-        """Testing ReviewRequestApprovalHook.is_approved with raised exception
-        """
-        SandboxReviewRequestApprovalTestHook(extension=self.extension)
-        review = ReviewRequest()
-        review._calculate_approval()
 
     def test_get_entries(self):
         """Testing NavigationBarHook.get_entries with raised exception"""

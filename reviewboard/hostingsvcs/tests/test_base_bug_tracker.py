@@ -84,8 +84,7 @@ class BaseBugTrackerDispatchTests(kgb.SpyAgency, TestCase):
         """Testing get_bug_info with a legacy override and a config returns
         no info
         """
-        config = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                     service_name='splat')
+        config = self.create_bug_tracker()
         tracker = _LegacyBugTracker()
 
         with self.assertWarns(RemovedInReviewBoard11_0Warning):
@@ -99,8 +98,7 @@ class BaseBugTrackerDispatchTests(kgb.SpyAgency, TestCase):
 
     def test_modern_override_with_config(self) -> None:
         """Testing get_bug_info with a modern override and a config"""
-        config = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                     service_name='splat')
+        config = self.create_bug_tracker()
         tracker = _ModernBugTracker()
 
         info = tracker.get_bug_info(config=config, bug_id='123')
@@ -121,8 +119,7 @@ class BaseBugTrackerDispatchTests(kgb.SpyAgency, TestCase):
         """Testing get_bug_info with a modern override resolves the
         repository's default bug tracker
         """
-        config = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                     service_name='splat')
+        config = self.create_bug_tracker()
         repository = self.create_repository()
         repository.default_bug_tracker = config
         repository.save(update_fields=('default_bug_tracker',))
@@ -135,8 +132,7 @@ class BaseBugTrackerDispatchTests(kgb.SpyAgency, TestCase):
 
     def test_cache_key_with_config(self) -> None:
         """Testing get_bug_info uses the config cache key"""
-        config = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                     service_name='splat')
+        config = self.create_bug_tracker()
         tracker = _ModernBugTracker()
 
         self.spy_on(tracker.make_bug_cache_key_for_config)
@@ -170,9 +166,73 @@ class BaseBugTrackerDispatchTests(kgb.SpyAgency, TestCase):
 
     def test_base_search_bugs(self) -> None:
         """Testing BaseBugTracker.search_bugs default returns no results"""
-        config = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                     service_name='splat')
+        config = self.create_bug_tracker()
 
         self.assertEqual(
             BaseBugTracker().search_bugs(config=config, query='crash'),
             [])
+
+    def test_get_bugs_info(self) -> None:
+        """Testing BaseBugTracker.get_bugs_info default fetches each bug"""
+        config = ConfiguredBugTracker.objects.create(name='Tracker',
+                                                     service_name='splat')
+        tracker = _ModernBugTracker()
+
+        self.assertEqual(
+            tracker.get_bugs_info(config=config, bug_ids=['123', '456']),
+            {
+                '123': {
+                    'summary': 'Bug 123',
+                    'description': f'From config:{config.pk}.',
+                    'status': 'open',
+                },
+                '456': {
+                    'summary': 'Bug 456',
+                    'description': f'From config:{config.pk}.',
+                    'status': 'open',
+                },
+            })
+
+    def test_get_bugs_info_with_errors(self) -> None:
+        """Testing BaseBugTracker.get_bugs_info skips bugs that fail to
+        fetch
+        """
+        config = ConfiguredBugTracker.objects.create(name='Tracker',
+                                                     service_name='splat')
+        tracker = _ModernBugTracker()
+
+        def _get_bug_info(
+            _tracker: BaseBugTracker,
+            *args,
+            bug_id: str,
+            **kwargs,
+        ) -> BugInfo:
+            if bug_id == '123':
+                raise ValueError('kaboom')
+
+            return {
+                'summary': f'Bug {bug_id}',
+                'description': '',
+                'status': 'open',
+            }
+
+        self.spy_on(tracker.get_bug_info, call_fake=_get_bug_info)
+
+        self.assertEqual(
+            tracker.get_bugs_info(config=config, bug_ids=['123', '456']),
+            {
+                '456': {
+                    'summary': 'Bug 456',
+                    'description': '',
+                    'status': 'open',
+                },
+            })
+
+    def test_get_bugs_info_with_no_metadata(self) -> None:
+        """Testing BaseBugTracker.get_bugs_info skips bugs without metadata"""
+        config = ConfiguredBugTracker.objects.create(name='Tracker',
+                                                     service_name='splat')
+
+        self.assertEqual(
+            BaseBugTracker().get_bugs_info(config=config, bug_ids=['123']),
+            {})

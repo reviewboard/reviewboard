@@ -1,0 +1,14 @@
+{% load djblets_js i18n %}
+
+{{input_html}}
+<div class="rb-c-repo-bug-trackers" id="{{input_id}}_widget"></div>
+
+<script>
+$(function() {
+    new RB.Admin.RepositoryBugTrackersView({
+        el: document.getElementById('{{input_id|escapejs}}_widget'),
+        $input: $('#{{input_id|escapejs}}'),
+        {{js_view_data|json_dumps_items}}
+    }).render();
+});
+</script>

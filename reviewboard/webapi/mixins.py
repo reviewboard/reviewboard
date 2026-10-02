@@ -1,16 +1,35 @@
+"""Mixins for API resources."""
+
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, TypedDict
+
+from django.contrib.auth.models import AnonymousUser
 from django.utils.html import escape
 from djblets.markdown import markdown_escape, markdown_unescape
 from djblets.webapi.resources.mixins.forms import (
-    UpdateFormMixin as DjbletsUpdateFormMixin)
+    UpdateFormMixin as DjbletsUpdateFormMixin,
+)
+from typing_extensions import NotRequired
 
-from reviewboard.reviews.markdown_utils import (markdown_set_field_escaped,
-                                                render_markdown)
+from reviewboard.hostingsvcs.models import SENTINEL_BUG_TRACKER_SERVICE_NAME
+from reviewboard.reviews.markdown_utils import (
+    markdown_set_field_escaped,
+    render_markdown,
+)
+from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY, sort_bug_ids
 from reviewboard.webapi.base import ImportExtraDataError
 
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
-class MarkdownFieldsMixin(object):
+    from django.http import HttpRequest
+
+    from reviewboard.hostingsvcs.models import ConfiguredBugTracker
+    from reviewboard.reviews.models import ReviewRequest, ReviewRequestDraft
+
+
+class MarkdownFieldsMixin:
     """Mixes in common logic for Markdown text fields.
 
     Any resource implementing this is assumed to have at least one
@@ -39,6 +58,7 @@ class MarkdownFieldsMixin(object):
     ``?include-raw-text-fields=1`` in 2.0.9 and 2.0.10. The latter is
     deprecated.)
     """
+
     TEXT_TYPE_PLAIN = 'plain'
     TEXT_TYPE_MARKDOWN = 'markdown'
     TEXT_TYPE_HTML = 'html'
@@ -531,3 +551,200 @@ class UpdateFormMixin(DjbletsUpdateFormMixin):
         form.save_m2m()
 
         return instance
+
+
+class SerializedBugEntry(TypedDict):
+    """A serialized entry in the bugs field for review requests and draft.
+
+    Version Added:
+        9.0
+    """
+
+    #: The bug ID.
+    id: str
+
+    #: The ID of the bug tracker.
+    tracker: int | None
+
+    #: The bug summary, when available.
+    summary: NotRequired[str]
+
+    #: The link to the bug, when available.
+    url: NotRequired[str]
+
+
+class ReviewRequestDetailsMixin:
+    """Mixin for resources which operate on review request details.
+
+    Version Added:
+        9.0
+    """
+
+    def serialize_bugs_field(
+        self,
+        obj: ReviewRequest | ReviewRequestDraft,
+        request: (HttpRequest | None) = None,
+        **kwargs,
+    ) -> Sequence[SerializedBugEntry]:
+        """Serialize the "bugs" field.
+
+        Args:
+            obj (reviewboard.reviews.models.ReviewRequest or
+                 reviewboard.reviews.models.ReviewRequestDraft):
+                The review request or draft to serialize.
+
+            request (django.http.HttpRequest, optional):
+                The HTTP request from the client.
+
+            **kwargs (dict, unused):
+                Additional keyword arguments.
+
+        Returns:
+            list of SerializedBugEntry:
+            The serialized bug entries.
+        """
+        if request is not None and request.user.is_authenticated:
+            user = request.user
+        else:
+            user = AnonymousUser()
+
+        entries: list[SerializedBugEntry] = []
+        trackers_by_pk: dict[int, ConfiguredBugTracker] = {}
+
+        def _create_bug_entry(
+            *,
+            bug_id: str,
+            bug_summary: str | None,
+            tracker_id: int | None,
+            tracker: ConfiguredBugTracker | None,
+        ) -> SerializedBugEntry:
+            entry: SerializedBugEntry = {
+                'id': bug_id,
+                'tracker': tracker_id,
+            }
+
+            if (tracker is not None and
+                tracker.is_usable_by(user, request=request) and
+                tracker.service_name != SENTINEL_BUG_TRACKER_SERVICE_NAME):
+                if url := tracker.get_bug_url(bug_id):
+                    entry['url'] = url
+
+                if bug_summary:
+                    entry['summary'] = bug_summary
+
+            return entry
+
+        if ((extra_data := obj.extra_data) and
+            extra_data.get(BUGS_MIGRATED_KEY)):
+            for bug in obj.bugs.select_related('bug_tracker'):
+                tracker = bug.bug_tracker
+                trackers_by_pk[tracker.pk] = tracker
+
+                entries.append(_create_bug_entry(
+                    bug_id=bug.bug_id,
+                    bug_summary=bug.summary,
+                    tracker_id=tracker.pk,
+                    tracker=tracker))
+        else:
+            bug_ids = obj.get_bug_list()
+
+            if not bug_ids:
+                return []
+
+            repository = obj.repository
+            tracker = None
+
+            if repository is not None:
+                tracker = repository.get_default_bug_tracker()
+
+            if tracker is not None:
+                tracker_id = tracker.pk
+                trackers_by_pk[tracker_id] = tracker
+            else:
+                tracker_id = None
+
+            for bug_id in bug_ids:
+                entries.append(_create_bug_entry(
+                    bug_id=bug_id,
+                    bug_summary=None,
+                    tracker_id=tracker_id,
+                    tracker=tracker))
+
+        return self._sort_bug_entries(entries, trackers_by_pk)
+
+    def serialize_bugs_closed_field(
+        self,
+        obj: ReviewRequest | ReviewRequestDraft,
+        **kwargs,
+    ) -> Sequence[str]:
+        """Serialize the ``bugs_closed`` field.
+
+        Args:
+            obj (reviewboard.reviews.models.ReviewRequest or
+                 reviewboard.reviews.models.ReviewRequestDraft):
+                The object being serialized.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            list of str:
+            The contents of the ``bugs_closed`` field.
+        """
+        return obj.get_bug_list()
+
+    def _sort_bug_entries(
+        self,
+        entries: Sequence[SerializedBugEntry],
+        trackers_by_pk: Mapping[int, ConfiguredBugTracker],
+    ) -> list[SerializedBugEntry]:
+        """Return serialized bug entries sorted for display.
+
+        Entries are grouped by tracker (unattributed bugs last), and each
+        group is ordered by its tracker's display ordering
+        (:py:func:`~reviewboard.reviews.models.bug.sort_bug_ids`).
+
+        Version Added:
+            9.0
+
+        Args:
+            entries (list of dict):
+                The serialized bug entries.
+
+            trackers_by_pk (dict):
+                The bug tracker configurations the entries reference, keyed
+                by primary key.
+
+        Returns:
+            list of SerializedBugEntry:
+            The sorted entries.
+        """
+        grouped: dict[int | None, list[SerializedBugEntry]] = {}
+
+        for entry in entries:
+            grouped.setdefault(
+                entry['tracker'], []).append(entry)
+
+        result: list[SerializedBugEntry] = []
+
+        # Sort by tracker pk, with all unattributed bugs last.
+        for tracker_pk in sorted(grouped,
+                                 key=lambda pk: (pk is None, pk or 0)):
+            group = grouped[tracker_pk]
+
+            if tracker_pk is not None:
+                tracker = trackers_by_pk.get(tracker_pk)
+            else:
+                tracker = None
+
+            order = {
+                bug_id: i
+                for i, bug_id in enumerate(sort_bug_ids(
+                    [entry['id'] for entry in group],
+                    tracker=tracker))
+            }
+
+            group.sort(key=lambda entry: order[entry['id']])
+            result += group
+
+        return result

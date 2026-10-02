@@ -147,7 +147,7 @@ export class APIToken extends BaseResource<
     };
 
     /**
-     * The default policy set for new API tokens.
+     * The starting point for built-in policies for new API tokens.
      */
     static defaultPolicies = {
         custom: {
@@ -158,15 +158,6 @@ export class APIToken extends BaseResource<
                 },
             },
         },
-        readOnly: {
-            resources: {
-                '*': {
-                    allow: ['GET', 'HEAD', 'OPTIONS'],
-                    block: ['*'],
-                },
-            },
-        },
-        readWrite: {},
     };
 
     /**

@@ -1,5 +1,6 @@
 import { suite } from '@beanbag/jasmine-suites';
 import {
+    afterEach,
     beforeEach,
     describe,
     expect,
@@ -19,6 +20,7 @@ const {
     BaseFieldView,
     MultilineTextFieldView,
     TextFieldView,
+    TrackedBugsFieldView,
 } = ReviewRequestFields;
 
 
@@ -448,6 +450,267 @@ suite('rb/views/reviewRequestFieldViews', function() {
 
                     expect(extraData.foo_text_type).toBe('plain');
                 });
+            });
+        });
+    });
+
+    describe('TrackedBugsFieldView', function() {
+        function buildField(options={}) {
+            const $el = $('<div>')
+                .attr('id', 'field_bugs:1')
+                .data({
+                    'bug-search-url': options.searchURL || '',
+                    'bug-tracker-id': 1,
+                    'bug-url-template':
+                        '/r/1/bug-trackers/1/bugs/--bug_id--/',
+                    'can-view-bugs': options.canView !== false ? '1' : '',
+                })
+                .text(options.text || '');
+
+            if (options.editable) {
+                $el.addClass('editable');
+            }
+
+            const view = new TrackedBugsFieldView({
+                el: $el,
+                fieldID: 'bugs:1',
+                model: editor,
+            });
+            view.reviewRequestEditorView = editorView;
+
+            return view;
+        }
+
+        afterEach(function() {
+            TrackedBugsFieldView.instances.splice(
+                0, TrackedBugsFieldView.instances.length);
+        });
+
+        describe('Initialization', function() {
+            it('Parses state from data attributes', function() {
+                field = buildField({
+                    text: '12, 34',
+                });
+
+                expect(field.bugTrackerID).toBe(1);
+                expect(field.canViewBugs).toBeTrue();
+                expect(field._loadValue()).toEqual(['12', '34']);
+                expect(TrackedBugsFieldView.instances).toContain(field);
+            });
+        });
+
+        describe('formatValue', function() {
+            it('With viewable bugs', function() {
+                field = buildField();
+                field.formatValue(['12', '34']);
+
+                const $links = field.$el.find('a.bug');
+                expect($links.length).toBe(2);
+                expect($links.eq(0).attr('href'))
+                    .toBe('/r/1/bug-trackers/1/bugs/12/');
+                expect($links.eq(0).text()).toBe('12');
+            });
+
+            it('Without viewable bugs', function() {
+                field = buildField({
+                    canView: false,
+                });
+                field.formatValue(['12', '34']);
+
+                expect(field.$el.find('a').length).toBe(0);
+                expect(field.$el.text()).toBe('12, 34');
+            });
+        });
+
+        describe('Editing', function() {
+            beforeEach(function() {
+                editor.set('editable', true);
+            });
+
+            function sendKey(
+                inputEl: HTMLInputElement,
+                key: string,
+            ) {
+                inputEl.dispatchEvent(new KeyboardEvent('keydown', {
+                    bubbles: true,
+                    cancelable: true,
+                    key: key,
+                }));
+            }
+
+            it('Enter tokenizes typed text without saving', function() {
+                field = buildField({
+                    editable: true,
+                    searchURL: '/api/bug-searches/',
+                    text: '12',
+                });
+                field.render();
+
+                spyOn(editor, 'setDraftField').and.resolveTo();
+
+                const inlineEditor = field.inlineEditorView;
+                inlineEditor.startEdit();
+
+                const comboBox = inlineEditor.comboBox;
+                const inputEl = comboBox.textField.inputEl;
+
+                inputEl.value = 'ENG-5';
+                sendKey(inputEl, 'Enter');
+
+                expect(comboBox.textField.value).toBe('');
+                expect(inlineEditor.getBugsValue()).toBe('12, ENG-5');
+                expect(editor.setDraftField).not.toHaveBeenCalled();
+
+                /* A second Enter, with nothing typed, saves. */
+                sendKey(inputEl, 'Enter');
+
+                expect(editor.setDraftField).toHaveBeenCalled();
+            });
+
+            it('Comma tokenizes typed text', function() {
+                field = buildField({
+                    editable: true,
+                    searchURL: '/api/bug-searches/',
+                    text: '12',
+                });
+                field.render();
+
+                const inlineEditor = field.inlineEditorView;
+                inlineEditor.startEdit();
+
+                const comboBox = inlineEditor.comboBox;
+                const inputEl = comboBox.textField.inputEl;
+
+                inputEl.value = '34';
+                sendKey(inputEl, ',');
+
+                expect(comboBox.textField.value).toBe('');
+                expect(inlineEditor.getBugsValue()).toBe('12, 34');
+            });
+
+            it('Backspace moves the last chip into the field', function() {
+                field = buildField({
+                    editable: true,
+                    searchURL: '/api/bug-searches/',
+                    text: '12, 34',
+                });
+                field.render();
+
+                const inlineEditor = field.inlineEditorView;
+                inlineEditor.startEdit();
+
+                const comboBox = inlineEditor.comboBox;
+                const inputEl = comboBox.textField.inputEl;
+
+                sendKey(inputEl, 'Backspace');
+
+                expect(comboBox.textField.value).toBe('34');
+                expect(inlineEditor.getBugsValue()).toBe('12, 34');
+
+                /* The restored text is editable like any typed text. */
+                inputEl.value = '345';
+                sendKey(inputEl, 'Enter');
+
+                expect(inlineEditor.getBugsValue()).toBe('12, 345');
+            });
+
+            it('Reopening the editor clears typed text', function() {
+                field = buildField({
+                    editable: true,
+                    searchURL: '/api/bug-searches/',
+                    text: '12, 34',
+                });
+                field.render();
+
+                const inlineEditor = field.inlineEditorView;
+                expect(inlineEditor.comboBox).not.toBeNull();
+
+                inlineEditor.startEdit();
+
+                /*
+                 * Simulate a bug ID typed but not accepted as a token,
+                 * with the suggestions pop-up it would have opened.
+                 */
+                inlineEditor.comboBox.textField.value = '56';
+                inlineEditor.comboBox.open();
+                expect(inlineEditor.getBugsValue()).toBe('12, 34, 56');
+                expect(inlineEditor.comboBox.isOpen).toBeTrue();
+
+                /* The typed text makes the editor dirty. */
+                spyOn(window, 'confirm').and.returnValue(true);
+
+                inlineEditor.cancel();
+                inlineEditor.startEdit();
+
+                expect(inlineEditor.comboBox.textField.value).toBe('');
+                expect(inlineEditor.comboBox.isOpen).toBeFalse();
+                expect(inlineEditor.getBugsValue()).toBe('12, 34');
+            });
+        });
+
+        describe('_saveValue', function() {
+            it('Sorts and de-duplicates the bugs for display', function() {
+                field = buildField({
+                    text: '12',
+                });
+
+                spyOn(editor, 'setDraftField').and.resolveTo();
+
+                field._saveValue('34, 12, 34');
+                expect(field._loadValue()).toEqual(['12', '34']);
+
+                /* Non-numeric IDs sort alphabetically. */
+                field._saveValue('ENG-5, ENG-12');
+                expect(field._loadValue()).toEqual(['ENG-12', 'ENG-5']);
+            });
+
+            it('Adopts the saved draft bug ordering', async function() {
+                field = buildField({
+                    text: '12',
+                });
+
+                spyOn(editor, 'setDraftField').and.callFake(async () => {
+                    /*
+                     * Simulate the response ordering the bugs with the
+                     * tracker service's keys, differing from the local
+                     * sort.
+                     */
+                    draft.set('bugs', [
+                        {id: 'ENG-5', tracker: 1},
+                        {id: 'ENG-12', tracker: 1},
+                        {id: '99', tracker: 2},
+                    ]);
+                });
+
+                await field._saveValue('ENG-12, ENG-5');
+
+                expect(field._loadValue()).toEqual(['ENG-5', 'ENG-12']);
+            });
+
+            it('Combines bugs across tracked fields', function() {
+                field = buildField({
+                    text: '12',
+                });
+
+                const $otherEl = $('<div>')
+                    .attr('id', 'field_bugs:2')
+                    .data('bug-tracker-id', 2)
+                    .text('500');
+                const otherField = new TrackedBugsFieldView({
+                    el: $otherEl,
+                    fieldID: 'bugs:2',
+                    model: editor,
+                });
+
+                spyOn(editor, 'setDraftField').and.resolveTo();
+
+                field._saveValue('12, 34');
+
+                expect(editor.setDraftField).toHaveBeenCalled();
+                const args = editor.setDraftField.calls.argsFor(0);
+                expect(args[0]).toBe('bugs');
+                expect(args[1].split(',').sort()).toEqual(
+                    ['1:12', '1:34', '2:500']);
             });
         });
     });

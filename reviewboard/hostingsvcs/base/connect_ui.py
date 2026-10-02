@@ -183,6 +183,7 @@ class BaseHostingServiceConnectUI:
         request: HttpRequest,
         *,
         accounts: Sequence[HostingServiceAccount],
+        bug_tracker_count: int = 0,
     ) -> SafeString:
         """Render the services list entry for this hosting service.
 
@@ -194,6 +195,10 @@ class BaseHostingServiceConnectUI:
                       reviewboard.hostingsvcs.models.HostingServiceAccount):
                 The accounts for this hosting service.
 
+            bug_tracker_count (int, optional):
+                The number of bug tracker configurations for this hosting
+                service.
+
         Returns:
             django.utils.safestring.SafeString:
             The rendered entry for the connected services list page.
@@ -202,7 +207,8 @@ class BaseHostingServiceConnectUI:
             self.connected_services_list_entry_template,
             self.make_connected_services_list_entry_context(
                 request,
-                accounts=accounts),
+                accounts=accounts,
+                bug_tracker_count=bug_tracker_count),
             request=request)
 
     def make_connected_services_list_entry_context(
@@ -210,6 +216,7 @@ class BaseHostingServiceConnectUI:
         request: HttpRequest,
         *,
         accounts: Sequence[HostingServiceAccount],
+        bug_tracker_count: int = 0,
     ) -> dict[str, Any]:
         """Return template context for rendering the services list entry.
 
@@ -220,6 +227,10 @@ class BaseHostingServiceConnectUI:
             accounts (list of
                       reviewboard.hostingsvcs.models.HostingServiceAccount):
                 The accounts for this hosting service.
+
+            bug_tracker_count (int, optional):
+                The number of bug tracker configurations for this hosting
+                service.
 
         Returns:
             dict:
@@ -265,7 +276,12 @@ class BaseHostingServiceConnectUI:
 
         return {
             'accounts_data': accounts_data,
+            'bug_tracker_count': bug_tracker_count,
             'filter_accounts': filter_accounts,
+            'has_visible_accounts': any(
+                account.visible
+                for account in accounts
+            ),
             'service_id': service.hosting_service_id,
             'service_name': service.name,
             'service_logo': service.logo_image,

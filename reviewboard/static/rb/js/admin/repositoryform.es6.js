@@ -146,16 +146,6 @@ $(document).ready(function() {
         $('#row-associate_ssh_key').parents('fieldset');
     const $associateSshKey = $('#id_associate_ssh_key');
     const associateSshKeyDisabled = $associateSshKey.prop('disabled');
-    const $bugTrackerUseHosting = $('#id_bug_tracker_use_hosting');
-    const $bugTrackerUseHostingRow = $('#row-bug_tracker_use_hosting');
-    const $bugTrackerType = $('#id_bug_tracker_type');
-    const $bugTrackerHostingURLRow = $('#row-bug_tracker_hosting_url');
-    const $bugTrackerTypeRow = $('#row-bug_tracker_type');
-    const $bugTrackerPlan = $('#id_bug_tracker_plan');
-    const $bugTrackerPlanRow = $('#row-bug_tracker_plan');
-    const $bugTrackerURLRow = $('#row-bug_tracker');
-    const $bugTrackerUsernameRow =
-        $('#row-bug_tracker_hosting_account_username');
     const $repoPlanRow = $('#row-repository_plan');
     const $repoPlan = $('#id_repository_plan');
     const $publicAccess = $('#id_public');
@@ -163,7 +153,6 @@ $(document).ready(function() {
     const $toolRow = $('#row-tool');
     const $showSshKey = $('#show-ssh-key-link');
     const $publicKeyPopup = $('#ssh-public-key-popup');
-    const $bugTrackerForms = $('.bug-tracker-form');
     const $submitButtons = $('input[type="submit"]');
     const $editHostingCredentials = $('#repo-edit-hosting-credentials');
     const $editHostingCredentialsLabel =
@@ -182,7 +171,6 @@ $(document).ready(function() {
         .hide()
         .appendTo($('#row-hosting_type'));
 
-    prevTypes.bug_tracker_type = 'none';
     prevTypes.hosting_type = 'custom';
     prevTypes.tool = 'none';
 
@@ -195,35 +183,8 @@ $(document).ready(function() {
         });
     });
 
-    $bugTrackerUseHosting
-        .change(function() {
-            if (this.checked) {
-                $bugTrackerTypeRow.hide();
-                $bugTrackerPlanRow.hide();
-                $bugTrackerUsernameRow.hide();
-                $bugTrackerURLRow.hide();
-                $bugTrackerForms.hide();
-            } else {
-                $bugTrackerTypeRow.show();
-                $bugTrackerType.triggerHandler('change');
-            }
-        })
-        .triggerHandler('change');
-
     $repoPlan.change(() => updateHostingForm($hostingType, 'repo-form-hosting',
                                              $repoPlan, $hostingRepoForms));
-
-    $bugTrackerPlan.change(() => {
-        const plan = $bugTrackerPlan.val() || 'default';
-        const bugTrackerType = $bugTrackerType.val();
-        const planInfo = HOSTING_SERVICES[bugTrackerType].planInfo[plan];
-
-        updateHostingForm($bugTrackerType, 'bug-tracker-form-hosting',
-                          $bugTrackerPlan, $bugTrackerForms);
-
-        $bugTrackerUsernameRow.toggle(
-            planInfo.bug_tracker_requires_username);
-    });
 
     $hostingType
         .change(() => {
@@ -246,21 +207,6 @@ $(document).ready(function() {
             }
 
             $repoPlan.triggerHandler('change');
-
-            if (isCustom ||
-                isFake ||
-                !HOSTING_SERVICES[hostingType].supports_bug_trackers) {
-                $bugTrackerUseHostingRow.hide();
-                $bugTrackerUseHosting
-                    .prop({
-                        disabled: true,
-                        checked: false,
-                    })
-                    .triggerHandler('change');
-            } else {
-                $bugTrackerUseHosting.prop('disabled', false);
-                $bugTrackerUseHostingRow.show();
-            }
 
             if (isCustom ||
                 !HOSTING_SERVICES[hostingType].supports_ssh_key_association) {
@@ -378,33 +324,6 @@ $(document).ready(function() {
                 $repoForm.toggle(!isFake);
                 $toolPowerPackAdvert.toggle(isFake);
                 $submitButtons.prop('disabled', isFake);
-            }
-        })
-        .triggerHandler('change');
-
-    $bugTrackerType
-        .change(() => {
-            $bugTrackerForms.hide();
-
-            const bugTrackerType = $bugTrackerType.val();
-
-            if (bugTrackerType === 'custom' || bugTrackerType === 'none') {
-                $bugTrackerHostingURLRow.hide();
-                $bugTrackerPlanRow.hide();
-                $bugTrackerUsernameRow.hide();
-            }
-
-            if (bugTrackerType === 'custom') {
-                $bugTrackerURLRow.show();
-            } else if (bugTrackerType === 'none') {
-                $bugTrackerURLRow.hide();
-            } else {
-                $bugTrackerURLRow.hide();
-                updatePlanEl($bugTrackerPlanRow, $bugTrackerPlan,
-                             bugTrackerType, false);
-
-                $bugTrackerHostingURLRow.toggle(
-                    HOSTING_SERVICES[bugTrackerType].self_hosted);
             }
         })
         .triggerHandler('change');

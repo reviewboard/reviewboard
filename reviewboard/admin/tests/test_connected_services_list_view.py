@@ -8,7 +8,10 @@ import re
 from django.urls import reverse
 
 from reviewboard.admin.views import ConnectedServiceRepositoriesView
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+)
 from reviewboard.testing.testcase import TestCase
 
 
@@ -498,3 +501,92 @@ class ConnectedServicesListViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 302)
+
+
+class ConnectedServicesListViewBugTrackerTests(TestCase):
+    """Unit tests for bug trackers in ConnectedServicesListView.
+
+    Version Added:
+        9.0
+    """
+
+    fixtures = ['test_users']
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        """Set up the test case class."""
+        super().setUpClass()
+
+        cls.url = reverse('connected-services-list')
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
+
+        self.client.login(username='admin', password='admin')
+
+    def test_get_lists_bug_trackers(self) -> None:
+        """Testing ConnectedServicesListView GET lists bug tracker
+        configurations, including for services with no accounts
+        """
+        ConfiguredBugTracker.objects.create(
+            name='My Splat Tracker',
+            service_name='splat',
+            settings={'splat_org_name': 'my-org'})
+        ConfiguredBugTracker.objects.create(
+            name='My Disabled Tracker',
+            service_name='splat',
+            enabled=False,
+            settings={'splat_org_name': 'other-org'})
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['service_entries']), 1)
+
+        # The configurations are behind a disclosure whose content is
+        # fetched from the bug trackers endpoint.
+        self.assertIn(b'2 bug trackers', response.content)
+        self.assertIn(b'data-item-type="bug-trackers"', response.content)
+        self.assertIn(b'data-item-count="2"', response.content)
+
+        # There are no accounts, so the accounts list is omitted
+        # entirely rather than rendering as an empty block.
+        self.assertNotIn(b'rb-c-admin-cs-accounts', response.content)
+
+    def test_get_never_lists_in_repo_configs(self) -> None:
+        """Testing ConnectedServicesListView GET never lists bug tracker
+        configurations for in-repo services
+        """
+        HostingServiceAccount.objects.create(
+            service_name='gitlab',
+            username='user1',
+            visible=True)
+
+        # Such rows come from migrating repositories that used another
+        # hosting service's bug tracker.
+        ConfiguredBugTracker.objects.create(
+            name='GitLab Issues',
+            service_name='gitlab',
+            settings={})
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        # The account renders, but the tracker is managed through the
+        # repository configuration, not here.
+        self.assertIn(b'user1', response.content)
+        self.assertNotIn(b'GitLab Issues', response.content)
+
+    def test_get_never_lists_sentinel(self) -> None:
+        """Testing ConnectedServicesListView GET never lists the sentinel
+        bug tracker
+        """
+        ConfiguredBugTracker.objects.get_sentinel()
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.context['service_entries']), 0)
+        self.assertNotIn(b'Unattributed Bugs', response.content)

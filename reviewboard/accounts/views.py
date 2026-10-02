@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from urllib.parse import quote, urlparse
+from urllib.parse import quote, unquote, urlencode, urlparse
 
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -79,11 +79,6 @@ class LoginView(DjangoLoginView):
 
     Version Added:
         5.0
-
-    Version Changed:
-        5.0.5:
-        Added the ``client-name`` and ``client-url`` query parameters for
-        authenticating clients.
     """
 
     template_name = 'accounts/login.html'
@@ -159,58 +154,70 @@ class LoginView(DjangoLoginView):
         self.client_url = None
 
         if siteconfig.get('client_web_login'):
-            self.client_name = self.request.GET.get(
+            request_GET = self.request.GET
+            request_POST = self.request.POST
+
+            client_name = request_GET.get(
                 'client-name',
-                self.request.POST.get('client-name', ''))
-            self.client_url = self.request.GET.get(
+                request_POST.get('client-name', ''))
+            client_url = request_GET.get(
                 'client-url',
-                self.request.POST.get('client-url', ''))
-            client_url_port = urlparse(self.client_url).port
-            self.success_url_allowed_hosts = \
-                _get_client_allowed_hosts(client_url_port)
+                request_POST.get('client-url', ''))
+
+            if client_name and client_url:
+                try:
+                    client_url_port = urlparse(client_url).port
+                except ValueError:
+                    # The request is malformed. Ignore the client login flow.
+                    pass
+                else:
+                    self.client_name = client_name
+                    self.client_url = client_url
+                    self.success_url_allowed_hosts = \
+                        _get_client_allowed_hosts(client_url_port)
 
         client_name = self.client_name
         client_url = self.client_url
         client_auth_flow = bool(client_name and client_url)
         self.client_auth_flow = client_auth_flow
-        client_redirect_param_str = ''
         redirect_field_name = self.redirect_field_name
         redirect_to = self.get_redirect_url()
 
-        if redirect_to and client_auth_flow:
-            client_redirect_param_str = (
-                '&%s=%s' % (redirect_field_name, quote(redirect_to)))
+        if client_auth_flow:
+            client_query_params = {
+                'client-name': client_name,
+                'client-url': client_url,
+            }
 
-        client_login_url = (
-            '%s?client-name=%s&client-url=%s%s'
-            % (local_site_reverse('client-login'),
-               client_name,
-               client_url,
-               client_redirect_param_str))
-        client_login_confirm_url = (
-            '%s?client-name=%s&client-url=%s%s'
-            % (local_site_reverse('client-login-confirm'),
-               client_name,
-               client_url,
-               client_redirect_param_str))
-        self.client_login_url = client_login_url
-        self.client_login_confirm_url = client_login_confirm_url
+            if redirect_to:
+                client_query_params[redirect_field_name] = redirect_to
+
+            client_query_string = urlencode(client_query_params)
+            client_login_url = local_site_reverse('client-login')
+            client_login_confirm_url = local_site_reverse(
+                'client-login-confirm')
+
+            self.client_login_url = \
+                f'{client_login_url}?{client_query_string}'
+            self.client_login_confirm_url = \
+                f'{client_login_confirm_url}?{client_query_string}'
 
         if (request.method == 'GET' and client_auth_flow and
             request.user.is_authenticated):
             # The request is for client web-based login, with the user already
             # logged in.
-            return HttpResponseRedirect(client_login_confirm_url)
+            return HttpResponseRedirect(self.client_login_confirm_url)
 
         sso_auto_login_backend = siteconfig.get('sso_auto_login_backend', None)
 
         if sso_auto_login_backend:
             try:
-                backend = sso_backends.get('backend_id', sso_auto_login_backend)
+                backend = sso_backends.get('backend_id',
+                                           sso_auto_login_backend)
                 login_url = backend.login_url
 
                 if client_auth_flow:
-                    redirect_to = client_login_confirm_url
+                    redirect_to = self.client_login_confirm_url
                 else:
                     redirect_to = self.get_success_url()
 
@@ -751,7 +758,13 @@ class BaseClientLoginView(LoginRequiredViewMixin,
             self.client_name = request_GET.get('client-name', '')
             self.client_url = request_GET.get('client-url', '')
 
-            client_url_port = urlparse(self.client_url).port
+            try:
+                client_url_port = urlparse(self.client_url).port
+            except ValueError:
+                # The client URL is malformed. This will make it fail the
+                # safety check below.
+                client_url_port = None
+
             client_allowed_hosts = _get_client_allowed_hosts(client_url_port)
             client_allowed_hosts.add(request.get_host())
             self.client_allowed_hosts = client_allowed_hosts
@@ -933,36 +946,32 @@ class ClientLoginConfirmationView(BaseClientLoginView):
         """
         context = super().get_context_data(**kwargs)
 
-        client_name = self.client_name
-        client_url = self.client_url
         redirect_field_name = self.redirect_field_name
-        redirect_to = self.redirect_to
-        client_redirect_param_str = ''
+
+        # self.redirect_to is already quoted, so unquote it to avoid
+        # double-encoding it below.
+        redirect_to = unquote(self.redirect_to)
+
+        client_query_params = {
+            'client-name': self.client_name,
+            'client-url': self.client_url,
+        }
 
         if redirect_to:
-            client_redirect_param_str = (
-                '&%s=%s' % (redirect_field_name, redirect_to))
+            client_query_params[redirect_field_name] = redirect_to
 
-        context['client_login_url'] = (
-            '%s?client-name=%s&client-url=%s%s'
-            % (local_site_reverse('client-login'),
-               client_name,
-               client_url,
-               client_redirect_param_str))
+        client_query_string = urlencode(client_query_params)
+        client_login_url = local_site_reverse('client-login')
+        login_url = local_site_reverse('login')
+        logout_url = local_site_reverse('logout')
 
-        # The client redirect part of the URL is encoded twice
-        # in order to preserve all of its query parameters.
-        logout_redirect = quote(
-            '%s?client-name=%s&client-url=%s%s'
-            % (local_site_reverse('login'),
-               client_name,
-               client_url,
-               client_redirect_param_str))
-        context['logout_url'] = (
-            '%s?%s=%s'
-            % (local_site_reverse('logout'),
-               redirect_field_name,
-               logout_redirect))
+        context['client_login_url'] = \
+            f'{client_login_url}?{client_query_string}'
+
+        logout_query_string = urlencode({
+            redirect_field_name: f'{login_url}?{client_query_string}',
+        })
+        context['logout_url'] = f'{logout_url}?{logout_query_string}'
 
         return context
 

@@ -11,7 +11,10 @@ from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
-from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
+from reviewboard.hostingsvcs.base.forms import (
+    BaseBugTrackerConfigForm,
+    BaseHostingServiceRepositoryForm,
+)
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 if TYPE_CHECKING:
@@ -24,7 +27,28 @@ logger = logging.getLogger(__name__)
 
 
 class SplatForm(BaseHostingServiceRepositoryForm):
-    """The Splat bug tracker configuration form."""
+    """The legacy repository form for Splat settings.
+
+    This collects Splat settings stored on a repository (``bug_tracker-*``
+    keys in ``extra_data``). It exists only for compatibility with legacy
+    per-repository bug tracker settings written through the repository form
+    and the Web API. Standalone configurations use
+    :py:class:`SplatBugTrackerConfigForm`.
+    """
+
+    splat_org_name = forms.SlugField(
+        label=_('Splat Organization Name'),
+        max_length=64,
+        required=True,
+        widget=forms.TextInput(attrs={'size': 60}))
+
+
+class SplatBugTrackerConfigForm(BaseBugTrackerConfigForm):
+    """Settings form for Splat bug tracker configurations.
+
+    Version Added:
+        9.0
+    """
 
     splat_org_name = forms.SlugField(
         label=_('Splat Organization Name'),
@@ -44,6 +68,7 @@ class Splat(BaseHostingService, BaseBugTracker):
     hosting_service_id = 'splat'
     name = 'Splat'
 
+    bug_tracker_config_form = SplatBugTrackerConfigForm
     bug_tracker_label = _('Splat Tickets')
     form = SplatForm
     supports_bug_info = True

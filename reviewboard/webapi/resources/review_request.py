@@ -66,7 +66,10 @@ from reviewboard.webapi.errors import (CHANGE_NUMBER_IN_USE,
                                        REPO_AUTHENTICATION_ERROR,
                                        REPO_INFO_ERROR,
                                        UNVERIFIED_HOST_CERT)
-from reviewboard.webapi.mixins import MarkdownFieldsMixin
+from reviewboard.webapi.mixins import (
+    MarkdownFieldsMixin,
+    ReviewRequestDetailsMixin,
+)
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.resources.repository import RepositoryResource
 from reviewboard.webapi.resources.review_group import ReviewGroupResource
@@ -78,7 +81,9 @@ from reviewboard.webapi.resources.user import UserResource
 logger = logging.getLogger(__name__)
 
 
-class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
+class ReviewRequestResource(MarkdownFieldsMixin,
+                            ReviewRequestDetailsMixin,
+                            WebAPIResource):
     """Provides information on review requests.
 
     Review requests are one of the central concepts in Review Board. They
@@ -287,7 +292,21 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                 'type': StringFieldType,
             },
             'description': 'The list of bugs closed or referenced by this '
-                           'change.',
+                           'change, on the default bug tracker. This field is '
+                           'deprecated. Callers should use the new ``bugs`` '
+                           'field instead.',
+            'deprecated_in': '9.0',
+        },
+        'bugs': {
+            'type': ListFieldType,
+            'items': {
+                'type': DictFieldType,
+            },
+            'description': 'The list of bugs linked to this review '
+                           'request, across all bug trackers. Each entry '
+                           'has ``id`` and ``tracker`` keys, plus ``url`` '
+                           'and ``summary`` when available.',
+            'added_in': '9.0',
         },
         'branch': {
             'type': StringFieldType,
@@ -450,6 +469,16 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             if 'repository' in request.GET:
                 q = q & Q(repository=int(request.GET.get('repository')))
 
+            if 'bug' in request.GET:
+                q = q & Q(bugs__bug_id=request.GET.get('bug'))
+
+                if 'bug-tracker' in request.GET:
+                    try:
+                        q = q & Q(bugs__bug_tracker=int(
+                            request.GET.get('bug-tracker')))
+                    except (TypeError, ValueError):
+                        pass
+
             commit_q = Q()
             if 'changenum' in request.GET:
                 try:
@@ -606,9 +635,6 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
             result.pop('created_with_history', None)
 
         return result
-
-    def serialize_bugs_closed_field(self, obj, **kwargs):
-        return obj.get_bug_list()
 
     def serialize_close_description_field(self, obj, **kwargs):
         if obj.status in (obj.SUBMITTED, obj.DISCARDED):
@@ -1185,6 +1211,18 @@ class ReviewRequestResource(MarkdownFieldsMixin, WebAPIResource):
                                "against the review request's "
                                "``last_updated`` field. This must be a valid "
                                ":term:`date/time format`.",
+            },
+            'bug': {
+                'type': StringFieldType,
+                'description': 'The ID of a bug that the review requests '
+                               'must be linked to.',
+                'added_in': '9.0',
+            },
+            'bug-tracker': {
+                'type': IntFieldType,
+                'description': 'The ID of the bug tracker to filter the '
+                               '``bug`` argument by.',
+                'added_in': '9.0',
             },
             'from-user': {
                 'type': StringFieldType,

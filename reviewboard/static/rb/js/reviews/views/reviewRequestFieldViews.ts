@@ -2,11 +2,19 @@
  * Views for review request fields.
  */
 
+import {
+    type ComboBoxItemAttrs,
+    ComboBoxView,
+    craft,
+} from '@beanbag/ink';
 import { BaseView, spina } from '@beanbag/spina';
 
 import {
     type ResourceLink,
 } from 'reviewboard/common/resources/models/baseResourceModel';
+import {
+    type DraftReviewRequestBug,
+} from 'reviewboard/common/resources/models/draftReviewRequestModel';
 import {
     type ReviewGroupResourceData,
 } from 'reviewboard/common/resources/models/reviewGroupModel';
@@ -21,6 +29,7 @@ import {
     RichTextInlineEditorView,
 } from 'reviewboard/ui';
 import {
+    type EditOptions,
     type InlineEditorViewOptions,
 } from 'reviewboard/ui/views/inlineEditorView';
 
@@ -964,6 +973,475 @@ export class BugsFieldView extends CommaSeparatedValuesTextFieldView {
         } else {
             this.$el.text(data.join(', '));
         }
+    }
+}
+
+
+/**
+ * An inline editor for per-tracker bug fields.
+ *
+ * When the bug tracker supports search, the plain text input is replaced with
+ * an Ink.ComboBox providing typeahead suggestions from the bug tracker's
+ * search API. Selected bugs are shown as removable tokens.
+ *
+ * Version Added:
+ *     9.0
+ */
+@spina
+export class TrackedBugsInlineEditorView extends InlineEditorView {
+    /**
+     * Defaults for the view options.
+     *
+     * The value accessors are routed through these options, rather than method
+     * overrides, since the base view reads and writes the field through them.
+     */
+    static defaultOptions = _.defaults({
+        getFieldValue: editor => editor.getBugsValue(),
+        setFieldValue: (editor, value) => editor.setBugsValue(value),
+    }, InlineEditorView.prototype.defaultOptions);
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The combo box, when the bug tracker supports search. */
+    comboBox: ComboBoxView = null;
+
+    /**
+     * Create and return the field to use for the input element.
+     *
+     * Returns:
+     *     jQuery:
+     *     The newly created input element.
+     */
+    createField(): JQuery {
+        const searchURL = this.$el.data('bug-search-url');
+
+        if (!searchURL) {
+            return super.createField();
+        }
+
+        this.comboBox = this._createComboBox(searchURL);
+
+        return $(this.comboBox.el);
+    }
+
+    /**
+     * Create the combo box used to search for and select bugs.
+     *
+     * Version Added:
+     *     9.0
+     *
+     * Args:
+     *     searchURL (string):
+     *         The URL of the bug search API endpoint.
+     *
+     * Returns:
+     *     ComboBoxView:
+     *     The new combo box.
+     */
+    protected _createComboBox(searchURL: string): ComboBoxView {
+        return craft<ComboBoxView>`
+            <Ink.ComboBox multiple allowCustomTokens
+                          load=${query => this._loadBugs(searchURL, query)}/>
+        `;
+    }
+
+    /**
+     * Connect events.
+     */
+    setupEvents() {
+        super.setupEvents();
+
+        if (this.comboBox !== null) {
+            this.listenTo(this.comboBox.selectedItems, 'add remove reset',
+                          () => this._scheduleUpdateDirtyState());
+        }
+    }
+
+    /**
+     * Show the editor.
+     *
+     * The combo box wraps its text field, so the base view's focus handling
+     * can't reach the input.
+     *
+     * Args:
+     *     options (EditOptions, optional):
+     *         Options for the operation.
+     */
+    showEditor(options: EditOptions = {}) {
+        super.showEditor(options);
+
+        const comboBox = this.comboBox;
+
+        if (comboBox !== null && this.options.focusOnOpen) {
+            comboBox.focus();
+        }
+    }
+
+    /**
+     * Return the value in the field.
+     *
+     * Returns:
+     *     string:
+     *     The current comma-separated bug IDs.
+     */
+    getBugsValue(): string {
+        const comboBox = this.comboBox;
+
+        if (comboBox === null) {
+            return this.$field.val() as string;
+        }
+
+        const bugIDs = comboBox.selectedItems.map(
+            item => String(item.get('id')));
+
+        /* Include any bug ID typed but not yet accepted as a token. */
+        const text = comboBox.textField.$el.find('input').val() as string;
+
+        if (text) {
+            for (const bugID of text.split(/[\s,]+/)) {
+                if (bugID && !bugIDs.includes(bugID)) {
+                    bugIDs.push(bugID);
+                }
+            }
+        }
+
+        return bugIDs.join(', ');
+    }
+
+    /**
+     * Set the value in the field.
+     *
+     * Args:
+     *     value (string):
+     *         The new comma-separated bug IDs for the field.
+     */
+    setBugsValue(value: string) {
+        const comboBox = this.comboBox;
+
+        if (comboBox === null) {
+            this.$field.val(value as string);
+
+            return;
+        }
+
+        const bugIDs = ((value as string) || '').split(/[\s,]+/)
+            .filter(bugID => !!bugID);
+
+        comboBox.selectedItems.reset(bugIDs.map(bugID => ({
+            id: bugID,
+            label: bugID,
+        })));
+
+        /*
+         * Clear any state left over from the last edit session: typed text (a
+         * typed-but-untokenized bug ID is folded into the value on save, so
+         * leaving it in the field would repeat it on the next edit) and the
+         * suggestions pop-up it may have opened.
+         */
+        comboBox.textField.value = '';
+        comboBox.close();
+    }
+
+    /**
+     * Load bug suggestions matching a query.
+     *
+     * Args:
+     *     searchURL (string):
+     *         The URL of the bug search API endpoint.
+     *
+     *     query (string):
+     *         The typed query.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise resolving to the attributes for the matching items.
+     */
+    protected async _loadBugs(
+        searchURL: string,
+        query: string,
+    ): Promise<ComboBoxItemAttrs[]> {
+        /*
+         * The search URL may already carry query parameters (such as
+         * review-request), so the query is merged in rather than appended with
+         * a second "?".
+         */
+        const url = new URL(searchURL, window.location.origin);
+        url.searchParams.set('q', query);
+
+        const rsp = await fetch(url);
+
+        if (!rsp.ok) {
+            return [];
+        }
+
+        const payload = await rsp.json();
+
+        return (payload.bugs || []).map(bug => ({
+            description: bug.summary,
+            id: bug.bug_id,
+            label: bug.bug_id,
+        }));
+    }
+}
+
+
+/**
+ * A per-tracker "Bugs" field.
+ *
+ * One instance exists per bug tracker on the review request. Edits for all
+ * trackers are saved through the draft's ``bugs`` API field.
+ *
+ * When the bug tracker supports search, editing provides typeahead
+ * suggestions.
+ *
+ * Version Added:
+ *     9.0
+ */
+@spina
+export class TrackedBugsFieldView extends CommaSeparatedValuesTextFieldView {
+    static useExtraData = false;
+
+    /** All tracked bug field views on the page. */
+    static instances: TrackedBugsFieldView[] = [];
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The ID of the bug tracker this field covers. */
+    bugTrackerID: number = null;
+
+    /** The local URL template for bugs, with a --bug_id-- placeholder. */
+    bugURLTemplate: string = null;
+
+    /** Whether the user may view bug links and infoboxes. */
+    canViewBugs = false;
+
+    /** The current bug IDs shown in the field. */
+    #bugIDs: string[] = [];
+
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (BaseFieldViewOptions):
+     *         Options for the view.
+     */
+    initialize(options: BaseFieldViewOptions) {
+        super.initialize(options);
+
+        const $el = this.$el;
+
+        this.bugTrackerID = parseInt($el.data('bug-tracker-id'), 10) || null;
+        this.bugURLTemplate = $el.data('bug-url-template') || null;
+        this.canViewBugs = !!$el.data('can-view-bugs');
+        this.#bugIDs = this._loadBugIDs();
+
+        TrackedBugsFieldView.instances.push(this);
+    }
+
+    /**
+     * Remove the view.
+     *
+     * Returns:
+     *     TrackedBugsFieldView:
+     *     This object, for chaining.
+     */
+    remove(): this {
+        const instances = TrackedBugsFieldView.instances;
+        const index = instances.indexOf(this);
+
+        if (index !== -1) {
+            instances.splice(index, 1);
+        }
+
+        return super.remove();
+    }
+
+    /**
+     * Render the view.
+     */
+    protected onInitialRender() {
+        const $el = this.$el;
+
+        if (this.canViewBugs &&
+            this.bugTrackerID !== null &&
+            $el.data('supports-bug-search')) {
+            const reviewRequest = this.model.get('reviewRequest');
+
+            $el.data(
+                'bug-search-url',
+                SITE_ROOT + reviewRequest.get('localSitePrefix') +
+                `api/bug-trackers/${this.bugTrackerID}/bugs/` +
+                `?review-request=${reviewRequest.id}`);
+        }
+
+        super.onInitialRender();
+
+        if (this.canViewBugs) {
+            $el.find('.bug').bug_infobox();
+        }
+    }
+
+    /**
+     * Return the type to use for the inline editor view.
+     *
+     * Returns:
+     *     function:
+     *     The constructor for the inline editor class to instantiate.
+     */
+    _getInlineEditorClass(): InlineEditorConstructor {
+        return TrackedBugsInlineEditorView;
+    }
+
+    /**
+     * Load the current value for the field.
+     *
+     * Returns:
+     *     Array of string:
+     *     The current bug IDs.
+     */
+    _loadValue(): unknown {
+        return this.#bugIDs;
+    }
+
+    /**
+     * Save a new value for the field.
+     *
+     * This combines the edited bug IDs with the bugs on every other tracked
+     * bug field, and saves the combined state through the draft's ``bugs``
+     * field.
+     *
+     * Args:
+     *     value (string):
+     *         The new comma-separated bug IDs for this field's tracker.
+     *
+     *     options (object):
+     *         Options for the save operation.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
+     */
+    _saveValue(
+        value: unknown,
+        options: SetDraftFieldOptions = {},
+    ): Promise<void> {
+        const bugIDs = _.uniq(this.#parseBugList((value as string) || ''));
+
+        /*
+         * Sort for display, matching the server's normalization
+         * (numeric where every ID is numeric, alphabetical otherwise),
+         * so the field shows the same order it will after a reload.
+         */
+        if (bugIDs.every(bugID => /^\d+$/.test(bugID))) {
+            bugIDs.sort((a, b) => parseInt(a, 10) - parseInt(b, 10));
+        } else {
+            bugIDs.sort();
+        }
+
+        this.#bugIDs = bugIDs;
+
+        const tokens: string[] = [];
+
+        for (const view of TrackedBugsFieldView.instances) {
+            if (view.model !== this.model || view.bugTrackerID === null) {
+                continue;
+            }
+
+            for (const bugID of view.#bugIDs) {
+                tokens.push(`${view.bugTrackerID}:${bugID}`);
+            }
+        }
+
+        return this.model.setDraftField(
+            'bugs',
+            tokens.join(','),
+            _.defaults({
+                jsonFieldName: 'bugs',
+                useExtraData: false,
+            }, options))
+            .then(() => this.#adoptDraftBugOrder());
+    }
+
+    /**
+     * Adopt the saved draft's ordering of this field's bugs.
+     *
+     * The saved draft orders each tracker's bugs for display, using the
+     * tracker service's ordering. This replaces the locally-sorted IDs
+     * with that ordering, so the field shows the same order it will
+     * after a reload.
+     *
+     * Version Added:
+     *     9.0
+     */
+    #adoptDraftBugOrder() {
+        const draft = this.model.get('reviewRequest').draft;
+        const entries = draft.get('bugs') as DraftReviewRequestBug[];
+
+        if (entries && entries.length > 0) {
+            this.#bugIDs = entries
+                .filter(entry => entry.tracker === this.bugTrackerID)
+                .map(entry => entry.id);
+        }
+    }
+
+    /**
+     * Format the value into the field.
+     *
+     * Args:
+     *     data (Array):
+     *         The new value of the field.
+     */
+    formatValue(data: string[]) {
+        data = data || [];
+
+        if (this.canViewBugs && this.bugURLTemplate) {
+            this.$el
+                .empty()
+                .append(this._urlizeList<string>(data, {
+                    cssClass: 'bug',
+                    makeItemURL: item => this.bugURLTemplate.replace(
+                        '--bug_id--', item),
+                }))
+                .find('.bug').bug_infobox();
+        } else {
+            this.$el.text(data.join(', '));
+        }
+    }
+
+    /**
+     * Return the bug IDs currently rendered in the field.
+     *
+     * This is called before the view renders, to seed the field's value
+     * from the server-rendered content.
+     *
+     * Version Added:
+     *     9.0
+     *
+     * Returns:
+     *     Array of string:
+     *     The bug IDs shown in the field.
+     */
+    protected _loadBugIDs(): string[] {
+        return this.#parseBugList(this.$el.text());
+    }
+
+    /**
+     * Parse a comma-separated list of bug IDs.
+     *
+     * Args:
+     *     value (string):
+     *         The value to parse.
+     *
+     * Returns:
+     *     Array of string:
+     *     The parsed bug IDs.
+     */
+    #parseBugList(value: string): string[] {
+        return (value || '').split(/[, ]+/).filter(bugID => !!bugID);
     }
 }
 

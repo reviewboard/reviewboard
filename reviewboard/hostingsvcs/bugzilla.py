@@ -11,7 +11,10 @@ from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
-from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
+from reviewboard.hostingsvcs.base.forms import (
+    BaseBugTrackerConfigForm,
+    BaseHostingServiceRepositoryForm,
+)
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
 
@@ -25,7 +28,38 @@ logger = logging.getLogger(__name__)
 
 
 class BugzillaForm(BaseHostingServiceRepositoryForm):
-    """Form for Bugzilla."""
+    """The legacy repository form for Bugzilla settings.
+
+    This collects Bugzilla settings stored on a repository
+    (``bug_tracker-*`` keys in ``extra_data``). It exists only for
+    compatibility with legacy per-repository bug tracker settings
+    written through the repository form and the Web API. Standalone
+    configurations use :py:class:`BugzillaBugTrackerConfigForm`.
+    """
+
+    bugzilla_url = forms.CharField(
+        label=_('Bugzilla URL'),
+        max_length=64,
+        required=True,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        validators=[validate_bug_tracker_base_hosting_url])
+
+    def clean_bugzilla_url(self) -> str:
+        """Clean the bugzilla URL field.
+
+        Returns:
+            str:
+            The cleaned data.
+        """
+        return self.cleaned_data['bugzilla_url'].rstrip('/')
+
+
+class BugzillaBugTrackerConfigForm(BaseBugTrackerConfigForm):
+    """Settings form for Bugzilla bug tracker configurations.
+
+    Version Added:
+        9.0
+    """
 
     bugzilla_url = forms.CharField(
         label=_('Bugzilla URL'),
@@ -50,6 +84,7 @@ class Bugzilla(BaseHostingService, BaseBugTracker):
     hosting_service_id = 'bugzilla'
     name = 'Bugzilla'
 
+    bug_tracker_config_form = BugzillaBugTrackerConfigForm
     bug_tracker_label = _('Bugzilla Bugs')
     form = BugzillaForm
     supports_bug_info = True

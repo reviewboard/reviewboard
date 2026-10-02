@@ -38,9 +38,15 @@ from reviewboard.admin.widgets import (admin_widgets_registry,
                                        dynamic_activity_data)
 from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.hostingsvcs.base import hosting_service_registry
+from reviewboard.hostingsvcs.bug_tracker_forms import (
+    is_bug_tracker_configurable,
+)
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
                                             TwoFactorAuthCodeRequiredError)
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+)
 from reviewboard.scmtools.errors import \
     UnverifiedCertificateError as LegacyUnverifiedCertificateError
 from reviewboard.scmtools.models import Repository
@@ -54,9 +60,11 @@ if TYPE_CHECKING:
     from django.http import HttpRequest
     from django.utils.safestring import SafeString
 
+    from reviewboard.hostingsvcs.base.connect_ui import (
+        AdminServicesListAttentionItem,
+    )
     from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
     from reviewboard.hostingsvcs.base.hosting_service import (
-        AdminServicesListAttentionItem,
         BaseHostingService,
     )
 
@@ -345,7 +353,8 @@ class ConnectedServicesListView(View):
             django.http.HttpResponse:
             The rendered response.
         """
-        # Build the list of available services.
+        # Build the list of available services. This offers every visible
+        # service that can connect an account.
         available_services = [
             {
                 'id': service.hosting_service_id,
@@ -380,6 +389,8 @@ class ConnectedServicesListView(View):
                 'attention_items': attention_items,
                 'auto_connect_url': auto_connect_url,
                 'available_services': available_services,
+                'bug_trackers_per_page':
+                    ConnectedServiceBugTrackersView.bug_trackers_per_page,
                 'repositories_per_page':
                     ConnectedServiceRepositoriesView.repositories_per_page,
                 'service_entries': [entry[1] for entry in entries],
@@ -424,6 +435,24 @@ class ConnectedServicesListView(View):
             .order_by('service_name', 'username', 'pk')
         )
 
+        # Count the bug tracker configurations per service, so each service's
+        # entry can summarize them alongside its accounts. The entries only
+        # need the counts; the configurations themselves are fetched on demand
+        # through ConnectedServiceBugTrackersView.
+        #
+        # The order_by() here clears the default ordering, which can otherwise
+        # mess up the aggregation.
+        bug_tracker_counts: dict[str, int] = {
+            row['service_name']: row['count']
+            for row in (
+                ConfiguredBugTracker.objects
+                .accessible(local_site=LocalSite.ALL)
+                .values('service_name')
+                .annotate(count=Count('pk'))
+                .order_by()
+            )
+        }
+
         # Group accounts by the associated hosting service. If there are any
         # accounts whose service cannot be loaded from the registry, they will
         # be grouped under None.
@@ -443,16 +472,42 @@ class ConnectedServicesListView(View):
             if not service:
                 continue
 
+            # In-repo bug trackers are managed entirely through the repository
+            # configuration, so their configurations are never surfaced here.
+            if is_bug_tracker_configurable(service):
+                bug_tracker_count = bug_tracker_counts.pop(
+                    service.hosting_service_id or '', 0)
+            else:
+                bug_tracker_count = 0
+
             entries.append((
                 (service.name or '').lower(),
                 service.connect_ui.render_connected_services_list_entry(
                     request,
-                    accounts=accounts),
+                    accounts=accounts,
+                    bug_tracker_count=bug_tracker_count),
             ))
             attention_items += \
                 service.connect_ui.get_connected_services_list_attention_items(
                     request,
                     accounts=accounts)
+
+        # Add entries for services that have bug tracker configurations but no
+        # accounts, such as anonymous bug trackers.
+        for service_name, bug_tracker_count in bug_tracker_counts.items():
+            service = hosting_service_registry.get_hosting_service(
+                service_name)
+
+            if not service or not is_bug_tracker_configurable(service):
+                continue
+
+            entries.append((
+                (service.name or '').lower(),
+                service.connect_ui.render_connected_services_list_entry(
+                    request,
+                    accounts=[],
+                    bug_tracker_count=bug_tracker_count),
+            ))
 
         return entries, attention_items
 
@@ -610,6 +665,107 @@ class ConnectedServiceRepositoriesView(View):
                 'X-Page-Number': str(page.number),
                 'X-Num-Pages': str(paginator.num_pages),
             })
+
+
+@method_decorator(staff_member_required, name='dispatch')
+class ConnectedServiceBugTrackersView(View):
+    """View returning a service's bug tracker configs as an HTML fragment.
+
+    This backs the expandable bug tracker list under each service on the
+    "Connected Services" page. It returns the bug tracker configurations for
+    a single hosting service as a rendered HTML fragment, optionally filtered
+    by a name search, and paginated.
+
+    The response body is only the bug tracker list. Pagination details are
+    returned in the ``X-Total-Count``, ``X-Page-Number``, and ``X-Num-Pages``
+    response headers so the client can drive its own paginator without the
+    controls being replaced when the list is swapped.
+
+    Version Added:
+        9.0
+    """
+
+    #: The number of bug tracker configurations to show per page.
+    bug_trackers_per_page = 25
+
+    def get(
+        self,
+        request: HttpRequest,
+        service_id: str,
+        *args,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP GET requests.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            service_id (str):
+                The ID of the hosting service to list bug trackers for.
+
+            *args (tuple):
+                Unused positional arguments.
+
+            **kwargs (dict):
+                Unused keyword arguments.
+
+        Returns:
+            django.http.HttpResponse:
+            The rendered bug tracker list fragment, with pagination details
+            in the response headers.
+
+        Raises:
+            django.http.Http404:
+                The service does not exist, or its configurations are
+                managed through the repository configuration instead.
+        """
+        service = hosting_service_registry.get_hosting_service(service_id)
+
+        # This matches the entries built for the page itself: in-repo bug
+        # trackers are managed entirely through the repository configuration,
+        # so their configurations are never surfaced here.
+        if (service is None or
+            not is_bug_tracker_configurable(service)):
+            raise Http404
+
+        # This spans all Local Sites, matching the entries shown on the
+        # Connected Services page.
+        bug_trackers = (
+            ConfiguredBugTracker.objects
+            .accessible(local_site=LocalSite.ALL)
+            .filter(service_name=service_id)
+        )
+
+        search = request.GET.get('q', '').strip()
+
+        if search:
+            bug_trackers = bug_trackers.filter(name__icontains=search)
+
+        bug_trackers = bug_trackers.order_by('name')
+
+        paginator = Paginator(bug_trackers, self.bug_trackers_per_page)
+
+        try:
+            page = paginator.page(request.GET.get('page', 1))
+        except (EmptyPage, PageNotAnInteger):
+            page = paginator.page(1)
+
+        html = render_to_string(
+            template_name=(
+                'admin/connected_services/_parts/bug_tracker_list.html'),
+            context={
+                'bug_trackers': page.object_list,
+                'page': page,
+            },
+            request=request)
+
+        response = HttpResponse(html)
+        response['X-Total-Count'] = str(paginator.count)
+        response['X-Page-Number'] = str(page.number)
+        response['X-Num-Pages'] = str(paginator.num_pages)
+
+        return response
 
 
 def _save_hosting_auth_form(

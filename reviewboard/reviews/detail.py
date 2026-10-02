@@ -23,9 +23,13 @@ from djblets.util.decorators import cached_property
 from typing_extensions import TypedDict
 
 from reviewboard.diffviewer.models import DiffCommit
+from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.registries.registry import OrderedRegistry
-from reviewboard.reviews.builtin_fields import (CommitListField,
-                                                ReviewRequestPageDataMixin)
+from reviewboard.reviews.builtin_fields import (
+    CommitListField,
+    ReviewRequestPageDataMixin,
+    TrackedBugsField,
+)
 from reviewboard.reviews.context import should_view_draft
 from reviewboard.reviews.features import status_updates_feature
 from reviewboard.reviews.fields import get_review_request_fieldsets
@@ -2274,11 +2278,27 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
 
         fields_changed_groups: list[_ChangeEntryFieldsChangedGroup] = []
 
+        # Per-tracker bug entries are stored under "bugs:<id>" keys, with
+        # a legacy "bugs_closed" entry written alongside for old
+        # consumers. When per-tracker entries exist, they take the place
+        # of the legacy entry in the display.
+        tracked_bug_keys = sorted(
+            field_id
+            for field_id in changedesc.fields_changed
+            if field_id.startswith('bugs:')
+        )
+
+        omitted_fields = set[str]()
+
+        if tracked_bug_keys:
+            omitted_fields.add('bugs_closed')
+
         for fieldset in fieldsets:
             for field_cls in fieldset.field_classes:
                 field_id = field_cls.field_id
 
-                if field_id not in changedesc.fields_changed:
+                if (field_id not in changedesc.fields_changed or
+                    field_id in omitted_fields):
                     continue
 
                 inline = field_cls.change_entry_renders_inline
@@ -2302,7 +2322,93 @@ class ChangeEntry(StatusUpdatesEntryMixin, BaseReviewRequestPageEntry):
                     field.get_change_entry_sections_html(
                         changedesc.fields_changed[field_id])
 
+        for field_id in tracked_bug_keys:
+            field = self._build_tracked_bugs_field(
+                review_request=review_request,
+                request=request,
+                field_id=field_id,
+                field_info=changedesc.fields_changed[field_id])
+
+            if field is None:
+                continue
+
+            inline = type(field).change_entry_renders_inline
+
+            if (not cur_field_changed_group or
+                cur_field_changed_group['inline'] != inline):
+                cur_field_changed_group = {
+                    'inline': inline,
+                    'fields': [],
+                }
+                fields_changed_groups.append(cur_field_changed_group)
+
+            cur_field_changed_group['fields'] += \
+                field.get_change_entry_sections_html(
+                    changedesc.fields_changed[field_id])
+
         self.fields_changed_groups = fields_changed_groups
+
+    def _build_tracked_bugs_field(
+        self,
+        *,
+        field_id: str,
+        field_info: dict[str, Any],
+        request: HttpRequest,
+        review_request: ReviewRequest,
+    ) -> TrackedBugsField | None:
+        """Return a field for rendering a per-tracker bug change entry.
+
+        This resolves the ``bugs:<id>`` key to the live bug tracker when
+        one still exists (even if disabled), and otherwise falls back to
+        the label snapshot stored with the entry, rendering plain bug
+        IDs. History rendering never depends on which trackers currently
+        apply to the review request.
+
+        Version Added:
+            9.0
+
+        Args:
+            field_id (str):
+                The ``bugs:<id>`` key for the change entry.
+
+            field_info (dict):
+                The stored change information for the entry.
+
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request the change entry is on.
+
+        Returns:
+            reviewboard.reviews.builtin_fields.TrackedBugsField:
+            The field to render the entry with, or ``None`` if the key
+            is invalid.
+        """
+        try:
+            tracker_pk = int(field_id.split(':', 1)[1])
+        except ValueError:
+            logger.warning('Invalid bug tracker change entry key %r on '
+                           'review request %s',
+                           field_id, review_request.display_id)
+            return None
+
+        tracker = ConfiguredBugTracker.objects.filter(pk=tracker_pk).first()
+
+        if tracker is not None:
+            label = tracker.name
+            usable = tracker.is_usable_by(request.user, request=request)
+        else:
+            label = field_info.get('label') or _('Bugs')
+            usable = False
+
+        return TrackedBugsField(
+            review_request,
+            request=request,
+            tracker=tracker,
+            field_id=field_id,
+            label=label,
+            usable=usable)
 
     def get_dom_element_id(self) -> str:
         """Return the ID used for the DOM element for this entry.

@@ -8,9 +8,7 @@ from __future__ import annotations
 
 from django.contrib.auth.models import User
 from django.test.client import RequestFactory
-from djblets.conditions import Condition, ConditionSet
 
-from reviewboard.accounts.conditions import UserInGroupChoice
 from reviewboard.hostingsvcs.models import (
     ConfiguredBugTracker,
     SENTINEL_BUG_TRACKER_SERVICE_NAME,
@@ -39,7 +37,7 @@ class ConfiguredBugTrackerManagerForReviewRequestTests(TestCase):
         repository = self.create_repository()
         review_request = self.create_review_request(repository=repository)
 
-        tracker = ConfiguredBugTracker.objects.create(
+        tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat')
 
@@ -55,7 +53,7 @@ class ConfiguredBugTrackerManagerForReviewRequestTests(TestCase):
         review_request1 = self.create_review_request(repository=repository1)
         review_request2 = self.create_review_request(repository=repository2)
 
-        tracker = ConfiguredBugTracker.objects.create(
+        tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat',
             apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
@@ -76,14 +74,14 @@ class ConfiguredBugTrackerManagerForReviewRequestTests(TestCase):
         """
         review_request = self.create_review_request()
 
-        tracker_all = ConfiguredBugTracker.objects.create(
+        tracker_all = self.create_bug_tracker(
             name='Tracker All',
             service_name='splat')
-        tracker_no_repos = ConfiguredBugTracker.objects.create(
+        tracker_no_repos = self.create_bug_tracker(
             name='Tracker No Repos',
             service_name='splat',
             apply_to=ConfiguredBugTracker.APPLY_TO_NO_REPOS)
-        selected_tracker = ConfiguredBugTracker.objects.create(
+        selected_tracker = self.create_bug_tracker(
             name='Tracker Selected',
             service_name='splat',
             apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
@@ -104,7 +102,7 @@ class ConfiguredBugTrackerManagerForReviewRequestTests(TestCase):
         repository = self.create_repository()
         review_request = self.create_review_request(repository=repository)
 
-        ConfiguredBugTracker.objects.create(
+        self.create_bug_tracker(
             name='Tracker No Repos',
             service_name='splat',
             apply_to=ConfiguredBugTracker.APPLY_TO_NO_REPOS)
@@ -123,7 +121,7 @@ class ConfiguredBugTrackerManagerForReviewRequestTests(TestCase):
 
         # This tracker's scoping does not match the repository, but it
         # is the repository's default.
-        tracker = ConfiguredBugTracker.objects.create(
+        tracker = self.create_bug_tracker(
             name='Default Tracker',
             service_name='splat',
             apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
@@ -141,7 +139,7 @@ class ConfiguredBugTrackerManagerForReviewRequestTests(TestCase):
         repository = self.create_repository()
         review_request = self.create_review_request(repository=repository)
 
-        ConfiguredBugTracker.objects.create(
+        self.create_bug_tracker(
             name='Tracker',
             service_name='splat',
             enabled=False)
@@ -162,10 +160,10 @@ class ConfiguredBugTrackerManagerForReviewRequestTests(TestCase):
             local_site=local_site,
             local_id=1)
 
-        global_tracker = ConfiguredBugTracker.objects.create(
+        global_tracker = self.create_bug_tracker(
             name='Global Tracker',
             service_name='splat')
-        site_tracker = ConfiguredBugTracker.objects.create(
+        site_tracker = self.create_bug_tracker(
             name='Site Tracker',
             service_name='splat',
             local_site=local_site)
@@ -185,20 +183,13 @@ class ConfiguredBugTrackerManagerForReviewRequestTests(TestCase):
         other_user = User.objects.create_user(username='other-user')
         group.users.add(other_user)
 
-        choice = UserInGroupChoice()
-        condition_set = ConditionSet(ConditionSet.MODE_ALL, [
-            Condition(choice,
-                      choice.get_operator('contains-any'),
-                      [group]),
-        ])
-
-        open_tracker = ConfiguredBugTracker.objects.create(
+        open_tracker = self.create_bug_tracker(
             name='Open Tracker',
             service_name='splat')
-        limited_tracker = ConfiguredBugTracker.objects.create(
+        limited_tracker = self.create_bug_tracker(
             name='Limited Tracker',
             service_name='splat',
-            user_conditions=condition_set.serialize())
+            limit_to_groups=[group])
 
         self.assertEqual(
             ConfiguredBugTracker.objects.for_review_request(review_request,
@@ -214,7 +205,7 @@ class ConfiguredBugTrackerManagerForReviewRequestTests(TestCase):
         repository = self.create_repository()
         review_request = self.create_review_request(repository=repository)
 
-        ConfiguredBugTracker.objects.create(
+        self.create_bug_tracker(
             name='Tracker',
             service_name='splat')
 
@@ -247,10 +238,10 @@ class ConfiguredBugTrackerManagerWithLinkedBugsTests(TestCase):
         """Testing with_linked_bugs"""
         review_request = self.create_review_request()
 
-        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                      service_name='splat')
-        ConfiguredBugTracker.objects.create(name='Unlinked',
-                                            service_name='splat')
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
+        self.create_bug_tracker(name='Unlinked',
+                                service_name='splat')
 
         review_request.bugs.add(Bug.objects.get_or_create_bug(
             bug_tracker=tracker,
@@ -277,8 +268,8 @@ class ConfiguredBugTrackerManagerWithLinkedBugsTests(TestCase):
         review_request = self.create_review_request(publish=True)
         draft = ReviewRequestDraft.create(review_request)
 
-        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                      service_name='splat')
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
         draft.bugs.add(Bug.objects.get_or_create_bug(bug_tracker=tracker,
                                                      bug_id='10'))
 
@@ -289,8 +280,8 @@ class ConfiguredBugTrackerManagerWithLinkedBugsTests(TestCase):
         """Testing with_linked_bugs caches results on the request"""
         review_request = self.create_review_request()
 
-        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                      service_name='splat')
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
         review_request.bugs.add(Bug.objects.get_or_create_bug(
             bug_tracker=tracker,
             bug_id='10'))
@@ -314,8 +305,8 @@ class ConfiguredBugTrackerManagerWithLinkedBugsTests(TestCase):
         review_request = self.create_review_request(publish=True)
         draft = ReviewRequestDraft.create(review_request)
 
-        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                      service_name='splat')
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
         draft.bugs.add(Bug.objects.get_or_create_bug(bug_tracker=tracker,
                                                      bug_id='10'))
 
@@ -338,10 +329,10 @@ class ConfiguredBugTrackerManagerWithLinkedBugsTests(TestCase):
         """
         review_request = self.create_review_request()
 
-        tracker = ConfiguredBugTracker.objects.create(name='Tracker',
-                                                      service_name='splat')
-        ConfiguredBugTracker.objects.create(name='Unlinked',
-                                            service_name='splat')
+        tracker = self.create_bug_tracker(name='Tracker',
+                                          service_name='splat')
+        self.create_bug_tracker(name='Unlinked',
+                                service_name='splat')
 
         review_request.bugs.add(Bug.objects.get_or_create_bug(
             bug_tracker=tracker,
@@ -369,10 +360,10 @@ class ConfiguredBugTrackerManagerAccessibleTests(TestCase):
         """Testing accessible includes disabled trackers and excludes the
         sentinel
         """
-        tracker = ConfiguredBugTracker.objects.create(
+        tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat')
-        disabled_tracker = ConfiguredBugTracker.objects.create(
+        disabled_tracker = self.create_bug_tracker(
             name='Disabled Tracker',
             service_name='splat',
             enabled=False)
@@ -389,10 +380,10 @@ class ConfiguredBugTrackerManagerAccessibleTests(TestCase):
         """Testing accessible with a LocalSite"""
         local_site = self.create_local_site()
 
-        ConfiguredBugTracker.objects.create(
+        self.create_bug_tracker(
             name='Global Tracker',
             service_name='splat')
-        site_tracker = ConfiguredBugTracker.objects.create(
+        site_tracker = self.create_bug_tracker(
             name='Site Tracker',
             service_name='splat',
             local_site=local_site)

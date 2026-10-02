@@ -120,6 +120,35 @@ def get_bug_tracker_field_equeries(
             ),
         })
 
+        # Resolving the repository's implied default bug tracker checks
+        # for attached trackers and then for a single site-wide tracker.
+        equeries += [
+            {
+                'annotations': {'a': Value(1)},
+                'join_types': {
+                    'hostingsvcs_configuredbugtracker_repositories':
+                        'INNER JOIN',
+                },
+                'limit': 1,
+                'model': ConfiguredBugTracker,
+                'num_joins': 1,
+                'tables': {
+                    'hostingsvcs_configuredbugtracker',
+                    'hostingsvcs_configuredbugtracker_repositories',
+                },
+                'where': Q(repositories__id=repository.pk),
+            },
+            {
+                'limit': 2,
+                'model': ConfiguredBugTracker,
+                'tables': {'hostingsvcs_configuredbugtracker'},
+                'where': (Q(apply_to=ConfiguredBugTracker.APPLY_TO_ALL) &
+                          Q(enabled=True) &
+                          Q(local_site=repository.local_site_id) &
+                          ~Q(service_name=SENTINEL_BUG_TRACKER_SERVICE_NAME)),
+            },
+        ]
+
     if isinstance(review_request_details, ReviewRequestDraft):
         bugs_table = 'reviews_reviewrequestdraft_bugs'
         bugs_q = Q(drafts__id=review_request_details.pk)

@@ -11,7 +11,6 @@ from django.test.client import RequestFactory
 from djblets.conditions import Condition, ConditionSet
 
 from reviewboard.accounts.conditions import (
-    UserInGroupChoice,
     UserIsSuperuserChoice,
 )
 from reviewboard.hostingsvcs.models import (
@@ -39,7 +38,7 @@ class ConfiguredBugTrackerTests(TestCase):
         account = HostingServiceAccount.objects.create(
             service_name='splat',
             username='test-user')
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='My Splat',
             service_name='splat',
             hosting_account=account)
@@ -50,7 +49,7 @@ class ConfiguredBugTrackerTests(TestCase):
 
     def test_service_without_account(self) -> None:
         """Testing ConfiguredBugTracker.service without a hosting account"""
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='My Splat',
             service_name='splat')
 
@@ -61,7 +60,7 @@ class ConfiguredBugTrackerTests(TestCase):
 
     def test_is_usable_by_with_empty_conditions(self) -> None:
         """Testing ConfiguredBugTracker.is_usable_by with empty conditions"""
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat')
 
@@ -71,7 +70,7 @@ class ConfiguredBugTrackerTests(TestCase):
         """Testing ConfiguredBugTracker.is_usable_by with a serialized empty
         condition list
         """
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat',
             user_conditions={
@@ -87,10 +86,10 @@ class ConfiguredBugTrackerTests(TestCase):
         group = self.create_review_group(name='group1')
         group.users.add(self.user)
 
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat',
-            user_conditions=self._make_group_conditions(group))
+            limit_to_groups=[group])
 
         self.assertTrue(bug_tracker.is_usable_by(self.user))
 
@@ -100,10 +99,10 @@ class ConfiguredBugTrackerTests(TestCase):
         """
         group = self.create_review_group(name='group1')
 
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat',
-            user_conditions=self._make_group_conditions(group))
+            limit_to_groups=[group])
 
         self.assertFalse(bug_tracker.is_usable_by(self.user))
 
@@ -119,7 +118,7 @@ class ConfiguredBugTrackerTests(TestCase):
             Condition(choice, choice.get_operator('is'), True),
         ])
 
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat',
             user_conditions=condition_set.serialize())
@@ -131,7 +130,7 @@ class ConfiguredBugTrackerTests(TestCase):
         """Testing ConfiguredBugTracker.is_usable_by fails closed with bad
         condition data
         """
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat',
             user_conditions={
@@ -154,10 +153,10 @@ class ConfiguredBugTrackerTests(TestCase):
         group = self.create_review_group(name='group1')
         group.users.add(self.user)
 
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat',
-            user_conditions=self._make_group_conditions(group))
+            limit_to_groups=[group])
 
         request = RequestFactory().get('/')
 
@@ -169,7 +168,7 @@ class ConfiguredBugTrackerTests(TestCase):
 
     def test_is_mutable_by(self) -> None:
         """Testing ConfiguredBugTracker.is_mutable_by"""
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat')
 
@@ -182,7 +181,7 @@ class ConfiguredBugTrackerTests(TestCase):
 
     def test_display_mode(self) -> None:
         """Testing ConfiguredBugTracker.display_mode"""
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat',
             settings={
@@ -194,7 +193,7 @@ class ConfiguredBugTrackerTests(TestCase):
 
     def test_display_mode_defaults_to_compact(self) -> None:
         """Testing ConfiguredBugTracker.display_mode defaults to compact"""
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat')
 
@@ -205,7 +204,7 @@ class ConfiguredBugTrackerTests(TestCase):
         """Testing ConfiguredBugTracker.display_mode with an unknown stored
         value
         """
-        bug_tracker = ConfiguredBugTracker.objects.create(
+        bug_tracker = self.create_bug_tracker(
             name='Tracker',
             service_name='splat',
             settings={
@@ -214,23 +213,3 @@ class ConfiguredBugTrackerTests(TestCase):
 
         self.assertEqual(bug_tracker.display_mode,
                          ConfiguredBugTracker.DISPLAY_MODE_COMPACT)
-
-    def _make_group_conditions(self, *groups) -> dict:
-        """Return serialized user conditions matching review groups.
-
-        Args:
-            *groups (tuple of reviewboard.reviews.models.group.Group):
-                The groups to match.
-
-        Returns:
-            dict:
-            The serialized condition set.
-        """
-        choice = UserInGroupChoice()
-        condition_set = ConditionSet(ConditionSet.MODE_ALL, [
-            Condition(choice,
-                      choice.get_operator('contains-any'),
-                      list(groups)),
-        ])
-
-        return condition_set.serialize()

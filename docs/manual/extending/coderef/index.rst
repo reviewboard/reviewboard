@@ -307,6 +307,7 @@ Review Requests and Reviews
    :toctree: python
 
    reviewboard.reviews.actions
+   reviewboard.reviews.approval
    reviewboard.reviews.builtin_fields
    reviewboard.reviews.chunk_generators
    reviewboard.reviews.conditions
@@ -472,6 +473,7 @@ Web API
    reviewboard.webapi.mixins
    reviewboard.webapi.models
    reviewboard.webapi.server_info
+   reviewboard.webapi.token_policies
    reviewboard.webapi.testing
    reviewboard.webapi.testing.queries
    reviewboard.webapi.tests.base

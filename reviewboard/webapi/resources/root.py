@@ -572,6 +572,7 @@ class RootResource(WebAPIResource, DjbletsRootResource):
 
     def __init__(self, *args, **kwargs):
         super(RootResource, self).__init__([
+            resources.bug_tracker,
             resources.default_reviewer,
             resources.extension,
             resources.hosting_service,

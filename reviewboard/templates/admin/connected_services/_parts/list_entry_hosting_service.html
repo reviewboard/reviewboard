@@ -12,6 +12,7 @@
 {% block service_controls %}{% endblock %}
 
  <div class="rb-c-admin-cs-card__body">
+{% if has_visible_accounts %}
   <ul class="rb-c-admin-cs-accounts">
 {% block service_accounts %}
 {%  for entry in accounts_data %}
@@ -39,6 +40,30 @@
 {%  endfor %}
 {% endblock service_accounts %}
   </ul>
+{% endif %}
+
+{% block service_bug_trackers %}
+{%  if bug_tracker_count %}
+  <div class="rb-c-admin-cs-service-items"
+       data-item-type="bug-trackers"
+       data-service-id="{{service_id}}"
+       data-item-count="{{bug_tracker_count}}">
+   <button class="rb-c-admin-cs-service-items__header" type="button"
+           aria-expanded="false"
+           aria-controls="cs-{{service_id}}-bug-trackers">
+    <span class="rb-c-admin-cs-service-items__disclosure"
+          aria-hidden="true"></span>
+{%   blocktrans trimmed count counter=bug_tracker_count %}
+    {{counter}} bug tracker
+{%   plural %}
+    {{counter}} bug trackers
+{%   endblocktrans %}
+   </button>
+   <div class="rb-c-admin-cs-service-items__panel"
+        id="cs-{{service_id}}-bug-trackers" hidden></div>
+  </div>
+{%  endif %}
+{% endblock service_bug_trackers %}
 
 {% block service_items %}
 {%  if total_repository_count %}

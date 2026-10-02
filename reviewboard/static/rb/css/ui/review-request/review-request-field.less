@@ -88,4 +88,16 @@
       align-items: center;
     }
   }
+
+  /*
+   * Tokens in a combo box editor, such as the tracked bugs field's.
+   *
+   * The tokens' own font size (--ink-u-font-sm) is larger than the
+   * field's standard font here, and the field's 2.5em line-height
+   * would pad the tokens vertically, so both are normalized.
+   */
+  .ink-c-combo-box__token {
+    font-size: var(--ink-u-font-std);
+    line-height: normal;
+  }
 }

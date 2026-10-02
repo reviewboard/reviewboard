@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from django.contrib import admin
@@ -21,6 +22,8 @@ from reviewboard.scmtools.forms import RepositoryForm
 from reviewboard.scmtools.models import Repository, Tool
 
 if TYPE_CHECKING:
+    from django.contrib.admin.options import _FieldsetSpec
+    from django.http import HttpRequest
     from django.utils.safestring import SafeString
 
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
@@ -94,6 +97,55 @@ class RepositoryAdmin(ModelAdmin):
     form = RepositoryForm
 
     fieldset_template_name = 'admin/scmtools/repository/_fieldset.html'
+
+    def get_fieldsets(
+        self,
+        request: HttpRequest,
+        obj: (Repository | None) = None,
+    ) -> _FieldsetSpec:
+        """Return the fieldsets for the repository form.
+
+        The Bug Tracker section renders the bug tracker widget instead
+        of the legacy fields. The legacy fields stay on the form
+        (hidden by the widget's stylesheet) so the widget can drive
+        them.
+
+        Version Added:
+            9.0
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            obj (reviewboard.scmtools.models.Repository, optional):
+                The repository being changed.
+
+        Returns:
+            tuple:
+            The fieldsets to display.
+        """
+        fieldsets = super().get_fieldsets(request, obj)
+
+        new_fieldsets = []
+
+        for title, info in deepcopy(fieldsets):
+            if title == RepositoryForm.BUG_TRACKER_FIELDSET:
+                title = RepositoryForm.ISSUE_TRACKING_FIELDSET
+
+                fields = tuple(info['fields'])
+
+                for field in ('default_bug_tracker',
+                              'bug_tracker_configs'):
+                    if field not in fields:
+                        fields += (field,)
+
+                info['fields'] = fields
+                info['classes'] = (*tuple(info.get('classes', ())),
+                                   'rb-c-repo-bug-trackers-fieldset')
+
+            new_fieldsets.append((title, info))
+
+        return new_fieldsets
 
     @admin.display(description=_('Type / Account'))
     def _repository_type(

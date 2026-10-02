@@ -1,0 +1,8 @@
+env_list = [ "3.10", "3.11", "3.12", "3.13", "3.14" ]
+
+[env_run_base]
+package = "editable"
+deps = [
+    "-r dev-requirements.txt",
+]
+commands = [["pytest", { replace = "posargs", extend = true }]]

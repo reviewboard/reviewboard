@@ -11,7 +11,14 @@ from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
 
 class VersionOneForm(BaseHostingServiceRepositoryForm):
-    """Form service for VersionOne."""
+    """The legacy repository form for VersionOne settings.
+
+    This collects VersionOne settings stored on a repository
+    (``bug_tracker-*`` keys in ``extra_data``). It exists only for
+    compatibility with legacy per-repository bug tracker settings written
+    through the repository form and the Web API. The service is no longer
+    available, so there is no standalone configuration form.
+    """
 
     versionone_url = forms.CharField(
         label=_('VersionOne URL'),

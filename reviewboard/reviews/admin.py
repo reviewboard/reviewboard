@@ -1,3 +1,5 @@
+"""Admin definitions for the reviews app."""
+
 from __future__ import annotations
 
 from django.template.defaultfilters import truncatechars
@@ -5,17 +7,30 @@ from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin import ModelAdmin, admin_site
 from reviewboard.reviews.forms import DefaultReviewerForm, GroupForm
-from reviewboard.reviews.models import (Comment,
-                                        DefaultReviewer,
-                                        FileAttachmentComment,
-                                        GeneralComment,
-                                        Group,
-                                        Review,
-                                        ReviewRequest,
-                                        ReviewRequestDraft,
-                                        Screenshot,
-                                        ScreenshotComment,
-                                        StatusUpdate)
+from reviewboard.reviews.models import (
+    Bug,
+    Comment,
+    DefaultReviewer,
+    FileAttachmentComment,
+    GeneralComment,
+    Group,
+    Review,
+    ReviewRequest,
+    ReviewRequestDraft,
+    Screenshot,
+    ScreenshotComment,
+    StatusUpdate,
+)
+
+
+class BugAdmin(ModelAdmin):
+    """Admin definitions for the Bug model.
+
+    Version Added:
+        9.0
+    """
+
+    list_display = ('bug_id', 'bug_tracker__name')
 
 
 class CommentAdmin(ModelAdmin):
@@ -302,6 +317,7 @@ class StatusUpdateAdmin(ModelAdmin):
     review_request_id.short_description = _('Review request ID')
 
 
+admin_site.register(Bug, BugAdmin)
 admin_site.register(Comment, CommentAdmin)
 admin_site.register(DefaultReviewer, DefaultReviewerAdmin)
 admin_site.register(FileAttachmentComment, FileAttachmentCommentAdmin)

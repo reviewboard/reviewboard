@@ -60,17 +60,22 @@ class ConnectedServiceRepositoriesViewTests(TestCase):
         """Testing ConnectedServiceRepositoriesView GET uses the hosting
         service's customized display path
         """
-        self.create_repository(
+        repository = self.create_repository(
             name='My Repo',
             hosting_account=self.account,
             path='git://github.com/example/reviewboard.git')
+        repository.extra_data.update({
+            'github_owner': 'example',
+            'github_repo_name': 'reviewboard',
+        })
+        repository.save(update_fields=('extra_data',))
 
         self.client.login(username='admin', password='admin')
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
 
-        # GitHub turns the clone URL into an "owner/repo" identifier.
+        # GitHub shows the stored "owner/repo" identifier, not the clone URL.
         content = response.content
         self.assertIn(b'example/reviewboard', content)
         self.assertNotIn(b'git://github.com/example/reviewboard.git', content)

@@ -71,6 +71,9 @@ RB.PageManager.ready(function() {
     new RB.Admin.ConnectedServicesView({
         el: document.querySelector('.rb-c-admin-cs-list'),
         autoConnectURL: {{auto_connect_url|json_dumps}},
+        bugTrackersPerPage: {{bug_trackers_per_page}},
+        bugTrackersURLTemplate:
+            "{% url 'connected-services-bug-trackers' service_id='__SERVICE_ID__' %}",
         connectURLTemplate:
             "{% url 'connected-services-connect' service_id='__SERVICE_ID__' %}",
         csrfToken: "{{csrf_token|escapejs}}",

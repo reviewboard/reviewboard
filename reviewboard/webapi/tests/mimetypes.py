@@ -12,6 +12,11 @@ api_token_item_mimetype = _build_mimetype('api-token')
 archived_item_mimetype = _build_mimetype('archived-review-request')
 
 
+bug_tracker_list_mimetype = _build_mimetype('bug-trackers')
+bug_tracker_item_mimetype = _build_mimetype('bug-tracker')
+bug_tracker_bugs_list_mimetype = _build_mimetype('bugs')
+
+
 change_list_mimetype = _build_mimetype('review-request-changes')
 change_item_mimetype = _build_mimetype('review-request-change')
 

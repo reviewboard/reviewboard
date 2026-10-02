@@ -817,6 +817,39 @@ class Site(object):
             # a dedup is needed.
             return True
 
+    def get_bug_backfill_needed(self) -> bool:
+        """Determine if legacy bug data may need converting.
+
+        This checks whether any review requests have a legacy bug list
+        that has not been converted to bug relations. The check is
+        approximate: it looks for a sample of review requests with bug
+        data and inspects them for the migration marker.
+
+        Version Added:
+            9.0
+
+        Returns:
+            bool:
+            Whether any legacy bug data needs conversion.
+        """
+        from reviewboard.reviews.models import ReviewRequest
+        from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY
+
+        try:
+            review_requests = (
+                ReviewRequest.objects
+                .exclude(bugs_closed='')
+                .only('pk', 'extra_data')
+                .order_by('-pk')[:100]
+            )
+
+            return any(
+                not (review_request.extra_data or {}).get(BUGS_MIGRATED_KEY)
+                for review_request in review_requests
+            )
+        except Exception:
+            return False
+
     def get_settings_local(self):
         """Return the current local settings module.
 
@@ -2856,6 +2889,7 @@ class UpgradeCommand(Command):
 
         diff_dedup_needed = site.get_diff_dedup_needed()
         static_media_upgrade_needed = site.get_static_media_upgrade_needed()
+        bug_backfill_needed = site.get_bug_backfill_needed()
         data_dir_exists = os.path.exists(
             os.path.join(site.install_dir, 'data'))
 
@@ -2980,6 +3014,22 @@ class UpgradeCommand(Command):
             console.print('    $ rb-site manage %s condensediffs'
                           % site.abs_install_dir,
                           wrap=False)
+            console.print()
+
+        if bug_backfill_needed:
+            console.print(
+                'Some review requests have bug data that has not been '
+                'converted to the new bug storage. Until converted, '
+                'searching and querying by bug ID will not cover those '
+                'review requests.'
+                '\n'
+                'To convert them at your convenience, type the following:')
+            console.print()
+            console.print(
+                '    $ rb-site manage %s migrate-bug-trackers '
+                '--backfill-bugs'
+                % site.abs_install_dir,
+                wrap=False)
             console.print()
 
 

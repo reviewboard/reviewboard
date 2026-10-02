@@ -858,10 +858,10 @@ class RepositoryGetDefaultBugTrackerTests(TestCase):
         """Testing Repository.get_default_bug_tracker with an explicit
         default bug tracker
         """
-        tracker = ConfiguredBugTracker.objects.create(name='My Tracker',
-                                                      service_name='splat')
-        other = ConfiguredBugTracker.objects.create(name='Other Tracker',
-                                                    service_name='splat')
+        tracker = self.create_bug_tracker(name='My Tracker',
+                                          service_name='splat')
+        other = self.create_bug_tracker(name='Other Tracker',
+                                        service_name='splat')
 
         repository = self.repository
         repository.default_bug_tracker = tracker
@@ -874,8 +874,8 @@ class RepositoryGetDefaultBugTrackerTests(TestCase):
         """Testing Repository.get_default_bug_tracker implies a default
         from a single tracker applying to all review requests
         """
-        tracker = ConfiguredBugTracker.objects.create(name='My Tracker',
-                                                      service_name='splat')
+        tracker = self.create_bug_tracker(name='My Tracker',
+                                          service_name='splat')
 
         self.assertEqual(self.repository.get_default_bug_tracker(),
                          tracker)
@@ -884,10 +884,10 @@ class RepositoryGetDefaultBugTrackerTests(TestCase):
         """Testing Repository.get_default_bug_tracker implies no default
         from multiple trackers applying to all review requests
         """
-        ConfiguredBugTracker.objects.create(name='My Tracker',
-                                            service_name='splat')
-        ConfiguredBugTracker.objects.create(name='Other Tracker',
-                                            service_name='splat')
+        self.create_bug_tracker(name='My Tracker',
+                                service_name='splat')
+        self.create_bug_tracker(name='Other Tracker',
+                                service_name='splat')
 
         self.assertIsNone(self.repository.get_default_bug_tracker())
 
@@ -895,10 +895,10 @@ class RepositoryGetDefaultBugTrackerTests(TestCase):
         """Testing Repository.get_default_bug_tracker implies no default
         for a repository with its own attached trackers
         """
-        ConfiguredBugTracker.objects.create(name='My Tracker',
-                                            service_name='splat')
+        self.create_bug_tracker(name='My Tracker',
+                                service_name='splat')
 
-        attached = ConfiguredBugTracker.objects.create(
+        attached = self.create_bug_tracker(
             name='Repo Tracker',
             service_name='splat',
             apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
@@ -910,9 +910,9 @@ class RepositoryGetDefaultBugTrackerTests(TestCase):
         """Testing Repository.get_default_bug_tracker never implies a
         default from a disabled tracker
         """
-        ConfiguredBugTracker.objects.create(name='My Tracker',
-                                            service_name='splat',
-                                            enabled=False)
+        self.create_bug_tracker(name='My Tracker',
+                                service_name='splat',
+                                enabled=False)
 
         self.assertIsNone(self.repository.get_default_bug_tracker())
 
@@ -920,11 +920,11 @@ class RepositoryGetDefaultBugTrackerTests(TestCase):
         """Testing Repository.get_default_bug_tracker never implies a
         default from trackers not applying to all review requests
         """
-        ConfiguredBugTracker.objects.create(
+        self.create_bug_tracker(
             name='My Tracker',
             service_name='splat',
             apply_to=ConfiguredBugTracker.APPLY_TO_NO_REPOS)
-        ConfiguredBugTracker.objects.create(
+        self.create_bug_tracker(
             name='Other Tracker',
             service_name='splat',
             apply_to=ConfiguredBugTracker.APPLY_TO_SELECTED_REPOS)
@@ -938,8 +938,8 @@ class RepositoryGetDefaultBugTrackerTests(TestCase):
         """
         local_site = self.get_local_site(name=self.local_site_name)
 
-        ConfiguredBugTracker.objects.create(name='My Tracker',
-                                            service_name='splat',
-                                            local_site=local_site)
+        self.create_bug_tracker(name='My Tracker',
+                                service_name='splat',
+                                local_site=local_site)
 
         self.assertIsNone(self.repository.get_default_bug_tracker())

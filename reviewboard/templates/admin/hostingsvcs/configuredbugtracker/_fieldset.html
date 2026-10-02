@@ -1,0 +1,23 @@
+{% comment %}
+Renders each service's settings in a fieldset of its own, after the main
+fields. Only the selected service's fieldset is shown, by
+RB.Admin.BugTrackerFormView.
+{% endcomment %}
+{% include "admin/includes/fieldset.html" %}
+
+{% if not fieldset.name %}
+{%  for service_id, name, settings_form in adminform.form.settings_fieldsets %}
+<fieldset class="rb-c-form-fieldset -is-wide rb-c-admin-bug-tracker-settings"
+          data-service-id="{{service_id}}"
+          style="display: none;">
+ <legend class="rb-c-form-fieldset__name">{{name}}</legend>
+ <div class="rb-c-form-fieldset__content">
+  <div class="rb-c-form-fieldset__fields">
+{%   for field in settings_form %}
+{%    include "forms/field.html" with form=settings_form %}
+{%   endfor %}
+  </div>
+ </div>
+</fieldset>
+{%  endfor %}
+{% endif %}
