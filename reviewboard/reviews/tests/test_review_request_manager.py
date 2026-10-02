@@ -7,6 +7,7 @@ from django_assert_queries.testing import assert_queries
 from django.contrib.auth.models import AnonymousUser, User
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.models import (DefaultReviewer, ReviewRequest,
                                         ReviewRequestDraft)
@@ -31,6 +32,18 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
     fixtures = ['test_users']
 
     @add_fixtures(['test_scmtools'])
+    def test_create_with_positional_args(self) -> None:
+        """Testing ReviewRequest.objects.create with positional arguments"""
+        user = User.objects.get(username='doc')
+        repository = self.create_repository()
+
+        with self.assertWarns(RemovedInReviewBoard11_0Warning):
+            review_request = ReviewRequest.objects.create(user, repository)
+
+        self.assertEqual(review_request.submitter, user)
+        self.assertEqual(review_request.repository, repository)
+
+    @add_fixtures(['test_scmtools'])
     def test_create_with_site(self):
         """Testing ReviewRequest.objects.create with LocalSite"""
         user = User.objects.get(username='doc')
@@ -38,7 +51,10 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
         repository = self.create_repository()
 
         review_request = ReviewRequest.objects.create(
-            user, repository, local_site=local_site)
+            user=user,
+            repository=repository,
+            local_site=local_site,
+        )
         self.assertEqual(review_request.repository, repository)
         self.assertEqual(review_request.local_site, local_site)
         self.assertEqual(review_request.local_id, 1)
@@ -51,9 +67,11 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
         repository = self.create_repository()
 
         review_request = ReviewRequest.objects.create(
-            user, repository,
+            user=user,
+            repository=repository,
             commit_id='123',
-            local_site=local_site)
+            local_site=local_site,
+        )
         self.assertEqual(review_request.repository, repository)
         self.assertEqual(review_request.commit_id, '123')
         self.assertEqual(review_request.local_site, local_site)
@@ -69,17 +87,22 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
         repository = self.create_repository()
 
         # This one should be fine.
-        ReviewRequest.objects.create(user, repository, commit_id='123',
-                                     local_site=local_site)
+        ReviewRequest.objects.create(
+            user=user,
+            repository=repository,
+            commit_id='123',
+            local_site=local_site,
+        )
         self.assertEqual(local_site.review_requests.count(), 1)
 
         # This one will yell.
         with self.assertRaises(ChangeNumberInUseError):
             ReviewRequest.objects.create(
-                user,
-                repository,
+                user=user,
+                repository=repository,
                 commit_id='123',
-                local_site=local_site)
+                local_site=local_site,
+            )
 
         # Make sure that entry doesn't exist in the database.
         self.assertEqual(local_site.review_requests.count(), 1)
@@ -95,7 +118,10 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
 
         # This one should be fine.
         existing_review_request = ReviewRequest.objects.create(
-            user, repository, local_site=local_site)
+            user=user,
+            repository=repository,
+            local_site=local_site,
+        )
         existing_draft = ReviewRequestDraft.create(existing_review_request)
         existing_draft.commit_id = '123'
         existing_draft.save()
@@ -105,10 +131,11 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
         # This one will yell.
         with self.assertRaises(ChangeNumberInUseError):
             ReviewRequest.objects.create(
-                user,
-                repository,
+                user=user,
+                repository=repository,
                 commit_id='123',
-                local_site=local_site)
+                local_site=local_site,
+            )
 
         # Make sure that entry doesn't exist in the database.
         self.assertEqual(local_site.review_requests.count(), 1)
@@ -128,10 +155,12 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
 
         with self.assertRaises(NotImplementedError):
             ReviewRequest.objects.create(
-                user, repository,
+                user=user,
+                repository=repository,
                 commit_id='123',
                 local_site=local_site,
-                create_from_commit_id=True)
+                create_from_commit_id=True,
+            )
 
         # Make sure that entry and related objects don't exist in the database.
         self.assertEqual(local_site.review_requests.count(), 0)
@@ -147,10 +176,11 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
         repository = self.create_repository(tool_name='Test')
 
         review_request = ReviewRequest.objects.create(
-            user,
-            repository,
+            user=user,
+            repository=repository,
             commit_id='123',
-            create_from_commit_id=True)
+            create_from_commit_id=True,
+        )
         self.assertEqual(review_request.repository, repository)
         self.assertEqual(review_request.diffset_history.diffsets.count(), 0)
         self.assertEqual(review_request.commit_id, '123')
@@ -177,10 +207,11 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
         default_reviewer.groups.add(self.create_review_group())
 
         review_request = ReviewRequest.objects.create(
-            user,
-            repository,
+            user=user,
+            repository=repository,
             commit_id='123',
-            create_from_commit_id=True)
+            create_from_commit_id=True,
+        )
         self.assertEqual(review_request.target_people.count(), 0)
         self.assertEqual(review_request.target_groups.count(), 0)
 
@@ -205,10 +236,11 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
         repository = self.create_repository(tool_name='Test')
 
         review_request = ReviewRequest.objects.create(
-            user,
-            repository,
+            user=user,
+            repository=repository,
             commit_id='123',
-            create_from_commit_id=True)
+            create_from_commit_id=True,
+        )
         self.assertEqual(review_request.repository, repository)
         self.assertEqual(review_request.diffset_history.diffsets.count(), 0)
         self.assertEqual(review_request.commit_id, '123')
@@ -245,10 +277,11 @@ class ReviewRequestManagerTests(kgb.SpyAgency, TestCase):
             tool_name='TestToolSupportsPendingChangeSets')
 
         review_request = ReviewRequest.objects.create(
-            user,
-            repository,
+            user=user,
+            repository=repository,
             commit_id=123,
-            create_from_commit_id=True)
+            create_from_commit_id=True,
+        )
         self.assertEqual(review_request.repository, repository)
         self.assertEqual(review_request.diffset_history.diffsets.count(), 0)
         self.assertEqual(review_request.commit_id, 123)

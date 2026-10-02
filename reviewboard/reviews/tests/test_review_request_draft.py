@@ -804,8 +804,12 @@ class PostCommitTests(SpyAgency, TestCase):
 
             return commit
 
-        review_request = ReviewRequest.objects.create(self.user,
-                                                      self.repository)
+        review_request = self.create_review_request(
+            submitter=self.user,
+            repository=self.repository,
+            summary='',
+            description='',
+        )
         draft = ReviewRequestDraft.create(review_request)
 
         self.spy_on(draft.repository.get_change, call_fake=get_change)
@@ -839,8 +843,10 @@ class PostCommitTests(SpyAgency, TestCase):
 
             return commit
 
-        review_request = ReviewRequest.objects.create(self.user,
-                                                      self.repository)
+        review_request = self.create_review_request(
+            submitter=self.user,
+            repository=self.repository,
+        )
         draft = ReviewRequestDraft.create(review_request)
 
         self.spy_on(draft.repository.get_change, call_fake=get_change)
@@ -865,8 +871,10 @@ class PostCommitTests(SpyAgency, TestCase):
         scmtool_cls.supports_post_commit = False
 
         try:
-            review_request = ReviewRequest.objects.create(self.user,
-                                                          self.repository)
+            review_request = self.create_review_request(
+                submitter=self.user,
+                repository=self.repository,
+            )
             draft = ReviewRequestDraft.create(review_request)
 
             with self.assertRaises(NotImplementedError):
@@ -876,15 +884,18 @@ class PostCommitTests(SpyAgency, TestCase):
 
     def test_update_from_pending_change(self):
         """Testing ReviewRequestDraft.update_from_pending_change"""
-        review_request = ReviewRequest.objects.create(self.user,
-                                                      self.repository)
+        review_request = self.create_review_request(
+            submitter=self.user,
+            repository=self.repository,
+            branch='',
+        )
         draft = ReviewRequestDraft.create(review_request)
 
         draft.description_rich_text = True
         draft.testing_done_rich_text = True
 
         changeset = ChangeSet()
-        changeset.branch = 'my-branch'
+        changeset.branch = 'new-branch'
         changeset.bugs_closed = ['123', '456', 'BUG-789']
         changeset.changenum = 4
         changeset.summary = '* This is a summary'
@@ -897,7 +908,7 @@ class PostCommitTests(SpyAgency, TestCase):
 
         draft.update_from_pending_change(4, changeset)
 
-        self.assertEqual(draft.branch, 'my-branch')
+        self.assertEqual(draft.branch, 'new-branch')
         self.assertEqual(draft.get_bug_list(), ['123', '456', 'BUG-789'])
         self.assertEqual(draft.description, '* This is a description.')
         self.assertFalse(draft.description_rich_text)
@@ -911,8 +922,10 @@ class PostCommitTests(SpyAgency, TestCase):
         """Testing ReviewRequestDraft.update_from_pending_change resets rich
         text fields
         """
-        review_request = ReviewRequest.objects.create(self.user,
-                                                      self.repository)
+        review_request = self.create_review_request(
+            submitter=self.user,
+            repository=self.repository,
+        )
         draft = ReviewRequestDraft.create(review_request)
 
         draft.description_rich_text = True

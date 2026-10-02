@@ -7,7 +7,7 @@ from djblets.db.query import get_object_or_none
 from djblets.testing.decorators import add_fixtures
 from djblets.webapi.errors import PERMISSION_DENIED
 
-from reviewboard.reviews.models import Group, ReviewRequest
+from reviewboard.reviews.models import Group
 from reviewboard.site.models import LocalSite
 from reviewboard.webapi.resources import resources
 from reviewboard.webapi.errors import GROUP_ALREADY_EXISTS
@@ -565,20 +565,25 @@ class ResourceItemTests(ExtraDataItemMixin, BaseWebAPITestCase,
     @add_fixtures(['test_scmtools'])
     def test_delete_with_review_requests(self):
         """Testing the DELETE groups/<id>/ API with existing review requests"""
-        self.login_user(admin=True)
+        user = self.login_user(admin=True)
 
-        group = Group.objects.create(name='test-group', invite_only=True)
-        group.users.add(self.user)
+        group = self.create_review_group(
+            invite_only=True,
+            users=[user],
+        )
 
         repository = self.create_repository()
-        request = ReviewRequest.objects.create(self.user, repository)
-        request.target_groups.add(group)
+        review_request = self.create_review_request(
+            submitter=user,
+            repository=repository,
+            target_groups=[group],
+        )
 
         self.api_delete(get_review_group_item_url('test-group'),
                         expected_status=204)
 
-        request = ReviewRequest.objects.get(pk=request.id)
-        self.assertEqual(request.target_groups.count(), 0)
+        review_request.refresh_from_db()
+        self.assertEqual(review_request.target_groups.count(), 0)
 
     #
     # HTTP GET tests
