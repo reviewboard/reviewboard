@@ -735,6 +735,7 @@ class ConnectedServiceBugTrackersView(View):
             ConfiguredBugTracker.objects
             .accessible(local_site=LocalSite.ALL)
             .filter(service_name=service_id)
+            .select_related('hosting_account')
         )
 
         search = request.GET.get('q', '').strip()
@@ -751,11 +752,18 @@ class ConnectedServiceBugTrackersView(View):
         except (EmptyPage, PageNotAnInteger):
             page = paginator.page(1)
 
+        page_bug_trackers = list(page.object_list)
+        connect_ui = service.connect_ui
+
+        for bug_tracker in page_bug_trackers:
+            bug_tracker.display_path = \
+                connect_ui.get_bug_tracker_display_path(bug_tracker)
+
         html = render_to_string(
             template_name=(
                 'admin/connected_services/_parts/bug_tracker_list.html'),
             context={
-                'bug_trackers': page.object_list,
+                'bug_trackers': page_bug_trackers,
                 'page': page,
             },
             request=request)

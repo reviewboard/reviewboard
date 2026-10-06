@@ -23,7 +23,10 @@ if TYPE_CHECKING:
 
     from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-    from reviewboard.hostingsvcs.models import HostingServiceAccount
+    from reviewboard.hostingsvcs.models import (
+        ConfiguredBugTracker,
+        HostingServiceAccount,
+    )
     from reviewboard.scmtools.models import Repository
 
 
@@ -413,6 +416,32 @@ class BaseHostingServiceConnectUI:
             The path to display for the repository.
         """
         return repository.path
+
+    def get_bug_tracker_display_path(
+        self,
+        bug_tracker: ConfiguredBugTracker,
+    ) -> str:
+        """Return the path to display for a bug tracker in the admin UI.
+
+        This is shown next to the bug tracker's name in the bug tracker list
+        on the "Connected Services" page. By default, nothing is shown.
+
+        Subclasses can override this to show where the bug tracker lives.
+        For example, a service that can connect to any server can show the
+        server's URL.
+
+        Version Added:
+            9.0
+
+        Args:
+            bug_tracker (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker configuration to return a display path for.
+
+        Returns:
+            str:
+            The path to display for the bug tracker, or an empty string.
+        """
+        return ''
 
     def get_auth_form_class(self) -> type[BaseHostingServiceAuthForm]:
         """Return the authentication form class for this service.

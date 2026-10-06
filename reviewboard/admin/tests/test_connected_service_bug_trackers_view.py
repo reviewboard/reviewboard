@@ -6,13 +6,22 @@ Version Added:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+import kgb
 from django.urls import reverse
 
 from reviewboard.hostingsvcs.models import ConfiguredBugTracker
+from reviewboard.hostingsvcs.splat import Splat
 from reviewboard.testing.testcase import TestCase
 
+if TYPE_CHECKING:
+    from reviewboard.hostingsvcs.base.connect_ui import (
+        BaseHostingServiceConnectUI,
+    )
 
-class ConnectedServiceBugTrackersViewTests(TestCase):
+
+class ConnectedServiceBugTrackersViewTests(kgb.SpyAgency, TestCase):
     """Unit tests for ConnectedServiceBugTrackersView.
 
     Version Added:
@@ -81,6 +90,39 @@ class ConnectedServiceBugTrackersViewTests(TestCase):
         self.assertEqual(response.headers['X-Total-Count'], '2')
         self.assertEqual(response.headers['X-Page-Number'], '1')
         self.assertEqual(response.headers['X-Num-Pages'], '1')
+
+    def test_get_with_display_path(self) -> None:
+        """Testing ConnectedServiceBugTrackersView GET shows the service's
+        display path for each configuration
+        """
+        ConfiguredBugTracker.objects.create(
+            name='My Splat Tracker',
+            service_name='splat',
+            settings={'splat_org_name': 'my-org'})
+        ConfiguredBugTracker.objects.create(
+            name='My Disabled Tracker',
+            service_name='splat',
+            enabled=False,
+            settings={'splat_org_name': 'other-org'})
+
+        def _get_display_path(
+            connect_ui: BaseHostingServiceConnectUI,
+            bug_tracker: ConfiguredBugTracker,
+        ) -> str:
+            return f'org: {bug_tracker.settings["splat_org_name"]}'
+
+        self.spy_on(Splat.connect_ui.get_bug_tracker_display_path,
+                    call_fake=_get_display_path)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content.decode('utf-8')
+        self.assertIn('org: my-org', content)
+
+        # Disabled configurations show their display path too.
+        self.assertRegex(content, r'org: other-org\s+\(disabled\)')
 
     def test_get_scopes_to_service(self) -> None:
         """Testing ConnectedServiceBugTrackersView GET only returns

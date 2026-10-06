@@ -7,11 +7,12 @@
      href="{% url "admin:hostingsvcs_configuredbugtracker_change" bug_tracker.id %}">
    {{bug_tracker.name}}
   </a>
-{%  if not bug_tracker.enabled %}
   <span class="rb-c-admin-cs-service-items__item__path">
+   {{bug_tracker.display_path}}
+{%  if not bug_tracker.enabled %}
    {% trans "(disabled)" %}
-  </span>
 {%  endif %}
+  </span>
   <span class="rb-c-admin-cs-service-items__item__extra">
 {%  if bug_tracker.user_conditions.conditions %}
    <span class="ink-c-badge" data-type="warning">
