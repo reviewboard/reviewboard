@@ -18,13 +18,14 @@ import json
 import logging
 from enum import Enum
 from typing import TYPE_CHECKING, TypedDict
+from urllib.parse import urlparse
 
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.scmtools.models import Repository
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Iterable, Mapping
     from typing import Any
 
     from typelets.json import JSONDict
@@ -257,12 +258,106 @@ def make_fingerprint(
     return json.dumps([FINGERPRINT_VERSION, *data], sort_keys=True)
 
 
+def _get_name_disambiguator(
+    service_name: str,
+    tracker_settings: Mapping[str, Any],
+) -> str | None:
+    """Return a value that tells a configuration apart from others.
+
+    This is used to label configurations that would otherwise share a name.
+    It's the host of the bug tracker when the host comes from the
+    configuration's settings (such as a JIRA or Bugzilla server URL). Services
+    where every tracker lives on one shared host (such as Splat) use a setting
+    that identifies the tracker on that host instead.
+
+    Version Added:
+        9.0
+
+    Args:
+        service_name (str):
+            The configuration's service name.
+
+        tracker_settings (dict):
+            The configuration's settings.
+
+    Returns:
+        str:
+        The disambiguator, or ``None`` if there isn't one.
+    """
+    if service_name == 'custom-bug-tracker':
+        url_template = tracker_settings.get('url_template') or ''
+
+        return urlparse(url_template).hostname or None
+    elif service_name == 'splat':
+        return tracker_settings.get('splat_org_name')
+
+    service_cls = hosting_service_registry.get_hosting_service(service_name)
+    host: (str | None) = None
+
+    if service_cls is not None and service_cls.supports_bug_trackers:
+        try:
+            template = service_cls.get_field(
+                tracker_settings.get('plan') or None,
+                'bug_tracker_field')
+        except Exception:
+            template = None
+
+        if template:
+            # Only use the host if it comes from the settings. A fixed host
+            # (like "github.com") is the same for every tracker.
+            template_host = template.split('://', 1)[-1].split('/', 1)[0]
+
+            if '%(' in template_host:
+                try:
+                    host = urlparse(template % tracker_settings).hostname
+                except (KeyError, TypeError, ValueError):
+                    host = None
+
+    return host
+
+
+def _is_in_repo_config(
+    config: ConfiguredBugTracker,
+) -> bool:
+    """Return whether a migrated configuration is for an in-repo tracker.
+
+    Version Added:
+        9.0
+
+    Args:
+        config (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+            The configuration.
+
+    Returns:
+        bool:
+        ``True`` if the configuration was migrated from in-repo settings.
+    """
+    fingerprint = (config.extra_data or {}).get(FINGERPRINT_KEY)
+
+    if not fingerprint:
+        return False
+
+    try:
+        return json.loads(fingerprint)[1] == BugTrackerCase.IN_REPO
+    except (IndexError, TypeError, ValueError):
+        return False
+
+
 def _generate_name(
     repository: Repository,
     tracker_case: BugTrackerCase,
     service_name: str,
 ) -> str:
     """Return a display name for a new configuration.
+
+    Names use the service's bug tracker label (for example, "JIRA Issues"),
+    since the name is the field label on review requests.
+
+    When another configuration on the Local Site already has that label, both
+    are labeled with their host instead (for example, "JIRA Issues
+    (jira.example.com)"). The existing configuration is only renamed if it was
+    migrated and still has its generated name. Any names that still collide
+    are numbered.
 
     Version Added:
         9.0
@@ -279,46 +374,59 @@ def _generate_name(
 
     Returns:
         str:
-        The generated name. This is unique within the Local Site, except
-        for in-repo trackers.
+        The generated name. This is unique within the Local Site, except for
+        in-repo trackers.
     """
     service_cls = hosting_service_registry.get_hosting_service(service_name)
 
-    if service_cls is not None and service_cls.name:
-        base_name = str(service_cls.name)
+    if service_cls is not None:
+        label = str(service_cls.get_bug_tracker_name())
     else:
-        base_name = service_name
+        label = service_name
 
     if tracker_case == BugTrackerCase.IN_REPO:
-        # In-repo trackers are named after the service's product (for
-        # example, "GitHub Issues"), since the name is the field label on
-        # review requests. Each repository has its own configuration, so
-        # these names repeat. That's fine, since they're managed from the
-        # repository and aren't listed in Connected Services.
-        if service_cls is not None:
-            return str(service_cls.get_bug_tracker_name())
+        # Each repository has its own in-repo configuration, so these names
+        # repeat. That's fine, since they're managed from the repository and
+        # aren't listed in Connected Services.
+        return label
 
-        return base_name
+    local_site_id = repository.local_site_id
+    configs = ConfiguredBugTracker.objects.filter(local_site=local_site_id)
+
+    if not configs.filter(name=label).exists():
+        return label
+
+    disambiguator = _get_name_disambiguator(
+        service_name,
+        get_settings_for_repository(repository, tracker_case))
+
+    if disambiguator:
+        base_name = f'{label} ({disambiguator})'
+
+        # Label the existing configuration with its host too, so that neither
+        # is left with a bare label.
+        for config in configs.filter(name=label):
+            if (FINGERPRINT_KEY not in (config.extra_data or {}) or
+                _is_in_repo_config(config)):
+                continue
+
+            other_disambiguator = _get_name_disambiguator(
+                config.service_name,
+                config.settings or {})
+
+            if other_disambiguator:
+                new_name = f'{label} ({other_disambiguator})'
+
+                if not configs.filter(name=new_name).exists():
+                    config.name = new_name
+                    config.save(update_fields=('name',))
     else:
-        tracker_settings = get_settings_for_repository(repository,
-                                                       tracker_case)
-        # As of the date of this migration to the new bug tracker data model,
-        # Splat is the only bug tracker implementation where multiple
-        # configured trackers share the same hosting_url value and need to be
-        # disambiguated by a different field.
-        disambiguator = (tracker_settings.get('hosting_url') or
-                         tracker_settings.get('splat_org_name'))
-
-        if disambiguator:
-            base_name = f'{base_name} ({disambiguator})'
+        base_name = label
 
     name = base_name
     i = 2
 
-    while (ConfiguredBugTracker.objects
-           .filter(name=name,
-                   local_site=repository.local_site_id)
-           .exists()):
+    while configs.filter(name=name).exists():
         name = f'{base_name} ({i})'
         i += 1
 
