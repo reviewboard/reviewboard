@@ -148,6 +148,7 @@ class CommitUser(BaseModel):
     """
 
     date: str
+    email: (str | None) = Field(default=None)
     name: str
 
 
