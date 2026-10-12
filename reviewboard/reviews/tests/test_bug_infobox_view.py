@@ -7,7 +7,10 @@ import kgb
 from django.http import HttpResponseNotFound
 
 from reviewboard.hostingsvcs.github import GitHub
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+)
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
 
@@ -33,11 +36,18 @@ class BugInfoboxViewTests(kgb.SpyAgency, TestCase):
         hosting_account = HostingServiceAccount.objects.create(
             service_name='github',
         )
+        tracker = ConfiguredBugTracker.objects.create(
+            name='GitHub Bugs',
+            service_name='github',
+            hosting_account=hosting_account,
+            settings={
+                'github_private_repo_name': 'test',
+                'plan': 'private',
+            })
         repository = self.create_repository(
             hosting_account=hosting_account,
-            bug_tracker='http://bugs.example.com/%%s',
+            default_bug_tracker=tracker,
             extra_data={
-                'bug_tracker_use_hosting': True,
                 'github_private_repo_name': 'test',
                 'repository_plan': 'private',
             })
@@ -70,12 +80,20 @@ class BugInfoboxViewTests(kgb.SpyAgency, TestCase):
         hosting_account = HostingServiceAccount.objects.create(
             service_name='github',
             local_site=local_site)
+        tracker = ConfiguredBugTracker.objects.create(
+            name='GitHub Bugs',
+            service_name='github',
+            hosting_account=hosting_account,
+            local_site=local_site,
+            settings={
+                'github_private_repo_name': 'test',
+                'plan': 'private',
+            })
         repository = self.create_repository(
             local_site=local_site,
             hosting_account=hosting_account,
-            bug_tracker='http://bugs.example.com/%%s',
+            default_bug_tracker=tracker,
             extra_data={
-                'bug_tracker_use_hosting': True,
                 'github_private_repo_name': 'test',
                 'repository_plan': 'private',
             })
@@ -112,12 +130,20 @@ class BugInfoboxViewTests(kgb.SpyAgency, TestCase):
         hosting_account = HostingServiceAccount.objects.create(
             service_name='github',
             local_site=local_site)
+        tracker = ConfiguredBugTracker.objects.create(
+            name='GitHub Bugs',
+            service_name='github',
+            hosting_account=hosting_account,
+            local_site=local_site,
+            settings={
+                'github_private_repo_name': 'test',
+                'plan': 'private',
+            })
         repository = self.create_repository(
             local_site=local_site,
             hosting_account=hosting_account,
-            bug_tracker='http://bugs.example.com/%%s',
+            default_bug_tracker=tracker,
             extra_data={
-                'bug_tracker_use_hosting': True,
                 'github_private_repo_name': 'test',
                 'repository_plan': 'private',
             })

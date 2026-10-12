@@ -458,6 +458,18 @@ class ConfiguredBugTracker(models.Model):
         return self._service
 
     @property
+    def is_sentinel(self) -> bool:
+        """Whether this bug tracker is the sentinel.
+
+        Type:
+            bool
+
+        Version Added:
+            9.0
+        """
+        return self.service_name == SENTINEL_BUG_TRACKER_SERVICE_NAME
+
+    @property
     def display_mode(self) -> str:
         """How the tracker's bugs are shown on review requests.
 

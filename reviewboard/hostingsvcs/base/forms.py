@@ -280,6 +280,30 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
 
         return initial
 
+    def get_hosting_url(self) -> str | None:
+        """Return the hosting URL for the account.
+
+        The hosting URL is stored on the account. Together with the username,
+        it tells accounts on different servers apart. Saving the form reuses
+        an existing account only when both match.
+
+        By default, this returns the ``hosting_url`` field for self-hosted
+        services, and ``None`` otherwise.
+
+        Services that are not marked as self-hosted, but can still connect to
+        more than one server, can override this to return the server's URL
+        from their own fields.
+
+        Version Added:
+            9.0
+
+        Returns:
+            str:
+            The hosting URL, or ``None`` if the account is not tied to a
+            particular server.
+        """
+        return self.cleaned_data.get('hosting_url')
+
     def get_credentials(self) -> HostingServiceCredentials:
         """Return credentials from the form.
 
@@ -331,6 +355,11 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
         provided in the form and to this method.
 
         :py:meth:`is_valid` must be called prior to saving.
+
+        Version Changed:
+            9.0:
+            The account's hosting URL now comes from
+            :py:meth:`get_hosting_url`.
 
         Args:
             allow_authorize (bool, optional):
@@ -394,12 +423,9 @@ class BaseHostingServiceAuthForm(_HostingServiceSubFormMixin,
 
         hosting_account = self.hosting_account
         hosting_service_id = self.hosting_service_cls.hosting_service_id
-        hosting_url: (str | None) = self.cleaned_data.get('hosting_url')
+        hosting_url = self.get_hosting_url()
 
         assert hosting_service_id
-
-        if not self.hosting_service_cls.self_hosted:
-            assert hosting_url is None
 
         if hosting_account:
             # Update the username and hosting URL, if they've changed.

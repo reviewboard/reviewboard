@@ -3,11 +3,12 @@
  */
 
 import {
+    type ComboBoxItem,
     type ComboBoxItemAttrs,
     ComboBoxView,
     craft,
 } from '@beanbag/ink';
-import { BaseView, spina } from '@beanbag/spina';
+import { type EventsHash, BaseView, spina } from '@beanbag/spina';
 
 import {
     type ResourceLink,
@@ -1442,6 +1443,590 @@ export class TrackedBugsFieldView extends CommaSeparatedValuesTextFieldView {
      */
     #parseBugList(value: string): string[] {
         return (value || '').split(/[, ]+/).filter(bugID => !!bugID);
+    }
+}
+
+
+/**
+ * Metadata about a bug on a tracker.
+ *
+ * Version Added:
+ *     9.0
+ */
+interface TrackedBugMetadata {
+    /** The bug's status. */
+    status: string;
+
+    /** A one-line summary of the bug. */
+    summary: string;
+}
+
+
+/**
+ * An inline editor for per-tracker bug fields shown as tables.
+ *
+ * This follows the related-object selector pattern: a joined combo box sits
+ * above the list of selected bugs, and the bugs render as rows below it.
+ *
+ * Version Added:
+ *     9.0
+ */
+@spina
+export class TrackedBugsTableInlineEditorView extends
+    TrackedBugsInlineEditorView {
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The body of the table of selected bugs. */
+    #$rows: JQuery = null;
+
+    /**
+     * Create the combo box used to search for and select bugs.
+     *
+     * The combo box is joined to the table of selected bugs below it, which
+     * stands in for the selection shown within the field.
+     *
+     * Args:
+     *     searchURL (string):
+     *         The URL of the bug search API endpoint.
+     *
+     * Returns:
+     *     ComboBoxView:
+     *     The new combo box.
+     */
+    protected _createComboBox(searchURL: string): ComboBoxView {
+        return craft<ComboBoxView>`
+            <Ink.ComboBox allowCustomTokens
+                          iconName="ink-i-search"
+                          joined
+                          multiple
+                          load=${query => this._loadBugs(searchURL, query)}
+                          placeholder=${gettext('Search for bugs...')}
+                          showSelected=${false}/>
+        `;
+    }
+
+    /**
+     * Start editing the field.
+     *
+     * The rendered table is not a plain list of bug IDs, so the value to edit
+     * is taken from the table's rows instead of the element's text.
+     *
+     * Args:
+     *     options (EditOptions, optional):
+     *         Options for the operation.
+     */
+    startEdit(options: EditOptions = {}) {
+        this.options.hasRawValue = true;
+        this.options.rawValue = this.$el
+            .find('.rb-c-bug-list__bug')
+            .map((i, el) => $(el).attr('data-bug-id'))
+            .get()
+            .join(', ');
+
+        super.startEdit(options);
+    }
+
+    /**
+     * Create and return the field to use for the input element.
+     *
+     * Returns:
+     *     jQuery:
+     *     The newly created input element.
+     */
+    createField(): JQuery {
+        let $field: JQuery;
+
+        if (this.$el.data('bug-search-url')) {
+            $field = this.#createSearchPanel();
+        } else {
+            /*
+             * The bug tracker has no search support, so the bugs are edited as
+             * a plain comma-separated list. That's a single-line control, even
+             * though the field itself is a block.
+             */
+            $field = $('<input type="text">');
+        }
+
+        /*
+         * The editor is multi-line, so it only saves on Ctrl+Enter by itself.
+         * Plain "Enter" in a text field is handled here, unless the combo box
+         * already used it to pick a bug. In all cases, the browser must not
+         * submit the editor's form, which would reload the page.
+         */
+        return $field.on('keydown', e => {
+            if (e.key === 'Enter' &&
+                !e.isDefaultPrevented() &&
+                (e.target as HTMLElement).matches('input')) {
+                e.preventDefault();
+
+                if (!e.ctrlKey) {
+                    this.submit();
+                }
+            }
+        });
+    }
+
+    /**
+     * Create the search field and the table of selected bugs below it.
+     *
+     * Returns:
+     *     jQuery:
+     *     The element containing the search field and table.
+     */
+    #createSearchPanel(): JQuery {
+        const $field = super.createField();
+        const comboBox = this.comboBox;
+
+        this.#$rows = $('<tbody>');
+
+        const $panel = $('<div class="rb-c-bug-list-editor">')
+            .append($field)
+            .append($('<div class="rb-c-review-request-field-tabular' +
+                      ' rb-c-bug-list">')
+                .append($('<table class="rb-c-review-request-field-tabular' +
+                          '__data">')
+                    .append(this.#$rows)));
+
+        this.listenTo(comboBox.selectedItems, 'add remove reset update',
+                      () => this.#renderRows());
+        this.#renderRows();
+
+        return $panel;
+    }
+
+    /**
+     * Render the rows for the currently selected bugs.
+     */
+    #renderRows() {
+        const $rows = this.#$rows;
+
+        if ($rows === null) {
+            return;
+        }
+
+        $rows.empty();
+
+        this.comboBox.selectedItems.each(item => {
+            const bugID = String(item.get('id'));
+
+            const $row = $('<tr class="rb-c-bug-list__bug">')
+                .attr('data-bug-id', bugID)
+                .appendTo($rows);
+
+            $('<td class="rb-c-bug-list__id">')
+                .text(bugID)
+                .appendTo($row);
+            $('<td class="rb-c-bug-list__summary">')
+                .text(this.#getBugSummary(bugID, item))
+                .appendTo($row);
+
+            const $actions = $('<td class="rb-c-bug-list__actions">')
+                .appendTo($row);
+
+            $('<button type="button" class="rb-c-bug-list__remove">')
+                .attr('aria-label', gettext('Remove bug'))
+                .attr('title', gettext('Remove bug'))
+                .append($('<span class="ink-i-close">'))
+                .on('click', () => this.comboBox.selectedItems.remove(item))
+                .appendTo($actions);
+        });
+    }
+
+    /**
+     * Return the summary to show for a bug.
+     *
+     * Bugs chosen from the search carry their summary. Bugs already on the
+     * review request take theirs from the rendered table.
+     *
+     * Args:
+     *     bugID (string):
+     *         The ID of the bug.
+     *
+     *     item (ComboBoxItem):
+     *         The selected combo box item for the bug.
+     *
+     * Returns:
+     *     string:
+     *     The summary, or an empty string if one isn't known.
+     */
+    #getBugSummary(
+        bugID: string,
+        item: ComboBoxItem,
+    ): string {
+        const description = item.get('description');
+
+        if (description) {
+            return description;
+        }
+
+        /*
+         * Bug IDs are free-form text, so they're compared directly rather than
+         * placed in a selector, where quotes would break it.
+         */
+        return this.$el
+            .find('.rb-c-bug-list__bug')
+            .filter((i, el) => el.getAttribute('data-bug-id') === bugID)
+            .find('.rb-c-bug-list__summary')
+            .text()
+            .trim();
+    }
+}
+
+
+/**
+ * A per-tracker "Bugs" field shown as a table.
+ *
+ * This is the detailed display mode for a bug tracker. The bugs render as a
+ * table of IDs, summaries, and statuses in the main review request fields,
+ * after Testing Done.
+ *
+ * The table is rendered by the server from locally-cached bug metadata.
+ * Anything missing or stale is fetched here, after the page loads, so a slow
+ * bug tracker never holds up the page.
+ *
+ * Version Added:
+ *     9.0
+ */
+@spina
+export class TrackedBugsTableFieldView extends TrackedBugsFieldView {
+    /**
+     * Whether the field is a block rather than an inline value.
+     *
+     * The table is a block, so the edit icon belongs beside the field's label
+     * rather than after the value.
+     */
+    static multiline = true;
+
+    /**
+     * Whether only the edit icon starts an edit.
+     *
+     * Clicking a row opens the bug, so the value can't also open the editor.
+     */
+    static useEditIconOnly = true;
+
+    static events: EventsHash = {
+        'click .rb-c-bug-list__bug': '_onRowClicked',
+    };
+
+    /**********************
+     * Instance variables *
+     **********************/
+
+    /** The URL for fetching bug metadata, if metadata can be shown. */
+    #bugInfoURL: string = null;
+
+    /** The known metadata for bugs, keyed off the bug ID. */
+    #bugMetadata = new Map<string, TrackedBugMetadata>();
+
+    /** Whether summaries and statuses are shown. */
+    #showMetadata = false;
+
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (BaseFieldViewOptions):
+     *         Options for the view.
+     */
+    initialize(options: BaseFieldViewOptions) {
+        super.initialize(options);
+
+        const $el = this.$el;
+
+        this.#bugInfoURL = $el.data('bug-info-url') || null;
+        this.#showMetadata =
+            ($el.find('.rb-c-bug-list__column-summary').length > 0);
+
+        this.#loadRenderedMetadata();
+    }
+
+    /**
+     * Render the view.
+     */
+    protected onInitialRender() {
+        super.onInitialRender();
+
+        if (this.$el.data('bug-info-stale')) {
+            this.#fetchBugMetadata(this._loadValue() as string[]);
+        }
+    }
+
+    /**
+     * Return the type to use for the inline editor view.
+     *
+     * Returns:
+     *     function:
+     *     The constructor for the inline editor class to instantiate.
+     */
+    _getInlineEditorClass(): InlineEditorConstructor {
+        return TrackedBugsTableInlineEditorView;
+    }
+
+    /**
+     * Format the value into the field.
+     *
+     * Args:
+     *     data (Array of string):
+     *         The new value of the field.
+     */
+    formatValue(data: string[]) {
+        const bugIDs = data || [];
+
+        this.#showTable(bugIDs);
+        this.#fetchBugMetadata(bugIDs.filter(
+            bugID => !this.#bugMetadata.has(bugID)));
+    }
+
+    /**
+     * Save a new value for the field.
+     *
+     * When editing finishes, the editor replaces the table with the plain bug
+     * IDs. The table is shown again right away, rather than after the save
+     * completes. Metadata for new bugs is fetched once it does.
+     *
+     * Args:
+     *     value (string):
+     *         The new comma-separated bug IDs for this field's tracker.
+     *
+     *     options (object):
+     *         Options for the save operation.
+     *
+     * Returns:
+     *     Promise:
+     *     A promise which resolves when the operation is complete.
+     */
+    _saveValue(
+        value: unknown,
+        options: SetDraftFieldOptions = {},
+    ): Promise<void> {
+        const promise = super._saveValue(value, options);
+
+        this.#showTable(this._loadValue() as string[]);
+
+        return promise;
+    }
+
+    /**
+     * Show a table of bugs in the field.
+     *
+     * Args:
+     *     bugIDs (Array of string):
+     *         The IDs of the bugs to show.
+     */
+    #showTable(bugIDs: string[]) {
+        this.$el
+            .empty()
+            .append(this.#renderTable(bugIDs));
+
+        if (this.canViewBugs) {
+            this.$el.find('.bug').bug_infobox();
+        }
+    }
+
+    /**
+     * Return the bug IDs currently rendered in the field.
+     *
+     * Returns:
+     *     Array of string:
+     *     The bug IDs shown in the table.
+     */
+    protected _loadBugIDs(): string[] {
+        return this.$el
+            .find('.rb-c-bug-list__bug')
+            .map((i, el) => $(el).attr('data-bug-id'))
+            .get();
+    }
+
+    /**
+     * Store the metadata rendered into the table by the server.
+     */
+    #loadRenderedMetadata() {
+        this.$el.find('.rb-c-bug-list__bug').each((i, el) => {
+            const $row = $(el);
+            const bugID = $row.attr('data-bug-id');
+            const summary = $row.find('.rb-c-bug-list__summary').text().trim();
+            const status = $row.find('.rb-c-bug-list__status').text().trim();
+
+            if (bugID && (summary || status)) {
+                this.#bugMetadata.set(bugID, {
+                    status: status,
+                    summary: summary,
+                });
+            }
+        });
+    }
+
+    /**
+     * Render the table of bugs.
+     *
+     * This should be kept in sync with
+     * :file:`templates/reviews/tracked_bugs_table_field.html`.
+     *
+     * Args:
+     *     bugIDs (Array of string):
+     *         The IDs of the bugs to show.
+     *
+     * Returns:
+     *     jQuery:
+     *     The rendered table.
+     */
+    #renderTable(bugIDs: string[]): JQuery {
+        const showMetadata = this.#showMetadata;
+        const $table = $('<table class="rb-c-review-request-field-tabular' +
+                         '__data">');
+
+        const $headRow = $('<tr>')
+            .appendTo($('<thead>').appendTo($table));
+
+        $('<th class="rb-c-bug-list__column-id">')
+            .text(gettext('Bug'))
+            .appendTo($headRow);
+
+        if (showMetadata) {
+            $('<th class="rb-c-bug-list__column-summary">')
+                .text(gettext('Summary'))
+                .appendTo($headRow);
+            $('<th class="rb-c-bug-list__column-status">')
+                .text(gettext('Status'))
+                .appendTo($headRow);
+        }
+
+        const $body = $('<tbody>').appendTo($table);
+
+        if (bugIDs.length === 0) {
+            $('<td>')
+                .attr('colspan', showMetadata ? 3 : 1)
+                .text(gettext('No bugs have been added.'))
+                .appendTo($('<tr class="rb-c-bug-list__empty">')
+                    .appendTo($body));
+        } else {
+            const bugURLTemplate = this.bugURLTemplate;
+
+            for (const bugID of bugIDs) {
+                const metadata = this.#bugMetadata.get(bugID);
+
+                const $row = $('<tr class="rb-c-bug-list__bug">')
+                    .attr('data-bug-id', bugID)
+                    .appendTo($body);
+
+                const $idCell = $('<td class="rb-c-bug-list__id">')
+                    .appendTo($row);
+
+                if (this.canViewBugs && bugURLTemplate) {
+                    $('<a class="bug">')
+                        .attr('href', bugURLTemplate.replace('--bug_id--',
+                                                             bugID))
+                        .text(bugID)
+                        .appendTo($idCell);
+                } else {
+                    $idCell.text(bugID);
+                }
+
+                if (showMetadata) {
+                    $('<td class="rb-c-bug-list__summary">')
+                        .text(metadata ? metadata.summary : '')
+                        .appendTo($row);
+                    $('<td class="rb-c-bug-list__status">')
+                        .text(metadata ? metadata.status : '')
+                        .appendTo($row);
+                }
+            }
+        }
+
+        return $('<div class="rb-c-review-request-field-tabular' +
+                 ' rb-c-bug-list">')
+            .append($table);
+    }
+
+    /**
+     * Fetch metadata for bugs and show it in the table.
+     *
+     * Args:
+     *     bugIDs (Array of string):
+     *         The IDs of the bugs to fetch metadata for.
+     */
+    async #fetchBugMetadata(bugIDs: string[]) {
+        if (!this.#bugInfoURL || bugIDs.length === 0) {
+            return;
+        }
+
+        const url = new URL(this.#bugInfoURL, window.location.origin);
+        url.searchParams.set('bug-ids', bugIDs.join(','));
+
+        let payload: { bugs?: Record<string, TrackedBugMetadata> };
+
+        try {
+            const rsp = await fetch(url);
+
+            if (!rsp.ok) {
+                return;
+            }
+
+            payload = await rsp.json();
+        } catch (err) {
+            console.error('Unable to fetch bug information: %s', err);
+
+            return;
+        }
+
+        const bugMetadata = this.#bugMetadata;
+
+        for (const [bugID, metadata] of
+             Object.entries<TrackedBugMetadata>(payload.bugs || {})) {
+            bugMetadata.set(bugID, metadata);
+        }
+
+        this.#updateRows();
+    }
+
+    /**
+     * Update the rendered rows with the known metadata.
+     */
+    #updateRows() {
+        if (!this.#showMetadata) {
+            return;
+        }
+
+        this.$el.find('.rb-c-bug-list__bug').each((i, el) => {
+            const $row = $(el);
+            const metadata = this.#bugMetadata.get($row.attr('data-bug-id'));
+
+            if (metadata) {
+                $row.find('.rb-c-bug-list__summary').text(metadata.summary);
+                $row.find('.rb-c-bug-list__status').text(metadata.status);
+            }
+        });
+    }
+
+    /**
+     * Handle a click on a row.
+     *
+     * The whole row opens the bug, using the same link as the bug ID. Clicks
+     * on the link itself, modifier clicks, and clicks ending a text selection
+     * are left to the browser.
+     *
+     * Args:
+     *     e (JQuery.ClickEvent):
+     *         The click event.
+     */
+    private _onRowClicked(e: JQuery.ClickEvent) {
+        if (e.button !== 0 || e.altKey || e.ctrlKey || e.metaKey ||
+            e.shiftKey ||
+            (e.target as HTMLElement).closest('a')) {
+            return;
+        }
+
+        if (window.getSelection()?.toString()) {
+            return;
+        }
+
+        const url = $(e.currentTarget).find('a.bug').attr('href');
+
+        if (url) {
+            RB.navigateTo(url);
+        }
     }
 }
 

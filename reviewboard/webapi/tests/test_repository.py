@@ -15,7 +15,10 @@ from reviewboard import scmtools
 from reviewboard.hostingsvcs.bitbucket import Bitbucket
 from reviewboard.hostingsvcs.github import GitHub
 from reviewboard.hostingsvcs.gitlab import GitLab
-from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.hostingsvcs.models import (
+    ConfiguredBugTracker,
+    HostingServiceAccount,
+)
 from reviewboard.scmtools.errors import (AuthenticationError,
                                          UnverifiedCertificateError)
 from reviewboard.scmtools.models import Repository
@@ -1463,9 +1466,15 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
             username='new-user',
             service_name='gitlab')
 
+        tracker = ConfiguredBugTracker.objects.create(
+            name='Example Bugs',
+            service_name='custom-bug-tracker',
+            settings={
+                'url_template': 'https://bugs.example.com/%s',
+            })
         repository = self.create_repository(
             hosting_account=old_account,
-            bug_tracker='https://bugs.example.com/%s',
+            default_bug_tracker=tracker,
             extra_data={
                 'bug_tracker_use_hosting': False,
                 'github_public_org_name': 'myorg',
@@ -1555,8 +1564,13 @@ class ResourceItemTests(ExtraDataItemMixin, BaseRepositoryTests,
     @webapi_test_template
     def test_put_with_bug_tracker_type(self) -> None:
         """Testing the PUT <URL> API with bug_tracker_type"""
-        repository = self.create_repository(
-            bug_tracker='https://bugs.example.com/%s')
+        tracker = ConfiguredBugTracker.objects.create(
+            name='Example Bugs',
+            service_name='custom-bug-tracker',
+            settings={
+                'url_template': 'https://bugs.example.com/%s',
+            })
+        repository = self.create_repository(default_bug_tracker=tracker)
 
         rsp = self._put_repository(
             repository=repository,

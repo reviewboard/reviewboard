@@ -7,8 +7,11 @@ from reviewboard.reviews.views.attachments import (
     ReviewFileAttachmentView,
     ReviewScreenshotView)
 from reviewboard.reviews.views.batch import BatchOperationView
-from reviewboard.reviews.views.bug_trackers import (BugInfoboxView,
-                                                    BugURLRedirectView)
+from reviewboard.reviews.views.bug_trackers import (
+    BugInfoboxView,
+    BugURLRedirectView,
+    TrackedBugInfoView,
+)
 from reviewboard.reviews.views.diff_fragments import (
     CommentDiffFragmentsView,
     ReviewsDiffFragmentView,
@@ -56,6 +59,7 @@ __all__ = [
     'ReviewsDiffViewerView',
     'ReviewsDownloadPatchErrorBundleView',
     'RootView',
+    'TrackedBugInfoView',
     'build_diff_comment_fragments',
 ]
 

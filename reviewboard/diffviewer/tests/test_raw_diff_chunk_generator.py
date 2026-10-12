@@ -3,6 +3,7 @@ from __future__ import annotations
 import kgb
 from tree_sitter import QueryError
 
+from reviewboard.diffviewer import interesting_lines
 from reviewboard.diffviewer.chunk_generator import RawDiffChunkGenerator
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.testing import TestCase
@@ -155,7 +156,113 @@ class RawDiffChunkGeneratorTests(kgb.SpyAgency, TestCase):
                 'numlines': 1,
             })
 
-    def test_get_chunks_with_settings_syntax_highlighting_true(self):
+    def test_get_chunks_interesting_lines_via_ts(self) -> None:
+        """Testing RawDiffChunkGenerator.get_chunks populates chunk headers
+        from tree-sitter interesting lines
+        """
+        body = '\n'.join(
+            f'x{i} = {i}'
+            for i in range(30)
+        )
+        old_source = (
+            f'class Foo:\n'
+            f'    def bar(self):\n'
+            f'        pass\n'
+            f'\n'
+            f'{body}\n'
+            f'LAST = 1\n'
+        )
+        new_source = old_source.replace('LAST = 1', 'LAST = 2')
+
+        generator = RawDiffChunkGenerator(
+            old=old_source.encode(),
+            new=new_source.encode(),
+            orig_filename='foo.py',
+            modified_filename='foo.py',
+            diff_settings=DiffSettings.create())
+
+        self.spy_on(interesting_lines._get_interesting_lines_via_regex)
+
+        chunks = list(generator.get_chunks())
+
+        self.assertSpyNotCalled(
+            interesting_lines._get_interesting_lines_via_regex)
+
+        expected_interesting_lines = [
+            (0, 'class Foo:'),
+            (1, '    def bar(self):'),
+        ]
+        self.assertEqual(generator.old_interesting_lines,
+                         expected_interesting_lines)
+        self.assertEqual(generator.new_interesting_lines,
+                         expected_interesting_lines)
+
+        chunk = chunks[0]
+        expected_headers = [
+            (1, 'class Foo:'),
+            (2, '    def bar(self):'),
+        ]
+        self.assertEqual(chunk['change'], 'equal')
+        self.assertTrue(chunk['collapsable'])
+        self.assertEqual(chunk['meta']['left_headers'], expected_headers)
+        self.assertEqual(chunk['meta']['right_headers'], expected_headers)
+        self.assertEqual(chunk['meta']['headers'], [
+            {'line': 2, 'text': 'def bar(self):'},
+            {'line': 2, 'text': 'def bar(self):'},
+        ])
+
+    def test_get_chunks_interesting_lines_via_regex(self) -> None:
+        """Testing RawDiffChunkGenerator.get_chunks populates chunk headers
+        from the regex scanner for languages without tree-sitter queries
+        """
+        body = '\n'.join(
+            f'my $x{i} = {i};'
+            for i in range(40)
+        )
+        old_source = (
+            f'sub helloWorld {{\n'
+            f'{body}\n'
+            f'}}\n'
+            f'print "1";\n'
+        )
+        new_source = old_source.replace('print "1";', 'print "2";')
+
+        generator = RawDiffChunkGenerator(
+            old=old_source.encode(),
+            new=new_source.encode(),
+            orig_filename='foo.pl',
+            modified_filename='foo.pl',
+            diff_settings=DiffSettings.create())
+
+        self.spy_on(interesting_lines._get_interesting_lines_via_regex)
+
+        chunks = list(generator.get_chunks())
+
+        self.assertSpyCalled(
+            interesting_lines._get_interesting_lines_via_regex)
+
+        expected_interesting_lines = [
+            (0, 'sub helloWorld {'),
+        ]
+        self.assertEqual(generator.old_interesting_lines,
+                         expected_interesting_lines)
+        self.assertEqual(generator.new_interesting_lines,
+                         expected_interesting_lines)
+
+        chunk = chunks[0]
+        expected_headers = [
+            (1, 'sub helloWorld {'),
+        ]
+        self.assertEqual(chunk['change'], 'equal')
+        self.assertTrue(chunk['collapsable'])
+        self.assertEqual(chunk['meta']['left_headers'], expected_headers)
+        self.assertEqual(chunk['meta']['right_headers'], expected_headers)
+        self.assertEqual(chunk['meta']['headers'], [
+            {'line': 1, 'text': 'sub helloWorld {'},
+            {'line': 1, 'text': 'sub helloWorld {'},
+        ])
+
+    def test_get_chunks_with_settings_syntax_highlighting_true(self) -> None:
         """Testing RawDiffChunkGenerator.get_chunks with
         DiffSettings.syntax_highlighting=True and syntax highlighting
         available for file

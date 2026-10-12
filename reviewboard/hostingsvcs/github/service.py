@@ -7,6 +7,7 @@ Version Added:
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, NamedTuple
 from urllib.parse import quote as urlquote, urljoin
@@ -65,7 +66,10 @@ if TYPE_CHECKING:
     from django.utils.safestring import SafeString
     from typelets.django.strings import StrOrPromise
 
-    from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
+    from reviewboard.hostingsvcs.base.bug_tracker import (
+        BugInfo,
+        BugSearchResult,
+    )
     from reviewboard.hostingsvcs.base.connect_ui import (
         AdminServicesListAccountMenuItem,
         AdminServicesListAttentionItem,
@@ -113,6 +117,9 @@ def _is_fine_grained_pat(
         ``True`` if the token is a fine-grained PAT, ``False`` otherwise.
     """
     return token.startswith('github_pat_')
+
+
+logger = logging.getLogger(__name__)
 
 
 def _get_installation_status_label(
@@ -1689,6 +1696,66 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             'status': issue.state,
             'summary': issue.title,
         }
+
+    def search_bugs(
+        self,
+        *,
+        config: ConfiguredBugTracker,
+        query: str,
+        limit: int = 25,
+    ) -> Sequence[BugSearchResult]:
+        """Return issues matching a search query.
+
+        GitHub issues are in-repo. The search runs against the configuration's
+        scoped repository.
+
+        Version Added:
+            9.0
+
+        Args:
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker configuration.
+
+            query (str):
+                The search query.
+
+            limit (int, optional):
+                The maximum number of results to return.
+
+        Returns:
+            list of reviewboard.hostingsvcs.base.bug_tracker.BugSearchResult:
+            The matching issues.
+        """
+        repository = config.repositories.first()
+
+        if repository is None:
+            return []
+
+        ids = self.get_repository_ids(repository)
+
+        try:
+            issues = self.client.search_issues(
+                api_url=self.get_api_url(self.account.hosting_url),
+                owner=ids.owner,
+                repo_name=ids.name,
+                query=query,
+                limit=limit,
+                repository=repository)
+        except Exception as e:
+            logger.warning('Error searching GitHub issues for bug tracker '
+                           '%s: %s',
+                           config.pk, e, exc_info=True)
+            return []
+
+        return [
+            {
+                'bug_id': str(issue.number),
+                'closed': issue.state == 'closed',
+                'status': issue.state,
+                'summary': issue.title,
+            }
+            for issue in issues
+        ]
 
     def get_repository_hook_instructions(
         self,

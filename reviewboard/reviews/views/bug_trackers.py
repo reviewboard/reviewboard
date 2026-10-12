@@ -10,6 +10,7 @@ from django.http import (
     HttpResponse,
     HttpResponseForbidden,
     HttpResponseNotFound,
+    JsonResponse,
 )
 from django.utils.html import escape, strip_tags
 from django.utils.safestring import SafeString, mark_safe
@@ -23,6 +24,7 @@ from reviewboard.hostingsvcs.models import (
     SENTINEL_BUG_TRACKER_SERVICE_NAME,
 )
 from reviewboard.reviews.markdown_utils import render_markdown
+from reviewboard.reviews.models.bug import Bug
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.site.urlresolvers import local_site_reverse
 
@@ -290,6 +292,67 @@ class BugInfoboxView(ReviewRequestViewMixin, TemplateView):
             text = escape(text).replace('\n\n', '<br><br>')
 
         return mark_safe(text)
+
+
+class TrackedBugInfoView(ReviewRequestViewMixin, View):
+    """Provides metadata for bugs on a bug tracker, as JSON.
+
+    This backs the detailed bug tables on a review request. Metadata
+    cached locally is served as-is, and anything stale is refreshed from
+    the bug tracker.
+
+    Version Added:
+        9.0
+    """
+
+    #: The maximum number of bugs that can be looked up in one request.
+    MAX_BUGS = 100
+
+    def get(
+        self,
+        request: HttpRequest,
+        bug_tracker_id: int,
+        **kwargs,
+    ) -> HttpResponse:
+        """Handle HTTP GET requests for this view.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            bug_tracker_id (int):
+                The ID of the bug tracker the bugs are on.
+
+            **kwargs (dict):
+                Keyword arguments passed to the handler.
+
+        Returns:
+            django.http.HttpResponse:
+            The metadata for the requested bugs, keyed off the bug ID.
+        """
+        tracker, error_response = _resolve_bug_tracker(
+            request, self.review_request, bug_tracker_id)
+
+        if error_response is not None:
+            return error_response
+
+        assert tracker is not None
+
+        bug_ids = [
+            bug_id
+            for bug_id in request.GET.get('bug-ids', '').split(',')
+            if bug_id
+        ][:self.MAX_BUGS]
+
+        if bug_ids:
+            metadata = Bug.objects.fetch_bug_info(bug_tracker=tracker,
+                                                  bug_ids=bug_ids)
+        else:
+            metadata = {}
+
+        return JsonResponse({
+            'bugs': metadata,
+        })
 
 
 class BugURLRedirectView(ReviewRequestViewMixin, View):
