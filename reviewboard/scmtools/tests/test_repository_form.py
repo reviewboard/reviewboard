@@ -5,7 +5,7 @@ import unittest
 from django import forms
 from django.contrib.auth.models import User
 from django.http import QueryDict
-from kgb import SpyAgency
+import kgb
 
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.models import (
@@ -39,7 +39,7 @@ class HiddenTestService(TestService):
     visible = False
 
 
-class RepositoryFormTests(SpyAgency, TestCase):
+class RepositoryFormTests(kgb.SpyAgency, TestCase):
     """Unit tests for the repository form."""
 
     fixtures = ['test_scmtools']
@@ -1520,6 +1520,40 @@ class RepositoryFormTests(SpyAgency, TestCase):
                                  scmtool_class=GitTool,
                                  test_repo_name='testrepo',
                                  tool_name='Git')
+
+    def test_hosting_service_info_js_view(self) -> None:
+        """Testing RepositoryForm.hosting_service_info includes the hosting
+        service's repository form view
+        """
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='test')
+        HostingServiceAccount.objects.create(
+            username='other',
+            service_name='self_hosted_test',
+            hosting_url='https://example.com')
+
+        self.spy_on(TestService.get_repository_form_js_view_data,
+                    owner=TestService,
+                    op=kgb.SpyOpReturn({'key': 'value'}))
+
+        form = self._build_form()
+        info = form.hosting_service_info['test']
+
+        self.assertEqual(info['js_view_class'],
+                         'RB.Admin.HostingServiceRepositoryFormView')
+        self.assertEqual(info['js_view_data'], {'key': 'value'})
+        self.assertSpyCalledWith(
+            TestService.get_repository_form_js_view_data,
+            [account])
+
+    def test_scmtool_info_js_view(self) -> None:
+        """Testing RepositoryForm.scmtool_info includes the SCMTool's
+        repository form view
+        """
+        form = self._build_form()
+
+        self.assertEqual(form.scmtool_info['git']['js_view_class'],
+                         'RB.Admin.SCMToolRepositoryFormView')
 
     def test_with_hosting_service_existing_account_needs_reauth(self):
         """Testing RepositoryForm with a hosting service and existing

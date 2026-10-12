@@ -1,4 +1,5 @@
 import { suite } from '@beanbag/jasmine-suites';
+import { spina } from '@beanbag/spina';
 import { dedent } from 'babel-plugin-dedent';
 import {
     afterEach,
@@ -6,12 +7,18 @@ import {
     describe,
     expect,
     it,
+    spyOn,
 } from 'jasmine-core';
 
 import {
+    type RepositoryFormHostingAccount,
     type RepositoryFormHostingServiceInfo,
+    type RepositoryFormPlan,
+    type RepositoryFormViewOptions,
+    HostingServiceRepositoryFormView,
     RepositoryForm,
     RepositoryFormView,
+    SCMToolRepositoryFormView,
 } from 'reviewboard/admin';
 
 
@@ -84,9 +91,10 @@ suite('rb/admin/views/RepositoryFormView', () => {
     let hostingServices: Record<string, RepositoryFormHostingServiceInfo>;
     let view: RepositoryFormView | null;
 
-    function createView() {
+    function createView(options: RepositoryFormViewOptions = {}) {
         view = new RepositoryFormView({
-            el: $form[0],
+            ...options,
+            el: $form[0] as HTMLFormElement,
             model: new RepositoryForm({
                 hostingServices: hostingServices,
                 tools: {
@@ -129,6 +137,7 @@ suite('rb/admin/views/RepositoryFormView', () => {
             fakesvc: {
                 accounts: [],
                 fake: true,
+                js_view_data: {},
                 needs_two_factor_auth_code: false,
                 plans: [],
                 scmtools: [],
@@ -149,6 +158,7 @@ suite('rb/admin/views/RepositoryFormView', () => {
                         username: 'hubot',
                     },
                 ],
+                js_view_data: {},
                 needs_two_factor_auth_code: false,
                 plans: [
                     {id: 'public', label: 'Public'},
@@ -166,6 +176,7 @@ suite('rb/admin/views/RepositoryFormView', () => {
                         username: 'tanuki',
                     },
                 ],
+                js_view_data: {},
                 needs_two_factor_auth_code: false,
                 plans: [],
                 scmtools: ['Git'],
@@ -391,6 +402,96 @@ suite('rb/admin/views/RepositoryFormView', () => {
             expect(isShown('#hosting-auth-form-github')).toBe(false);
             expect($form.find('#id_force_authorize').val()).toBe('false');
             expect($link.text().trim()).toBe('Edit credentials');
+        });
+    });
+
+    describe('Hosting service views', () => {
+        /* Offers only private plans to the unauthorized account. */
+        @spina
+        class TestHostingServiceView extends HostingServiceRepositoryFormView {
+            getAccountLabel(account: RepositoryFormHostingAccount): string {
+                return `${this.data['prefix']}${account.username}`;
+            }
+
+            getRepositoryPlans(
+                plans: RepositoryFormPlan[],
+                account: RepositoryFormHostingAccount | null,
+            ): RepositoryFormPlan[] {
+                if (account !== null && !account.is_authorized) {
+                    return plans.filter(plan => plan.id === 'private');
+                }
+
+                return plans;
+            }
+        }
+
+        beforeEach(() => {
+            hostingServices.github.js_view_data = {prefix: '@'};
+            $form.find('#id_hosting_type').val('github');
+        });
+
+        it('Uses the hosting service view for account labels', () => {
+            createView({
+                hostingServiceViews: {github: TestHostingServiceView},
+            });
+
+            expect(optionLabels('#id_hosting_account'))
+                .toEqual(['Link new account', '@octocat', '@hubot']);
+        });
+
+        it('Rebuilds plans when the account changes', () => {
+            createView({
+                hostingServiceViews: {github: TestHostingServiceView},
+            });
+
+            expect(optionLabels('#id_repository_plan'))
+                .toEqual(['Public', 'Private']);
+            expect(isShown('#row-repository_plan')).toBe(true);
+
+            selectField('#id_hosting_account', '2');
+
+            expect(optionLabels('#id_repository_plan')).toEqual(['Private']);
+            expect(view.model.get('repositoryPlan')).toBe('private');
+            expect(isShown('#row-repository_plan')).toBe(false);
+            expect(isShown('#repo-form-hosting-github-public')).toBe(false);
+            expect(isShown('#repo-form-hosting-github-private')).toBe(true);
+        });
+
+        it('Removes the view when switching services', () => {
+            spyOn(TestHostingServiceView.prototype, 'getAccountLabel')
+                .and.callThrough();
+
+            createView({
+                hostingServiceViews: {github: TestHostingServiceView},
+            });
+            selectField('#id_hosting_type', 'gitlab');
+
+            expect(TestHostingServiceView.prototype.getAccountLabel)
+                .toHaveBeenCalledTimes(2);
+            expect(optionLabels('#id_hosting_account'))
+                .toEqual(['Link new account',
+                          'tanuki (https://gitlab.example.com)']);
+            expect($.contains(document.body, $form[0])).toBe(true);
+        });
+    });
+
+    describe('SCMTool views', () => {
+        it('Creates a view for the selected SCMTool', () => {
+            const renderSpy = spyOn(SCMToolRepositoryFormView.prototype,
+                                    'render').and.callThrough();
+            const removeSpy = spyOn(SCMToolRepositoryFormView.prototype,
+                                    'remove').and.callThrough();
+
+            createView();
+
+            expect(renderSpy).toHaveBeenCalledTimes(1);
+            expect(removeSpy).not.toHaveBeenCalled();
+
+            selectField('#id_hosting_type', 'github');
+
+            expect(removeSpy).toHaveBeenCalledTimes(1);
+            expect(renderSpy).toHaveBeenCalledTimes(1);
+            expect($.contains(document.body, $form[0])).toBe(true);
         });
     });
 

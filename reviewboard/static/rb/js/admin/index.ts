@@ -42,7 +42,17 @@ export {
     type ServiceBugTrackerInfo,
     RepositoryBugTrackersView,
 } from './views/repositoryBugTrackersView';
-export { RepositoryFormView } from './views/repositoryFormView';
+export {
+    type RepositoryFormViewOptions,
+    RepositoryFormView,
+} from './views/repositoryFormView';
+export {
+    type HostingServiceRepositoryFormViewOptions,
+    HostingServiceRepositoryFormView,
+} from './views/hostingServiceRepositoryFormView';
+export {
+    SCMToolRepositoryFormView,
+} from './views/scmToolRepositoryFormView';
 
 
 /* Legacy namespace for RB.Admin. */
@@ -60,14 +70,22 @@ import {
     RepositoryBugTrackersView,
 } from './views/repositoryBugTrackersView';
 import { RepositoryFormView } from './views/repositoryFormView';
+import {
+    HostingServiceRepositoryFormView,
+} from './views/hostingServiceRepositoryFormView';
+import {
+    SCMToolRepositoryFormView,
+} from './views/scmToolRepositoryFormView';
 
 export const Admin = {
     BugTrackerFormView,
     ConnectServiceWizardView,
     ConnectedServicesView,
+    HostingServiceRepositoryFormView,
     PageView: BaseAdminPageView,
     RepositoryBugTrackersView,
     RepositoryForm,
     RepositoryFormView,
+    SCMToolRepositoryFormView,
     connectedServiceMenuActions,
 };

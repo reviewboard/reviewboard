@@ -57,6 +57,9 @@ export interface RepositoryFormHostingServiceInfo {
     /** The linked accounts for the service. */
     accounts: RepositoryFormHostingAccount[];
 
+    /** Data for the service's repository form view. */
+    js_view_data: Record<string, unknown>;
+
     /** Whether the user needs to enter a two-factor auth code. */
     needs_two_factor_auth_code: boolean;
 

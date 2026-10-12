@@ -14,6 +14,36 @@ import {
 import { dedent } from 'babel-plugin-dedent';
 
 import { type RepositoryForm } from '../models/repositoryFormModel';
+import {
+    HostingServiceRepositoryFormView,
+} from './hostingServiceRepositoryFormView';
+import { SCMToolRepositoryFormView } from './scmToolRepositoryFormView';
+
+
+/**
+ * Options for RepositoryFormView.
+ *
+ * Version Added:
+ *     9.0
+ */
+export interface RepositoryFormViewOptions {
+    /**
+     * The view class for each hosting service, keyed by ID.
+     *
+     * Services that aren't listed use
+     * :js:class:`HostingServiceRepositoryFormView`.
+     */
+    hostingServiceViews?: Record<string,
+                                 typeof HostingServiceRepositoryFormView>;
+
+    /**
+     * The view class for each SCMTool, keyed by ID.
+     *
+     * SCMTools that aren't listed use
+     * :js:class:`SCMToolRepositoryFormView`.
+     */
+    scmToolViews?: Record<string, typeof SCMToolRepositoryFormView>;
+}
 
 
 /**
@@ -38,11 +68,19 @@ interface RepositoryFormToolOption {
  * fields, sub-forms and notices that apply to the selected hosting
  * service, account, plan and SCMTool.
  *
+ * Hosting services and SCMTools can change how the form behaves through
+ * their own views. See :js:class:`HostingServiceRepositoryFormView` and
+ * :js:class:`SCMToolRepositoryFormView`.
+ *
  * Version Added:
  *     9.0
  */
 @spina
-export class RepositoryFormView extends BaseView<RepositoryForm> {
+export class RepositoryFormView extends BaseView<
+    RepositoryForm,
+    HTMLFormElement,
+    RepositoryFormViewOptions
+> {
     static events: EventsHash = {
         'change #id_hosting_account': '_onHostingAccountChanged',
         'change #id_hosting_type': '_onHostingTypeChanged',
@@ -53,7 +91,7 @@ export class RepositoryFormView extends BaseView<RepositoryForm> {
     };
 
     static modelEvents: EventsHash = {
-        'change:hostingAccountID': '_updateHostingAuthForms',
+        'change:hostingAccountID': '_onModelHostingAccountChanged',
         'change:hostingType': '_onModelHostingTypeChanged',
         'change:repositoryPlan': '_updateHostingRepoForms',
         'change:tool': '_updateSCMToolForms',
@@ -126,11 +164,36 @@ export class RepositoryFormView extends BaseView<RepositoryForm> {
     /** The Repository Type row. */
     #$toolRow: JQuery;
 
+    /** The view for the selected hosting service. */
+    #hostingServiceView: (HostingServiceRepositoryFormView | null) = null;
+
+    /** The view class for each hosting service, keyed by ID. */
+    #hostingServiceViews: Record<string,
+                                 typeof HostingServiceRepositoryFormView>;
+
+    /** The view for the selected SCMTool. */
+    #scmToolView: (SCMToolRepositoryFormView | null) = null;
+
+    /** The view class for each SCMTool, keyed by ID. */
+    #scmToolViews: Record<string, typeof SCMToolRepositoryFormView>;
+
     /** Whether SSH key association was disabled when the page loaded. */
     #associateSSHKeyDisabled: boolean;
 
     /** Every SCMTool option the form was rendered with. */
     #toolOptions: Array<RepositoryFormToolOption>;
+
+    /**
+     * Initialize the view.
+     *
+     * Args:
+     *     options (RepositoryFormViewOptions):
+     *         Options for the view.
+     */
+    initialize(options: RepositoryFormViewOptions = {}) {
+        this.#hostingServiceViews = options.hostingServiceViews ?? {};
+        this.#scmToolViews = options.scmToolViews ?? {};
+    }
 
     /**
      * Render the view.
@@ -249,6 +312,14 @@ export class RepositoryFormView extends BaseView<RepositoryForm> {
     }
 
     /**
+     * Remove the view.
+     */
+    protected onRemove() {
+        this.#hostingServiceView?.remove();
+        this.#scmToolView?.remove();
+    }
+
+    /**
      * Return the hosting account ID selected in the form.
      *
      * Returns:
@@ -339,6 +410,22 @@ export class RepositoryFormView extends BaseView<RepositoryForm> {
         this.#$hostingAccountRow.toggle(onHostingService && !isFake);
         this.#$toolRow.toggle(!isFake);
 
+        this.#hostingServiceView?.remove();
+        this.#hostingServiceView = null;
+
+        if (info !== null) {
+            const hostingType = model.get('hostingType');
+            const ViewClass = (this.#hostingServiceViews[hostingType] ??
+                               HostingServiceRepositoryFormView);
+
+            this.#hostingServiceView = new ViewClass({
+                data: info.js_view_data,
+                el: this.el,
+                model: model,
+            });
+            this.#hostingServiceView.render();
+        }
+
         this.#rebuildToolList();
         this.#rebuildAccountList();
         this.#rebuildPlanList();
@@ -404,15 +491,9 @@ export class RepositoryFormView extends BaseView<RepositoryForm> {
                 this.#getHostingAuthForm().find('.errorlist').length > 0);
 
             for (const account of accounts) {
-                let text = account.username;
-
-                if (account.hosting_url) {
-                    text += ` (${account.hosting_url})`;
-                }
-
                 $('<option>')
                     .val(account.pk)
-                    .text(text)
+                    .text(this.#hostingServiceView.getAccountLabel(account))
                     .appendTo($hostingAccount);
             }
 
@@ -441,7 +522,9 @@ export class RepositoryFormView extends BaseView<RepositoryForm> {
         let plans = [];
 
         if (info !== null) {
-            plans = info.plans;
+            plans = this.#hostingServiceView.getRepositoryPlans(
+                info.plans,
+                this.model.getSelectedAccount());
         }
 
         $repoPlan.empty();
@@ -462,6 +545,18 @@ export class RepositoryFormView extends BaseView<RepositoryForm> {
         model.set('repositoryPlan',
                   ($repoPlan.val() as string) || null,
                   {silent: true});
+    }
+
+    /**
+     * Update the form for a newly-selected hosting account.
+     *
+     * The hosting service's view may offer different plans for the
+     * account, so the plans are rebuilt.
+     */
+    private _onModelHostingAccountChanged() {
+        this._updateHostingAuthForms();
+        this.#rebuildPlanList();
+        this._updateHostingRepoForms();
     }
 
     /**
@@ -551,6 +646,9 @@ export class RepositoryFormView extends BaseView<RepositoryForm> {
         this.#$scmtoolAuthForms.hide();
         this.#$scmtoolRepoForms.hide();
 
+        this.#scmToolView?.remove();
+        this.#scmToolView = null;
+
         if (!model.isHostingServiceSelected()) {
             const toolID = model.get('tool');
             const toolInfo = model.get('tools')[toolID];
@@ -564,6 +662,15 @@ export class RepositoryFormView extends BaseView<RepositoryForm> {
             } else {
                 this.$(`#auth-form-scm-${toolID}`).show();
                 this.$(`#repo-form-scm-${toolID}`).show();
+
+                const ViewClass = (this.#scmToolViews[toolID] ??
+                                   SCMToolRepositoryFormView);
+
+                this.#scmToolView = new ViewClass({
+                    el: this.el,
+                    model: model,
+                });
+                this.#scmToolView.render();
             }
         }
 

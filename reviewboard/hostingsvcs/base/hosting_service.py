@@ -25,7 +25,7 @@ from reviewboard.hostingsvcs.base.connect_ui import BaseHostingServiceConnectUI
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-    from typing import ClassVar
+    from typing import ClassVar, TypeAlias
 
     from django.db.models import Model
     from django.http import HttpRequest
@@ -33,7 +33,8 @@ if TYPE_CHECKING:
     from django.utils.safestring import SafeString
     from paramiko import PKey
     from typelets.django.strings import StrOrPromise
-    from typing_extensions import NotRequired, TypeAlias
+    from typelets.json import JSONDict
+    from typing_extensions import NotRequired
 
     from reviewboard.hostingsvcs.base.forms import (
         BaseBugTrackerConfigForm,
@@ -162,6 +163,20 @@ class BaseHostingService(Generic[THostingServiceClient]):
     #:     9.0
     connect_ui_cls: type[BaseHostingServiceConnectUI] = \
         BaseHostingServiceConnectUI
+
+    #: The JavaScript view class for the repository configuration form.
+    #:
+    #: This view is created when the hosting service is selected in the
+    #: form. It can change how the form behaves for this service. It must
+    #: be a subclass of :js:class:`RB.Admin.HostingServiceRepositoryFormView`.
+    #:
+    #: Extensions providing a view should load it on the repository form's
+    #: page through a static media bundle.
+    #:
+    #: Version Added:
+    #:     9.0
+    repository_form_js_view_class: ClassVar[str] = \
+        'RB.Admin.HostingServiceRepositoryFormView'
 
     #: The unique ID of the hosting service.
     #:
@@ -1266,6 +1281,30 @@ class BaseHostingService(Generic[THostingServiceClient]):
                     return info[name]
 
         return getattr(cls, name, default)
+
+    @classmethod
+    def get_repository_form_js_view_data(
+        cls,
+        accounts: Sequence[HostingServiceAccount],
+    ) -> JSONDict:
+        """Return data for the repository form's JavaScript view.
+
+        This data is passed to the :py:attr:`repository_form_js_view_class`
+        view as its ``data`` option.
+
+        Version Added:
+            9.0
+
+        Args:
+            accounts (list of
+                      reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The accounts for this service that are offered in the form.
+
+        Returns:
+            dict:
+            The data for the view. This must be serializable to JSON.
+        """
+        return {}
 
     @classmethod
     def get_protected_objects_for_account_deletion(

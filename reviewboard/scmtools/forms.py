@@ -49,7 +49,7 @@ from reviewboard.hostingsvcs.models import (
 )
 from reviewboard.reviews.models import Group
 from reviewboard.scmtools import scmtools_registry
-from reviewboard.scmtools.certs import Certificate as LegacyCertificate
+from reviewboard.scmtools.core import SCMTool
 from reviewboard.scmtools.errors import (
     AuthenticationError,
     RepositoryNotFoundError,
@@ -71,6 +71,7 @@ if TYPE_CHECKING:
     from typelets.json import JSONDict, JSONList
 
     from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
+    from reviewboard.scmtools.certs import Certificate as LegacyCertificate
 
 
 logger = logging.getLogger(__name__)
@@ -1087,6 +1088,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                 self.scmtool_info[scmtool_id] = {
                     'name': name,
                     'fake': True,
+                    'js_view_class': SCMTool.repository_form_js_view_class,
                 }
 
         scmtool_choices.sort(key=lambda x: x[1])
@@ -1258,6 +1260,8 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                      'supports_post_commit'):
             info[attr] = getattr(scmtool_cls, attr)
 
+        info['js_view_class'] = scmtool_cls.repository_form_js_view_class
+
         return info
 
     def _get_hosting_service_info(self, hosting_service, hosting_accounts=[],
@@ -1304,6 +1308,13 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         else:
             scmtools = visible_scmtools
 
+        hosting_service_id = hosting_service.hosting_service_id
+        accounts = [
+            account
+            for account in hosting_accounts
+            if account.service_name == hosting_service_id
+        ]
+
         return {
             'scmtools': sorted(scmtools),
             'plans': [],
@@ -1323,9 +1334,11 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
                     'username': account.username,
                     'is_authorized': account.is_authorized,
                 }
-                for account in hosting_accounts
-                if account.service_name == hosting_service.hosting_service_id
+                for account in accounts
             ],
+            'js_view_class': hosting_service.repository_form_js_view_class,
+            'js_view_data':
+                hosting_service.get_repository_form_js_view_data(accounts),
         }
 
     def _load_scmtool(self, scmtool_cls, is_active):

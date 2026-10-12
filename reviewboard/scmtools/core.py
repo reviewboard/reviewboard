@@ -788,6 +788,21 @@ class SCMTool:
     #: browsing and posting existing commits and their diffs for review.
     supports_post_commit: bool = False
 
+    #: The JavaScript view class for the repository configuration form.
+    #:
+    #: This view is created when the SCMTool is selected in the form and no
+    #: hosting service is used. It can change how the form behaves for this
+    #: SCMTool. It must be a subclass of
+    #: :js:class:`RB.Admin.SCMToolRepositoryFormView`.
+    #:
+    #: Extensions providing a view should load it on the repository form's
+    #: page through a static media bundle.
+    #:
+    #: Version Added:
+    #:     9.0
+    repository_form_js_view_class: ClassVar[str] = \
+        'RB.Admin.SCMToolRepositoryFormView'
+
     #: Whether custom URL masks can be defined to fetching file contents.
     #:
     #: Some systems (such as Git) have no way of accessing an individual file

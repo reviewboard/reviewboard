@@ -1,5 +1,5 @@
 {% extends "admin/change_form.html" %}
-{% load admin_urls i18n pipeline %}
+{% load admin_urls djblets_js i18n pipeline %}
 
 {% block scripts-post %}
 {{block.super}}
@@ -10,6 +10,16 @@
 $(document).ready(function() {
     new RB.Admin.RepositoryFormView({
         el: document.getElementById('repository_form'),
+        hostingServiceViews: {
+{%  for hosting_service_id, info in adminform.form.hosting_service_info.items %}
+            {{hosting_service_id|json_dumps}}: {{info.js_view_class}},
+{%  endfor %}
+        },
+        scmToolViews: {
+{%  for scmtool_id, info in adminform.form.scmtool_info.items %}
+            {{scmtool_id|json_dumps}}: {{info.js_view_class}},
+{%  endfor %}
+        },
         model: new RB.Admin.RepositoryForm({
             hostingServices: HOSTING_SERVICES,
             tools: TOOLS_INFO,
