@@ -9,6 +9,14 @@ export {
     LicenseStatus,
 } from './models/licenseModel';
 export { CallLicenseActionError } from './models/callLicenseActionError';
+export {
+    type RepositoryFormAttrs,
+    type RepositoryFormHostingAccount,
+    type RepositoryFormHostingServiceInfo,
+    type RepositoryFormPlan,
+    type RepositoryFormSCMToolInfo,
+    RepositoryForm,
+} from './models/repositoryFormModel';
 
 export {
     type AccountMenuActionContext,
@@ -34,6 +42,7 @@ export {
     type ServiceBugTrackerInfo,
     RepositoryBugTrackersView,
 } from './views/repositoryBugTrackersView';
+export { RepositoryFormView } from './views/repositoryFormView';
 
 
 /* Legacy namespace for RB.Admin. */
@@ -46,9 +55,11 @@ import {
 import {
     ConnectedServicesView,
 } from './views/connectedServicesView';
+import { RepositoryForm } from './models/repositoryFormModel';
 import {
     RepositoryBugTrackersView,
 } from './views/repositoryBugTrackersView';
+import { RepositoryFormView } from './views/repositoryFormView';
 
 export const Admin = {
     BugTrackerFormView,
@@ -56,5 +67,7 @@ export const Admin = {
     ConnectedServicesView,
     PageView: BaseAdminPageView,
     RepositoryBugTrackersView,
+    RepositoryForm,
+    RepositoryFormView,
     connectedServiceMenuActions,
 };

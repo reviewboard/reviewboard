@@ -1488,7 +1488,7 @@ class RepositoryForm(LocalSiteAwareModelFormMixin, forms.ModelForm):
         hosting_info = self.hosting_service_info[hosting_service_id]
         hosting_info['planInfo'][plan_type_id] = plan_info
         hosting_info['plans'].append({
-            'type': plan_type_id,
+            'id': plan_type_id,
             'label': str(plan_type_label),
         })
 

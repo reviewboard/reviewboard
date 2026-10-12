@@ -3,10 +3,19 @@
 
 {% block scripts-post %}
 {{block.super}}
-{%  javascript 'repositoryform' %}
 
 <script>
 {% include "admin/repository_fields.js" with form=adminform.form %}
+
+$(document).ready(function() {
+    new RB.Admin.RepositoryFormView({
+        el: document.getElementById('repository_form'),
+        model: new RB.Admin.RepositoryForm({
+            hostingServices: HOSTING_SERVICES,
+            tools: TOOLS_INFO,
+        }),
+    }).render();
+});
 </script>
 {% endblock scripts-post %}
 
