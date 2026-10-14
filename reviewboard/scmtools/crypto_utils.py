@@ -4,7 +4,8 @@ import base64
 import os
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
+from cryptography.hazmat.decrepit.ciphers.modes import CFB8
 from django.conf import settings
 
 
@@ -37,7 +38,7 @@ def _create_cipher(iv, key):
                         % type(key))
 
     return Cipher(algorithms.AES(key),
-                  modes.CFB8(iv),
+                  CFB8(iv),
                   default_backend())
 
 

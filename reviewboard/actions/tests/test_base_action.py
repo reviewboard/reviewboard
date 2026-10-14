@@ -148,8 +148,9 @@ class BaseActionTests(TestCase):
             'request': request,
         })
 
-        MyAction().render_js(request=request,
-                             context=context)
+        action.render_js(request=request,
+                         context=context,
+                         placement=action.get_placement('review-request'))
 
         self.assertTrue(action.should_register(request=request,
                                                context=context))
@@ -192,8 +193,9 @@ class BaseActionTests(TestCase):
             'request': request,
         })
 
-        MyAction().render_js(request=request,
-                             context=context)
+        action.render_js(request=request,
+                         context=context,
+                         placement=action.get_placement('review-request'))
 
         self.assertTrue(action.should_register(request=request,
                                                context=context))

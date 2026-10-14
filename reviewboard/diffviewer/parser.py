@@ -1292,7 +1292,7 @@ class DiffParser(BaseDiffParser):
         # 1) the filename won't have multiple consecutive spaces, and
         # 2) there's at least 2 spaces separating the filename and info.
         if b'  ' in s:
-            filename, info = re.split(br'  +', s, 1)
+            filename, info = re.split(br'  +', s, maxsplit=1)
 
             return filename, info
 

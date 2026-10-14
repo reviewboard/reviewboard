@@ -367,7 +367,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertEqual(value[0].message, 'second')
         self.assertEqual(value[0].author_name,
                          'Michael Rowe <mike.rowe@nab.com.au>')
-        self.assertEqual(value[0].date, '2007-08-07T17:12:23')
+        self.assertEqual(value[0].date, '2007-08-07T17:12:23+00:00')
         self.assertEqual(value[0].parent,
                          'f814b6e226d2ba6d26d02ca8edbff91f57ab2786')
 
@@ -376,7 +376,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertEqual(value[1].message, 'first')
         self.assertEqual(value[1].author_name,
                          'Michael Rowe <mike.rowe@nab.com.au>')
-        self.assertEqual(value[1].date, '2007-08-07T17:11:57')
+        self.assertEqual(value[1].date, '2007-08-07T17:11:57+00:00')
         self.assertEqual(value[1].parent, '')
 
         self.assertRaisesRegex(SCMError, 'Cannot load commits: ',
@@ -407,7 +407,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertEqual(value[0].message, 'second')
         self.assertEqual(value[0].author_name,
                          'Michael Rowe <mike.rowe@nab.com.au>')
-        self.assertEqual(value[0].date, '2007-08-07T17:12:23')
+        self.assertEqual(value[0].date, '2007-08-07T17:12:23+00:00')
         self.assertEqual(value[0].parent,
                          'f814b6e226d2ba6d26d02ca8edbff91f57ab2786')
 
@@ -416,7 +416,7 @@ class MercurialTests(DiffParserTestingMixin, SCMTestCase):
         self.assertEqual(value[1].message, 'first')
         self.assertEqual(value[1].author_name,
                          'Michael Rowe <mike.rowe@nab.com.au>')
-        self.assertEqual(value[1].date, '2007-08-07T17:11:57')
+        self.assertEqual(value[1].date, '2007-08-07T17:11:57+00:00')
         self.assertEqual(value[1].parent, '')
 
         self.assertRaisesRegex(SCMError, 'Cannot load commits: ',
@@ -941,7 +941,7 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
         self.assertEqual(commit.id, '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
         self.assertEqual(commit.message, 'This is the change description')
         self.assertEqual(commit.author_name, 'Test User')
-        self.assertEqual(commit.date, '2020-03-02T03:40:19')
+        self.assertEqual(commit.date, '2020-03-02T03:40:19+00:00')
         self.assertEqual(commit.parent,
                          'b9af6489f6f2004ad11b82c6057f7007e3c35372')
 
@@ -996,7 +996,7 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
         self.assertEqual(commit.id, '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
         self.assertEqual(commit.message, 'This is the change description')
         self.assertEqual(commit.author_name, 'Test User')
-        self.assertEqual(commit.date, '2020-03-02T03:40:19')
+        self.assertEqual(commit.date, '2020-03-02T03:40:19+00:00')
         self.assertEqual(commit.parent,
                          'b9af6489f6f2004ad11b82c6057f7007e3c35372')
 
@@ -1004,7 +1004,7 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
         self.assertEqual(commit.id, 'b9af6489f6f2004ad11b82c6057f7007e3c35372')
         self.assertEqual(commit.message, 'This is another description')
         self.assertEqual(commit.author_name, 'Another User')
-        self.assertEqual(commit.date, '2020-02-16T15:52:00')
+        self.assertEqual(commit.date, '2020-02-16T15:52:00+00:00')
         self.assertEqual(commit.parent,
                          '8210c0d945ef893d40a903c9dc14cd072eee5bb7')
 
@@ -1059,7 +1059,7 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
         self.assertEqual(commit.id, '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
         self.assertEqual(commit.message, 'This is the change description')
         self.assertEqual(commit.author_name, 'Test User')
-        self.assertEqual(commit.date, '2020-03-02T03:40:19')
+        self.assertEqual(commit.date, '2020-03-02T03:40:19+00:00')
         self.assertEqual(commit.parent,
                          'b9af6489f6f2004ad11b82c6057f7007e3c35372')
 
@@ -1067,7 +1067,7 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
         self.assertEqual(commit.id, 'b9af6489f6f2004ad11b82c6057f7007e3c35372')
         self.assertEqual(commit.message, 'This is another description')
         self.assertEqual(commit.author_name, 'Another User')
-        self.assertEqual(commit.date, '2020-02-16T15:52:00')
+        self.assertEqual(commit.date, '2020-02-16T15:52:00+00:00')
         self.assertEqual(commit.parent,
                          '8210c0d945ef893d40a903c9dc14cd072eee5bb7')
 
@@ -1125,7 +1125,7 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
         self.assertEqual(commit.id, '1ca5879492b8fd606df1964ea3c1e2f4520f076f')
         self.assertEqual(commit.message, 'This is the change description')
         self.assertEqual(commit.author_name, 'Test User')
-        self.assertEqual(commit.date, '2020-03-02T03:40:19')
+        self.assertEqual(commit.date, '2020-03-02T03:40:19+00:00')
         self.assertEqual(commit.parent,
                          'b9af6489f6f2004ad11b82c6057f7007e3c35372')
 
@@ -1133,7 +1133,7 @@ class HgWebClientTests(kgb.SpyAgency, TestCase):
         self.assertEqual(commit.id, 'b9af6489f6f2004ad11b82c6057f7007e3c35372')
         self.assertEqual(commit.message, 'This is another description')
         self.assertEqual(commit.author_name, 'Another User')
-        self.assertEqual(commit.date, '2020-02-16T15:52:00')
+        self.assertEqual(commit.date, '2020-02-16T15:52:00+00:00')
         self.assertEqual(commit.parent,
                          '8210c0d945ef893d40a903c9dc14cd072eee5bb7')
 

@@ -294,7 +294,11 @@ def submitter(
     else:
         raise Http404
 
-    datagrid = datagrid_cls(request, user, local_site=local_site)
+    datagrid = datagrid_cls(
+        request=request,
+        user=user,
+        local_site=local_site)
+
     datagrid.tabs = [
         (UserPageReviewRequestDataGrid.tab_title,
          local_site_reverse('user',

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import json
 import logging
-from datetime import datetime
-from typing import Any, TYPE_CHECKING
+from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 from urllib.parse import quote as urllib_quote, urlparse
 
 from django.utils.encoding import force_str
@@ -26,6 +26,7 @@ from reviewboard.scmtools.git import GitDiffParser, strip_git_symlink_mode
 
 if TYPE_CHECKING:
     import subprocess
+    from typing import Any
 
     from reviewboard.diffviewer.parser import ParsedDiffFile
     from reviewboard.scmtools.core import (
@@ -264,8 +265,9 @@ class HgTool(SCMTool):
             str:
             Date of given data in ISO 8601 format.
         """
-        return force_str(datetime.utcfromtimestamp(
-            data[0] + (data[1] * -1)).isoformat())
+        return force_str(
+            datetime.fromtimestamp(data[0] + (data[1] * -1), timezone.utc)
+            .isoformat())
 
     @classmethod
     def check_repository(

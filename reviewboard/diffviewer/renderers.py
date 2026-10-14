@@ -329,9 +329,10 @@ class DiffRenderer(object):
                                         if header[0] <= last_linenum
                                     ]
 
-                            meta['headers'] = \
-                                compute_chunk_last_header(new_lines, num_lines,
-                                                          meta)
+                            meta['headers'] = compute_chunk_last_header(
+                                lines=new_lines,
+                                numlines=num_lines,
+                                meta=meta)
                     else:
                         self.diff_file['chunks'].remove(chunk)
 

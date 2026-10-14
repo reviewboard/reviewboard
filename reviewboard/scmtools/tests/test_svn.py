@@ -807,7 +807,7 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             commits[0],
             Commit('chipx86',
                    '5',
-                   '2010-05-21T09:33:40.893946',
+                   '2010-05-21T09:33:40.893946+00:00',
                    'Add an unterminated keyword for testing bug #1523\n',
                    '4'))
 
@@ -817,7 +817,7 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             commits[1],
             Commit('david',
                    '6',
-                   '2013-06-13T07:43:04.725088',
+                   '2013-06-13T07:43:04.725088+00:00',
                    'Add a branches directory',
                    '5'))
 
@@ -830,7 +830,7 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             commits[0],
             Commit('chipx86',
                    '5',
-                   '2010-05-21T09:33:40.893946',
+                   '2010-05-21T09:33:40.893946+00:00',
                    'Add an unterminated keyword for testing bug #1523\n',
                    '4'))
 
@@ -840,14 +840,14 @@ class _CommonSVNTestCase(DiffParserTestingMixin, kgb.SpyAgency, SCMTestCase):
             commits[0],
             Commit('david',
                    '7',
-                   '2013-06-13T07:43:27.259554',
+                   '2013-06-13T07:43:27.259554+00:00',
                    'Add a branch',
                    '5'))
         self.assertEqual(
             commits[1],
             Commit('chipx86',
                    '5',
-                   '2010-05-21T09:33:40.893946',
+                   '2010-05-21T09:33:40.893946+00:00',
                    'Add an unterminated keyword for testing bug #1523\n',
                    '4'))
 
