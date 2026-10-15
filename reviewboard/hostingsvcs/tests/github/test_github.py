@@ -1385,6 +1385,116 @@ class GitHubTests(GitHubTestCase):
             b'- foo\n'
             b'+ bar\n')
 
+    def test_get_change_with_files_without_patch(self) -> None:
+        """Testing GitHub.get_change with file entries without a patch"""
+        commit_sha = '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
+        parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
+        tree_sha = '56e25e58380daf9b4dfe35677ae6043fe1743922'
+
+        # GitHub leaves out "patch" for binary files and for diffs that are
+        # too large.
+        binary_file_entry = {
+            'sha': '86b520d2b3c4d5e6f708192a3b4c5d6e7f809123',
+            'filename': 'logo.png',
+            'status': 'modified',
+        }
+
+        paths: dict[str | None, HttpTestPath] = {
+            f'/repos/myuser/myrepo/commits/{commit_sha}': {
+                'payload': self.dump_json({
+                    'commit': {
+                        'author': {
+                            'date': '2013-06-25T23:31:22Z',
+                            'name': 'David Trowbridge',
+                        },
+                        'committer': {
+                            'date': '2013-06-25T23:31:22Z',
+                            'name': 'David Trowbridge',
+                        },
+                        'message': 'Update the logo',
+                        'tree': {
+                            'sha': tree_sha,
+                        },
+                    },
+                    'files': [binary_file_entry],
+                    'sha': commit_sha,
+                    'parents': [{'sha': parent_sha}],
+                }),
+            },
+            f'/repos/myuser/myrepo/compare/{parent_sha}...{commit_sha}': {
+                'payload': self.dump_json({
+                    'base_commit': {
+                        'commit': {
+                            'author': {
+                                'date': '2013-06-25T23:31:22Z',
+                                'name': 'David Trowbridge',
+                            },
+                            'committer': {
+                                'date': '2013-06-25T23:31:22Z',
+                                'name': 'David Trowbridge',
+                            },
+                            'message': 'Base commit message',
+                            'tree': {'sha': tree_sha},
+                        },
+                    },
+                    'files': [
+                        {
+                            'sha': '4344b3ad41b171ea606e88e9665c34cca602affb',
+                            'filename': 'README',
+                            'status': 'modified',
+                            'patch': (
+                                '@@ -1 +1 @@\n'
+                                '-Hi\n'
+                                '+Hello'
+                            ),
+                        },
+                        binary_file_entry,
+                    ],
+                }),
+            },
+            f'/repos/myuser/myrepo/git/trees/{tree_sha}': {
+                'payload': self.dump_json({
+                    'tree': [
+                        {
+                            'path': 'README',
+                            'sha': '830a40c3197223c6a0abb3355ea48891a1857bfd',
+                        },
+                        {
+                            'path': 'logo.png',
+                            'sha': '86b520c1a2b3c4d5e6f708192a3b4c5d6e7f8091',
+                        },
+                    ],
+                    'truncated': False,
+                }),
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=3) as ctx:
+            repository = ctx.create_repository()
+            change = ctx.service.get_change(repository=repository,
+                                            revision=commit_sha)
+
+        self.assertEqual(
+            change,
+            Commit(author_name='David Trowbridge',
+                   date='2013-06-25T23:31:22Z',
+                   id='1c44b461cebe5874a857c51a4a13a849a4d1e52d',
+                   message='Update the logo',
+                   parent='44568f7d33647d286691517e6325fea5c7a21d5e'))
+
+        # Files without a patch aren't included in the diff.
+        self.assertEqual(
+            change.diff,
+            b'diff --git a/README b/README\n'
+            b'index 830a40c3197223c6a0abb3355ea48891a1857bfd'
+            b'..4344b3ad41b171ea606e88e9665c34cca602affb 100644\n'
+            b'--- a/README\n'
+            b'+++ b/README\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hi\n'
+            b'+Hello\n')
+
     def test_get_change_with_not_found(self) -> None:
         """Testing GitHub.get_change with commit not found"""
         with (self.setup_http_test(status_code=404,
