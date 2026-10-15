@@ -79,6 +79,22 @@ class ConnectedServicesListViewTests(TestCase):
         # repositories row.
         self.assertNotIn(b'connected repositor', response.content)
 
+    def test_get_with_account_without_username(self) -> None:
+        """Testing ConnectedServicesListView GET with a hosting account that
+        has no username
+        """
+        HostingServiceAccount.objects.create(
+            service_name='gitlab',
+            username='',
+            hosting_url='https://gitlab.example.com',
+            visible=True)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'(unnamed account)', response.content)
+
     def test_get_with_repository_count(self) -> None:
         """Testing ConnectedServicesListView GET renders the repository count
         """
