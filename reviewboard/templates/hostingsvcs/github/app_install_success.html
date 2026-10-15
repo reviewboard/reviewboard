@@ -8,7 +8,7 @@
 </h1>
 
 {% if verification_failed %}
-<p>
+<p data-wizard-cancel-label="{% trans 'Close' %}">
 {%  blocktrans %}
  We couldn't check which repositories this app can access right now. You can
  configure repositories from the connected services list.
@@ -45,7 +45,7 @@
 {%  endfor %}
 </form>
 {% else %}
-<p>
+<p data-wizard-cancel-label="{% trans 'Close' %}">
 {%  blocktrans %}
  There are no Personal Access Token repositories to move onto this connection.
 {%  endblocktrans %}
