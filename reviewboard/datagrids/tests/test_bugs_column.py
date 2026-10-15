@@ -10,6 +10,7 @@ from django.utils.safestring import SafeString
 
 from reviewboard.datagrids.columns import BugsColumn
 from reviewboard.datagrids.tests.base import BaseColumnTestCase
+from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 
 
 class BugsColumnTests(BaseColumnTestCase):
@@ -45,9 +46,15 @@ class BugsColumnTests(BaseColumnTestCase):
 
     def test_render_data_with_one_bug_with_tracker(self) -> None:
         """Testing BugsColumn.render_data with one bug and a bug tracker"""
+        tracker = ConfiguredBugTracker.objects.create(
+            name='Example Bugs',
+            service_name='custom-bug-tracker',
+            settings={
+                'url_template': 'https://bugs.example.com/%s',
+            })
         repository = self.create_repository(
             tool_name='Test',
-            bug_tracker='https://bugs.example.com/%s')
+            default_bug_tracker=tracker)
         review_request = self.create_review_request(
             repository=repository,
             bugs_closed='1234',
@@ -93,9 +100,15 @@ class BugsColumnTests(BaseColumnTestCase):
 
     def test_to_json_with_one_bug_with_tracker(self) -> None:
         """Testing BugsColumn.to_json with one bug and a bug tracker"""
+        tracker = ConfiguredBugTracker.objects.create(
+            name='Example Bugs',
+            service_name='custom-bug-tracker',
+            settings={
+                'url_template': 'https://bugs.example.com/%s',
+            })
         repository = self.create_repository(
             tool_name='Test',
-            bug_tracker='https://bugs.example.com/%s')
+            default_bug_tracker=tracker)
         review_request = self.create_review_request(
             repository=repository,
             bugs_closed='1234',

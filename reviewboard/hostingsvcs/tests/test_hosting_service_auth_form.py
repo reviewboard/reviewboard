@@ -232,6 +232,61 @@ class HostingServiceAuthFormTests(kgb.SpyAgency, CaptureSSLMixin, TestCase):
         hosting_account = form.save()
         self.assertIsNone(hosting_account.hosting_url)
 
+    def test_save_new_account_with_get_hosting_url(self) -> None:
+        """Testing BaseHostingServiceAuthForm.save with get_hosting_url
+        overridden for a non-self-hosted service
+        """
+        class MyAuthForm(BaseHostingServiceAuthForm):
+            def get_hosting_url(self) -> str:
+                return 'https://example.com'
+
+        form = MyAuthForm(
+            {
+                'hosting_account_username': 'myuser',
+                'hosting_account_password': 'mypass',
+            },
+            hosting_service_cls=TestService)
+
+        self.assertTrue(form.is_valid())
+
+        hosting_account = form.save()
+        self.assertEqual(hosting_account.hosting_url, 'https://example.com')
+
+    def test_save_new_account_with_get_hosting_url_other_server(
+        self,
+    ) -> None:
+        """Testing BaseHostingServiceAuthForm.save with get_hosting_url
+        overridden does not reuse an account for the same username on
+        another server
+        """
+        class MyAuthForm(BaseHostingServiceAuthForm):
+            def get_hosting_url(self) -> str:
+                return 'https://two.example.com'
+
+        orig_account = HostingServiceAccount.objects.create(
+            service_name='test',
+            username='myuser',
+            hosting_url='https://one.example.com')
+
+        form = MyAuthForm(
+            {
+                'hosting_account_username': 'myuser',
+                'hosting_account_password': 'mypass',
+            },
+            hosting_service_cls=TestService)
+
+        self.assertTrue(form.is_valid())
+
+        hosting_account = form.save()
+        self.assertNotEqual(hosting_account.pk, orig_account.pk)
+        self.assertEqual(hosting_account.hosting_url,
+                         'https://two.example.com')
+
+        # The original account is left alone.
+        orig_account.refresh_from_db()
+        self.assertEqual(orig_account.hosting_url, 'https://one.example.com')
+        self.assertNotIn('password', orig_account.data)
+
     def test_save_new_account_without_hosting_url_self_hosted(self):
         """Testing BaseHostingServiceAuthForm.save with new account and no
         hosting URL with a self-hosted service

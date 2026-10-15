@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import re
-import sre_constants
 
 from django import forms
 from django.contrib.auth.models import User
@@ -439,8 +438,8 @@ class X509SettingsForm(SiteSettingsForm):
 
         try:
             re.compile(regex)
-        except sre_constants.error as e:
-            raise ValidationError(e)
+        except re.error as e:
+            raise ValidationError(str(e))
 
         return regex
 

@@ -24,6 +24,31 @@ import { type UserResourceData } from './userModel';
 
 
 /**
+ * A bug linked to a review request draft.
+ *
+ * Version Added:
+ *     9.0
+ */
+export interface DraftReviewRequestBug {
+    /** The ID of the bug on its tracker. */
+    id: string;
+
+    /**
+     * The ID of the bug tracker configuration.
+     *
+     * This is ``null`` for unattributed bugs.
+     */
+    tracker: number | null;
+
+    /** A one-line summary of the bug, when available. */
+    summary?: string;
+
+    /** The public URL for the bug, when available. */
+    url?: string;
+}
+
+
+/**
  * Attributes for the DraftReviewRequest model.
  *
  * Version Added:
@@ -32,6 +57,16 @@ import { type UserResourceData } from './userModel';
 export interface DraftReviewRequestAttrs extends BaseResourceAttrs {
     /** The branch field content. */
     branch: string;
+
+    /**
+     * The bugs linked to this change, across all trackers.
+     *
+     * Entries are ordered for display, grouped by tracker.
+     *
+     * Version Added:
+     *     9.0
+     */
+    bugs: DraftReviewRequestBug[];
 
     /** The list of bugs addressed by this change. */
     bugsClosed: string[];
@@ -86,6 +121,7 @@ export interface DraftReviewRequestAttrs extends BaseResourceAttrs {
 export interface DraftReviewRequestResourceData
 extends BaseResourceResourceData {
     branch: string;
+    bugs: DraftReviewRequestBug[];
     bugs_closed: string[];
     changedescription: string;
     changedescription_text_type: string;
@@ -131,6 +167,7 @@ export class DraftReviewRequest extends BaseResource<
     static defaults(): Result<Partial<DraftReviewRequestAttrs>> {
         return {
             branch: null,
+            bugs: [],
             bugsClosed: null,
             changeDescription: null,
             changeDescriptionRichText: false,
@@ -173,6 +210,7 @@ export class DraftReviewRequest extends BaseResource<
 
     static deserializedAttrs = [
         'branch',
+        'bugs',
         'bugsClosed',
         'changeDescription',
         'dependsOn',

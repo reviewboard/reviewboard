@@ -15,7 +15,7 @@ import traceback
 import subprocess
 import warnings
 from collections import OrderedDict
-from datetime import datetime
+from datetime import datetime, timezone
 from importlib import import_module
 from pprint import pformat
 from random import choice as random_choice
@@ -1567,8 +1567,10 @@ class Site(object):
                                 'site-upgrade-failure.log')
 
         with open(filename, 'w') as fp:
+            now = datetime.now(timezone.utc)
+
             fp.write('Database upgrade failure log\n')
-            fp.write('Time: %s UTC\n' % datetime.utcnow())
+            fp.write(f'Time: {now} UTC\n')
             fp.write('\n')
 
             fp.write('Database\n')

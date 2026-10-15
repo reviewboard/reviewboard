@@ -26,7 +26,6 @@ from reviewboard.deprecation import (
     RemovedInReviewBoard10_0Warning,
     RemovedInReviewBoard11_0Warning,
 )
-from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.errors import MissingHostingServiceError
 from reviewboard.hostingsvcs.models import (
     ConfiguredBugTracker,
@@ -464,35 +463,37 @@ class Repository(models.Model):
 
         return None
 
-    @cached_property
+    @property
     def bug_tracker_service(self) -> BaseHostingService | None:
-        """The selected bug tracker service for the repository.
+        """The service of the repository's default bug tracker.
 
-        This will be ``None`` if this repository is not associated with a bug
+        This will be ``None`` if this repository has no default bug
         tracker.
+
+        Deprecated:
+            9.0:
+            Use :py:attr:`default_bug_tracker` and its
+            :py:attr:`~reviewboard.hostingsvcs.models.ConfiguredBugTracker.service`
+            instead. This will be removed in Review Board 11.
 
         Type:
             reviewboard.hostingsvcs.base.hosting_service.BaseHostingService
 
         Raises:
             reviewboard.hostingsvcs.errors.MissingHostingServiceError:
-                The hosting service for this repository could not be loaded.
+                The bug tracker's service could not be loaded.
         """
-        if self.extra_data.get('bug_tracker_use_hosting'):
-            return self.hosting_service
+        RemovedInReviewBoard11_0Warning.warn(
+            'Repository.bug_tracker_service is deprecated and will be '
+            'removed in Review Board 11. Use '
+            'Repository.default_bug_tracker.service instead.')
 
-        bug_tracker_type = self.extra_data.get('bug_tracker_type')
+        default_bug_tracker = self.default_bug_tracker
 
-        if bug_tracker_type:
-            bug_tracker_cls = \
-                hosting_service_registry.get_hosting_service(bug_tracker_type)
-            assert bug_tracker_cls is not None
+        if default_bug_tracker is None:
+            return None
 
-            # TODO: we need to figure out some way of storing a second
-            # hosting service account for bug trackers.
-            return bug_tracker_cls(HostingServiceAccount())
-
-        return None
+        return default_bug_tracker.service
 
     def get_default_bug_tracker(self) -> ConfiguredBugTracker | None:
         """Return the bug tracker acting as this repository's default.

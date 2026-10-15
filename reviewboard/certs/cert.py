@@ -1009,7 +1009,7 @@ class Certificate:
         valid_from = self._valid_from
 
         if valid_from is UNSET:
-            valid_from = self._get_x509_attr(datetime, 'not_valid_before')
+            valid_from = self._get_x509_attr(datetime, 'not_valid_before_utc')
             self._valid_from = valid_from
 
         return valid_from
@@ -1024,7 +1024,8 @@ class Certificate:
         valid_through = self._valid_through
 
         if valid_through is UNSET:
-            valid_through = self._get_x509_attr(datetime, 'not_valid_after')
+            valid_through = self._get_x509_attr(datetime,
+                                                'not_valid_after_utc')
             self._valid_through = valid_through
 
         return valid_through

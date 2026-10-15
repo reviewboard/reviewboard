@@ -93,6 +93,18 @@ bugs_urls = [
 ]
 
 
+#: URLs for bugs with a linked bug tracker.
+#:
+#: Version Added:
+#:     9.0
+tracked_bugs_urls = [
+    path('', views.BugURLRedirectView.as_view(),
+         name='bug_tracker_bug_url'),
+    path('infobox/', views.BugInfoboxView.as_view(),
+         name='bug_tracker_bug_infobox'),
+]
+
+
 review_request_urls = [
     # Review request detail
     path('',
@@ -121,6 +133,16 @@ review_request_urls = [
 
     # Bugs
     re_path(r'^bugs/(?P<bug_id>[\w\.-]+)/', include(bugs_urls)),
+
+    # Bugs on a specific bug tracker
+    re_path(r'^bug-trackers/(?P<bug_tracker_id>\d+)/'
+            r'bugs/(?P<bug_id>[\w\.-]+)/',
+            include(tracked_bugs_urls)),
+
+    # Bug metadata on a specific bug tracker
+    path('bug-trackers/<int:bug_tracker_id>/bug-info/',
+         views.TrackedBugInfoView.as_view(),
+         name='bug_tracker_bug_info'),
 
     # Review Request infobox
     path('infobox/',

@@ -12,7 +12,6 @@ from djblets.webapi.resources.mixins.forms import (
 )
 from typing_extensions import NotRequired
 
-from reviewboard.hostingsvcs.models import SENTINEL_BUG_TRACKER_SERVICE_NAME
 from reviewboard.reviews.markdown_utils import (
     markdown_set_field_escaped,
     render_markdown,
@@ -625,7 +624,7 @@ class ReviewRequestDetailsMixin:
 
             if (tracker is not None and
                 tracker.is_usable_by(user, request=request) and
-                tracker.service_name != SENTINEL_BUG_TRACKER_SERVICE_NAME):
+                not tracker.is_sentinel):
                 if url := tracker.get_bug_url(bug_id):
                     entry['url'] = url
 

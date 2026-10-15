@@ -800,6 +800,59 @@ class GitHubClient(HostingServiceClient['GitHub']):
             result_type=api.TreeResponse,
             repository=repository)
 
+    def search_issues(
+        self,
+        *,
+        api_url: str,
+        owner: str,
+        repo_name: str,
+        query: str,
+        limit: int,
+        repository: (Repository | None) = None,
+    ) -> Sequence[api.SearchedIssue]:
+        """Search for issues in a repository.
+
+        Version Added:
+            9.0
+
+        Args:
+            api_url (str):
+                The base URL for the API.
+
+            owner (str):
+                The name of the repository's owner.
+
+            repo_name (str):
+                The repository's name.
+
+            query (str):
+                The search query.
+
+            limit (int):
+                The maximum number of results to return.
+
+            repository (reviewboard.scmtools.models.Repository, optional):
+                The repository object, if available.
+
+        Returns:
+            list of reviewboard.hostingsvcs.github.api.SearchedIssue:
+            The matching issues.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error searching for issues.
+        """
+        search_rsp = self._api_get(
+            url=f'{api_url}search/issues',
+            params={
+                'per_page': str(limit),
+                'q': f'{query} repo:{owner}/{repo_name}',
+            },
+            result_type=api.SearchIssuesResponse,
+            repository=repository)
+
+        return search_rsp.items
+
     def _api_get(
         self,
         *,

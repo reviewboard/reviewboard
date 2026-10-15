@@ -25,7 +25,7 @@ from housekeeping import deprecate_non_keyword_only_args
 from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Mapping, Sequence
     from typing import Any, ClassVar, Literal
 
     from typelets.django.strings import StrOrPromise
@@ -299,6 +299,54 @@ class BaseBugTracker:
             'description': '',
             'status': '',
         }
+
+    def get_bugs_info(
+        self,
+        *,
+        config: ConfiguredBugTracker,
+        bug_ids: Sequence[str],
+    ) -> Mapping[str, BugInfo]:
+        """Return the information for several bugs at once.
+
+        This is used to populate cached bug metadata for display. The
+        default implementation fetches each bug separately. Services that
+        can fetch several bugs in one request should override this.
+
+        Only the summary and status are guaranteed. Overrides may return
+        an empty description, since callers use this for listings rather
+        than for full bug information.
+
+        Bugs that could not be fetched are left out of the results.
+
+        Version Added:
+            9.0
+
+        Args:
+            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
+                The bug tracker configuration.
+
+            bug_ids (list of str):
+                The IDs of the bugs to fetch.
+
+        Returns:
+            dict:
+            A mapping of bug ID to :py:class:`BugInfo`.
+        """
+        results: dict[str, BugInfo] = {}
+
+        for bug_id in bug_ids:
+            try:
+                bug_info = self.get_bug_info(config=config, bug_id=bug_id)
+            except Exception as e:
+                logger.warning('Unable to fetch information for bug %s on '
+                               'bug tracker %s: %s',
+                               bug_id, config.pk, e, exc_info=True)
+                continue
+
+            if bug_info.get('summary') or bug_info.get('status'):
+                results[bug_id] = bug_info
+
+        return results
 
     def get_bug_url(
         self,

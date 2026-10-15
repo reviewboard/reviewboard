@@ -14,7 +14,6 @@ from djblets.db.fields import ModificationTimestampField, RelationCounterField
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.changedescs.models import ChangeDescription
 from reviewboard.diffviewer.models import DiffSet
-from reviewboard.hostingsvcs.models import SENTINEL_BUG_TRACKER_SERVICE_NAME
 from reviewboard.reviews.errors import NotModifiedError, PublishError
 from reviewboard.reviews.fields import get_review_request_fields
 from reviewboard.reviews.models.bug import BUGS_MIGRATED_KEY, Bug, sort_bug_ids
@@ -849,8 +848,7 @@ class ReviewRequestDraft(BaseReviewRequestDetails):
                 for bug in details.bugs.select_related('bug_tracker'):
                     tracker = bug.bug_tracker
 
-                    if (tracker.service_name ==
-                        SENTINEL_BUG_TRACKER_SERVICE_NAME):
+                    if tracker.is_sentinel:
                         # Unattributed bugs only surface through the
                         # legacy entry.
                         continue

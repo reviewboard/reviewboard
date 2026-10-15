@@ -171,3 +171,68 @@ class BaseBugTrackerDispatchTests(kgb.SpyAgency, TestCase):
         self.assertEqual(
             BaseBugTracker().search_bugs(config=config, query='crash'),
             [])
+
+    def test_get_bugs_info(self) -> None:
+        """Testing BaseBugTracker.get_bugs_info default fetches each bug"""
+        config = ConfiguredBugTracker.objects.create(name='Tracker',
+                                                     service_name='splat')
+        tracker = _ModernBugTracker()
+
+        self.assertEqual(
+            tracker.get_bugs_info(config=config, bug_ids=['123', '456']),
+            {
+                '123': {
+                    'summary': 'Bug 123',
+                    'description': f'From config:{config.pk}.',
+                    'status': 'open',
+                },
+                '456': {
+                    'summary': 'Bug 456',
+                    'description': f'From config:{config.pk}.',
+                    'status': 'open',
+                },
+            })
+
+    def test_get_bugs_info_with_errors(self) -> None:
+        """Testing BaseBugTracker.get_bugs_info skips bugs that fail to
+        fetch
+        """
+        config = ConfiguredBugTracker.objects.create(name='Tracker',
+                                                     service_name='splat')
+        tracker = _ModernBugTracker()
+
+        def _get_bug_info(
+            _tracker: BaseBugTracker,
+            *args,
+            bug_id: str,
+            **kwargs,
+        ) -> BugInfo:
+            if bug_id == '123':
+                raise ValueError('kaboom')
+
+            return {
+                'summary': f'Bug {bug_id}',
+                'description': '',
+                'status': 'open',
+            }
+
+        self.spy_on(tracker.get_bug_info, call_fake=_get_bug_info)
+
+        self.assertEqual(
+            tracker.get_bugs_info(config=config, bug_ids=['123', '456']),
+            {
+                '456': {
+                    'summary': 'Bug 456',
+                    'description': '',
+                    'status': 'open',
+                },
+            })
+
+    def test_get_bugs_info_with_no_metadata(self) -> None:
+        """Testing BaseBugTracker.get_bugs_info skips bugs without metadata"""
+        config = ConfiguredBugTracker.objects.create(name='Tracker',
+                                                     service_name='splat')
+
+        self.assertEqual(
+            BaseBugTracker().get_bugs_info(config=config, bug_ids=['123']),
+            {})

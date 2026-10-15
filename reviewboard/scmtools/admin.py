@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from typing import TYPE_CHECKING
 
 from django.contrib import admin
@@ -104,8 +105,10 @@ class RepositoryAdmin(ModelAdmin):
     ) -> _FieldsetSpec:
         """Return the fieldsets for the repository form.
 
-        The Bug Tracker section additionally offers the default bug
-        tracker selector.
+        The Bug Tracker section renders the bug tracker widget instead
+        of the legacy fields. The legacy fields stay on the form
+        (hidden by the widget's stylesheet) so the widget can drive
+        them.
 
         Version Added:
             9.0
@@ -123,13 +126,26 @@ class RepositoryAdmin(ModelAdmin):
         """
         fieldsets = super().get_fieldsets(request, obj)
 
-        for title, info in fieldsets:
-            if (title == RepositoryForm.BUG_TRACKER_FIELDSET and
-                'default_bug_tracker' not in info['fields']):
-                info['fields'] = (*tuple(info['fields']),
-                                  'default_bug_tracker')
+        new_fieldsets = []
 
-        return fieldsets
+        for title, info in deepcopy(fieldsets):
+            if title == RepositoryForm.BUG_TRACKER_FIELDSET:
+                title = RepositoryForm.ISSUE_TRACKING_FIELDSET
+
+                fields = tuple(info['fields'])
+
+                for field in ('default_bug_tracker',
+                              'bug_tracker_configs'):
+                    if field not in fields:
+                        fields += (field,)
+
+                info['fields'] = fields
+                info['classes'] = (*tuple(info.get('classes', ())),
+                                   'rb-c-repo-bug-trackers-fieldset')
+
+            new_fieldsets.append((title, info))
+
+        return new_fieldsets
 
     @admin.display(description=_('Type / Account'))
     def _repository_type(

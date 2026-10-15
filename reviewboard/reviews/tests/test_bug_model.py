@@ -6,10 +6,14 @@ Version Added:
 
 from __future__ import annotations
 
+from datetime import timedelta
+
 import kgb
 from django.db import IntegrityError, transaction
 from django.db.models import ProtectedError
+from django.utils import timezone
 
+from reviewboard.hostingsvcs.base.bug_tracker import BugInfo
 from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.hostingsvcs.splat import Splat
 from reviewboard.reviews.models import Bug
@@ -77,6 +81,314 @@ class BugTests(TestCase):
         self.assertEqual(
             list(review_request.bugs.values_list('bug_id', flat=True)),
             ['123'])
+
+
+class BugMetadataTests(kgb.SpyAgency, TestCase):
+    """Unit tests for cached bug metadata."""
+
+    fixtures = ['test_users']
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
+
+        self.bug_tracker = ConfiguredBugTracker.objects.create(
+            name='Tracker',
+            service_name='splat')
+
+    def test_get_cached_bug_info(self) -> None:
+        """Testing BugManager.get_cached_bug_info"""
+        Bug.objects.create(bug_tracker=self.bug_tracker,
+                           bug_id='123',
+                           summary='A crash',
+                           status='open',
+                           metadata_timestamp=timezone.now())
+        Bug.objects.create(bug_tracker=self.bug_tracker,
+                           bug_id='456')
+
+        metadata, stale_bug_ids = Bug.objects.get_cached_bug_info(
+            bug_tracker=self.bug_tracker,
+            bug_ids=['123', '456', '789'])
+
+        self.assertEqual(metadata, {
+            '123': {
+                'status': 'open',
+                'summary': 'A crash',
+            },
+        })
+        self.assertEqual(stale_bug_ids, ['456', '789'])
+
+    def test_get_cached_bug_info_with_stale_metadata(self) -> None:
+        """Testing BugManager.get_cached_bug_info with stale metadata"""
+        Bug.objects.create(
+            bug_tracker=self.bug_tracker,
+            bug_id='123',
+            summary='A crash',
+            status='open',
+            metadata_timestamp=timezone.now() - timedelta(days=1))
+
+        metadata, stale_bug_ids = Bug.objects.get_cached_bug_info(
+            bug_tracker=self.bug_tracker,
+            bug_ids=['123'])
+
+        # The stale metadata is still returned, so it can be shown while
+        # fresh metadata is fetched.
+        self.assertEqual(metadata, {
+            '123': {
+                'status': 'open',
+                'summary': 'A crash',
+            },
+        })
+        self.assertEqual(stale_bug_ids, ['123'])
+
+    def test_fetch_bug_info(self) -> None:
+        """Testing BugManager.fetch_bug_info caches fetched metadata"""
+        bug = Bug.objects.create(bug_tracker=self.bug_tracker, bug_id='123')
+
+        self._spy_on_get_bugs_info()
+
+        self.assertEqual(
+            Bug.objects.fetch_bug_info(bug_tracker=self.bug_tracker,
+                                       bug_ids=['123']),
+            {
+                '123': {
+                    'status': 'open',
+                    'summary': 'Bug 123',
+                },
+            })
+
+        bug.refresh_from_db()
+
+        self.assertEqual(bug.summary, 'Bug 123')
+        self.assertEqual(bug.status, 'open')
+        self.assertIsNotNone(bug.metadata_timestamp)
+
+    def test_fetch_bug_info_with_multiple_bugs(self) -> None:
+        """Testing BugManager.fetch_bug_info saves all refreshed bugs in
+        one query
+        """
+        bug1 = Bug.objects.create(bug_tracker=self.bug_tracker, bug_id='123')
+        bug2 = Bug.objects.create(bug_tracker=self.bug_tracker, bug_id='456')
+
+        self._spy_on_get_bugs_info(bugs_info={
+            '123': {
+                'status': 'open',
+                'summary': 'Bug 123',
+            },
+            '456': {
+                'status': 'closed',
+                'summary': 'Bug 456',
+            },
+        })
+
+        # 1 query to fetch the rows, 1 to update them.
+        with self.assertNumQueries(2):
+            Bug.objects.fetch_bug_info(bug_tracker=self.bug_tracker,
+                                       bug_ids=['123', '456'])
+
+        bug1.refresh_from_db()
+        bug2.refresh_from_db()
+
+        self.assertEqual(bug1.summary, 'Bug 123')
+        self.assertEqual(bug1.status, 'open')
+        self.assertEqual(bug2.summary, 'Bug 456')
+        self.assertEqual(bug2.status, 'closed')
+        self.assertEqual(bug1.metadata_timestamp, bug2.metadata_timestamp)
+
+    def test_fetch_bug_info_with_fresh_metadata(self) -> None:
+        """Testing BugManager.fetch_bug_info does not contact the tracker
+        for fresh metadata
+        """
+        Bug.objects.create(bug_tracker=self.bug_tracker,
+                           bug_id='123',
+                           summary='A crash',
+                           status='open',
+                           metadata_timestamp=timezone.now())
+
+        spy = self._spy_on_get_bugs_info()
+
+        self.assertEqual(
+            Bug.objects.fetch_bug_info(bug_tracker=self.bug_tracker,
+                                       bug_ids=['123']),
+            {
+                '123': {
+                    'status': 'open',
+                    'summary': 'A crash',
+                },
+            })
+
+        self.assertSpyNotCalled(spy)
+
+    def test_fetch_bug_info_without_row(self) -> None:
+        """Testing BugManager.fetch_bug_info does not create rows"""
+        self._spy_on_get_bugs_info()
+
+        self.assertEqual(
+            Bug.objects.fetch_bug_info(bug_tracker=self.bug_tracker,
+                                       bug_ids=['123']),
+            {
+                '123': {
+                    'status': 'open',
+                    'summary': 'Bug 123',
+                },
+            })
+
+        self.assertEqual(Bug.objects.count(), 0)
+
+    def test_fetch_bug_info_without_bug_info_support(self) -> None:
+        """Testing BugManager.fetch_bug_info with a tracker without bug
+        info support
+        """
+        Bug.objects.create(bug_tracker=self.bug_tracker, bug_id='123')
+
+        spy = self._spy_on_get_bugs_info(supports_bug_info=False)
+
+        self.assertEqual(
+            Bug.objects.fetch_bug_info(bug_tracker=self.bug_tracker,
+                                       bug_ids=['123']),
+            {})
+        self.assertSpyNotCalled(spy)
+
+    def test_fetch_bug_info_with_error(self) -> None:
+        """Testing BugManager.fetch_bug_info with an error fetching
+        metadata
+        """
+        Bug.objects.create(
+            bug_tracker=self.bug_tracker,
+            bug_id='123',
+            summary='A crash',
+            status='open',
+            metadata_timestamp=(timezone.now() - timedelta(days=1)))
+
+        service_cls = type(self.bug_tracker.service)
+
+        self.spy_on(service_cls.get_bugs_info,
+                    owner=service_cls,
+                    op=kgb.SpyOpRaise(Exception('kaboom')))
+
+        with self.assertLogs(logger='reviewboard.reviews.models.bug',
+                             level='ERROR'):
+            metadata = Bug.objects.fetch_bug_info(
+                bug_tracker=self.bug_tracker,
+                bug_ids=['123'])
+
+        # The stale metadata is served rather than nothing.
+        self.assertEqual(metadata, {
+            '123': {
+                'status': 'open',
+                'summary': 'A crash',
+            },
+        })
+
+    def test_fetch_bug_info_with_partial_error(self) -> None:
+        """Testing BugManager.fetch_bug_info with an error fetching
+        metadata for one bug
+        """
+        stale_timestamp = timezone.now() - timedelta(days=1)
+        bug1 = Bug.objects.create(
+            bug_tracker=self.bug_tracker,
+            bug_id='123',
+            summary='A crash',
+            status='open',
+            metadata_timestamp=stale_timestamp)
+        bug2 = Bug.objects.create(
+            bug_tracker=self.bug_tracker,
+            bug_id='456',
+            summary='A hang',
+            status='open',
+            metadata_timestamp=stale_timestamp)
+
+        def _get_bug_info(
+            _service: Splat,
+            *args,
+            bug_id: str,
+            **kwargs,
+        ) -> BugInfo:
+            if bug_id == '123':
+                raise Exception('kaboom')
+
+            return {
+                'description': '',
+                'status': 'closed',
+                'summary': 'A hang, fixed',
+            }
+
+        self.spy_on(Splat.get_bug_info,
+                    owner=Splat,
+                    call_fake=_get_bug_info)
+
+        with self.assertLogs(logger='reviewboard.hostingsvcs.base.bug_tracker',
+                             level='WARNING'):
+            metadata = Bug.objects.fetch_bug_info(
+                bug_tracker=self.bug_tracker,
+                bug_ids=['123', '456'])
+
+        # The failed bug falls back to its stale metadata, while the other
+        # bug gets fresh metadata.
+        self.assertEqual(metadata, {
+            '123': {
+                'status': 'open',
+                'summary': 'A crash',
+            },
+            '456': {
+                'status': 'closed',
+                'summary': 'A hang, fixed',
+            },
+        })
+
+        bug1.refresh_from_db()
+        bug2.refresh_from_db()
+
+        # The failed bug's row is left alone, so it stays stale and is
+        # retried next time.
+        self.assertEqual(bug1.summary, 'A crash')
+        self.assertEqual(bug1.status, 'open')
+        self.assertEqual(bug1.metadata_timestamp, stale_timestamp)
+
+        self.assertEqual(bug2.summary, 'A hang, fixed')
+        self.assertEqual(bug2.status, 'closed')
+        self.assertGreater(bug2.metadata_timestamp, stale_timestamp)
+
+    def _spy_on_get_bugs_info(
+        self,
+        supports_bug_info: bool = True,
+        bugs_info: (dict[str, dict[str, str]] | None) = None,
+    ) -> kgb.FunctionSpy:
+        """Spy on the tracker's bulk metadata fetching.
+
+        Args:
+            supports_bug_info (bool, optional):
+                Whether the service should report bug info support.
+
+            bugs_info (dict, optional):
+                The bug info the service should return. This defaults to
+                info for a single bug, ``123``.
+
+        Returns:
+            kgb.FunctionSpy:
+            The spy on the bulk fetch method.
+        """
+        if bugs_info is None:
+            bugs_info = {
+                '123': {
+                    'description': '',
+                    'status': 'open',
+                    'summary': 'Bug 123',
+                },
+            }
+
+        service_cls = type(self.bug_tracker.service)
+
+        self.spy_on(
+            service_cls.get_bugs_info,
+            owner=service_cls,
+            op=kgb.SpyOpReturn(bugs_info))
+
+        old_value = service_cls.supports_bug_info
+        service_cls.supports_bug_info = supports_bug_info
+        self.addCleanup(setattr, service_cls, 'supports_bug_info', old_value)
+
+        return service_cls.get_bugs_info.spy
 
 
 class SortBugIDsTests(kgb.SpyAgency, TestCase):

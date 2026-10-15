@@ -9,7 +9,8 @@ RB.PageManager.beforeRender(function(page) {
 {%   if field.js_view_class %}
     reviewRequestEditorView.addFieldView(
         new {{field.js_view_class}}({
-            el: $('#field_{{field.field_id|escapejs}}'),
+            el: $(document.getElementById(
+                'field_{{field.field_id|escapejs}}')),
             fieldID: '{{field.field_id|escapejs}}',
             fieldLabel: '{{field.label|escapejs}}',
             model: model

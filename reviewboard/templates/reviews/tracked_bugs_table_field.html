@@ -1,0 +1,44 @@
+{% load i18n %}
+{% comment %}
+This template should be kept in sync with the rendering in:
+
+- static/rb/js/reviews/views/reviewRequestFieldViews.ts
+
+so that server-rendered and client-rendered tables match.
+{% endcomment %}
+<div class="rb-c-review-request-field-tabular rb-c-bug-list">
+ <table class="rb-c-review-request-field-tabular__data">
+  <thead>
+   <tr>
+    <th class="rb-c-bug-list__column-id">{% trans "Bug" %}</th>
+{% if show_metadata %}
+    <th class="rb-c-bug-list__column-summary">{% trans "Summary" %}</th>
+    <th class="rb-c-bug-list__column-status">{% trans "Status" %}</th>
+{% endif %}
+   </tr>
+  </thead>
+  <tbody>
+{% for row in rows %}
+   <tr class="rb-c-bug-list__bug" data-bug-id="{{row.bug_id}}">
+    <td class="rb-c-bug-list__id">
+{%  if row.url %}
+     <a class="bug" href="{{row.url}}">{{row.bug_id}}</a>
+{%  else %}
+     {{row.bug_id}}
+{%  endif %}
+    </td>
+{%  if show_metadata %}
+    <td class="rb-c-bug-list__summary">{{row.summary}}</td>
+    <td class="rb-c-bug-list__status">{{row.status}}</td>
+{%  endif %}
+   </tr>
+{% empty %}
+   <tr class="rb-c-bug-list__empty">
+    <td colspan="{% if show_metadata %}3{% else %}1{% endif %}">
+     {% trans "No bugs have been added." %}
+    </td>
+   </tr>
+{% endfor %}
+  </tbody>
+ </table>
+</div>

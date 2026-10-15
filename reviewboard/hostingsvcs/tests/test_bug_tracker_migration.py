@@ -304,13 +304,113 @@ class MaterializeConfigsTests(TestCase):
 
         materialize_configs()
 
+        # Both trackers are labeled with their hosts.
         names = sorted(
             ConfiguredBugTracker.objects
             .filter(service_name='custom-bug-tracker')
             .values_list('name', flat=True)
         )
         self.assertEqual(names,
-                         ['Custom Bug Tracker', 'Custom Bug Tracker (2)'])
+                         ['Bugs (bugs1.example.com)',
+                          'Bugs (bugs2.example.com)'])
+
+    @ignore_legacy_url_deprecation
+    def test_names_use_bug_tracker_label(self) -> None:
+        """Testing materialize_configs names a lone tracker with its service's
+        bug tracker label
+        """
+        self.create_repository(
+            name='repo1',
+            bug_tracker='https://bugs.example.com/%s')
+        self.create_repository(
+            name='repo2',
+            extra_data={
+                'bug_tracker_type': 'jira',
+                'bug_tracker-jira_url': 'https://jira.example.com',
+            })
+
+        materialize_configs()
+
+        self.assertEqual(
+            sorted(
+                ConfiguredBugTracker.objects
+                .filter(service_name__in=('custom-bug-tracker', 'jira'))
+                .values_list('name', flat=True)
+            ),
+            ['Bugs', 'JIRA Issues'])
+
+    def test_name_collisions_with_jira_servers(self) -> None:
+        """Testing materialize_configs labels JIRA trackers on different
+        servers with their hosts
+        """
+        for i, jira_url in enumerate(('https://jira.example.com',
+                                      'https://jira2.example.com')):
+            self.create_repository(
+                name=f'repo{i}',
+                extra_data={
+                    'bug_tracker_type': 'jira',
+                    'bug_tracker-jira_url': jira_url,
+                })
+
+        materialize_configs()
+
+        self.assertEqual(
+            sorted(
+                ConfiguredBugTracker.objects
+                .filter(service_name='jira')
+                .values_list('name', flat=True)
+            ),
+            ['JIRA Issues (jira.example.com)',
+             'JIRA Issues (jira2.example.com)'])
+
+    def test_name_collisions_with_shared_host(self) -> None:
+        """Testing materialize_configs numbers colliding trackers on a shared
+        host
+        """
+        for i, project in enumerate(('project1', 'project2')):
+            self.create_repository(
+                name=f'repo{i}',
+                extra_data={
+                    'bug_tracker_type': 'sourceforge',
+                    'bug_tracker-sourceforge_project_name': project,
+                })
+
+        materialize_configs()
+
+        # Every SourceForge tracker is on sourceforge.net, so the host doesn't
+        # help.
+        self.assertEqual(
+            sorted(
+                ConfiguredBugTracker.objects
+                .filter(service_name='sourceforge')
+                .values_list('name', flat=True)
+            ),
+            ['SourceForge bug tracker', 'SourceForge bug tracker (2)'])
+
+    def test_name_collisions_keep_manual_names(self) -> None:
+        """Testing materialize_configs never renames a configuration that
+        wasn't migrated
+        """
+        manual_config = ConfiguredBugTracker.objects.create(
+            name='JIRA Issues',
+            service_name='jira',
+            settings={
+                'jira_url': 'https://jira.example.com',
+            })
+
+        self.create_repository(extra_data={
+            'bug_tracker_type': 'jira',
+            'bug_tracker-jira_url': 'https://jira2.example.com',
+        })
+
+        materialize_configs()
+
+        manual_config.refresh_from_db()
+        self.assertEqual(manual_config.name, 'JIRA Issues')
+        self.assertTrue(
+            ConfiguredBugTracker.objects
+            .filter(name='JIRA Issues (jira2.example.com)')
+            .exists())
 
     def test_creates_sentinel(self) -> None:
         """Testing materialize_configs creates the sentinel tracker"""

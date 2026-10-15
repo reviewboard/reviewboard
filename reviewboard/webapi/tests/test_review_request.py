@@ -1131,7 +1131,7 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
         ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     @add_fixtures(['test_scmtools'])
-    def test_post_with_repository_id(self):
+    def test_post_with_repository_id(self) -> None:
         """Testing the POST review-requests/ API with a repository ID"""
         repository = self.create_repository()
 
@@ -1139,17 +1139,18 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
             get_review_request_list_url(),
             {'repository': repository.pk},
             expected_mimetype=review_request_item_mimetype)
+        assert rsp is not None
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
             self.base_url + get_repository_item_url(repository))
 
-        # See if we can fetch this. Also return it for use in other
-        # unit tests.
-        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        # See if we can fetch this.
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     @add_fixtures(['test_scmtools'])
-    def test_post_with_repository_name(self):
+    def test_post_with_repository_name(self) -> None:
         """Testing the POST review-requests/ API with a repository name"""
         repository = self.create_repository()
 
@@ -1157,17 +1158,18 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
             get_review_request_list_url(),
             {'repository': repository.name},
             expected_mimetype=review_request_item_mimetype)
+        assert rsp is not None
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
             self.base_url + get_repository_item_url(repository))
 
-        # See if we can fetch this. Also return it for use in other
-        # unit tests.
-        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        # See if we can fetch this.
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     @add_fixtures(['test_scmtools'])
-    def test_post_with_repository_mirror_path(self):
+    def test_post_with_repository_mirror_path(self) -> None:
         """Testing the POST review-requests/ API with a repository
         mirror_path
         """
@@ -1177,17 +1179,18 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
             get_review_request_list_url(),
             {'repository': repository.mirror_path},
             expected_mimetype=review_request_item_mimetype)
+        assert rsp is not None
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
             self.base_url + get_repository_item_url(repository))
 
-        # See if we can fetch this. Also return it for use in other
-        # unit tests.
-        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        # See if we can fetch this.
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     @add_fixtures(['test_scmtools'])
-    def test_post_with_repository_path(self):
+    def test_post_with_repository_path(self) -> None:
         """Testing the POST review-requests/ API with a repository path"""
         repository = self.create_repository(mirror_path='/foo')
 
@@ -1195,27 +1198,29 @@ class ResourceListTests(kgb.SpyAgency, ExtraDataListMixin, SSLTestsMixin,
             get_review_request_list_url(),
             {'repository': repository.path},
             expected_mimetype=review_request_item_mimetype)
+        assert rsp is not None
+
         self.assertEqual(rsp['stat'], 'ok')
         self.assertEqual(
             rsp['review_request']['links']['repository']['href'],
             self.base_url + get_repository_item_url(repository))
 
-        # See if we can fetch this. Also return it for use in other
-        # unit tests.
-        return ReviewRequest.objects.get(pk=rsp['review_request']['id'])
+        # See if we can fetch this.
+        ReviewRequest.objects.get(pk=rsp['review_request']['id'])
 
     @add_fixtures(['test_scmtools'])
-    def test_post_with_no_repository(self):
+    def test_post_with_no_repository(self) -> None:
         """Testing the POST review-requests/ API with no repository"""
         rsp = self.api_post(
             get_review_request_list_url(),
             expected_mimetype=review_request_item_mimetype)
+        assert rsp is not None
+
         self.assertEqual(rsp['stat'], 'ok')
 
         self.assertNotIn('repository', rsp['review_request']['links'])
 
-        # See if we can fetch this. Also return it for use in other
-        # unit tests.
+        # See if we can fetch this.
         review_request = ReviewRequest.objects.get(
             pk=rsp['review_request']['id'])
         self.assertEqual(review_request.repository, None)

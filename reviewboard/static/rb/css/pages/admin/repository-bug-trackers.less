@@ -1,0 +1,369 @@
+/**
+ * Styles for the repository form's bug trackers widget.
+ *
+ * Version Added:
+ *     9.0
+ */
+
+@import (reference) "rb/css/defs.less";
+
+
+/**
+ * The repository form's bug trackers widget.
+ *
+ * This lists the trackers for a repository. Each tracker has a radio
+ * button for choosing the default tracker for bare bug IDs. Trackers
+ * attached to the repository can be removed, and a picker attaches more.
+ *
+ * This is rendered by :js:class:`RB.Admin.RepositoryBugTrackersView`.
+ *
+ * Structure:
+ *     <div class="rb-c-repo-bug-trackers">
+ *      <div class="rb-c-repo-bug-trackers__list">...</div>
+ *      <div class="rb-c-repo-bug-trackers__footer">...</div>
+ *     </div>
+ *
+ *     When there are no trackers, the list is replaced by an empty
+ *     message:
+ *
+ *     <div class="rb-c-repo-bug-trackers">
+ *      <div class="rb-c-repo-bug-trackers__empty">...</div>
+ *      <div class="rb-c-repo-bug-trackers__footer">...</div>
+ *     </div>
+ */
+.rb-c-repo-bug-trackers {
+  max-width: 60em;
+
+  /**
+   * The list of trackers.
+   *
+   * The built-in hosting service tracker comes first, if it's in use.
+   * Next are trackers that apply to all review requests, then trackers
+   * attached to the repository.
+   *
+   * Structure:
+   *     <div class="rb-c-repo-bug-trackers__list">
+   *      [<div class="rb-c-repo-bug-trackers__row">...</div>]
+   *     </div>
+   */
+  &__list {
+    background: var(--ink-p-surface-bright-bg);
+    border: 1px solid var(--ink-p-container-border-color);
+    border-radius: var(--ink-u-border-radius-s);
+    overflow: hidden;
+  }
+
+  /**
+   * A tracker in the list.
+   *
+   * Trackers that apply to all review requests can't be removed here, so
+   * they show a lock instead of a remove button.
+   *
+   * Structure:
+   *     <div class="rb-c-repo-bug-trackers__row">
+   *      <input class="rb-c-repo-bug-trackers__radio" ...>
+   *      <img class="rb-c-repo-bug-trackers__logo" ...>
+   *      <div class="rb-c-repo-bug-trackers__info">
+   *       <div class="rb-c-repo-bug-trackers__name">...</div>
+   *       <div class="rb-c-repo-bug-trackers__meta">...</div>
+   *      </div>
+   *      <button class="rb-c-repo-bug-trackers__remove" ...>...</button>
+   *     </div>
+   *
+   *     For a tracker that applies to all review requests:
+   *
+   *     <div class="rb-c-repo-bug-trackers__row">
+   *      ...
+   *      <span class="rb-c-repo-bug-trackers__lock" ...>...</span>
+   *     </div>
+   */
+  &__row {
+    align-items: center;
+    border-top: 1px solid var(--ink-p-container-border-color-weak);
+    display: grid;
+    gap: var(--ink-u-spacing-m);
+    grid-template-columns: auto auto 1fr auto;
+    padding: var(--ink-u-spacing-s) var(--ink-u-spacing-m);
+
+    &:first-child {
+      border-top: 0;
+    }
+  }
+
+  /**
+   * The radio button for making a tracker the default.
+   *
+   * All rows share one radio group. The default tracker handles bug IDs
+   * that don't name a tracker.
+   *
+   * DOM Attributes:
+   *     name (string):
+   *         The radio group's name. This is ``_bug_tracker_default_choice``.
+   *
+   *     title (string):
+   *         The tooltip for the radio button.
+   *
+   *     value (string):
+   *         The tracker's configuration ID, or ``builtin`` for a built-in
+   *         tracker that doesn't have a configuration yet.
+   *
+   * Structure:
+   *     <input class="rb-c-repo-bug-trackers__radio"
+   *            type="radio"
+   *            name="_bug_tracker_default_choice"
+   *            value="..."
+   *            title="..."
+   *            [checked]>
+   */
+  &__radio {
+    cursor: pointer;
+    margin: 0;
+  }
+
+  /**
+   * The tracker's logo.
+   *
+   * This is the service's logo image when there is one. Otherwise, it's a
+   * tile showing the initials of the tracker's name.
+   *
+   * DOM Attributes:
+   *     alt (string):
+   *         Empty, since the logo is decorative.
+   *
+   *     aria-hidden (string):
+   *         Set to ``true`` on the initials tile.
+   *
+   * Structure:
+   *     <img class="rb-c-repo-bug-trackers__logo" alt="" src="...">
+   *
+   *     Or, without a logo image:
+   *
+   *     <span class="rb-c-repo-bug-trackers__logo" aria-hidden="true">
+   *      ...
+   *     </span>
+   */
+  &__logo {
+    align-items: center;
+    background: var(--ink-p-grey-300);
+    border-radius: var(--ink-u-border-radius-s);
+    color: var(--ink-p-fg-weak);
+    display: flex;
+    flex: none;
+    font-size: 60%;
+    font-weight: bold;
+    height: 24px;
+    justify-content: center;
+    object-fit: contain;
+    width: 24px;
+  }
+
+  /* Real service logos stand on their own, without the initials tile. */
+  img&__logo {
+    background: transparent;
+  }
+
+  /**
+   * The tracker's name and badges.
+   *
+   * Badges show whether the tracker is the default, whether it applies to
+   * all review requests, whether access is limited, and whether it's
+   * disabled.
+   *
+   * Structure:
+   *     <div class="rb-c-repo-bug-trackers__name">
+   *      ...
+   *      <span class="ink-c-badge" ...>...</span>
+   *      ...
+   *     </div>
+   */
+  &__name {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    font-weight: bold;
+    gap: var(--ink-u-spacing-s);
+
+    .ink-c-badge {
+      font-weight: normal;
+    }
+
+    .ink-c-badge__icon {
+      height: var(--ink-u-icon-sm);
+      width: var(--ink-u-icon-sm);
+    }
+  }
+
+  /*
+   * Ink has no "primary" badge type yet. Style it after Ink's own
+   * type pattern.
+   *
+   * TODO: this can go away once this is in Ink.
+   */
+  .ink-c-badge[data-type="primary"] {
+    --_ink-c-badge-bg: var(--ink-p-accent-primary-bg);
+    --_ink-c-badge-border-color: var(--ink-p-accent-primary-bg);
+    --_ink-c-badge-fg: var(--ink-p-accent-primary-fg);
+  }
+
+  /**
+   * Details shown under the tracker's name.
+   *
+   * This describes where the tracker comes from, such as its service or
+   * whether it's the repository's built-in tracker.
+   *
+   * Structure:
+   *     <div class="rb-c-repo-bug-trackers__meta">...</div>
+   */
+  &__meta {
+    color: var(--ink-p-fg-weak);
+    font-size: var(--ink-u-font-xs);
+    margin-top: var(--ink-u-spacing-xs);
+  }
+
+  /**
+   * The button for removing a tracker from the repository.
+   *
+   * DOM Attributes:
+   *     data-tracker-key (string):
+   *         The tracker's configuration ID, or ``builtin`` for a built-in
+   *         tracker that doesn't have a configuration yet.
+   *
+   *     title (string):
+   *         The tooltip for the button.
+   *
+   * Structure:
+   *     <button class="rb-c-repo-bug-trackers__remove"
+   *             type="button"
+   *             data-tracker-key="..."
+   *             title="...">
+   *      <span class="ink-i-close" aria-hidden="true"></span>
+   *     </button>
+   */
+  &__remove {
+    align-items: center;
+    background: transparent;
+    border: 0;
+    border-radius: var(--ink-u-border-radius-s);
+    color: var(--ink-p-fg-weak);
+    cursor: pointer;
+    display: flex;
+    height: 24px;
+    justify-content: center;
+    width: 24px;
+
+    &:hover {
+      background: var(--ink-p-accent-error-bg);
+      color: var(--ink-p-accent-error-fg);
+    }
+  }
+
+  /**
+   * A lock shown on trackers that apply to all review requests.
+   *
+   * These trackers can't be removed from the repository. The lock takes
+   * the remove button's place, and is sized to line up with it.
+   *
+   * DOM Attributes:
+   *     aria-hidden (string):
+   *         Set to ``true``.
+   *
+   *     title (string):
+   *         The tooltip explaining the lock.
+   *
+   * Structure:
+   *     <span class="rb-c-repo-bug-trackers__lock"
+   *           title="..."
+   *           aria-hidden="true">
+   *      <span class="rb-icon-lock"></span>
+   *     </span>
+   */
+  &__lock {
+    align-items: center;
+    color: var(--ink-p-fg-weak);
+    display: flex;
+    height: 24px;
+    justify-content: center;
+    width: 24px;
+  }
+
+  /**
+   * A message shown in place of the list when there are no trackers.
+   *
+   * Structure:
+   *     <div class="rb-c-repo-bug-trackers__empty">...</div>
+   */
+  &__empty {
+    border: 1px dashed var(--ink-p-container-border-color);
+    border-radius: var(--ink-u-border-radius-s);
+    color: var(--ink-p-fg-weak);
+    padding: var(--ink-u-spacing-ml);
+  }
+
+  /**
+   * The area below the list, with the attach picker and a hint.
+   *
+   * The attach picker is left out when there's nothing left to attach.
+   *
+   * Structure:
+   *     <div class="rb-c-repo-bug-trackers__footer">
+   *      <select class="rb-c-repo-bug-trackers__attach-select">...</select>
+   *      <span class="rb-c-repo-bug-trackers__hint">...</span>
+   *     </div>
+   */
+  &__footer {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ink-u-spacing-m);
+    margin-top: var(--ink-u-spacing-m);
+  }
+
+  /**
+   * The picker for attaching a tracker to the repository.
+   *
+   * The first option is a prompt with an empty value. Each other option
+   * is a tracker that can be attached.
+   *
+   * Structure:
+   *     <select class="rb-c-repo-bug-trackers__attach-select">
+   *      <option value="">...</option>
+   *      <option value="...">...</option>
+   *      ...
+   *     </select>
+   */
+  &__attach-select {
+    background: var(--ink-p-input-bg);
+    border: var(--ink-g-border-input);
+    border-radius: var(--ink-u-border-radius-input);
+    color: var(--ink-p-input-fg);
+    cursor: pointer;
+    padding: var(--ink-u-spacing-s) var(--ink-u-spacing-m);
+  }
+
+  /**
+   * A hint explaining what the default tracker is for.
+   *
+   * Structure:
+   *     <span class="rb-c-repo-bug-trackers__hint">...</span>
+   */
+  &__hint {
+    color: var(--ink-p-fg-weak);
+    font-size: var(--ink-u-font-xs);
+  }
+}
+
+/*
+ * With the widget active, the legacy bug tracker fields stay on the
+ * form so the widget can drive them, but their rows are never shown.
+ */
+fieldset.rb-c-repo-bug-trackers-fieldset {
+  #row-bug_tracker,
+  #row-bug_tracker_hosting_account_username,
+  #row-bug_tracker_hosting_url,
+  #row-bug_tracker_plan,
+  #row-bug_tracker_type,
+  #row-bug_tracker_use_hosting,
+  #row-default_bug_tracker {
+    display: none;
+  }
+}

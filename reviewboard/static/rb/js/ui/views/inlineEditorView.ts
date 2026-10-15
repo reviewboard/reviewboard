@@ -155,7 +155,7 @@ export interface InlineEditorViewOptions {
 }
 
 
-interface EditOptions {
+export interface EditOptions {
     /** Whether to suppress animation. */
     preventAnimation?: boolean;
 

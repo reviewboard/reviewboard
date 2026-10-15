@@ -148,6 +148,7 @@ class CommitUser(BaseModel):
     """
 
     date: str
+    email: (str | None) = Field(default=None)
     name: str
 
 
@@ -170,7 +171,7 @@ class FileEntry(BaseModel):
     """
 
     filename: str
-    patch: str | None
+    patch: (str | None) = Field(default=None)
     previous_filename: (str | None) = Field(default=None)
     status: Literal[
         'added',
@@ -281,6 +282,28 @@ class PushHookPayload(BaseModel):
 
     #: The Git ref that was pushed to.
     ref: (str | None) = None
+
+
+class SearchedIssue(BaseModel):
+    """Data for an issue in search results.
+
+    Version Added:
+        9.0
+    """
+
+    number: int
+    state: Literal['open', 'closed']
+    title: str
+
+
+class SearchIssuesResponse(BaseModel):
+    """API response for an issue search.
+
+    Version Added:
+        9.0
+    """
+
+    items: list[SearchedIssue]
 
 
 class Repository(BaseModel):
