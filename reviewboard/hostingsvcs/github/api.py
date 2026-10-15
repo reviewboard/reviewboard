@@ -171,7 +171,7 @@ class FileEntry(BaseModel):
     """
 
     filename: str
-    patch: str | None
+    patch: (str | None) = Field(default=None)
     previous_filename: (str | None) = Field(default=None)
     status: Literal[
         'added',
