@@ -61,7 +61,7 @@ def test_get_queries_with_python_highlights() -> None:
 
     # This may have to update when queries are updated from
     # nvim-treesitter.
-    assert query.pattern_count == 83
+    assert query.pattern_count == 86
 
 
 def test_get_queries_with_python_injections() -> None:
@@ -74,7 +74,7 @@ def test_get_queries_with_python_injections() -> None:
 
     # This may have to update when queries are updated from
     # nvim-treesitter.
-    assert query.pattern_count == 3
+    assert query.pattern_count == 4
 
 
 def test_get_queries_with_nonexistent_language() -> None:

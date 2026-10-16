@@ -106,7 +106,9 @@
 
 (emph) @markup.italic
 
-(url) @markup.link.url
+
+
+
 
 ; code blocks
 (raw_span) @markup.raw

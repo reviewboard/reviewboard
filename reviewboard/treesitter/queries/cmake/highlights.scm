@@ -3,7 +3,7 @@
   (argument_list
     (argument
       (unquoted_argument)) @constant)
-  (#lua-match? @constant "^[%u@][%u%d_]+$"))
+  (#match? @constant "^[A-Z@][A-Z\\d_]+$"))
 
 [
   (quoted_argument)
@@ -86,16 +86,16 @@
     (block) @function.builtin
     (argument_list
       (argument
-        (unquoted_argument) @constant))
-    (#any-of? @constant "SCOPE_FOR" "POLICIES" "VARIABLES" "PROPAGATE"))
-  (endblock_command
-    (endblock) @function.builtin))
+        (unquoted_argument) @constant
+        (#any-of? @constant "SCOPE_FOR" "POLICIES" "VARIABLES" "PROPAGATE")
+      )*
+    )?
+  )
+  (endblock_command (endblock) @function.builtin))
 
-;
 ((argument) @boolean
   (#match? @boolean "^(1|[oO][nN]|[yY][eE][sS]|[tT][rR][uU][eE]|[yY]|0|[oO][fF][fF]|[nN][oO]|[fF][aA][lL][sS][eE]|[nN]|[iI][gG][nN][oO][rR][eE]|[nN][oO][tT][fF][oO][uU][nN][dD]|.*-[nN][oO][tT][fF][oO][uU][nN][dD])$"))
 
-;
 (if_command
   (if)
   (argument_list
@@ -218,4 +218,4 @@
 ((source_file
   .
   (line_comment) @keyword.directive @nospell)
-  (#lua-match? @keyword.directive "^#!/"))
+  (#match? @keyword.directive "^#!/"))

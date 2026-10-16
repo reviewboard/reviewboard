@@ -61,7 +61,6 @@
   "!="
   "..."
   "*"
-  "*"
   "*="
   "/"
   "/="
@@ -153,32 +152,28 @@
     "panic" "print" "println" "real" "recover"))
 
 ; Delimiters
-"." @punctuation.delimiter
+[
+  "."
+  ","
+  ":"
+  ";"
+] @punctuation.delimiter
 
-"," @punctuation.delimiter
-
-":" @punctuation.delimiter
-
-";" @punctuation.delimiter
-
-"(" @punctuation.bracket
-
-")" @punctuation.bracket
-
-"{" @punctuation.bracket
-
-"}" @punctuation.bracket
-
-"[" @punctuation.bracket
-
-"]" @punctuation.bracket
+[
+  "("
+  ")"
+  "{"
+  "}"
+  "["
+  "]"
+] @punctuation.bracket
 
 ; Literals
 (interpreted_string_literal) @string
 
 (raw_string_literal) @string
 
-(rune_literal) @string
+(rune_literal) @character
 
 (escape_sequence) @string.escape
 

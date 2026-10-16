@@ -48,9 +48,35 @@ def _django_db_helper() -> None:  # pyright:ignore[reportUnusedFunction]
     pass
 
 
+#: Languages that don't have any queries available.
 SKIPPED_HIGHLIGHT_LANGUAGES: set[SupportedLanguage] = {
-    # actionscript just doesn't have any highlights available.
+    'abnf',
     'actionscript',
+    'batch',
+    'cfml',
+    'cobol',
+    'crystal',
+    'edoc',
+    'eds',
+    'flatbuffers',
+    'fluent',
+    'gdscript',
+    'jinja2',
+    'move',
+    'norg',
+    'plantuml',
+    'postscript',
+    'prolog',
+    'rtf',
+    'slint',
+    'souffle',
+    'task',
+    'tsql',
+    'vb',
+    'wast',
+    'wat',
+    'xit',
+    'yul',
 }
 
 HIGHLIGHT_TEST_PARAMS = [
@@ -63,12 +89,10 @@ if not DEBUG_TREESITTER:
     BROKEN_HIGHLIGHT_LANGUAGES: set[SupportedLanguage] = {
         'fennel',
         'groovy',
-        'haxe',
         'netlinx',
         'test',
         'verilog',
         'vhdl',
-        'vue',
     }
     SKIPPED_HIGHLIGHT_LANGUAGES |= BROKEN_HIGHLIGHT_LANGUAGES
 

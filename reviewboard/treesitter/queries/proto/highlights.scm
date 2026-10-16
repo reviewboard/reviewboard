@@ -1,3 +1,22 @@
+(full_ident
+  (identifier) @variable)
+
+(full_ident
+  (identifier)
+  (identifier) @variable.member)
+
+(field
+  (identifier) @property)
+
+(field_option
+  (identifier) @property)
+
+(enum_value_option
+  (identifier) @property)
+
+(block_lit
+  (identifier) @property)
+
 [
   "extend"
   "extensions"
@@ -5,13 +24,17 @@
   "option"
   "reserved"
   "syntax"
+  "edition"
   "to"
+  "max"
 ] @keyword
 
 [
   "enum"
+  "group"
   "service"
   "message"
+  "map"
 ] @keyword.type
 
 "rpc" @keyword.function
@@ -19,9 +42,14 @@
 "returns" @keyword.return
 
 [
+  "export"
+  "local"
   "optional"
   "repeated"
   "required"
+  "stream"
+  "weak"
+  "public"
 ] @keyword.modifier
 
 [
@@ -44,10 +72,12 @@
 
 (string) @string
 
-[
-  "\"proto3\""
-  "\"proto2\""
-] @string.special
+(reserved_identifier) @string
+
+(syntax
+  version: (string) @string.special)
+
+(escape_sequence) @string.escape
 
 (int_lit) @number
 
@@ -77,6 +107,12 @@
 [
   ";"
   ","
+  "."
+  ":"
 ] @punctuation.delimiter
 
-"=" @operator
+[
+  "="
+  "-"
+  "+"
+] @operator

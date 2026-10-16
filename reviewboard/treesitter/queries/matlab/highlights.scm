@@ -170,7 +170,6 @@
   "-"
   ".*"
   "*"
-  ".*"
   "/"
   "./"
   "\\"
@@ -204,13 +203,16 @@
 
 (number) @number
 
-(boolean) @boolean
+((identifier) @boolean
+  (#eq? @boolean "true"))
+
+((identifier) @boolean
+  (#eq? @boolean "false"))
 
 ; Comments
-[
-  (comment)
-  (line_continuation)
-] @comment @spell
+(comment) @comment @spell
+
+(line_continuation) @punctuation.special
 
 ((comment) @keyword.directive
   (#match? @keyword.directive "^%% "))

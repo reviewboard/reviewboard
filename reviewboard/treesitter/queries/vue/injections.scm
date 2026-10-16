@@ -114,6 +114,7 @@
     (attribute_value) @injection.content)
   (#set! injection.language "javascript"))
 
+
 ; <script lang="css">
 ((style_element
   (start_tag

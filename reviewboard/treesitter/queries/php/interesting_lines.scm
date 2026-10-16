@@ -2,6 +2,8 @@
 
 (anonymous_function) @function.outer
 
+(arrow_function) @function.outer
+
 (method_declaration) @function.outer
 
 (trait_declaration) @class.outer

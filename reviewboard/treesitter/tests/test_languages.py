@@ -119,6 +119,8 @@ def test_get_language_name_for_file_special_names(
     ('file.config.json', 'json'),  # multiple extensions
     ('path/to/my-file_v1.2.py', 'python'),  # complex filename
     ('file.PY', None),  # case sensitivity
+    ('notes.txt', None),  # excluded generic extension
+    ('requirements.txt', 'requirements'),  # file name beats exclusion
 ])
 def test_get_language_name_for_file_edge_cases(
     filename: str,

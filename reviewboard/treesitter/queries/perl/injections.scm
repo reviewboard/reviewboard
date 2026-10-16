@@ -13,3 +13,6 @@
   (#not-match? @_modifiers "(?s)e.*e")
   (#set! injection.language "perl")
   (#set! injection.include-children))
+
+(heredoc_content
+  (heredoc_end) @injection.language) @injection.content

@@ -849,15 +849,29 @@ def test_get_interesting_lines_no_queries_for_language() -> None:
     file_lines = source.splitlines()
     tree = get_parser('perl').parse(source.encode())
 
-    with kgb.spy_on(interesting_lines._get_interesting_lines_via_regex) \
-            as spy:
-        result = get_interesting_lines(filename='test.pl',
-                                       language_name='perl',
-                                       file_content=file_lines,
-                                       tree=tree)
+    # Perl has real queries, so simulate a language without them. The query
+    # helper is wrapped in lru_cache, so the spy goes on the underlying
+    # function, and the cache needs clearing so the call reaches it.
+    interesting_lines._get_interesting_lines_query.cache_clear()
 
-        assert result == [(0, 'sub helloWorld {')]
-        assert spy.called
+    try:
+        with (
+            kgb.spy_on(
+                interesting_lines._get_interesting_lines_query.__wrapped__,
+                op=kgb.SpyOpReturn(None)),
+            kgb.spy_on(
+                interesting_lines._get_interesting_lines_via_regex
+            ) as spy
+        ):
+            result = get_interesting_lines(filename='test.pl',
+                                           language_name='perl',
+                                           file_content=file_lines,
+                                           tree=tree)
+
+            assert result == [(0, 'sub helloWorld {')]
+            assert spy.called
+    finally:
+        interesting_lines._get_interesting_lines_query.cache_clear()
 
 
 def test_get_interesting_lines_compile_failure(

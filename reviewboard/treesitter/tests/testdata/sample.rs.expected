@@ -1,7 +1,7 @@
 <span class="ts-keyword-import">use</span> <span class="ts-module"><span class="ts-variable">std</span></span>::<span class="ts-module"><span class="ts-variable">collections</span></span>::<span class="ts-variable">HashMap</span>;
 <span class="ts-keyword-import">use</span> <span class="ts-module"><span class="ts-variable">std</span></span>::<span class="ts-module"><span class="ts-variable">fmt</span></span>::<span class="ts-variable">Display</span>;
 
-<span class="ts-comment">//<span class="ts-comment"><span class="ts-operator">/</span></span> Documentation comment for Person struct</span>
+<span class="ts-comment">//<span class="ts-operator"><span class="ts-comment">/</span></span> Documentation comment for Person struct</span>
 <span class="ts-comment"></span>#[<span class="ts-variable"><span class="ts-function">derive</span></span>(<span class="ts-variable">Debug</span>, <span class="ts-variable">Clone</span>)]
 <span class="ts-keyword">pub</span> <span class="ts-keyword">struct</span> Person {
     <span class="ts-keyword">pub</span> <span class="ts-variable">name</span>: String,
@@ -21,7 +21,7 @@
 }
 
 <span class="ts-keyword">impl</span> Person {
-    <span class="ts-comment">//<span class="ts-comment"><span class="ts-operator">/</span></span> Creates a new Person</span>
+    <span class="ts-comment">//<span class="ts-operator"><span class="ts-comment">/</span></span> Creates a new Person</span>
 <span class="ts-comment"></span>    <span class="ts-keyword">pub</span> <span class="ts-keyword">fn</span> <span class="ts-function"><span class="ts-variable">new</span></span>(<span class="ts-variable">name</span>: String, <span class="ts-variable">age</span>: <span class="ts-type-builtin">u32</span>) -&gt; Self {
         Person {
             <span class="ts-variable">name</span>,

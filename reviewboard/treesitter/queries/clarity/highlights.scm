@@ -27,10 +27,15 @@
 (function_signature_for_trait (identifier) @function)
 (basic_native_form
   operator: (native_identifier) @function)
+(allowance
+  operator: (allowance_identifier) @function)
 (contract_function_call
   operator: (identifier) @function)
 [
  "let"
+ "restrict-assets?"
+ "as-contract?"
+ "with-all-assets-unsafe"
 ] @function
 
 
@@ -59,6 +64,8 @@
  "burn-block-height"
  "chain-id"
  "contract-caller"
+ "current-contract"
+ "is-in-mainnet"
  "is-in-regtest"
  "stacks-block-height"
  "stx-liquid-supply"

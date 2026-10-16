@@ -153,7 +153,7 @@
     "charArrayOf" "emptyArray" "mapOf" "setOf" "listOf" "emptyMap" "emptySet" "emptyList"
     "mutableMapOf" "mutableSetOf" "mutableListOf" "print" "println" "error" "TODO" "run"
     "runCatching" "repeat" "lazy" "lazyOf" "enumValues" "enumValueOf" "assert" "check"
-    "checkNotNull" "require" "requireNotNull" "with" "suspend" "synchronized"))
+    "checkNotNull" "require" "requireNotNull" "with" "synchronized"))
 
 ; Literals
 [
@@ -343,12 +343,11 @@
   "?:"
   "!!"
   "is"
-  "!is"
   "in"
-  "!in"
   "as"
   "as?"
   ".."
+  "..<"
   "->"
 ] @operator
 
@@ -389,10 +388,6 @@
 
 ; NOTE: `interpolated_identifier`s can be highlighted in any way
 (string_literal
-  "$" @punctuation.special
-  (interpolated_identifier) @none @variable)
-
-(string_literal
-  "${" @punctuation.special
+  (interpolation_expression_start) @punctuation.special
   (interpolated_expression) @none
-  "}" @punctuation.special)
+  (interpolation_expression_end) @punctuation.special)

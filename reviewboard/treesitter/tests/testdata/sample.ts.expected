@@ -121,7 +121,7 @@
   }
 
   <span class="ts-keyword">private</span> <span class="ts-function"><span class="ts-variable">isValidEmail</span></span>(<span class="ts-variable">email</span>: <span class="ts-type-builtin">string</span>): <span class="ts-type-builtin">boolean</span> {
-    <span class="ts-keyword">const</span> <span class="ts-variable">emailRegex</span> <span class="ts-operator">=</span> /<span class="ts-string-regexp">^[^\s@]+@[^\s@]+\.[^\s@]+$</span>/;
+    <span class="ts-keyword">const</span> <span class="ts-variable">emailRegex</span> <span class="ts-operator">=</span> /<span class="ts-string-regexp">^[^<span class="ts-string">\s</span><span class="ts-constant">@</span>]<span class="ts-operator">+</span>@[^<span class="ts-string">\s</span><span class="ts-constant">@</span>]<span class="ts-operator">+</span><span class="ts-string-regexp">\.</span>[^<span class="ts-string">\s</span><span class="ts-constant">@</span>]<span class="ts-operator">+</span>$</span>/;
     <span class="ts-keyword">return</span> <span class="ts-variable">emailRegex</span>.<span class="ts-variable"><span class="ts-function-method-call">test</span></span>(<span class="ts-variable">email</span>);
   }
 

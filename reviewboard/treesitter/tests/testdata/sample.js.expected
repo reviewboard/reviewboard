@@ -56,7 +56,7 @@
     }
 
     <span class="ts-comment">/**</span>
-<span class="ts-comment">     * <span class="ts-variable">Clear</span> <span class="ts-variable">the</span> <span class="ts-variable">cache</span>.</span>
+<span class="ts-comment">     * Clear the cache.</span>
 <span class="ts-comment">     */</span>
     <span class="ts-function"><span class="ts-variable">clearCache</span></span>() {
         <span class="ts-variable-builtin">this</span>.<span class="ts-variable">cache</span>.<span class="ts-variable"><span class="ts-function-method-call">clear</span></span>();

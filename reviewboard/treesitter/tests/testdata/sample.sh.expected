@@ -21,9 +21,9 @@
 
 <span class="ts-comment"># Global variables</span>
 <span class="ts-constant"><span class="ts-variable">PYTHON_VERSION</span></span><span class="ts-operator">=</span><span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">DEFAULT_PYTHON_VERSION</span></span>}&quot;</span>
-<span class="ts-constant"><span class="ts-variable">VERBOSE</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">false</span></span>
-<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">false</span></span>
-<span class="ts-constant"><span class="ts-variable">FORCE_REINSTALL</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">false</span></span>
+<span class="ts-constant"><span class="ts-variable">VERBOSE</span></span><span class="ts-operator">=</span><span class="ts-string">false</span>
+<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span><span class="ts-operator">=</span><span class="ts-string">false</span>
+<span class="ts-constant"><span class="ts-variable">FORCE_REINSTALL</span></span><span class="ts-operator">=</span><span class="ts-string">false</span>
 
 <span class="ts-comment"># Function definitions</span>
 <span class="ts-function">usage</span>() {
@@ -65,7 +65,7 @@
             <span class="ts-function-call"><span class="ts-function-builtin">echo</span></span> <span class="ts-variable">-e</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">RED</span></span>}[ERROR]${<span class="ts-constant"><span class="ts-variable">NC</span></span>} $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">|</span> <span class="ts-function-call">tee</span> <span class="ts-variable">-a</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
             ;;
         <span class="ts-string">&quot;DEBUG&quot;</span>)
-            <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">VERBOSE</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">true</span> ]]; <span class="ts-keyword">then</span>
+            <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">VERBOSE</span></span>&quot;</span> <span class="ts-operator">==</span> true ]]; <span class="ts-keyword">then</span>
                 <span class="ts-function-call"><span class="ts-function-builtin">echo</span></span> <span class="ts-variable">-e</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">BLUE</span></span>}[DEBUG]${<span class="ts-constant"><span class="ts-variable">NC</span></span>} $<span class="ts-variable">message</span>&quot;</span> <span class="ts-operator">|</span> <span class="ts-function-call">tee</span> <span class="ts-variable">-a</span> <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">LOG_FILE</span></span>&quot;</span>
             <span class="ts-keyword">fi</span>
             ;;
@@ -77,7 +77,7 @@
 <span class="ts-comment"># Error handling</span>
 <span class="ts-function">error_exit</span>() {
     <span class="ts-function-call">log</span> <span class="ts-string">&quot;ERROR&quot;</span> <span class="ts-string">&quot;$<span class="ts-variable">1</span>&quot;</span>
-    <span class="ts-function-call"><span class="ts-function-builtin">exit</span></span> <span class="ts-string">&quot;${<span class="ts-variable">2</span>:-<span class="ts-number">1</span>}&quot;</span>
+    <span class="ts-function-call"><span class="ts-function-builtin">exit</span></span> <span class="ts-string">&quot;${<span class="ts-variable">2</span>:-1}&quot;</span>
 }
 
 <span class="ts-comment"># Cleanup function for trap</span>
@@ -98,7 +98,7 @@
 }
 
 <span class="ts-comment"># Set up signal handlers</span>
-<span class="ts-function-call"><span class="ts-function-builtin">trap</span></span> <span class="ts-variable">cleanup</span> <span class="ts-variable">EXIT</span>
+<span class="ts-function-call"><span class="ts-function-builtin">trap</span></span> <span class="ts-variable">cleanup</span> <span class="ts-string"><span class="ts-variable">EXIT</span></span>
 <span class="ts-function-call"><span class="ts-function-builtin">trap</span></span> <span class="ts-string">&#39;error_exit &quot;Script interrupted&quot; 130&#39;</span> <span class="ts-variable">INT</span> <span class="ts-variable">TERM</span>
 
 <span class="ts-comment"># System detection</span>
@@ -198,7 +198,7 @@
         <span class="ts-string-regexp">linux_*</span>)
             <span class="ts-keyword">if</span> <span class="ts-function-call">command_exists</span> <span class="ts-variable">apt-get</span>; <span class="ts-keyword">then</span>
                 <span class="ts-function-call">log</span> <span class="ts-string">&quot;DEBUG&quot;</span> <span class="ts-string">&quot;Using apt package manager&quot;</span>
-                <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">false</span> ]]; <span class="ts-keyword">then</span>
+                <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> false ]]; <span class="ts-keyword">then</span>
                     <span class="ts-function-call">sudo</span> <span class="ts-variable">apt-get</span> <span class="ts-variable">update</span>
                     <span class="ts-function-call">sudo</span> <span class="ts-variable">apt-get</span> <span class="ts-variable">install</span> <span class="ts-variable">-y</span> \
                         <span class="ts-variable">build-essential</span> \
@@ -211,7 +211,7 @@
                 <span class="ts-keyword">fi</span>
             <span class="ts-keyword">elif</span> <span class="ts-function-call">command_exists</span> <span class="ts-variable">yum</span>; <span class="ts-keyword">then</span>
                 <span class="ts-function-call">log</span> <span class="ts-string">&quot;DEBUG&quot;</span> <span class="ts-string">&quot;Using yum package manager&quot;</span>
-                <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">false</span> ]]; <span class="ts-keyword">then</span>
+                <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> false ]]; <span class="ts-keyword">then</span>
                     <span class="ts-function-call">sudo</span> <span class="ts-variable">yum</span> <span class="ts-variable">install</span> <span class="ts-variable">-y</span> \
                         <span class="ts-variable">gcc</span> \
                         <span class="ts-variable">postgresql-devel</span> \
@@ -228,7 +228,7 @@
         <span class="ts-string-regexp">macos_*</span>)
             <span class="ts-keyword">if</span> <span class="ts-function-call">command_exists</span> <span class="ts-variable">brew</span>; <span class="ts-keyword">then</span>
                 <span class="ts-function-call">log</span> <span class="ts-string">&quot;DEBUG&quot;</span> <span class="ts-string">&quot;Using Homebrew package manager&quot;</span>
-                <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">false</span> ]]; <span class="ts-keyword">then</span>
+                <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> false ]]; <span class="ts-keyword">then</span>
                     <span class="ts-function-call">brew</span> <span class="ts-variable">install</span> <span class="ts-variable">postgresql</span> <span class="ts-variable">python</span> <span class="ts-variable">node</span> <span class="ts-variable">npm</span>
                 <span class="ts-keyword">fi</span>
             <span class="ts-keyword">else</span>
@@ -248,12 +248,12 @@
 
     <span class="ts-function-call">log</span> <span class="ts-string">&quot;INFO&quot;</span> <span class="ts-string">&quot;Setting up Python virtual environment...&quot;</span>
 
-    <span class="ts-keyword">if</span> [[ <span class="ts-operator">-d</span> <span class="ts-string">&quot;$<span class="ts-variable">venv_dir</span>&quot;</span> ]] <span class="ts-operator">&amp;&amp;</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">FORCE_REINSTALL</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">false</span> ]]; <span class="ts-keyword">then</span>
+    <span class="ts-keyword">if</span> [[ <span class="ts-operator">-d</span> <span class="ts-string">&quot;$<span class="ts-variable">venv_dir</span>&quot;</span> ]] <span class="ts-operator">&amp;&amp;</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">FORCE_REINSTALL</span></span>&quot;</span> <span class="ts-operator">==</span> false ]]; <span class="ts-keyword">then</span>
         <span class="ts-function-call">log</span> <span class="ts-string">&quot;INFO&quot;</span> <span class="ts-string">&quot;Virtual environment already exists&quot;</span>
         <span class="ts-function-call"><span class="ts-function-builtin">return</span></span> <span class="ts-number">0</span>
     <span class="ts-keyword">fi</span>
 
-    <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">false</span> ]]; <span class="ts-keyword">then</span>
+    <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> false ]]; <span class="ts-keyword">then</span>
         <span class="ts-keyword">if</span> [[ <span class="ts-operator">-d</span> <span class="ts-string">&quot;$<span class="ts-variable">venv_dir</span>&quot;</span> ]]; <span class="ts-keyword">then</span>
             <span class="ts-function-call">log</span> <span class="ts-string">&quot;INFO&quot;</span> <span class="ts-string">&quot;Removing existing virtual environment&quot;</span>
             <span class="ts-function-call">rm</span> <span class="ts-variable">-rf</span> <span class="ts-string">&quot;$<span class="ts-variable">venv_dir</span>&quot;</span>
@@ -283,7 +283,7 @@
     <span class="ts-keyword">for</span> <span class="ts-variable">req_file</span> <span class="ts-keyword">in</span> <span class="ts-string">&quot;${<span class="ts-variable">requirements_files</span>[@]}&quot;</span>; <span class="ts-keyword">do</span>
         <span class="ts-keyword">if</span> [[ <span class="ts-operator">-f</span> <span class="ts-string">&quot;$<span class="ts-variable">req_file</span>&quot;</span> ]]; <span class="ts-keyword">then</span>
             <span class="ts-function-call">log</span> <span class="ts-string">&quot;DEBUG&quot;</span> <span class="ts-string">&quot;Installing from $<span class="ts-variable">req_file</span>&quot;</span>
-            <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">false</span> ]]; <span class="ts-keyword">then</span>
+            <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> false ]]; <span class="ts-keyword">then</span>
                 <span class="ts-function-call">pip</span> <span class="ts-variable">install</span> <span class="ts-variable">-r</span> <span class="ts-string">&quot;$<span class="ts-variable">req_file</span>&quot;</span>
             <span class="ts-keyword">fi</span>
         <span class="ts-keyword">else</span>
@@ -300,7 +300,7 @@
     <span class="ts-keyword">local</span> <span class="ts-variable">db_user</span><span class="ts-operator">=</span><span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">PROJECT_NAME</span></span>}_user&quot;</span>
 
     <span class="ts-keyword">if</span> <span class="ts-function-call">command_exists</span> <span class="ts-variable">createdb</span>; <span class="ts-keyword">then</span>
-        <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">false</span> ]]; <span class="ts-keyword">then</span>
+        <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> false ]]; <span class="ts-keyword">then</span>
             <span class="ts-comment"># Check if database exists</span>
             <span class="ts-keyword">if</span> <span class="ts-function-call">psql</span> <span class="ts-variable">-lqt</span> <span class="ts-operator">|</span> <span class="ts-function-call">cut</span> <span class="ts-variable">-d</span> <span class="ts-variable">\|</span> <span class="ts-variable">-f</span> <span class="ts-number">1</span> <span class="ts-operator">|</span> <span class="ts-function-call">grep</span> <span class="ts-variable">-qw</span> <span class="ts-string">&quot;$<span class="ts-variable">db_name</span>&quot;</span>; <span class="ts-keyword">then</span>
                 <span class="ts-function-call">log</span> <span class="ts-string">&quot;INFO&quot;</span> <span class="ts-string">&quot;Database $<span class="ts-variable">db_name</span> already exists&quot;</span>
@@ -318,7 +318,7 @@
 <span class="ts-function">run_tests</span>() {
     <span class="ts-function-call">log</span> <span class="ts-string">&quot;INFO&quot;</span> <span class="ts-string">&quot;Running tests...&quot;</span>
 
-    <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">false</span> ]]; <span class="ts-keyword">then</span>
+    <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> false ]]; <span class="ts-keyword">then</span>
         <span class="ts-keyword">if</span> [[ <span class="ts-operator">-f</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">SCRIPT_DIR</span></span>}/manage.py&quot;</span> ]]; <span class="ts-keyword">then</span>
             <span class="ts-function-call">python</span> <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable">SCRIPT_DIR</span></span>}/manage.py&quot;</span> <span class="ts-variable">test</span>
         <span class="ts-keyword">elif</span> <span class="ts-function-call">command_exists</span> <span class="ts-variable">pytest</span>; <span class="ts-keyword">then</span>
@@ -338,15 +338,15 @@
                 <span class="ts-function-call"><span class="ts-function-builtin">exit</span></span> <span class="ts-number">0</span>
                 ;;
             <span class="ts-variable">-v</span><span class="ts-operator">|</span><span class="ts-string-regexp">--verbose</span>)
-                <span class="ts-constant"><span class="ts-variable">VERBOSE</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">true</span></span>
+                <span class="ts-constant"><span class="ts-variable">VERBOSE</span></span><span class="ts-operator">=</span><span class="ts-string">true</span>
                 <span class="ts-function-call"><span class="ts-function-builtin">shift</span></span>
                 ;;
             <span class="ts-variable">-n</span><span class="ts-operator">|</span><span class="ts-string-regexp">--dry-run</span>)
-                <span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">true</span></span>
+                <span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span><span class="ts-operator">=</span><span class="ts-string">true</span>
                 <span class="ts-function-call"><span class="ts-function-builtin">shift</span></span>
                 ;;
             <span class="ts-variable">-f</span><span class="ts-operator">|</span><span class="ts-string-regexp">--force</span>)
-                <span class="ts-constant"><span class="ts-variable">FORCE_REINSTALL</span></span><span class="ts-operator">=</span><span class="ts-string"><span class="ts-boolean">true</span></span>
+                <span class="ts-constant"><span class="ts-variable">FORCE_REINSTALL</span></span><span class="ts-operator">=</span><span class="ts-string">true</span>
                 <span class="ts-function-call"><span class="ts-function-builtin">shift</span></span>
                 ;;
             <span class="ts-variable">-p</span><span class="ts-operator">|</span><span class="ts-string-regexp">--python</span>)
@@ -367,7 +367,7 @@
 <span class="ts-function">main</span>() {
     <span class="ts-function-call">log</span> <span class="ts-string">&quot;INFO&quot;</span> <span class="ts-string">&quot;Starting ${<span class="ts-constant"><span class="ts-variable">PROJECT_NAME</span></span>} development setup&quot;</span>
 
-    <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> <span class="ts-boolean">true</span> ]]; <span class="ts-keyword">then</span>
+    <span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;$<span class="ts-constant"><span class="ts-variable">DRY_RUN</span></span>&quot;</span> <span class="ts-operator">==</span> true ]]; <span class="ts-keyword">then</span>
         <span class="ts-function-call">log</span> <span class="ts-string">&quot;INFO&quot;</span> <span class="ts-string">&quot;DRY RUN MODE - No changes will be made&quot;</span>
     <span class="ts-keyword">fi</span>
 
@@ -412,7 +412,7 @@
 }
 
 <span class="ts-comment"># Script entry point</span>
-<span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable"><span class="ts-variable-builtin">BASH_SOURCE</span></span></span>[<span class="ts-number">0</span>]}&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;${<span class="ts-constant">0</span>}&quot;</span> ]]; <span class="ts-keyword">then</span>
+<span class="ts-keyword">if</span> [[ <span class="ts-string">&quot;${<span class="ts-constant"><span class="ts-variable"><span class="ts-variable-builtin">BASH_SOURCE</span></span></span>[<span class="ts-number">0</span>]}&quot;</span> <span class="ts-operator">==</span> <span class="ts-string">&quot;${<span class="ts-variable">0</span>}&quot;</span> ]]; <span class="ts-keyword">then</span>
     <span class="ts-function-call">parse_arguments</span> <span class="ts-string">&quot;$<span class="ts-constant">@</span>&quot;</span>
     <span class="ts-function-call">main</span>
 <span class="ts-keyword">fi</span>
