@@ -28,7 +28,7 @@ from django.db.utils import OperationalError
 from django.dispatch import receiver
 from django.utils.encoding import force_str
 
-from reviewboard import finalize_setup, get_manual_url, get_version_string
+from reviewboard import get_manual_url, get_version_string
 from reviewboard.admin.import_utils import has_module
 from reviewboard.cmdline.utils.console import (Console,
                                                get_console,
@@ -39,6 +39,7 @@ from reviewboard.rb_platform import (SITELIST_FILE_UNIX,
                                      DEFAULT_FS_CACHE_PATH,
                                      INSTALLED_SITE_PATH)
 from reviewboard.upgrade import (UpgradeState,
+                                 finalize_setup,
                                  run_post_upgrade_tasks,
                                  run_pre_upgrade_tasks)
 

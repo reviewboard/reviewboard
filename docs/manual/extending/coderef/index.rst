@@ -20,8 +20,10 @@ Top-Level Modules
 
    reviewboard
    reviewboard.deprecation
+   reviewboard.process
    reviewboard.rb_platform
    reviewboard.signals
+   reviewboard.upgrade
    reviewboard.urls
 
 

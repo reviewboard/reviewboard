@@ -14,9 +14,9 @@ from wsgiref import simple_server
 import django
 from django.core.management import execute_from_command_line
 
-from reviewboard import finalize_setup
 from reviewboard.dependencies import (PYTHON_MIN_VERSION,
                                       PYTHON_MIN_VERSION_STR)
+from reviewboard.upgrade import finalize_setup
 
 if TYPE_CHECKING:
     from reviewboard.cmdline.utils.console import Console

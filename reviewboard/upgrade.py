@@ -17,7 +17,10 @@ import logging
 from typing import TYPE_CHECKING
 
 from django.db import DatabaseError
+from housekeeping import deprecate_non_keyword_only_args
 from typing_extensions import TypedDict
+
+from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
 
 if TYPE_CHECKING:
     from django.db.models import Model
@@ -704,3 +707,40 @@ def run_post_upgrade_tasks(
     post_upgrade_apply_scmtool_data(upgrade_state, console)
     post_upgrade_apply_condition_tool_info(upgrade_state, console)
     post_upgrade_migrate_bug_trackers(upgrade_state, console)
+
+
+@deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
+def finalize_setup(
+    *,
+    is_upgrade: bool = False,
+) -> None:
+    """Internal function to upgrade internal state after installs/upgrades.
+
+    This should only be called by Review Board install or upgrade code.
+
+    Version Changed:
+        9.0:
+        * This moved from :py:mod:`reviewboard`.
+        * Keyword arguments are now required. This will be enforced in
+          Review Board 11.
+
+    Version Changed:
+        5.0:
+        Removed the ``register_scmtools`` argument.
+
+    Version Added:
+        4.0
+
+    Args:
+        is_upgrade (bool, optional):
+            Whether this is finalizing an upgrade, rather than a new install.
+    """
+    from reviewboard import signals
+    from reviewboard.admin.management.sites import init_siteconfig
+
+    # Update the recorded product version.
+    init_siteconfig()
+
+    # Notify anything else that needs to listen.
+    signals.finalized_setup.send(sender=None,
+                                 is_upgrade=is_upgrade)
