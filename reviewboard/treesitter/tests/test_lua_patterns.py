@@ -342,7 +342,8 @@ def test_complex_patterns(
     # From sql/highlights.scm
     ('^%d+$', '^\\d+$'),
     ('^[-]?%d*%.%d*$', '^[-]?\\d*\\.\\d*$'),
-    ('^[-]?%d*\\.%d*$', '^[-]?\\d*\\.\\d*$'),
+    # Backslashes are literal in Lua patterns.
+    ('^[-]?%d*\\.%d*$', '(?s)^[-]?\\d*\\\\.\\d*$'),
 
     # From zig/highlights.scm
     ('^[A-Z_][a-zA-Z0-9_]*', '^[A-Z_][a-zA-Z0-9_]*'),

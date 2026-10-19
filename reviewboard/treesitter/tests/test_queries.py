@@ -385,6 +385,29 @@ def test_lua_match_edits_pattern_conversion() -> None:
     )
 
 
+def test_lua_match_edits_escaped_quote() -> None:
+    """Test conversion of Lua patterns containing an escaped quote."""
+    content = dedent(r"""
+        ((identifier) @name
+         (#lua-match? @name "^@\"<html"))
+    """)
+    content_bytes = content.encode()
+    language = get_query_language()
+    tree = tree_sitter.Parser(language).parse(content_bytes)
+
+    edits = list(get_lua_match_edits(tree))
+    assert len(edits) == 1
+
+    result = apply_edits(content_bytes, edits)
+    assert result == (
+        b'\n((identifier) @name\n'
+        b' (#match? @name "^@\\"<html"))\n'
+    )
+
+    # The result must still be a valid query.
+    tree_sitter.Query(language, result.decode())
+
+
 def test_gsub_edits_no_match() -> None:
     """Test with query containing no gsub! directives."""
     content = dedent("""

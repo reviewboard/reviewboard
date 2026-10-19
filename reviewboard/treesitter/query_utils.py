@@ -168,6 +168,45 @@ def get_set3_edits(
         yield (node.start_byte, node.end_byte, b'')
 
 
+def _unescape_query_string(
+    value: str,
+) -> str:
+    """Return the contents of a quoted string from a query file.
+
+    Version Added:
+        9.0
+
+    Args:
+        value (str):
+            The string, including its surrounding quotes.
+
+    Returns:
+        str:
+        The string contents, with escaped quotes and backslashes restored.
+    """
+    return re.sub(r'\\([\\"])', r'\1',
+                  value.removeprefix('"').removesuffix('"'))
+
+
+def _escape_query_string(
+    value: str,
+) -> str:
+    """Return a value escaped for use inside a query file string.
+
+    Version Added:
+        9.0
+
+    Args:
+        value (str):
+            The value to escape.
+
+    Returns:
+        str:
+        The escaped value, without surrounding quotes.
+    """
+    return value.replace('\\', '\\\\').replace('"', '\\"')
+
+
 @lru_cache(maxsize=1)
 def get_lua_match_query() -> tree_sitter.Query:
     """Return a query for finding all lua-match? predicates.
@@ -242,7 +281,7 @@ def get_lua_match_edits(
         name, lua_pattern = predicate_args.decode().split(' ', 1)
 
         python_regex = lua_pattern_to_python(
-            lua_pattern.removeprefix('"').removesuffix('"'))
+            _unescape_query_string(lua_pattern))
 
         if python_regex is None:
             raise ValueError(
@@ -250,8 +289,7 @@ def get_lua_match_edits(
                 f'Python regular expression.'
             )
 
-        # The scheme files require backslashes to be escaped.
-        python_regex = python_regex.replace('\\', '\\\\')
+        python_regex = _escape_query_string(python_regex)
 
         replacement = f'(#{new_predicate}? {name} "{python_regex}")'
 
@@ -320,7 +358,7 @@ def get_gsub_edits(
         lua_pattern, lua_replacement = rest.rsplit(' ', 1)
 
         python_regex = lua_pattern_to_python(
-            lua_pattern.removeprefix('"').removesuffix('"'))
+            _unescape_query_string(lua_pattern))
 
         if python_regex is None:
             raise ValueError(
@@ -331,8 +369,9 @@ def get_gsub_edits(
         # Convert Lua backreferences (%1, %2, etc.) to Python ones (\1, \2).
         python_replacement = re.sub(r'%(\d+)', r'\\\1', lua_replacement)
 
+        python_regex = _escape_query_string(python_regex)
+
         # The scheme files require backslashes to be escaped.
-        python_regex = python_regex.replace('\\', '\\\\')
         python_replacement = python_replacement.replace('\\', '\\\\')
 
         replacement = f'(#gsub! {name} "{python_regex}" {python_replacement})'
