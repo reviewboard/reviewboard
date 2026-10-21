@@ -440,6 +440,32 @@ class MaterializeConfigsTests(TestCase):
             config.service.get_bug_url(config=config, bug_id='ENG-1'),
             'https://jira.example.com/browse/ENG-1')
 
+    def test_bugzilla_configs(self) -> None:
+        """Testing materialize_configs with legacy Bugzilla settings"""
+        repository = self.create_repository(extra_data={
+            'bug_tracker_plan': 'default',
+            'bug_tracker_type': 'bugzilla',
+            'bug_tracker_use_hosting': False,
+            'bug_tracker-bugzilla_url': 'https://bugzilla.example.com',
+        })
+
+        materialize_configs()
+
+        repository.refresh_from_db()
+        config = repository.default_bug_tracker
+        assert config is not None
+
+        self.assertEqual(config.service_name, 'bugzilla')
+        self.assertEqual(config.settings['bugzilla_url'],
+                         'https://bugzilla.example.com')
+
+        self.assertIsNone(config.hosting_account)
+        self.assertFalse(config.service.is_bug_tracker_account_required(
+            config.settings))
+        self.assertEqual(
+            config.service.get_bug_url(config=config, bug_id='123'),
+            'https://bugzilla.example.com/show_bug.cgi?id=123')
+
     def test_creates_sentinel(self) -> None:
         """Testing materialize_configs creates the sentinel tracker"""
         materialize_configs()

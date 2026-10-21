@@ -248,6 +248,17 @@ class ConnectServiceViewTests(TestCase):
         # The site name field belongs to the Cloud flow.
         self.assertNotIn(b'name="jira_cloud_site"', response.content)
 
+    def test_get_bugzilla_form(self) -> None:
+        """Testing ConnectServiceView GET with Bugzilla"""
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get(self._get_url('bugzilla'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'name="bugzilla_url"', response.content)
+        self.assertIn(b'hosting_account_username', response.content)
+        self.assertIn(b'API key', response.content)
+
     def _get_url(
         self,
         service_id: str,

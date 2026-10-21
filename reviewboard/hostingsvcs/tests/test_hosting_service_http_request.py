@@ -64,6 +64,29 @@ class HostingServiceHTTPRequestTests(kgb.SpyAgency,
                 'passwords': [],
             })
 
+    def test_open_logs_url_without_query(self) -> None:
+        """Testing HostingServiceHTTPRequest.open does not log the URL's
+        query string
+        """
+        hosting_account = HostingServiceAccount.objects.create(
+            service_name='gitlab',
+            username='myuser',
+            hosting_url='https://example.com',
+        )
+
+        http_request = HostingServiceHTTPRequest(
+            url='https://example.com/rest/bug?api_key=secret#frag',
+            hosting_service=hosting_account.service,
+        )
+
+        with self.assertLogs(level=logging.DEBUG) as cm:
+            http_request.open()
+
+        output = '\n'.join(cm.output)
+        self.assertIn('at https://example.com/rest/bug', output)
+        self.assertNotIn('secret', output)
+        self.assertNotIn('frag', output)
+
     def test_open_with_legacy_ssl_cert_data(self) -> None:
         """Testing HostingServiceHTTPRequest.open with legacy ssl_cert data"""
         storage_backend = self.cert_manager.storage_backend

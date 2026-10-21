@@ -596,13 +596,18 @@ class HostingServiceHTTPRequest:
                 **ssl_kwargs,
             ))
 
+        # Query strings may contain credentials (such as Bugzilla API
+        # keys), so they're left out of the log.
+        log_url = urlunparse(urlparse(url)._replace(query='', fragment=''))
+
+        if hosting_service:
             timer_msg = (
                 f'Performing HTTP {method} request for '
-                f'{hosting_service.name} at {url}'
+                f'{hosting_service.name} at {log_url}'
             )
         else:
             timer_msg = (
-                f'Performing HTTP {method} request at {url}'
+                f'Performing HTTP {method} request at {log_url}'
             )
 
         opener = build_opener(*urlopen_handlers)
