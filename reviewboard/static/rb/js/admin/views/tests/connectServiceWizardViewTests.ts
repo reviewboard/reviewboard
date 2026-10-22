@@ -125,4 +125,72 @@ suite('rb/admin/views/ConnectServiceWizardView', function() {
                 '/admin/connected-services/github/connect/');
         });
     });
+
+    describe('Form submission', function() {
+        /*
+         * Wait for pending fetches and the handlers chained off them.
+         */
+        async function settle() {
+            for (let i = 0; i < 5; i++) {
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+        }
+
+        async function openWithForm(response: object) {
+            spyOn(window, 'fetch').and.returnValues(
+                Promise.resolve(new Response(
+                    '<form data-service-id="test"></form>')),
+                Promise.resolve(new Response(JSON.stringify(response))));
+
+            wizard = new ConnectServiceWizardView({
+                connectURLTemplate:
+                    '/admin/connected-services/__SERVICE_ID__/connect/',
+                csrfToken: 'test-csrf',
+                initialConnectURL: '/admin/connected-services/test/connect/',
+                services: services,
+            });
+            wizard.render();
+            await settle();
+
+            wizard.$('form[data-service-id]').trigger('submit');
+            await settle();
+        }
+
+        it('Shows returned HTML in place on success', async function() {
+            await openWithForm({
+                html: '<h1 class="next-step">Connected</h1>',
+                success: true,
+            });
+
+            expect(wizard.$('.next-step').length).toBe(1);
+            expect(wizard.$('form[data-service-id]').length).toBe(0);
+        });
+
+        it('Navigates to the close URL when closed', async function() {
+            spyOn(RB, 'navigateTo');
+
+            await openWithForm({
+                html: '<div data-wizard-close-url="/done/"></div>',
+                success: true,
+            });
+
+            wizard.trigger('closed');
+
+            expect(RB.navigateTo).toHaveBeenCalledWith('/done/');
+        });
+
+        it('Closes without navigating when no close URL is set',
+           async function() {
+            spyOn(RB, 'navigateTo');
+
+            await openWithForm({
+                html: '<div></div>',
+                success: true,
+            });
+
+            wizard.trigger('closed');
+
+            expect(RB.navigateTo).not.toHaveBeenCalled();
+        });
+    });
 });

@@ -174,6 +174,15 @@ export class ConnectServiceWizardView extends DialogView<
     #backStack: (() => void)[] = [];
 
     /**
+     * A URL to navigate to when the dialog is closed.
+     *
+     * A step can set this by marking any element with
+     * ``data-wizard-close-url``. This is used once an account is connected,
+     * so that closing the dialog reloads the page to show the new account.
+     */
+    #closeURL: string | null = null;
+
+    /**
      * The options passed to the view.
      *
      * This is captured during the initial render, since Ink discards
@@ -225,6 +234,12 @@ export class ConnectServiceWizardView extends DialogView<
 
         this.#$body = $('<div class="rb-c-connect-wizard__body">');
         this.#bodyEl = this.#$body[0];
+
+        this.once('closed', () => {
+            if (this.#closeURL) {
+                RB.navigateTo(this.#closeURL);
+            }
+        });
 
         if (this.#options.initialConnectURL) {
             /*
@@ -437,6 +452,8 @@ export class ConnectServiceWizardView extends DialogView<
         if (this.#cancelButton) {
             this.#cancelButton.label = _`Cancel`;
         }
+
+        this.#closeURL = null;
     }
 
     /**
@@ -704,6 +721,7 @@ export class ConnectServiceWizardView extends DialogView<
     #bindConnectContent($content: JQuery) {
         this.#updateTitleFromContent($content);
         this.#updateCancelLabel($content);
+        this.#updateCloseURL($content);
         this.#bindConnectPageLinks($content);
         this.#bindStepAction($content);
     }
@@ -758,6 +776,21 @@ export class ConnectServiceWizardView extends DialogView<
     }
 
     /**
+     * Update the URL to navigate to when the dialog is closed.
+     *
+     * A step can mark any element with ``data-wizard-close-url``. When no such
+     * element is present, closing the dialog just closes it.
+     *
+     * Args:
+     *     $content (jQuery):
+     *         The element containing the connect UI.
+     */
+    #updateCloseURL($content: JQuery) {
+        this.#closeURL = $content.find('[data-wizard-close-url]')
+            .attr('data-wizard-close-url') || null;
+    }
+
+    /**
      * Bind links that navigate to another connect page.
      *
      * A link with a ``data-connect-page`` attribute loads its ``href`` as a
@@ -783,11 +816,11 @@ export class ConnectServiceWizardView extends DialogView<
     /**
      * Configure the footer action for the current connect page.
      *
-     * The connect page may carry a form to submit. An AJAX connect form
-     * (marked with ``data-service-id``) is submitted in place. Any other
-     * form marked with ``data-wizard-action-label`` is submitted natively,
-     * which may navigate away from Review Board. The footer action button is
-     * configured to match, or hidden when there is no such form.
+     * The connect page may carry a form to submit. An AJAX form (marked with
+     * ``data-service-id``) is submitted in place. Any other form marked with
+     * ``data-wizard-action-label`` is submitted natively, which may navigate
+     * away from Review Board. The footer action button is configured to match,
+     * or hidden when there is no such form.
      *
      * Args:
      *     $content (jQuery):
@@ -832,11 +865,11 @@ export class ConnectServiceWizardView extends DialogView<
     }
 
     /**
-     * Submit the connect form to the server.
+     * Submit an AJAX form to the server.
      *
-     * On success, the page is redirected to the connected services list. On
-     * failure, the form is replaced with the re-rendered fragment showing the
-     * errors.
+     * On success, the response either provides the next step's HTML, which is
+     * shown in place, or a URL to redirect to. On failure, the form is
+     * replaced with the re-rendered fragment showing the errors.
      *
      * Args:
      *     $form (jQuery):
@@ -856,7 +889,15 @@ export class ConnectServiceWizardView extends DialogView<
             if (response.ok) {
                 const rsp = await response.json();
 
-                if (rsp.success) {
+                if (rsp.success && rsp.html) {
+                    /*
+                     * The form's work is done (such as an account being
+                     * created), so there is nothing to go back to.
+                     */
+                    this.#backStack = [];
+                    this.#updateBackVisibility();
+                    this.#showConnectUI(rsp.html);
+                } else if (rsp.success) {
                     window.location.href = rsp.redirect;
                 } else {
                     const $content = $(this.#bodyEl)
