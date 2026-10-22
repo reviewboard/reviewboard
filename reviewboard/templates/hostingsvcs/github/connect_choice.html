@@ -28,11 +28,9 @@
 {% endif %}
 
 <ul class="rb-c-connect-wizard__options">
-{% comment %}
-{# TODO: wire up the "Add a repository" flow. #}
 {% for account in connected_accounts %}
  <li class="rb-c-connect-wizard__option">
-  <a href="#">
+  <a href="{{account.add_repository_url}}">
 {%  if account.avatar_url %}
    <img src="{{account.avatar_url}}" aria-hidden="true">
 {%  else %}
@@ -49,7 +47,6 @@
   </a>
  </li>
 {% endfor %}
-{% endcomment %}
 {% if github_app_create_url %}
  <li class="rb-c-connect-wizard__option">
   <a href="{{github_app_create_url}}" data-connect-page>

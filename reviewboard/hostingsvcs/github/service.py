@@ -255,7 +255,11 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
                     avatar_url = ''
                     is_app_install = False
 
+                add_actions = self.get_add_object_actions(request,
+                                                          account=account)
+
                 connected_accounts.append({
+                    'add_repository_url': add_actions[0]['url'],
                     'avatar_url': avatar_url,
                     'is_app_install': is_app_install,
                     'username': account.username,

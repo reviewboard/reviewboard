@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING
-from unittest import skip
 
 from django.urls import reverse
 
@@ -85,12 +84,11 @@ class ConnectServiceViewTests(TestCase):
         self.assertIn(b'method=pat', content)
         self.assertNotIn(b'hosting_account_username', content)
 
-    @skip('Disabled until implementation is complete')
     def test_get_with_github_connected_accounts(self) -> None:
         """Testing ConnectServiceView GET for GitHub renders "Add a
         repository" options for connected accounts
         """
-        HostingServiceAccount.objects.create(
+        account = HostingServiceAccount.objects.create(
             service_name='github',
             username='acme-org',
             data={
@@ -111,6 +109,12 @@ class ConnectServiceViewTests(TestCase):
         content = response.content
         self.assertIn(b'Add a repository for acme-org', content)
         self.assertIn(b'https://example.com/avatar.png', content)
+        self.assertIn(
+            b'href="/admin/db/scmtools/repository/add/?hosting_type=github'
+            b'&amp;hosting_account=%d&amp;'
+            b'next=%%2Fadmin%%2Fconnected-services%%2F"'
+            % account.pk,
+            content)
 
     def test_get_with_github_pat_method(self) -> None:
         """Testing ConnectServiceView GET for GitHub with ?method=pat renders
