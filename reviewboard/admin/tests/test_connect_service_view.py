@@ -194,8 +194,31 @@ class ConnectServiceViewTests(TestCase):
         self.assertTrue(rsp['success'])
 
         html = rsp['html']
-        self.assertIn('Add a bug tracker', html)
-        self.assertNotIn('Add a repository', html)
+        self.assertIn('Create a new bug tracker on Test Bug Tracker', html)
+        self.assertNotIn('Add a repository from', html)
+
+    def test_add_object_actions_with_hosting_url(self) -> None:
+        """Testing BaseHostingServiceConnectUI.get_add_object_actions with a
+        self-hosted account labels actions with the server
+        """
+        account = HostingServiceAccount.objects.create(
+            hosting_url='https://tracker.example.com/',
+            service_name='test',
+            username='myuser')
+
+        actions = TestService.connect_ui.get_add_object_actions(
+            self.create_http_request(),
+            account=account)
+
+        self.assertEqual(
+            [
+                (action['label'], action['description'])
+                for action in actions
+            ],
+            [
+                ('Add a repository from tracker.example.com', 'myuser'),
+                ('Create a new bug tracker on tracker.example.com', 'myuser'),
+            ])
 
     def test_add_object_actions_with_local_site_account(self) -> None:
         """Testing BaseHostingServiceConnectUI.get_add_object_actions with a

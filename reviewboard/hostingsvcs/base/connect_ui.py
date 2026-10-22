@@ -7,6 +7,7 @@ Version Added:
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, TypedDict, cast
+from urllib.parse import urlparse
 
 from django.template.loader import render_to_string
 from django.templatetags.static import static
@@ -575,6 +576,10 @@ class BaseHostingServiceConnectUI:
         account pre-selected, and returns to the "Connected Services" page
         once saved.
 
+        Actions are labeled with the account's server (or the service name,
+        for accounts on the service's main site), and described with the
+        account's username.
+
         Version Added:
             9.0
 
@@ -605,6 +610,9 @@ class BaseHostingServiceConnectUI:
         if local_site_id := account.local_site_id:
             params['local_site'] = local_site_id
 
+        # Self-hosted accounts are told apart by their server.
+        host = urlparse(account.hosting_url or '').netloc or service.name
+
         actions: list[ConnectAddObjectAction] = []
 
         if service.supports_repositories:
@@ -613,11 +621,11 @@ class BaseHostingServiceConnectUI:
                 **params,
             })
             actions.append({
-                'description': (
-                    _('Set up a repository using {username}.')
-                    .format(username=account.username)
+                'description': account.username,
+                'label': (
+                    _('Add a repository from {host}')
+                    .format(host=host)
                 ),
-                'label': _('Add a repository'),
                 'url': f'{reverse("admin:scmtools_repository_add")}?{query}',
             })
 
@@ -628,11 +636,11 @@ class BaseHostingServiceConnectUI:
             })
             url = reverse('admin:hostingsvcs_configuredbugtracker_add')
             actions.append({
-                'description': (
-                    _('Set up a bug tracker using {username}.')
-                    .format(username=account.username)
+                'description': account.username,
+                'label': (
+                    _('Create a new bug tracker on {host}')
+                    .format(host=host)
                 ),
-                'label': _('Add a bug tracker'),
                 'url': f'{url}?{query}',
             })
 
