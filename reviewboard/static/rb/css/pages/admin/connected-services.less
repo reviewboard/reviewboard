@@ -898,6 +898,35 @@
   }
 
   /**
+   * The step shown after an account is connected.
+   *
+   * Structure:
+   *     <div class="rb-c-connect-wizard__success">
+   *      <h1><span class="ink-i-success"></span> ...</h1>
+   *      <ul class="rb-c-connect-wizard__options">...</ul>
+   *     </div>
+   */
+  &__success {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-std);
+
+    h1 {
+      align-items: center;
+      display: flex;
+      gap: var(--ink-u-spacing-s);
+
+      /* Size the icon to the heading text so the two line up. */
+      .ink-i-success {
+        color: var(--ink-p-accent-success-fg-on-container);
+        flex-shrink: 0;
+        height: 1em;
+        width: 1em;
+      }
+    }
+  }
+
+  /**
    * The title for a section of services.
    */
   &__section-title {

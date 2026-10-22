@@ -1,6 +1,6 @@
 {% load i18n %}
 {% blocktrans asvar wizard_title %}Connected to {{service_name}}{% endblocktrans %}
-<div class="rb-c-admin-cs-connect"
+<div class="rb-c-admin-cs-connect rb-c-connect-wizard__success"
      data-wizard-title="{{wizard_title}}"
      data-wizard-title-icon="{{service_logo}}"
      data-wizard-cancel-label="{% trans 'Done' %}"
@@ -12,13 +12,11 @@
 {% endfor %}
 {% block content %}
  <h1>
+  <span class="ink-i-success" aria-hidden="true"></span>
 {%  blocktrans with name=account.username %}
   {{name}} is connected.
 {%  endblocktrans %}
  </h1>
-{%  if add_actions %}
- <p>{% trans "What would you like to set up next?" %}</p>
-{%  endif %}
 {% endblock content %}
 {% if add_actions %}
  <ul class="rb-c-connect-wizard__options">
