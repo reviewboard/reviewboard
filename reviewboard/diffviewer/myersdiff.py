@@ -700,9 +700,9 @@ class MyersDiffer(Differ):
 
     def _very_approx_sqrt(self, i):
         result = 1
-        i /= 4
+        i //= 4
         while i > 0:
-            i /= 4
+            i //= 4
             result *= 2
 
         return result
