@@ -188,11 +188,22 @@ class BaseHostingServiceConnectUI:
     #: The template to use for rendering the connect UI.
     #:
     #: This is the per-service step of the "Connect a service" flow. The
-    #: default template renders the service's authentication form. Services
-    #: that need to offer additional or alternative connection methods can
-    #: override this template or :py:meth:`render_connect_ui`.
+    #: default template renders the service's authentication form. If the
+    #: service already has connected accounts, it will also include choices
+    #: to use them (e.g. add a new repository or bug tracker using that
+    #: account).
+    #:
+    #: Services that need to offer additional or alternative connection
+    #: methods can override this template or :py:meth:`render_connect_ui`.
     connect_ui_template: ClassVar[str] = \
         'admin/connected_services/_parts/connect_form.html'
+
+    #: The template to use for rendering the existing accounts choice.
+    #:
+    #: When the service already has connected accounts, the connect UI
+    #: first offers to use one of them, or to link another account.
+    connect_choice_template: ClassVar[str] = \
+        'admin/connected_services/_parts/connect_choice.html'
 
     #: The template to use for rendering the connect success UI.
     #:
@@ -511,6 +522,11 @@ class BaseHostingServiceConnectUI:
 
         This is the per-service step of the "Connect a service" flow. The
         default implementation renders the service's authentication form.
+
+        If the service already has connected accounts, it will also include
+        choices to use them (e.g. add a new repository or bug tracker using
+        that account).
+
         Services can override this method (or :py:attr:`connect_ui_template`)
         to offer additional or alternative connection methods.
 
@@ -528,6 +544,28 @@ class BaseHostingServiceConnectUI:
             The rendered connect UI.
         """
         if form is None:
+            if request.GET.get('method') != 'new':
+                existing_account_actions = \
+                    self.get_existing_account_actions(request)
+
+                if existing_account_actions:
+                    service = self._hosting_service_cls
+                    connect_url = reverse(
+                        'connected-services-connect',
+                        kwargs={
+                            'service_id': service.hosting_service_id,
+                        })
+
+                    return render_to_string(
+                        self.connect_choice_template,
+                        {
+                            'existing_account_actions':
+                                existing_account_actions,
+                            'link_account_url': f'{connect_url}?method=new',
+                            'service_name': service.name,
+                        },
+                        request=request)
+
             form = self.get_auth_form_class()(
                 hosting_service_cls=self._hosting_service_cls,
                 local_site=request.local_site)
@@ -636,7 +674,10 @@ class BaseHostingServiceConnectUI:
             })
             url = reverse('admin:hostingsvcs_configuredbugtracker_add')
             actions.append({
-                'description': account.username,
+                'description': (
+                    _('Using {account}')
+                    .format(account=account.username)
+                ),
                 'label': (
                     _('Create a new bug tracker on {host}')
                     .format(host=host)
@@ -645,6 +686,41 @@ class BaseHostingServiceConnectUI:
             })
 
         return actions
+
+    def get_existing_account_actions(
+        self,
+        request: HttpRequest,
+    ) -> Sequence[ConnectAddObjectAction]:
+        """Return the add actions for the service's existing accounts.
+
+        These are offered in the connect UI, so an account that's already
+        connected can be used without linking it again. Hidden accounts are
+        left out.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+        Returns:
+            list of ConnectAddObjectAction:
+            The actions for all existing accounts.
+        """
+        from reviewboard.hostingsvcs.models import HostingServiceAccount
+
+        accounts = (
+            HostingServiceAccount.objects
+            .filter(service_name=self._hosting_service_cls.hosting_service_id,
+                    local_site=request.local_site,
+                    visible=True)
+            .order_by('hosting_url', 'username')
+        )
+
+        return [
+            action
+            for account in accounts
+            for action in self.get_add_object_actions(request,
+                                                      account=account)
+        ]
 
     def render_connect_success_ui(
         self,

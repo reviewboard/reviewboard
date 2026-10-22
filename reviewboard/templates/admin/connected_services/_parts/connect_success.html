@@ -20,5 +20,9 @@
  <p>{% trans "What would you like to set up next?" %}</p>
 {%  endif %}
 {% endblock content %}
-{% include "admin/connected_services/_parts/connect_add_actions.html" %}
+{% if add_actions %}
+ <ul class="rb-c-connect-wizard__options">
+{%  include "admin/connected_services/_parts/connect_add_actions.html" %}
+ </ul>
+{% endif %}
 </div>

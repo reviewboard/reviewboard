@@ -52,6 +52,52 @@ class ConnectServiceViewTests(TestCase):
         # dialog header (client-side), not in this fragment.
         self.assertIn(b'hosting_account_username', response.content)
 
+    def test_get_with_existing_accounts(self) -> None:
+        """Testing ConnectServiceView GET with existing accounts offers to use
+        them or link another
+        """
+        account = HostingServiceAccount.objects.create(
+            hosting_url='https://scm.example.com/',
+            service_name='test',
+            username='myuser')
+        HostingServiceAccount.objects.create(
+            service_name='test',
+            username='hidden-user',
+            visible=False)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self._get_url('test'))
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content
+        self.assertIn(b'Add a repository from scm.example.com', content)
+        self.assertIn(b'Create a new bug tracker on scm.example.com', content)
+        self.assertIn(b'hosting_account=%d' % account.pk, content)
+        self.assertIn(
+            b'href="/admin/connected-services/test/connect/?method=new" '
+            b'data-connect-page',
+            content)
+        self.assertNotIn(b'hidden-user', content)
+        self.assertNotIn(b'hosting_account_username', content)
+
+    def test_get_with_existing_accounts_and_method_new(self) -> None:
+        """Testing ConnectServiceView GET with existing accounts and
+        ?method=new renders the form
+        """
+        HostingServiceAccount.objects.create(
+            service_name='test',
+            username='myuser')
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self._get_url('test'), {
+            'method': 'new',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'hosting_account_username', response.content)
+        self.assertNotIn(b'Link another account', response.content)
+
     def test_get_with_unknown_service(self) -> None:
         """Testing ConnectServiceView GET with an unknown service"""
         self.client.login(username='admin', password='admin')
