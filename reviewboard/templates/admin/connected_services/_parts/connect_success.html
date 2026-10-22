@@ -1,0 +1,24 @@
+{% load i18n %}
+{% blocktrans asvar wizard_title %}Connected to {{service_name}}{% endblocktrans %}
+<div class="rb-c-admin-cs-connect"
+     data-wizard-title="{{wizard_title}}"
+     data-wizard-title-icon="{{service_logo}}"
+     data-wizard-cancel-label="{% trans 'Done' %}"
+     data-wizard-close-url="{% url 'connected-services-list' %}">
+{% for alert in alerts %}
+ <div class="ink-c-alert -is-{{alert.level}}" role="status">
+  <div class="ink-c-alert__content">{{alert.message}}</div>
+ </div>
+{% endfor %}
+{% block content %}
+ <h1>
+{%  blocktrans with name=account.username %}
+  {{name}} is connected.
+{%  endblocktrans %}
+ </h1>
+{%  if add_actions %}
+ <p>{% trans "What would you like to set up next?" %}</p>
+{%  endif %}
+{% endblock content %}
+{% include "admin/connected_services/_parts/connect_add_actions.html" %}
+</div>

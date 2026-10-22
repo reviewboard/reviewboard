@@ -135,11 +135,82 @@ class ConnectServiceViewTests(TestCase):
 
         rsp = json.loads(response.content)
         self.assertTrue(rsp['success'])
-        self.assertEqual(rsp['redirect'], reverse('connected-services-list'))
+        self.assertNotIn('redirect', rsp)
 
         account = HostingServiceAccount.objects.get(service_name='test',
                                                     username='myuser')
         self.assertTrue(account.is_authorized)
+
+        # The success step offers the next actions for the account, and
+        # reloads the list when closed.
+        html = rsp['html']
+        self.assertIn('Connected to Test Service', html)
+        self.assertIn(
+            f'data-wizard-close-url="{reverse("connected-services-list")}"',
+            html)
+        self.assertIn(
+            '/admin/db/scmtools/repository/add/?hosting_type=test&amp;'
+            f'hosting_account={account.pk}&amp;'
+            'next=%2Fadmin%2Fconnected-services%2F',
+            html)
+        self.assertIn(
+            '/admin/db/hostingsvcs/configuredbugtracker/add/?'
+            f'service_name=test&amp;hosting_account={account.pk}&amp;'
+            'next=%2Fadmin%2Fconnected-services%2F',
+            html)
+
+    def test_post_with_bug_tracker_service(self) -> None:
+        """Testing ConnectServiceView POST with a bug tracker service offers
+        only a bug tracker
+        """
+        class BugTrackerTestService(TestService):
+            hosting_service_id = 'test-bug-tracker'
+            name = 'Test Bug Tracker'
+            supports_repositories = False
+
+            # Don't reuse the parent class's cached connect UI.
+            _connect_ui = None
+
+        hosting_service_registry.register(BugTrackerTestService)
+
+        try:
+            self.client.login(username='admin', password='admin')
+            response = self.client.post(
+                self._get_url('test-bug-tracker'),
+                {
+                    'hosting_account_username': 'myuser',
+                    'hosting_account_password': 'mypass',
+                })
+        finally:
+            hosting_service_registry.unregister(BugTrackerTestService)
+
+        self.assertEqual(response.status_code, 200)
+
+        rsp = json.loads(response.content)
+        self.assertTrue(rsp['success'])
+
+        html = rsp['html']
+        self.assertIn('Add a bug tracker', html)
+        self.assertNotIn('Add a repository', html)
+
+    def test_add_object_actions_with_local_site_account(self) -> None:
+        """Testing BaseHostingServiceConnectUI.get_add_object_actions with a
+        Local Site account includes the Local Site
+        """
+        local_site = self.create_local_site()
+        account = HostingServiceAccount.objects.create(
+            local_site=local_site,
+            service_name='test',
+            username='myuser')
+
+        actions = TestService.connect_ui.get_add_object_actions(
+            self.create_http_request(),
+            account=account)
+
+        self.assertEqual(len(actions), 2)
+
+        for action in actions:
+            self.assertIn(f'local_site={local_site.pk}', action['url'])
 
     def test_post_with_authorization_error(self) -> None:
         """Testing ConnectServiceView POST surfaces an AuthorizationError"""

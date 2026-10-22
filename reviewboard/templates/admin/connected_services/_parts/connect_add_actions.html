@@ -1,0 +1,12 @@
+{% if add_actions %}
+<ul class="rb-c-connect-wizard__options">
+{%  for action in add_actions %}
+ <li class="rb-c-connect-wizard__option">
+  <a href="{{action.url}}">
+   <h2>{{action.label}}</h2>
+   <p>{{action.description}}</p>
+  </a>
+ </li>
+{%  endfor %}
+</ul>
+{% endif %}

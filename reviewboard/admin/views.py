@@ -781,7 +781,7 @@ def _save_hosting_auth_form(
     service_id: str,
     *,
     force_authorize: bool = False,
-) -> bool:
+) -> HostingServiceAccount | None:
     """Save a hosting service auth form, recording any failure on the form.
 
     This wraps :py:meth:`~reviewboard.hostingsvcs.base.forms.
@@ -804,12 +804,12 @@ def _save_hosting_auth_form(
             authorized.
 
     Returns:
-        bool:
-        ``True`` if the account was saved, or ``False`` if an error occurred.
-        On failure, the error is added to the form.
+        reviewboard.hostingsvcs.models.HostingServiceAccount:
+        The saved account, or ``None`` if an error occurred. On failure, the
+        error is added to the form.
     """
     try:
-        form.save(force_authorize=force_authorize)
+        return form.save(force_authorize=force_authorize)
     except ValueError as e:
         form.add_error(None, str(e))
     except TwoFactorAuthCodeRequiredError as e:
@@ -831,10 +831,8 @@ def _save_hosting_auth_form(
                 'Unexpected error when linking the account: {e}. Additional '
                 'details may be found in the Review Board log file.'
             ).format(e=e))
-    else:
-        return True
 
-    return False
+    return None
 
 
 @method_decorator(
@@ -908,8 +906,8 @@ class ConnectServiceView(BaseServicesView):
 
         Returns:
             django.http.JsonResponse:
-            A JSON response indicating success (with a redirect URL) or
-            failure (with the re-rendered connect UI fragment).
+            A JSON response indicating success (with the connect success UI
+            fragment) or failure (with the re-rendered connect UI fragment).
         """
         service = self._get_authorized_hosting_service(service_id)
 
@@ -917,11 +915,16 @@ class ConnectServiceView(BaseServicesView):
             data=request.POST,
             hosting_service_cls=service)
 
-        if form.is_valid() and _save_hosting_auth_form(form, service_id):
-            return JsonResponse({
-                'success': True,
-                'redirect': reverse('connected-services-list'),
-            })
+        if form.is_valid():
+            account = _save_hosting_auth_form(form, service_id)
+
+            if account is not None:
+                return JsonResponse({
+                    'success': True,
+                    'html': service.connect_ui.render_connect_success_ui(
+                        request,
+                        account=account),
+                })
 
         return JsonResponse({
             'success': False,
@@ -1022,7 +1025,8 @@ class EditServiceCredentialsView(BaseServicesView):
             local_site=account.local_site)
 
         if (form.is_valid() and
-            _save_hosting_auth_form(form, service_id, force_authorize=True)):
+            _save_hosting_auth_form(form, service_id,
+                                    force_authorize=True) is not None):
             return JsonResponse({
                 'success': True,
                 'redirect': reverse('connected-services-list'),
