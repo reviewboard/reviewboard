@@ -409,7 +409,8 @@ class JIRAConnectUI(BaseHostingServiceConnectUI):
         """Render the connect UI for JIRA.
 
         By default, this shows a choice between JIRA Cloud and JIRA Data
-        Center. When requested with ``?deployment=cloud`` or
+        Center. Existing accounts are offered first, to create a bug tracker
+        with them. When requested with ``?deployment=cloud`` or
         ``?deployment=dc``, it shows the credentials form for that deployment.
 
         Version Added:
@@ -462,7 +463,7 @@ class JIRAConnectUI(BaseHostingServiceConnectUI):
         """Return template context for rendering the connect UI.
 
         This adds the URLs for the JIRA Cloud and JIRA Data Center connect
-        pages.
+        pages, and the actions for existing accounts.
 
         Version Added:
             9.0
@@ -488,6 +489,8 @@ class JIRAConnectUI(BaseHostingServiceConnectUI):
         context['jira_cloud_connect_url'] = \
             f'{connect_url}?deployment=cloud'
         context['jira_dc_connect_url'] = f'{connect_url}?deployment=dc'
+        context['existing_account_actions'] = \
+            self.get_existing_account_actions(request)
 
         return context
 

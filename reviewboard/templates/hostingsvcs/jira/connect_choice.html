@@ -1,11 +1,20 @@
 {% load i18n %}
 
+{% if existing_account_actions %}
+<h1>{% trans "How do you want to use JIRA?" %}</h1>
+{% else %}
 <h1>{% trans "How do you want to connect to JIRA?" %}</h1>
+{% endif %}
 
 <ul class="rb-c-connect-wizard__options">
+{% include "admin/connected_services/_parts/connect_add_actions.html" with add_actions=existing_account_actions %}
  <li class="rb-c-connect-wizard__option">
   <a href="{{jira_cloud_connect_url}}" data-connect-page>
+{% if existing_account_actions %}
+   <h2>{% trans "Link a JIRA Cloud account" %}</h2>
+{% else %}
    <h2>{% trans "JIRA Cloud" %}</h2>
+{% endif %}
    <p>
 {% blocktrans %}
     Hosted by Atlassian, at a yourteam.atlassian.net address.
@@ -15,7 +24,11 @@
  </li>
  <li class="rb-c-connect-wizard__option">
   <a href="{{jira_dc_connect_url}}" data-connect-page>
+{% if existing_account_actions %}
+   <h2>{% trans "Link a JIRA Data Center account" %}</h2>
+{% else %}
    <h2>{% trans "JIRA Data Center" %}</h2>
+{% endif %}
    <p>
 {% blocktrans %}
     A self-hosted JIRA server, run by your organization.

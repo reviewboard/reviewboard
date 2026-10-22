@@ -361,6 +361,31 @@ class ConnectServiceViewTests(TestCase):
         self.assertIn(b'?deployment=dc', response.content)
         self.assertNotIn(b'/jira/bug-trackers/add/', response.content)
 
+    def test_get_jira_with_existing_accounts(self) -> None:
+        """Testing ConnectServiceView GET for JIRA with existing accounts
+        offers them before the deployment choice
+        """
+        account = HostingServiceAccount.objects.create(
+            hosting_url='https://jira.example.com/',
+            service_name='jira',
+            username='myuser')
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self._get_url('jira'))
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content
+        self.assertIn(b'Create a new bug tracker on jira.example.com',
+                      content)
+        self.assertIn(b'hosting_account=%d' % account.pk, content)
+        self.assertIn(b'Link a JIRA Cloud account', content)
+        self.assertIn(b'Link a JIRA Data Center account', content)
+
+        # The account comes before the deployment choices.
+        self.assertLess(content.index(b'jira.example.com'),
+                        content.index(b'?deployment=cloud'))
+
     def test_get_jira_cloud_form(self) -> None:
         """Testing ConnectServiceView GET with the JIRA Cloud deployment"""
         self.client.login(username='admin', password='admin')
