@@ -24,10 +24,12 @@ from django.http import (
     HttpResponse,
     HttpResponseBadRequest,
     HttpResponseRedirect,
+    JsonResponse,
 )
 from django.shortcuts import get_object_or_404, render
 from django.templatetags.static import static
 from django.utils.decorators import method_decorator
+from django.utils.html import format_html
 from django.utils.translation import gettext as _, ngettext
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -759,10 +761,13 @@ class GitHubAppInstallCallbackView(GitHubAppView):
 
         hosting_service_id = kwargs['hosting_service_id']
 
-        # The wizard loads the install success step from this same URL via
-        # ?step=reassign. Return the bare fragment for the requested
+        # The wizard loads the install success steps from this same URL via
+        # ?step=reassign (move existing repositories) and ?step=done (set up
+        # what's next). Return the bare fragment for the requested
         # installation account.
-        if request.GET.get('step') == 'reassign':
+        step = request.GET.get('step')
+
+        if step in ('reassign', 'done'):
             installation_account = self._get_account_or_none(
                 pk=request.GET.get('account_id'),
                 service_name='github')
@@ -771,6 +776,14 @@ class GitHubAppInstallCallbackView(GitHubAppView):
                 not is_installation_account(installation_account)):
                 raise Http404(
                     _('The specified GitHub App installation was not found.'))
+
+            if step == 'done':
+                from reviewboard.hostingsvcs.github.service import GitHub
+
+                return HttpResponse(
+                    GitHub.connect_ui.render_connect_success_ui(
+                        request,
+                        account=installation_account))
 
             return self._render_success_fragment(
                 request=request,
@@ -933,20 +946,38 @@ class GitHubAppInstallCallbackView(GitHubAppView):
 
         Returns:
             django.http.HttpResponse:
-            A redirect to the connected services list.
+            A redirect to the connected services list. When submitted from
+            the connect wizard, this is instead a JSON response with the
+            connect success step, showing the outcome.
         """
+        # The connect wizard submits this form in place. It gets the next
+        # step back as JSON, and shows the outcome there instead of as a
+        # message on the next page load.
+        in_wizard = \
+            request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
         installation_account = self._get_account_or_none(
             pk=request.POST.get('account_id'),
             service_name='github')
 
         if (installation_account is None or
             not is_installation_account(installation_account)):
-            return self._show_error(
-                request,
-                _(
-                    'The specified GitHub App installation was not found. '
-                    'Please try connecting again.'
-                ))
+            error = _(
+                'The specified GitHub App installation was not found. '
+                'Please try connecting again.'
+            )
+
+            if in_wizard:
+                return JsonResponse({
+                    'success': False,
+                    'html': format_html(
+                        '<div class="ink-c-alert -is-error" role="alert">'
+                        '<div class="ink-c-alert__content">{}</div>'
+                        '</div>',
+                        error),
+                })
+
+            return self._show_error(request, error)
 
         # Recompute the eligible repositories and only reassign ones that are
         # genuinely candidates. No session state survives from the GET, so this
@@ -1014,30 +1045,43 @@ class GitHubAppInstallCallbackView(GitHubAppView):
         count = len(selected_repositories)
 
         if count:
-            messages.success(
-                request,
-                ngettext(
-                    'Review Board is now connected to GitHub, and %(count)d '
-                    'repository was moved to the new connection.',
-                    'Review Board is now connected to GitHub, and %(count)d '
-                    'repositories were moved to the new connection.',
-                    count) % {'count': count})
+            level = messages.SUCCESS
+            message = ngettext(
+                'Review Board is now connected to GitHub, and %(count)d '
+                'repository was moved to the new connection.',
+                'Review Board is now connected to GitHub, and %(count)d '
+                'repositories were moved to the new connection.',
+                count) % {'count': count}
         elif lookup_failed and requested_ids:
             # The connection itself succeeded, but the repositories the
             # administrator asked to move were left on their old credentials.
             # Reporting plain success here would hide that.
-            messages.warning(
-                request,
-                _(
-                    'Review Board is now connected to GitHub, but the '
-                    'repositories you selected could not be moved to the new '
-                    'connection. They are still using their old credentials. '
-                    'Please try moving them again.'
-                ))
+            level = messages.WARNING
+            message = _(
+                'Review Board is now connected to GitHub, but the '
+                'repositories you selected could not be moved to the new '
+                'connection. They are still using their old credentials. '
+                'Please try moving them again.'
+            )
         else:
-            messages.success(
-                request,
-                _('Review Board is now connected to GitHub.'))
+            level = messages.SUCCESS
+            message = _('Review Board is now connected to GitHub.')
+
+        if in_wizard:
+            return JsonResponse({
+                'success': True,
+                'html': GitHub.connect_ui.render_connect_success_ui(
+                    request,
+                    account=installation_account,
+                    extra_context={
+                        'alerts': [{
+                            'level': messages.DEFAULT_TAGS[level],
+                            'message': message,
+                        }],
+                    }),
+            })
+
+        messages.add_message(request, level, message)
 
         return HttpResponseRedirect(
             local_site_reverse('connected-services-list',
@@ -1144,16 +1188,26 @@ class GitHubAppInstallCallbackView(GitHubAppView):
         logo_image = GitHub.logo_image
         assert logo_image is not None
 
+        callback_url = local_site_reverse(
+            'github-app-install-callback',
+            request=request,
+            kwargs={
+                'hosting_service_id': hosting_service_id,
+            })
+        done_query = urlencode({
+            'step': 'done',
+            'account_id': installation_account.pk,
+        })
+
         return render(
             request=request,
             template_name='hostingsvcs/github/app_install_success.html',
             context={
-                'form_action': local_site_reverse(
-                    'github-app-install-callback',
-                    request=request,
-                    kwargs={
-                        'hosting_service_id': hosting_service_id,
-                    }),
+                'add_actions': GitHub.connect_ui.get_add_object_actions(
+                    request,
+                    account=installation_account),
+                'done_url': f'{callback_url}?{done_query}',
+                'form_action': callback_url,
                 'installation_account': installation_account,
                 'owner_login': owner_login or '',
                 'repositories': repositories,

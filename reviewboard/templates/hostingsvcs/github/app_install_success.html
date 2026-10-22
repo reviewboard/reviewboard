@@ -14,6 +14,7 @@
  configure repositories from the connected services list.
 {%  endblocktrans %}
 </p>
+{%  include "admin/connected_services/_parts/connect_add_actions.html" %}
 {% elif repositories %}
 <p>
 {%  blocktrans %}
@@ -26,8 +27,8 @@
 <form method="post" action="{{form_action}}"
       id="github-repo-reassign-account-form"
       class="rb-c-form"
-      data-wizard-action-label="{% trans 'Reassign selected repositories' %}"
-      data-wizard-cancel-label="{% trans 'Skip' %}">
+      data-service-id="github"
+      data-wizard-action-label="{% trans 'Reassign selected repositories' %}">
  {% csrf_token %}
  <input type="hidden" name="account_id"
         value="{{installation_account.pk}}">
@@ -44,10 +45,15 @@
  </div>
 {%  endfor %}
 </form>
+
+<p>
+ <a href="{{done_url}}" data-connect-page>{% trans "Skip this step" %}</a>
+</p>
 {% else %}
 <p data-wizard-cancel-label="{% trans 'Close' %}">
 {%  blocktrans %}
  There are no Personal Access Token repositories to move onto this connection.
 {%  endblocktrans %}
 </p>
+{%  include "admin/connected_services/_parts/connect_add_actions.html" %}
 {% endif %}
