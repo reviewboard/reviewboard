@@ -168,3 +168,88 @@ class TextBasedReviewUITests(kgb.SpyAgency, TestCase):
                 ]),
                 cache,
             )
+
+    def test_get_extra_context_too_large(self) -> None:
+        """Testing TextBasedReviewUI.get_extra_context with a file over
+        max_display_file_size
+        """
+        self.spy_on(TextBasedReviewUI.get_text_lines,
+                    owner=TextBasedReviewUI)
+
+        review_ui = TextBasedReviewUI(review_request=self.review_request,
+                                      obj=self.attachment)
+        review_ui.max_display_file_size = 5
+
+        request = RequestFactory().get('/')
+        extra_context = review_ui.get_extra_context(request)
+
+        self.assertTrue(extra_context['too_large'])
+        self.assertNotIn('text_lines', extra_context)
+        self.assertNotIn('rendered_lines', extra_context)
+        self.assertSpyNotCalled(TextBasedReviewUI.get_text_lines)
+
+    def test_get_extra_context_with_diff_too_large(self) -> None:
+        """Testing TextBasedReviewUI.get_extra_context with diff_against_obj
+        over max_display_file_size
+        """
+        new_attachment = self.create_file_attachment(
+            self.review_request,
+            attachment_history=self.attachment_history,
+            attachment_revision=1,
+            caption='Revision 2 caption',
+            orig_filename='revision2.txt',
+            mimetype='text/plain',
+            file_content=b'Short.')
+
+        self.spy_on(RawDiffChunkGenerator.get_chunks_uncached,
+                    owner=RawDiffChunkGenerator)
+
+        review_ui = TextBasedReviewUI(review_request=self.review_request,
+                                      obj=new_attachment)
+        review_ui.set_diff_against(self.attachment)
+        review_ui.max_display_file_size = 10
+
+        request = RequestFactory().get('/')
+        extra_context = review_ui.get_extra_context(request)
+
+        self.assertTrue(extra_context['too_large'])
+        self.assertNotIn('source_chunks', extra_context)
+        self.assertNotIn('rendered_chunks', extra_context)
+        self.assertSpyNotCalled(RawDiffChunkGenerator.get_chunks_uncached)
+
+    def test_render_comment_thumbnail_too_large(self) -> None:
+        """Testing TextBasedReviewUI.render_comment_thumbnail with a file
+        over max_display_file_size
+        """
+        comment = self.create_file_attachment_comment(
+            self.review,
+            self.attachment,
+            extra_fields={
+                'beginLineNum': 1,
+                'endLineNum': 1,
+                'viewMode': 'source',
+            })
+
+        review_ui = TextBasedReviewUI(review_request=self.review_request,
+                                      obj=self.attachment)
+        review_ui.max_display_file_size = 5
+
+        self.assertEqual(
+            review_ui.render_comment_thumbnail(comment, 1, 1, 'source'),
+            '')
+
+    def test_render_too_large(self) -> None:
+        """Testing TextBasedReviewUI.render_to_string with a file over
+        max_display_file_size
+        """
+        review_ui = TextBasedReviewUI(review_request=self.review_request,
+                                      obj=self.attachment)
+        review_ui.max_display_file_size = 5
+
+        request = RequestFactory().get('/')
+        request.user = self.review_request.submitter
+
+        html = review_ui.render_to_string(request)
+
+        self.assertIn('This file is too large to display.', html)
+        self.assertNotIn('This is revision 1.', html)

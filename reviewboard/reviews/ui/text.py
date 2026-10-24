@@ -83,6 +83,15 @@ class TextBasedReviewUI(ReviewUI[
     #: Extra classes to apply to the Review UI element.
     extra_css_classes: list[str] = []
 
+    #: The largest file size, in bytes, that will be displayed.
+    #:
+    #: Rendering and diffing text gets very slow on large files. Files over
+    #: this size show an error instead of their contents.
+    #:
+    #: Version Added:
+    #:     8.1
+    max_display_file_size: int = 1024 * 1024
+
     js_model_class: str = 'RB.TextBasedReviewable'
     js_view_class: str = 'RB.TextBasedReviewableView'
 
@@ -122,6 +131,7 @@ class TextBasedReviewUI(ReviewUI[
         """
         context = {}
         diff_type_mismatch = False
+        too_large = self.is_too_large()
 
         if self.diff_against_obj:
             diff_against_review_ui = self.diff_against_obj.review_ui
@@ -134,7 +144,7 @@ class TextBasedReviewUI(ReviewUI[
 
             if type(self) != type(diff_against_review_ui):
                 diff_type_mismatch = True
-            else:
+            elif not too_large:
                 chunk_generator = self._get_source_diff_chunk_generator()
                 context['source_chunks'] = chunk_generator.get_chunks(
                     self._make_diff_chunks_cache_key('source',
@@ -144,7 +154,7 @@ class TextBasedReviewUI(ReviewUI[
                 context['rendered_chunks'] = chunk_generator.get_chunks(
                     self._make_diff_chunks_cache_key('rendered',
                                                      chunk_generator))
-        else:
+        elif not too_large:
             file_line_list = [
                 mark_safe(line)
                 for line in self.get_text_lines()
@@ -172,9 +182,31 @@ class TextBasedReviewUI(ReviewUI[
             'is_diff': self.diff_against_obj is not None,
             'num_revisions': num_revisions,
             'diff_type_mismatch': diff_type_mismatch,
+            'too_large': too_large,
         })
 
         return context
+
+    def is_too_large(self) -> bool:
+        """Return whether the files are too large to display.
+
+        This checks the attachment and, if set, the attachment being diffed
+        against.
+
+        Version Added:
+            8.1.1
+
+        Returns:
+            bool:
+            ``True`` if either file is larger than
+            :py:attr:`max_display_file_size`.
+        """
+        max_size = self.max_display_file_size
+
+        return any(
+            obj is not None and obj.file.size > max_size
+            for obj in (self.obj, self.diff_against_obj)
+        )
 
     def get_text(self) -> str:
         """Return the file contents as a string.
@@ -405,6 +437,9 @@ class TextBasedReviewUI(ReviewUI[
             logger.warning('Unexpected view mode "%s" when rendering '
                            'comment thumbnail.',
                            view_mode)
+            return ''
+
+        if self.is_too_large():
             return ''
 
         context = {
