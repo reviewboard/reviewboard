@@ -9,6 +9,7 @@ from typing import (Any, Iterator, List, Optional, Sequence, TYPE_CHECKING,
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.safestring import mark_safe
+from django.utils.translation import get_language
 from djblets.cache.backend import cache_memoize
 from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
@@ -135,10 +136,14 @@ class TextBasedReviewUI(ReviewUI[
                 diff_type_mismatch = True
             else:
                 chunk_generator = self._get_source_diff_chunk_generator()
-                context['source_chunks'] = chunk_generator.get_chunks()
+                context['source_chunks'] = chunk_generator.get_chunks(
+                    self._make_diff_chunks_cache_key('source',
+                                                     chunk_generator))
 
                 chunk_generator = self._get_rendered_diff_chunk_generator()
-                context['rendered_chunks'] = chunk_generator.get_chunks()
+                context['rendered_chunks'] = chunk_generator.get_chunks(
+                    self._make_diff_chunks_cache_key('rendered',
+                                                     chunk_generator))
         else:
             file_line_list = [
                 mark_safe(line)
@@ -416,9 +421,12 @@ class TextBasedReviewUI(ReviewUI[
             elif view_mode == 'rendered':
                 chunk_generator = self._get_rendered_diff_chunk_generator()
 
-            chunks = get_chunks_in_range(chunk_generator.get_chunks(),
-                                         begin_line_num,
-                                         end_line_num - begin_line_num + 1)
+            chunks = get_chunks_in_range(
+                chunk_generator.get_chunks(
+                    self._make_diff_chunks_cache_key(view_mode,
+                                                     chunk_generator)),
+                begin_line_num,
+                end_line_num - begin_line_num + 1)
 
             context.update({
                 'chunks': chunks,
@@ -520,6 +528,39 @@ class TextBasedReviewUI(ReviewUI[
             orig_filename=self.obj.filename,
             modified_filename=self.diff_against_obj.filename,
             diff_settings=DiffSettings.create(request=self.request))
+
+    def _make_diff_chunks_cache_key(
+        self,
+        view_mode: str,
+        chunk_generator: RawDiffChunkGenerator,
+    ) -> Sequence[str]:
+        """Return a cache key for diff chunks between two attachments.
+
+        Version Added:
+            8.1.1
+
+        Args:
+            view_mode (str):
+                The view mode. One of ``source`` or ``rendered``.
+
+            chunk_generator (reviewboard.diffviewer.chunk_generator.
+                             RawDiffChunkGenerator):
+                The chunk generator that will generate the chunks.
+
+        Returns:
+            str:
+            The cache key for the diff chunks.
+        """
+        assert self.diff_against_obj is not None
+
+        return [
+            'text-attachment-diff',
+            view_mode,
+            str(self.diff_against_obj.pk),
+            str(self.obj.pk),
+            chunk_generator.diff_settings.state_hash,
+            get_language(),
+        ]
 
     def _get_source_diff_chunk_generator(self) -> RawDiffChunkGenerator:
         """Return a chunk generator for diffing source text.

@@ -1,12 +1,20 @@
 """Unit tests for reviewboard.reviews.ui.text.TextBasedReviewUI."""
 
-from django.test.client import RequestFactory
+from __future__ import annotations
 
+import kgb
+from django.core.cache import cache
+from django.test.client import RequestFactory
+from django.utils.translation import get_language
+from djblets.cache.backend import make_cache_key
+
+from reviewboard.diffviewer.chunk_generator import RawDiffChunkGenerator
+from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.reviews.ui.text import TextBasedReviewUI
 from reviewboard.testing import TestCase
 
 
-class TextBasedReviewUITests(TestCase):
+class TextBasedReviewUITests(kgb.SpyAgency, TestCase):
     """Unit tests for reviewboard.reviews.ui.text.TextBasedReviewUI."""
 
     fixtures = ['test_users']
@@ -115,3 +123,48 @@ class TextBasedReviewUITests(TestCase):
         self.assertEqual(list(extra_context['rendered_chunks']), [])
         self.assertNotIn('text_lines', extra_context)
         self.assertNotIn('rendered_lines', extra_context)
+
+    def test_get_extra_context_with_diff_cached(self) -> None:
+        """Testing TextBasedReviewUI.get_extra_context with diff_against_obj
+        caches diff chunks
+        """
+        new_attachment = self.create_file_attachment(
+            self.review_request,
+            attachment_history=self.attachment_history,
+            attachment_revision=1,
+            caption='Revision 2 caption',
+            orig_filename='revision2.txt',
+            mimetype='text/plain',
+            file_content=b'And this is revision 2.')
+
+        self.spy_on(RawDiffChunkGenerator.get_chunks_uncached,
+                    owner=RawDiffChunkGenerator)
+
+        request = RequestFactory().get('/')
+
+        for i in range(2):
+            review_ui = TextBasedReviewUI(review_request=self.review_request,
+                                          obj=new_attachment)
+            review_ui.set_diff_against(self.attachment)
+            extra_context = review_ui.get_extra_context(request)
+
+            self.assertEqual(len(list(extra_context['source_chunks'])), 1)
+            self.assertEqual(list(extra_context['rendered_chunks']), [])
+
+        # One call each for source and rendered, on the first pass only.
+        self.assertSpyCallCount(RawDiffChunkGenerator.get_chunks_uncached, 2)
+
+        state_hash = DiffSettings.create().state_hash
+
+        for view_mode in ('source', 'rendered'):
+            self.assertIn(
+                make_cache_key([
+                    'text-attachment-diff',
+                    view_mode,
+                    str(self.attachment.pk),
+                    str(new_attachment.pk),
+                    state_hash,
+                    get_language(),
+                ]),
+                cache,
+            )
