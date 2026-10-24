@@ -183,7 +183,8 @@ class TextBasedReviewUI(ReviewUI[
         return cast(
             str,
             cache_memoize('text-attachment-%d-string' % self.obj.pk,
-                          self._get_text_uncached))
+                          self._get_text_uncached,
+                          large_data=True))
 
     def get_text_lines(self) -> Sequence[str]:
         """Return the file contents as syntax-highlighted lines.
@@ -195,7 +196,8 @@ class TextBasedReviewUI(ReviewUI[
         return cast(
             List[str],
             cache_memoize('text-attachment-%d-lines' % self.obj.pk,
-                          lambda: list(self.generate_highlighted_text())))
+                          lambda: list(self.generate_highlighted_text()),
+                          large_data=True))
 
     def get_rendered_lines(self) -> list[str]:
         """Return the file contents as a render, based on the raw text.
@@ -212,7 +214,8 @@ class TextBasedReviewUI(ReviewUI[
             return cast(
                 List[str],
                 cache_memoize('text-attachment-%d-rendered' % self.obj.pk,
-                              lambda: list(self.generate_render())))
+                              lambda: list(self.generate_render()),
+                              large_data=True))
         else:
             return []
 
