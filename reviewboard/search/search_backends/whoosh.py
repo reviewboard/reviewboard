@@ -6,6 +6,8 @@ from django import forms
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from haystack.backends.whoosh_backend import WhooshEngine, WhooshSearchBackend
+from whoosh.qparser import FuzzyTermPlugin
 
 from reviewboard.search.search_backends.base import (SearchBackend,
                                                      SearchBackendForm)
@@ -42,12 +44,45 @@ class WhooshConfigForm(SearchBackendForm):
         return index_file
 
 
+class RBWhooshSearchBackend(WhooshSearchBackend):
+    """A Haystack Whoosh backend without fuzzy term searches.
+
+    Haystack turns on fuzzy terms (such as ``word~3``) in the Whoosh query
+    parser. The cost of these grows very quickly with the number of edits,
+    so a single query can run for minutes and use gigabytes of memory.
+    This backend turns them off.
+
+    Version Added:
+        8.1.1
+    """
+
+    def setup(self) -> None:
+        """Set up the backend.
+
+        This removes fuzzy term support from the query parser.
+        """
+        super().setup()
+
+        self.parser.remove_plugin_class(FuzzyTermPlugin)
+
+
+class RBWhooshEngine(WhooshEngine):
+    """A Haystack Whoosh engine that uses RBWhooshSearchBackend.
+
+    Version Added:
+        8.1.1
+    """
+
+    backend = RBWhooshSearchBackend
+
+
 class WhooshBackend(SearchBackend):
     """The Whoosh search backend."""
 
     search_backend_id = 'whoosh'
     name = _('Whoosh')
-    haystack_backend_name = 'haystack.backends.whoosh_backend.WhooshEngine'
+    haystack_backend_name = \
+        'reviewboard.search.search_backends.whoosh.RBWhooshEngine'
     config_form_class = WhooshConfigForm
     form_field_map = {
         'search_index_file': 'PATH',

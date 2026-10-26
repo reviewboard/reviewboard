@@ -1,11 +1,13 @@
 """Unit tests for search functionality."""
 
+import haystack
 from django.apps.registry import apps
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
+from whoosh.query import FuzzyTerm
 
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.reviews.models import ReviewRequestDraft
@@ -361,6 +363,19 @@ class SearchTests(SpyAgency, TestCase):
             with self.subTest(q=q):
                 response = self.search(q)
                 self.assertEqual(response.context['hits_returned'], 0)
+
+    def test_search_fuzzy_terms_disabled(self) -> None:
+        """Testing search query parsing with fuzzy term syntax"""
+        backend = haystack.connections['default'].get_backend()
+        backend.setup()
+
+        query = backend.parser.parse('reviewboard~9')
+
+        self.assertNotIsInstance(query, FuzzyTerm)
+        self.assertFalse(any(
+            isinstance(subquery, FuzzyTerm)
+            for subquery in query.leaves()
+        ))
 
     def test_search_review_request_id(self):
         """Testing search with a review request ID"""
