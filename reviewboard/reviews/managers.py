@@ -13,10 +13,7 @@ from django.db.models.query import QuerySet
 from django.utils.text import slugify
 from housekeeping.functions import deprecate_non_keyword_only_args
 
-from reviewboard.deprecation import (
-    RemovedInReviewBoard11_0Warning,
-    RemovedInReviewBoard90Warning,
-)
+from reviewboard.deprecation import RemovedInReviewBoard90Warning
 from reviewboard.diffviewer.models import DiffSetHistory
 from reviewboard.reviews.signals import review_request_diffset_uploaded
 from reviewboard.scmtools.errors import ChangeNumberInUseError
@@ -511,23 +508,9 @@ class ReviewRequestManager(Manager['ReviewRequest']):
         """
         return ReviewRequestQuerySet(self.model)
 
-    @deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
-    def create(
-        self,
-        *,
-        user: User,
-        repository: Repository | None,
-        commit_id: (str | None) = None,
-        local_site: (LocalSite | None) = None,
-        create_from_commit_id: bool = False,
-        create_with_history: bool = False,
-    ) -> ReviewRequest:
+    def create(self, user, repository, commit_id=None, local_site=None,
+               create_from_commit_id=False, create_with_history=False):
         """Create a new review request.
-
-        Version Changed:
-            9.0:
-            All arguments are now keyword-only. This will be required in
-            Review Board 11.
 
         Args:
             user (django.contrib.auth.models.User):

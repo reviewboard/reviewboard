@@ -236,10 +236,7 @@ class Command(BaseCommand):
                 if int(verbosity) > NORMAL:
                     self.stdout.write('Request #%s:' % j)
 
-                review_request = ReviewRequest.objects.create(
-                    user=new_user,
-                    repository=None,
-                )
+                review_request = ReviewRequest.objects.create(new_user, None)
                 review_request.public = True
                 review_request.summary = self.lorem_ipsum('summary')
                 review_request.description = self.lorem_ipsum('description')

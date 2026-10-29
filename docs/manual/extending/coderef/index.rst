@@ -134,21 +134,6 @@ Avatars
    :ref:`djblets.avatars <coderef-djblets-avatars>`
 
 
-Broker Support
-==============
-
-.. autosummary::
-   :toctree: python
-
-   reviewboard.broker
-   reviewboard.broker.backends
-   reviewboard.broker.backends.local
-   reviewboard.broker.base
-   reviewboard.broker.base.backends
-   reviewboard.broker.base.forms
-   reviewboard.broker.registry
-
-
 Review Request Change Descriptions
 ==================================
 

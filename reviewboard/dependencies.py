@@ -74,7 +74,6 @@ rbintegrations_version = '~=5.0.1'
 #:     8.0
 base_package_dependencies: _DependencyMap = {
     'bleach': '>=6.1.0,<7',
-    'celery': '~=5.6.3',
     'Django': django_version,
     'django-cors-headers': '~=3.11.0',
     'django_evolution': '>=3.0a0.dev0,==3.*',

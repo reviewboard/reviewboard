@@ -76,20 +76,16 @@ from reviewboard.testing.scmtool import (TestTool,
 from reviewboard.webapi.models import WebAPIToken
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable, Iterator, Mapping, Sequence
+    from collections.abc import Iterator, Mapping, Sequence
     from contextlib import AbstractContextManager
-    from typing import TypeAlias, TypeVar
+    from typing import TypeAlias
 
     from django.http import HttpRequest
     from django_assert_queries import ExpectedQuery
-    from djblets.registries.registry import Registry as DjbletsRegistry
-    from registries import Registry as RegistriesRegistry
     from typelets.json import JSONDict
 
     from reviewboard.changedescs.models import ChangeDescription
     from reviewboard.scmtools.core import FileLookupContext, RevisionID
-
-    _T = TypeVar('_T')
 
 
 #: Details for a filediff.
@@ -3266,88 +3262,6 @@ class TestCase(FixturesCompilerMixin, DjbletsTestCase):
         return CertificateFingerprints(sha1=sha1,
                                        sha256=sha256,
                                        **kwargs)
-
-    @contextmanager
-    def add_registry_items(
-        self,
-        registry: DjbletsRegistry[_T] | RegistriesRegistry[_T],
-        items: Iterable[_T],
-    ) -> Iterator[None]:
-        """Temporarily register items in a registry.
-
-        The items will be registered during the context and unregistered
-        after exiting the context.
-
-        Version Added:
-            9.0
-
-        Args:
-            registry (djblets.registries.registry.Registry or
-                      registries.Registry):
-                The registry to manage during the context.
-
-            item (list):
-                The items to register and unregister.
-
-        Context:
-            The items will be registered for the duration of the context.
-        """
-        for item in items:
-            registry.register(item)
-
-        try:
-            yield
-        finally:
-            for item in items:
-                try:
-                    registry.unregister(item)
-                except Exception:
-                    # Ignore this. The test may have unregistered it.
-                    pass
-
-    @contextmanager
-    def override_env_vars(
-        self,
-        env: Mapping[str, str | None],
-    ) -> Iterator[None]:
-        """Temporarily override or unset environment variables.
-
-        The environment variables will be set during the context, and restored
-        to the previous value (or deleted if not previously present) after
-        exiting the context.
-
-        Version Added:
-            9.0
-
-        Args:
-            env (dict):
-                The environment variables to set or unset.
-
-                If any are ``None``, they will be unset for the duration of
-                the context.
-
-        Context:
-            The environment variables will be set (or unset) for the
-            duration of the context.
-        """
-        old_values: dict[str, str | None] = {}
-
-        for key, value in env.items():
-            old_values[key] = os.environ.get(key)
-
-            if value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = value
-
-        try:
-            yield
-        finally:
-            for key, value in old_values.items():
-                if value is None:
-                    os.environ.pop(key, None)
-                else:
-                    os.environ[key] = value
 
     @contextmanager
     def siteconfig_settings(

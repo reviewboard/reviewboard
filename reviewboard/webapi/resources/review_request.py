@@ -850,13 +850,9 @@ class ReviewRequestResource(MarkdownFieldsMixin,
 
         try:
             review_request = ReviewRequest.objects.create(
-                commit_id=commit_id,
+                user, repository, commit_id, local_site,
                 create_from_commit_id=create_from_commit_id,
-                create_with_history=create_with_history,
-                local_site=local_site,
-                repository=repository,
-                user=user,
-            )
+                create_with_history=create_with_history)
 
             if extra_fields:
                 try:

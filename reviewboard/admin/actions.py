@@ -404,23 +404,6 @@ class AdminSettingsAuthenticationNavAction(BaseAction):
     ]
 
 
-class AdminSettingsBackgroundTasksNavAction(BaseAction):
-    """Settings -> Background Tasks navigation action.
-
-    Version Added:
-        9.0
-    """
-
-    action_id = 'admin-settings-background-tasks-nav'
-    label = _('Background Tasks')
-    url_name = 'settings-background-tasks'
-
-    placements = [
-        ActionPlacement(attachment=AttachmentPoint.ADMIN_NAV,
-                        parent_id=AdminSettingsNavGroupAction.action_id),
-    ]
-
-
 class AdminSettingsAvatarsNavAction(BaseAction):
     """Settings -> Avatars navigation action.
 
@@ -923,7 +906,6 @@ def get_default_admin_actions() -> Iterator[BaseAction]:
         AdminSettingsGeneralNavAction(),
         AdminSettingsAuthenticationNavAction(),
         AdminSettingsAvatarsNavAction(),
-        AdminSettingsBackgroundTasksNavAction(),
         AdminSettingsEmailNavAction(),
         AdminSettingsReviewsNavAction(),
         AdminSettingsDiffsNavAction(),

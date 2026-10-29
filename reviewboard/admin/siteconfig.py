@@ -133,10 +133,6 @@ defaults.update({
     'client_web_login': True,
     'sso_auto_login_backend': '',
 
-    # Message broker settings.
-    'broker_id': 'local',
-    'brokers': {},
-
     # Reviews settings
     'default_use_rich_text': True,
     'reviews_allow_self_shipit': True,
