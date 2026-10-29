@@ -130,7 +130,11 @@ class RBSearchForm(ModelSearchForm):
         else:
             local_site_id = BaseSearchIndex.NO_LOCAL_SITE_ID
 
-        sqs = sqs.filter_and(local_sites__contains=local_site_id)
+        # Access filters are applied as narrow queries, which the search
+        # backend parses separately from the user's query. Adding them to the
+        # main query would let a crafted query close the user's parentheses
+        # early and OR its way past them.
+        sqs = sqs.narrow(SQ(local_sites__contains=local_site_id))
 
         # Filter out any private review requests the user doesn't have
         # access to.
@@ -185,6 +189,6 @@ class RBSearchForm(ModelSearchForm):
                                 (repository_sq &
                                  (target_users_sq | target_groups_sq)))
 
-            sqs = sqs.exclude(private_sq)
+            sqs = sqs.narrow(~private_sq)
 
         return sqs.order_by('-last_updated')

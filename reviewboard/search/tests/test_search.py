@@ -312,6 +312,56 @@ class SearchTests(SpyAgency, TestCase):
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
 
+    def test_review_requests_without_private_group_access_query_injection(
+        self,
+    ) -> None:
+        """Testing search with private review requests without access to
+        a private group and a query that tries to escape the access filters
+        """
+        self.client.login(username='grumpy', password='grumpy')
+        user = User.objects.get(username='grumpy')
+
+        group = self.create_review_group(invite_only=True)
+
+        review_request = self.create_review_request(publish=True,
+                                                    summary='secretthing')
+        review_request.target_groups.add(group)
+
+        self.assertFalse(review_request.is_accessible_by(user))
+        reindex_search()
+
+        queries = [
+            'secretthing) OR (secretthing',
+            'nomatch) OR summary:secretthing OR (nomatch',
+            'secretthing))) OR (((secretthing',
+            'secretthing OR nomatch',
+        ]
+
+        for q in queries:
+            with self.subTest(q=q):
+                response = self.search(q)
+                self.assertEqual(response.context['hits_returned'], 0)
+
+    @add_fixtures(['test_site'])
+    def test_review_requests_on_local_site_query_injection(self) -> None:
+        """Testing search with review requests on a Local Site and a query
+        that tries to escape the Local Site filter
+        """
+        self.create_review_request(publish=True,
+                                   summary='secretthing',
+                                   with_local_site=True)
+        reindex_search()
+
+        queries = [
+            'secretthing) OR (secretthing',
+            'secretthing OR nomatch',
+        ]
+
+        for q in queries:
+            with self.subTest(q=q):
+                response = self.search(q)
+                self.assertEqual(response.context['hits_returned'], 0)
+
     def test_search_review_request_id(self):
         """Testing search with a review request ID"""
         site = Site.objects.get_current()
