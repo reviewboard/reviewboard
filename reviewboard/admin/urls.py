@@ -32,6 +32,7 @@ from django.views.generic import RedirectView
 from reviewboard.admin import admin_site, views
 from reviewboard.admin.forms.auth_settings import AuthenticationSettingsForm
 from reviewboard.admin.forms.avatar_settings import AvatarServicesForm
+from reviewboard.admin.forms.background_tasks import BackgroundTasksForm
 from reviewboard.admin.forms.diff_settings import DiffSettingsForm
 from reviewboard.admin.forms.email_settings import EMailSettingsForm
 from reviewboard.admin.forms.general_settings import GeneralSettingsForm
@@ -100,6 +101,13 @@ urlpatterns = [
                  'form_class': AvatarServicesForm,
              },
              name='settings-avatars'),
+
+        path('background-tasks/',
+             views.site_settings,
+             kwargs={
+                 'form_class': BackgroundTasksForm,
+             },
+             name='settings-background-tasks'),
 
         path('email/',
              views.site_settings,

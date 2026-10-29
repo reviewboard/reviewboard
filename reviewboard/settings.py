@@ -185,6 +185,7 @@ RB_BUILTIN_APPS = [
     'reviewboard.admin',
     'reviewboard.attachments',
     'reviewboard.avatars',
+    'reviewboard.broker',
     'reviewboard.changedescs',
     'reviewboard.diffviewer',
     'reviewboard.extensions',

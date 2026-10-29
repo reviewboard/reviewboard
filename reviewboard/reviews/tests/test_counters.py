@@ -155,10 +155,11 @@ class ReviewRequestCounterTests(SpyAgency, TestCase):
             path='path1',
             tool_name='Subversion',
             local_site=self.test_site)
-        self.review_request = ReviewRequest.objects.create(
-            self.user,
-            repository,
-            local_site=self.test_site)
+        self.review_request = self.create_review_request(
+            submitter=self.user,
+            repository=repository,
+            local_site=self.test_site,
+        )
 
         self._check_counters(with_local_site=True,
                              total_outgoing=1,

@@ -49,6 +49,7 @@ Hosting = 'https://rbcommons.com/'
 rb-site = 'reviewboard.cmdline.rbsite:main'
 rbext = 'reviewboard.cmdline.rbext:main'
 rbssh = 'reviewboard.cmdline.rbssh:main'
+rbworker = 'reviewboard.worker.main:main'
 
 
 [project.optional-dependencies]
