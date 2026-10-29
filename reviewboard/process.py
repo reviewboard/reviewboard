@@ -15,11 +15,55 @@ from __future__ import annotations
 
 import logging
 import os
+from enum import Enum
 
+from django.core.exceptions import ImproperlyConfigured
 from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard import get_version_string
 from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
+
+
+#: The process mode that Review Board is operating in.
+#:
+#: Version Added:
+#:     9.0
+_process_mode: (RBProcessMode | None) = None
+
+
+# TODO: Switch to StrEnum once we're on Python 3.11+
+class RBProcessMode(str, Enum):
+    """The process mode that Review Board will operate in.
+
+    The process mode is used to differentiate between running Review Board
+    as part of a web server, as a background worker, or as another means
+    (such as via a script or command line).
+
+    The mode set during initialization can be accessed by calling
+    :py:func:`get_rb_process_mode`, and is also available via the
+    :envvar:`RB_PROCESS_MODE` environment variable.
+
+    Version Added:
+        9.0
+    """
+
+    #: Default process mode.
+    #:
+    #: This is used for scripts, unit tests, and other cases where
+    #: Review Board is not being used as a service.
+    DEFAULT = 'default'
+
+    #: Web server process mode.
+    #:
+    #: This is used when running Review Board as part of a web server
+    #: process.
+    SERVER = 'server'
+
+    #: Worker process mode.
+    #:
+    #: This is used when running Review Board as part of a background
+    #: worker process.
+    WORKER = 'worker'
 
 
 @deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
@@ -28,6 +72,7 @@ def initialize(
     load_extensions: bool = True,
     setup_logging: bool = True,
     setup_templates: bool = True,
+    process_mode: RBProcessMode = RBProcessMode.DEFAULT,
 ) -> None:
     """Begin initialization of Review Board.
 
@@ -41,7 +86,8 @@ def initialize(
 
     Version Added:
         9.0:
-        This moved from :py:mod:`reviewboard`. The old function wraps this.
+        * This moved from :py:mod:`reviewboard`. The old function wraps this.
+        * Added the ``process_mode`` argument.
 
     Args:
         load_extensions (bool, optional):
@@ -62,7 +108,27 @@ def initialize(
 
             Keep in mind that many pieces of functionality, such as avatars
             and some management commands, may be impacted by this setting.
+
+        process_mode (RBProcessMode, optional):
+            The mode this Review Board instance will operate in.
+
+            Review Board's configuration and operations may change based on
+            the process mode. This supports web servers, background workers,
+            and general usage for scripts or other operations.
+
+            In most cases, this should be left to the default.
+
+            Version Added:
+                9.0
     """
+    global _process_mode
+
+    # Store the process mode Review Board will operate in.
+    _process_mode = process_mode
+    os.environ['RB_PROCESS_MODE'] = str(process_mode)
+
+    # Point Django to the settings module for Review Board. If already set,
+    # this will be ignored.
     os.environ.setdefault('DJANGO_SETTINGS_MODULE',
                           'reviewboard.settings')
 
@@ -96,10 +162,12 @@ def initialize(
 
     load_site_config()
 
+    version = get_version_string()
+
     if (setup_templates or load_extensions) and not is_running_test:
         if settings.DEBUG:
-            logging.debug('Log file for Review Board v%s (PID %s)' %
-                          (get_version_string(), os.getpid()))
+            logging.debug('Log file for Review Board v%s in %s mode (PID %s)',
+                          version, process_mode, os.getpid())
 
         # Generate the AJAX serial, used for AJAX request caching.
         generate_ajax_serial()
@@ -116,12 +184,10 @@ def initialize(
         if not getattr(settings, 'TEMPLATE_SERIAL', None):
             settings.TEMPLATE_SERIAL = settings.AJAX_SERIAL
 
-    siteconfig = SiteConfiguration.objects.get_current()
-
     if load_extensions and not is_running_test:
-        installed_version = get_version_string()
+        siteconfig = SiteConfiguration.objects.get_current()
 
-        if siteconfig.version == installed_version:
+        if siteconfig.version == version:
             # Load all extensions
             try:
                 get_extension_manager().load()
@@ -132,6 +198,27 @@ def initialize(
         else:
             logging.warning('Extensions will not be loaded. The site must '
                             'be upgraded from Review Board %s to %s.',
-                            siteconfig.version, installed_version)
+                            siteconfig.version, version)
 
     signals.initializing.send(sender=None)
+
+
+def get_rb_process_mode() -> RBProcessMode:
+    """Return the process mode that Review Board is operating in.
+
+    Version Added:
+        9.0
+
+    Returns:
+        RBProcessMode:
+        The initialized process mode.
+    """
+    # Sanity-check that Review Board is initialized. This should safely be
+    # the case in anything we ship.
+    if _process_mode is None:
+        raise ImproperlyConfigured(
+            'Review Board must be initialized before the process mode can '
+            'be retrieved. Please call reviewboard.process.initialize().'
+        )
+
+    return _process_mode
