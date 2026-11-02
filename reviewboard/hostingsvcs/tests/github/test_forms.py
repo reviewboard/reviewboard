@@ -7,6 +7,7 @@ Version Added:
 from __future__ import annotations
 
 from reviewboard.hostingsvcs.github.forms import (
+    GitHubAppForm,
     GitHubPrivateForm,
     GitHubPrivateOrgForm,
     GitHubPublicForm,
@@ -26,6 +27,7 @@ class GitHubRepositoryFormTests(GitHubTestCase):
         personal plan
         """
         for form_cls, repo_name_field in (
+                (GitHubAppForm, 'github_app_repo_name'),
                 (GitHubPublicForm, 'github_public_repo_name'),
                 (GitHubPrivateForm, 'github_private_repo_name')):
             repository = self._create_repository()

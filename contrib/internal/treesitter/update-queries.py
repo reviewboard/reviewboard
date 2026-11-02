@@ -93,10 +93,21 @@ INTERESTING_LINES_DROP_NODE_TYPES: Mapping[SupportedLanguage, set[str]] = {
 #: Version Added:
 #:     9.0
 EXCLUDED_LANGUAGES: set[SupportedLanguage] = {
+    # The C# highlights in nvim-treesitter don't compile against the
+    # tree-sitter-c-sharp in tree-sitter-language-pack. We use the upstream
+    # grammar's highlights instead.
+    'csharp',
+
     # The HTML queries in nvim-treesitter are extremely inefficient, and don't
     # buy us anything. We have custom ones based on the tree-sitter-html
     # queries but with improved injections support.
     'html',
+
+    # nvim-treesitter uses alaviss/tree-sitter-nim, while
+    # tree-sitter-language-pack uses aMOPel/tree-sitter-nim (for licensing
+    # reasons). The two grammars have different node types, so we use the
+    # upstream grammar's highlights instead.
+    'nim',
 
     # nvim-treesitter uses a different tree-sitter-prisma than
     # tree-sitter-language-pack.

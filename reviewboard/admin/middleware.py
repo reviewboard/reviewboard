@@ -9,6 +9,7 @@ from reviewboard import initialize
 from reviewboard.admin.checks import check_updates_required
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.admin.views import manual_updates_required
+from reviewboard.process import RBProcessMode
 
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ def init_review_board_middleware(get_response):
         global _initialized
 
         if not _initialized:
-            initialize()
+            initialize(process_mode=RBProcessMode.SERVER)
             _initialized = True
 
         return get_response(request)

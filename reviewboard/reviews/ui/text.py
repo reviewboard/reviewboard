@@ -9,6 +9,7 @@ from typing import Any, Iterator, TYPE_CHECKING, cast
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.safestring import mark_safe
+from django.utils.translation import get_language
 from djblets.cache.backend import cache_memoize
 from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
@@ -82,6 +83,15 @@ class TextBasedReviewUI(ReviewUI[
     #: Extra classes to apply to the Review UI element.
     extra_css_classes: list[str] = []
 
+    #: The largest file size, in bytes, that will be displayed.
+    #:
+    #: Rendering and diffing text gets very slow on large files. Files over
+    #: this size show an error instead of their contents.
+    #:
+    #: Version Added:
+    #:     8.1
+    max_display_file_size: int = 1024 * 1024
+
     js_model_class: str = 'RB.TextBasedReviewable'
     js_view_class: str = 'RB.TextBasedReviewableView'
 
@@ -121,6 +131,7 @@ class TextBasedReviewUI(ReviewUI[
         """
         context = {}
         diff_type_mismatch = False
+        too_large = self.is_too_large()
 
         if self.diff_against_obj:
             diff_against_review_ui = self.diff_against_obj.review_ui
@@ -133,13 +144,17 @@ class TextBasedReviewUI(ReviewUI[
 
             if type(self) != type(diff_against_review_ui):
                 diff_type_mismatch = True
-            else:
+            elif not too_large:
                 chunk_generator = self._get_source_diff_chunk_generator()
-                context['source_chunks'] = chunk_generator.get_chunks()
+                context['source_chunks'] = chunk_generator.get_chunks(
+                    self._make_diff_chunks_cache_key('source',
+                                                     chunk_generator))
 
                 chunk_generator = self._get_rendered_diff_chunk_generator()
-                context['rendered_chunks'] = chunk_generator.get_chunks()
-        else:
+                context['rendered_chunks'] = chunk_generator.get_chunks(
+                    self._make_diff_chunks_cache_key('rendered',
+                                                     chunk_generator))
+        elif not too_large:
             file_line_list = [
                 mark_safe(line)
                 for line in self.get_text_lines()
@@ -167,9 +182,31 @@ class TextBasedReviewUI(ReviewUI[
             'is_diff': self.diff_against_obj is not None,
             'num_revisions': num_revisions,
             'diff_type_mismatch': diff_type_mismatch,
+            'too_large': too_large,
         })
 
         return context
+
+    def is_too_large(self) -> bool:
+        """Return whether the files are too large to display.
+
+        This checks the attachment and, if set, the attachment being diffed
+        against.
+
+        Version Added:
+            8.1.1
+
+        Returns:
+            bool:
+            ``True`` if either file is larger than
+            :py:attr:`max_display_file_size`.
+        """
+        max_size = self.max_display_file_size
+
+        return any(
+            obj is not None and obj.file.size > max_size
+            for obj in (self.obj, self.diff_against_obj)
+        )
 
     def get_text(self) -> str:
         """Return the file contents as a string.
@@ -183,7 +220,8 @@ class TextBasedReviewUI(ReviewUI[
         return cast(
             str,
             cache_memoize('text-attachment-%d-string' % self.obj.pk,
-                          self._get_text_uncached))
+                          self._get_text_uncached,
+                          large_data=True))
 
     def get_text_lines(self) -> Sequence[str]:
         """Return the file contents as syntax-highlighted lines.
@@ -195,7 +233,8 @@ class TextBasedReviewUI(ReviewUI[
         return cast(
             Sequence[str],
             cache_memoize('text-attachment-%d-lines' % self.obj.pk,
-                          lambda: list(self.generate_highlighted_text())))
+                          lambda: list(self.generate_highlighted_text()),
+                          large_data=True))
 
     def get_rendered_lines(self) -> list[str]:
         """Return the file contents as a render, based on the raw text.
@@ -212,7 +251,8 @@ class TextBasedReviewUI(ReviewUI[
             return cast(
                 list[str],
                 cache_memoize('text-attachment-%d-rendered' % self.obj.pk,
-                              lambda: list(self.generate_render())))
+                              lambda: list(self.generate_render()),
+                              large_data=True))
         else:
             return []
 
@@ -399,6 +439,9 @@ class TextBasedReviewUI(ReviewUI[
                            view_mode)
             return ''
 
+        if self.is_too_large():
+            return ''
+
         context = {
             'is_diff': self.diff_against_obj is not None,
             'review_ui': self,
@@ -413,9 +456,12 @@ class TextBasedReviewUI(ReviewUI[
             elif view_mode == 'rendered':
                 chunk_generator = self._get_rendered_diff_chunk_generator()
 
-            chunks = get_chunks_in_range(chunk_generator.get_chunks(),
-                                         begin_line_num,
-                                         end_line_num - begin_line_num + 1)
+            chunks = get_chunks_in_range(
+                chunk_generator.get_chunks(
+                    self._make_diff_chunks_cache_key(view_mode,
+                                                     chunk_generator)),
+                begin_line_num,
+                end_line_num - begin_line_num + 1)
 
             context.update({
                 'chunks': chunks,
@@ -517,6 +563,39 @@ class TextBasedReviewUI(ReviewUI[
             orig_filename=self.obj.filename,
             modified_filename=self.diff_against_obj.filename,
             diff_settings=DiffSettings.create(request=self.request))
+
+    def _make_diff_chunks_cache_key(
+        self,
+        view_mode: str,
+        chunk_generator: RawDiffChunkGenerator,
+    ) -> Sequence[str]:
+        """Return a cache key for diff chunks between two attachments.
+
+        Version Added:
+            8.1.1
+
+        Args:
+            view_mode (str):
+                The view mode. One of ``source`` or ``rendered``.
+
+            chunk_generator (reviewboard.diffviewer.chunk_generator.
+                             RawDiffChunkGenerator):
+                The chunk generator that will generate the chunks.
+
+        Returns:
+            str:
+            The cache key for the diff chunks.
+        """
+        assert self.diff_against_obj is not None
+
+        return [
+            'text-attachment-diff',
+            view_mode,
+            str(self.diff_against_obj.pk),
+            str(self.obj.pk),
+            chunk_generator.diff_settings.state_hash,
+            get_language(),
+        ]
 
     def _get_source_diff_chunk_generator(self) -> RawDiffChunkGenerator:
         """Return a chunk generator for diffing source text.

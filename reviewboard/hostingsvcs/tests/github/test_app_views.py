@@ -527,6 +527,74 @@ class GitHubAppInstallCallbackViewTests(GitHubTestCase):
         self.assertIn(b'data-wizard-title="Connected to GitHub"',
                       response.content)
 
+        # The reassign form is submitted in place, and can be skipped to
+        # reach the next step.
+        self.assertIn(b'data-service-id="github"', response.content)
+        self.assertIn(
+            b'href="%s?step=done&amp;account_id=%d" data-connect-page'
+            % (url.encode(), installation_account.pk),
+            response.content)
+
+    def test_get_reassign_step_without_candidates(self) -> None:
+        """Testing GitHubAppInstallCallbackView GET ?step=reassign with no
+        repositories to move offers to add a repository
+        """
+        installation_account = self._create_app_installation_account()
+
+        self.login_user(admin=True)
+        url = local_site_reverse('github-app-install-callback',
+                                 kwargs={'hosting_service_id': 'github'})
+        response = self.client.get(url, {
+            'step': 'reassign',
+            'account_id': installation_account.pk,
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b'/admin/db/scmtools/repository/add/?hosting_type=github&amp;'
+            b'hosting_account=%d' % installation_account.pk,
+            response.content)
+
+    def test_get_done_step(self) -> None:
+        """Testing GitHubAppInstallCallbackView GET ?step=done renders the
+        connect success step
+        """
+        installation_account = self._create_app_installation_account()
+
+        self.login_user(admin=True)
+        url = local_site_reverse('github-app-install-callback',
+                                 kwargs={'hosting_service_id': 'github'})
+        response = self.client.get(url, {
+            'step': 'done',
+            'account_id': installation_account.pk,
+        })
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content
+        self.assertIn(b'data-wizard-title="Connected to GitHub"', content)
+        self.assertIn(b'data-wizard-cancel-label="Done"', content)
+        self.assertIn(
+            b'/admin/db/scmtools/repository/add/?hosting_type=github&amp;'
+            b'hosting_account=%d' % installation_account.pk,
+            content)
+
+    def test_get_done_step_with_non_installation_account(self) -> None:
+        """Testing GitHubAppInstallCallbackView GET ?step=done with a non-app
+        account
+        """
+        pat_account = self.create_hosting_account()
+
+        self.login_user(admin=True)
+        url = local_site_reverse('github-app-install-callback',
+                                 kwargs={'hosting_service_id': 'github'})
+        response = self.client.get(url, {
+            'step': 'done',
+            'account_id': pat_account.pk,
+        })
+
+        self.assertEqual(response.status_code, 404)
+
     def test_get_reassign_step_with_non_installation_account(self) -> None:
         """Testing GitHubAppInstallCallbackView GET ?step=reassign with a
         non-app account
@@ -864,6 +932,10 @@ class GitHubAppInstallCallbackViewTests(GitHubTestCase):
         repository1 = self._create_org_repo('repo1', 'myorg', pat_account)
         repository2 = self._create_org_repo('repo2', 'myorg', pat_account)
 
+        # Keys we don't own must survive the rewrite.
+        repository1.extra_data['github_extension_data'] = 'keep'
+        repository1.save(update_fields=('extra_data',))
+
         self.login_user(admin=True)
         url = local_site_reverse('github-app-install-callback',
                                  kwargs={'hosting_service_id': 'github'})
@@ -873,12 +945,27 @@ class GitHubAppInstallCallbackViewTests(GitHubTestCase):
         })
 
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(
-            Repository.objects.get(pk=repository1.pk).hosting_account,
-            installation_account)
-        self.assertEqual(
-            Repository.objects.get(pk=repository2.pk).hosting_account,
-            pat_account)
+
+        # The moved repository is rewritten onto the app plan, with the
+        # canonical owner/name keys and the old plan fields removed.
+        repository1 = Repository.objects.get(pk=repository1.pk)
+        self.assertEqual(repository1.hosting_account, installation_account)
+        self.assertEqual(repository1.extra_data, {
+            'github_app_repo_name': 'repo1',
+            'github_extension_data': 'keep',
+            'github_owner': 'myorg',
+            'github_repo_name': 'repo1',
+            'repository_plan': 'app',
+        })
+
+        # The unselected repository is untouched.
+        repository2 = Repository.objects.get(pk=repository2.pk)
+        self.assertEqual(repository2.hosting_account, pat_account)
+        self.assertEqual(repository2.extra_data, {
+            'github_public_org_name': 'myorg',
+            'github_public_org_repo_name': 'repo2',
+            'repository_plan': 'public-org',
+        })
 
     def test_post_ignores_non_candidate_repository(self) -> None:
         """Testing GitHubAppInstallCallbackView POST ignores non-candidates"""
@@ -992,6 +1079,68 @@ class GitHubAppInstallCallbackViewTests(GitHubTestCase):
             response,
             'The specified GitHub App installation was not found. Please try '
             'connecting again.')
+
+    def test_post_in_wizard(self) -> None:
+        """Testing GitHubAppInstallCallbackView POST from the connect wizard
+        returns the connect success step
+        """
+        installation_account = self._create_app_installation_account()
+        pat_account = self.create_hosting_account()
+        repository = self._create_org_repo('repo1', 'myorg', pat_account)
+
+        self.login_user(admin=True)
+        url = local_site_reverse('github-app-install-callback',
+                                 kwargs={'hosting_service_id': 'github'})
+        response = self.client.post(
+            url,
+            {
+                'account_id': installation_account.pk,
+                'repositories': [repository.pk],
+            },
+            headers={
+                'X-Requested-With': 'XMLHttpRequest',
+            })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            Repository.objects.get(pk=repository.pk).hosting_account,
+            installation_account)
+
+        rsp = json.loads(response.content)
+        self.assertTrue(rsp['success'])
+
+        # The outcome is shown in the step instead of as a message.
+        html = rsp['html']
+        self.assertIn('ink-c-alert -is-success', html)
+        self.assertIn('1 repository was moved to the new connection.', html)
+        self.assertIn('Add a repository', html)
+        self.assertMessages(response, [])
+
+    def test_post_in_wizard_with_non_installation_account(self) -> None:
+        """Testing GitHubAppInstallCallbackView POST from the connect wizard
+        with a non-app account
+        """
+        pat_account = self.create_hosting_account()
+
+        self.login_user(admin=True)
+        url = local_site_reverse('github-app-install-callback',
+                                 kwargs={'hosting_service_id': 'github'})
+        response = self.client.post(
+            url,
+            {
+                'account_id': pat_account.pk,
+            },
+            headers={
+                'X-Requested-With': 'XMLHttpRequest',
+            })
+
+        self.assertEqual(response.status_code, 200)
+
+        rsp = json.loads(response.content)
+        self.assertFalse(rsp['success'])
+        self.assertIn('The specified GitHub App installation was not found.',
+                      rsp['html'])
+        self.assertMessages(response, [])
 
     def _create_org_repo(
         self,

@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 from django.db import models
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext, gettext_lazy as _
 from djblets.conditions import ConditionSet
 from djblets.db.fields import JSONField
 
@@ -96,13 +96,17 @@ class HostingServiceAccount(models.Model):
             str:
             A string representation of the object.
         """
+        # Some services (such as Azure DevOps) only need a token, so the
+        # username may be empty.
+        username = self.username or gettext('(unnamed account)')
+
         if self.hosting_url:
             # Show the hosting URL, so that users can distinguish between
             # the accounts across different self-hosted servers of a given
             # type.
-            return f'{self.username} ({self.hosting_url})'
+            return f'{username} ({self.hosting_url})'
         else:
-            return self.username
+            return username
 
     @property
     def service(self) -> BaseHostingService:

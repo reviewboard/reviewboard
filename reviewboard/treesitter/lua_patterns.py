@@ -177,22 +177,7 @@ def lua_pattern_to_python(
 
             last_was_item = True
 
-        # 2) Handle backslash escapes (already escaped patterns).
-        elif c == '\\' and i + 1 < len(pattern):
-            next_char = pattern[i + 1]
-
-            if next_char in SPECIAL_CHARS:
-                # This is already a proper escape sequence, pass through.
-                out += '\\' + next_char
-                i += 2
-            else:
-                # Unknown escape, treat backslash as literal.
-                out += '\\\\'
-                i += 1
-
-            last_was_item = True
-
-        # 3) Character class.
+        # 2) Character class.
         elif c == '[':
             # Find the closing ], following Lua's parsing rules: the
             # class holds at least one item (so a leading ], possibly
@@ -231,13 +216,13 @@ def lua_pattern_to_python(
             i = end + 1
             last_was_item = True
 
-        # 4) Non-greedy quantifier (Lua "X-" is Python "X*?").
+        # 3) Non-greedy quantifier (Lua "X-" is Python "X*?").
         elif c == '-' and last_was_item:
             out += '*?'
             i += 1
             last_was_item = False
 
-        # 5) Pass-through anchors and quantifiers.
+        # 4) Pass-through anchors and quantifiers.
         elif c in '^$.*+?':
             if c == '.':
                 # This is a wildcard dot that matches any character.
@@ -247,19 +232,19 @@ def lua_pattern_to_python(
             i += 1
             last_was_item = (c == '.')
 
-        # 6) Handle escapes not previously handled above.
+        # 5) Backslashes have no special meaning in Lua patterns.
         elif c == '\\':
             out += '\\\\'
             i += 1
             last_was_item = True
 
-        # 7) Escape other regex specials.
+        # 6) Escape other regex specials.
         elif c in r'{}[]|':
             out += '\\' + c
             i += 1
             last_was_item = True
 
-        # 8) Literal.
+        # 7) Literal.
         else:
             out += c
             i += 1

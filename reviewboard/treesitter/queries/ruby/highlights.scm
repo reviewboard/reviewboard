@@ -48,6 +48,9 @@
   "then"
 ] @keyword.conditional
 
+(in_clause
+  "in" @keyword.conditional)
+
 (if
   "end" @keyword.conditional)
 
@@ -60,6 +63,9 @@
   "retry"
   "next"
 ] @keyword.repeat
+
+(in
+  "in" @keyword.repeat)
 
 (constant) @constant
 
@@ -186,9 +192,13 @@
 [
   (bare_symbol)
   (simple_symbol)
-  (delimited_symbol)
   (hash_key_symbol)
 ] @string.special.symbol
+
+(delimited_symbol
+  ":\"" @string.special.symbol
+  (string_content) @string.special.symbol
+  "\"" @string.special.symbol)
 
 (regex
   (string_content) @string.regexp)
@@ -215,20 +225,24 @@
 
 (program
   (comment)+ @comment.documentation
+  .
   (class))
 
 (module
   (comment)+ @comment.documentation
+  .
   (body_statement
     (class)))
 
 (class
   (comment)+ @comment.documentation
+  .
   (body_statement
     (method)))
 
 (body_statement
   (comment)+ @comment.documentation
+  .
   (method))
 
 ; Operators
@@ -285,6 +299,9 @@
   "/" @punctuation.bracket)
 
 (pair
+  ":" @punctuation.delimiter)
+
+(keyword_pattern
   ":" @punctuation.delimiter)
 
 [

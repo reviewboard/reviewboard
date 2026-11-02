@@ -65,8 +65,8 @@ class RBTestRunner(TestRunner):
 
         # Create an initial SiteConfiguration.
         #
-        # Ideally, we'd call reviewboard.finalize_setup(), but this triggers
-        # some early Django state setup that we want to avoid.
+        # Ideally, we'd call reviewboard.upgrade.finalize_setup(), but this
+        # triggers some early Django state setup that we want to avoid.
         from reviewboard.admin.management.sites import init_siteconfig
 
         siteconfig = init_siteconfig()

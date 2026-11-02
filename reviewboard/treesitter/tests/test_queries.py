@@ -48,9 +48,35 @@ def _django_db_helper() -> None:  # pyright:ignore[reportUnusedFunction]
     pass
 
 
+#: Languages that don't have any queries available.
 SKIPPED_HIGHLIGHT_LANGUAGES: set[SupportedLanguage] = {
-    # actionscript just doesn't have any highlights available.
+    'abnf',
     'actionscript',
+    'batch',
+    'cfml',
+    'cobol',
+    'crystal',
+    'edoc',
+    'eds',
+    'flatbuffers',
+    'fluent',
+    'gdscript',
+    'jinja2',
+    'move',
+    'norg',
+    'plantuml',
+    'postscript',
+    'prolog',
+    'rtf',
+    'slint',
+    'souffle',
+    'task',
+    'tsql',
+    'vb',
+    'wast',
+    'wat',
+    'xit',
+    'yul',
 }
 
 HIGHLIGHT_TEST_PARAMS = [
@@ -63,12 +89,10 @@ if not DEBUG_TREESITTER:
     BROKEN_HIGHLIGHT_LANGUAGES: set[SupportedLanguage] = {
         'fennel',
         'groovy',
-        'haxe',
         'netlinx',
         'test',
         'verilog',
         'vhdl',
-        'vue',
     }
     SKIPPED_HIGHLIGHT_LANGUAGES |= BROKEN_HIGHLIGHT_LANGUAGES
 
@@ -383,6 +407,29 @@ def test_lua_match_edits_pattern_conversion() -> None:
         b'\n((identifier) @name\n'
         b' (#match? @name "^[A-Za-z]$"))\n'
     )
+
+
+def test_lua_match_edits_escaped_quote() -> None:
+    """Test conversion of Lua patterns containing an escaped quote."""
+    content = dedent(r"""
+        ((identifier) @name
+         (#lua-match? @name "^@\"<html"))
+    """)
+    content_bytes = content.encode()
+    language = get_query_language()
+    tree = tree_sitter.Parser(language).parse(content_bytes)
+
+    edits = list(get_lua_match_edits(tree))
+    assert len(edits) == 1
+
+    result = apply_edits(content_bytes, edits)
+    assert result == (
+        b'\n((identifier) @name\n'
+        b' (#match? @name "^@\\"<html"))\n'
+    )
+
+    # The result must still be a valid query.
+    tree_sitter.Query(language, result.decode())
 
 
 def test_gsub_edits_no_match() -> None:

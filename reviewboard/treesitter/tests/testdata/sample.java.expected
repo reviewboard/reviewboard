@@ -9,8 +9,8 @@
 
 <span class="ts-comment">/**</span>
 <span class="ts-comment"> * Example Java class demonstrating various language features</span>
-<span class="ts-comment"> * @author ReviewBoard Team</span>
-<span class="ts-comment"> * @version 1.0</span>
+<span class="ts-comment"> * <span class="ts-keyword">@author</span> ReviewBoard Team</span>
+<span class="ts-comment"> * <span class="ts-keyword">@version</span> 1.0</span>
 <span class="ts-comment"> */</span>
 <span class="ts-keyword">public</span> <span class="ts-keyword">class</span> <span class="ts-variable">UserManager</span> {
 
@@ -37,11 +37,11 @@
 
     <span class="ts-comment">/**</span>
 <span class="ts-comment">     * Creates a new user with validation</span>
-<span class="ts-comment">     * @param name The user&#39;s name</span>
-<span class="ts-comment">     * @param email The user&#39;s email</span>
-<span class="ts-comment">     * @param role The user&#39;s role</span>
-<span class="ts-comment">     * @return The created user</span>
-<span class="ts-comment">     * @throws IllegalArgumentException if validation fails</span>
+<span class="ts-comment">     * <span class="ts-keyword">@param</span> <span class="ts-variable">name</span> The user&#39;s name</span>
+<span class="ts-comment">     * <span class="ts-keyword">@param</span> <span class="ts-variable">email</span> The user&#39;s email</span>
+<span class="ts-comment">     * <span class="ts-keyword">@param</span> <span class="ts-variable">role</span> The user&#39;s role</span>
+<span class="ts-comment">     * <span class="ts-keyword">@return</span> The created user</span>
+<span class="ts-comment">     * <span class="ts-keyword">@throws</span><span class="ts-variable"> IllegalArgumentException</span> if validation fails</span>
 <span class="ts-comment">     */</span>
     <span class="ts-keyword">public</span> User <span class="ts-variable"><span class="ts-function">createUser</span></span>(String <span class="ts-variable">name</span>, String <span class="ts-variable">email</span>, String <span class="ts-variable">role</span>)
             <span class="ts-keyword">throws</span> IllegalArgumentException {
@@ -80,7 +80,7 @@
     }
 
     <span class="ts-comment">/**</span>
-<span class="ts-comment">     * Finds users matching the given predicate</span>
+<span class="ts-comment">     * <span class="ts-variable">Finds</span><span class="ts-variable"> users</span><span class="ts-variable"> matching</span><span class="ts-variable"> the</span><span class="ts-variable"> given</span><span class="ts-variable"> predicate</span></span>
 <span class="ts-comment">     */</span>
     <span class="ts-keyword">public</span> List<span class="ts-operator">&lt;</span>User<span class="ts-operator">&gt;</span> <span class="ts-variable"><span class="ts-function">findUsers</span></span>(Predicate<span class="ts-operator">&lt;</span>User<span class="ts-operator">&gt;</span> <span class="ts-variable">predicate</span>) {
         <span class="ts-keyword">return</span> <span class="ts-variable">users</span>.<span class="ts-variable"><span class="ts-function-method-call">values</span></span>()

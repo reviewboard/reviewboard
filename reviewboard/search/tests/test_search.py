@@ -2,12 +2,22 @@
 
 from __future__ import annotations
 
+import haystack
 from django.apps.registry import apps
 from django.contrib.auth.models import User
 from django.contrib.sites.models import Site
 from djblets.siteconfig.models import SiteConfiguration
 from djblets.testing.decorators import add_fixtures
 from kgb import SpyAgency
+from whoosh.query import (
+    Every,
+    FuzzyTerm,
+    NullQuery,
+    NumericRange,
+    Prefix,
+    Term,
+    Wildcard,
+)
 
 from reviewboard.admin.siteconfig import load_site_config
 from reviewboard.reviews.models import ReviewRequestDraft
@@ -313,6 +323,104 @@ class SearchTests(SpyAgency, TestCase):
         results = context['object_list']
         self.assertEqual(results[0].content_type(), 'reviews.reviewrequest')
         self.assertEqual(results[0].summary, review_request.summary)
+
+    def test_review_requests_without_private_group_access_query_injection(
+        self,
+    ) -> None:
+        """Testing search with private review requests without access to
+        a private group and a query that tries to escape the access filters
+        """
+        self.client.login(username='grumpy', password='grumpy')
+        user = User.objects.get(username='grumpy')
+
+        group = self.create_review_group(invite_only=True)
+
+        review_request = self.create_review_request(publish=True,
+                                                    summary='secretthing')
+        review_request.target_groups.add(group)
+
+        self.assertFalse(review_request.is_accessible_by(user))
+        reindex_search()
+
+        queries = [
+            'secretthing) OR (secretthing',
+            'nomatch) OR summary:secretthing OR (nomatch',
+            'secretthing))) OR (((secretthing',
+            'secretthing OR nomatch',
+        ]
+
+        for q in queries:
+            with self.subTest(q=q):
+                response = self.search(q)
+                self.assertEqual(response.context['hits_returned'], 0)
+
+    @add_fixtures(['test_site'])
+    def test_review_requests_on_local_site_query_injection(self) -> None:
+        """Testing search with review requests on a Local Site and a query
+        that tries to escape the Local Site filter
+        """
+        self.create_review_request(publish=True,
+                                   summary='secretthing',
+                                   with_local_site=True)
+        reindex_search()
+
+        queries = [
+            'secretthing) OR (secretthing',
+            'secretthing OR nomatch',
+        ]
+
+        for q in queries:
+            with self.subTest(q=q):
+                response = self.search(q)
+                self.assertEqual(response.context['hits_returned'], 0)
+
+    def test_search_fuzzy_terms_disabled(self) -> None:
+        """Testing search query parsing with fuzzy term syntax"""
+        backend = haystack.connections['default'].get_backend()
+        backend.setup()
+
+        query = backend.parser.parse('reviewboard~9')
+
+        self.assertNotIsInstance(query, FuzzyTerm)
+        self.assertFalse(any(
+            isinstance(subquery, FuzzyTerm)
+            for subquery in query.leaves()
+        ))
+
+    def test_search_wildcards_limited(self) -> None:
+        """Testing search query parsing limits short wildcard terms and text
+        ranges
+        """
+        backend = haystack.connections['default'].get_backend()
+        backend.setup()
+        parser = backend.parser
+
+        for q in (
+            'ja*',
+            '*script',
+            'j?vascript',
+            '[a TO z]',
+            'summary:[a TO z]',
+        ):
+            with self.subTest(q=q):
+                self.assertIs(parser.parse(q), NullQuery)
+
+        # Ignored terms are dropped from the rest of the query.
+        self.assertEqual(parser.parse('window AND ja*'),
+                         Term('text', 'window'))
+
+        # A bare wildcard matches everything without expanding terms.
+        self.assertEqual(parser.parse('*'), Every())
+        self.assertEqual(parser.parse('text:*'), Every())
+
+        # Longer patterns, numeric ranges, and keyword fields still work.
+        self.assertEqual(parser.parse('java*'), Prefix('text', 'java'))
+        self.assertEqual(parser.parse('jav?script'),
+                         Wildcard('text', 'jav?script'))
+        self.assertIsInstance(parser.parse('review_request_id:[1 TO 5]'),
+                              NumericRange)
+        self.assertEqual(parser.parse('local_sites:*0*'),
+                         Wildcard('local_sites', '*0*'))
 
     def test_search_review_request_id(self):
         """Testing search with a review request ID"""

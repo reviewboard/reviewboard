@@ -250,13 +250,6 @@ PIPELINE_JAVASCRIPT: Mapping[str, StaticBundle] = {
         ),
         'output_filename': 'rb/js/admin.min.js',
     },
-    'repositoryform': {
-        'source_filenames': (
-            # Legacy JavaScript
-            'rb/js/admin/repositoryform.es6.js',
-        ),
-        'output_filename': 'rb/js/repositoryform.min.js',
-    },
     'webhooks-form': {
         'source_filenames': (
             # Legacy JavaScript

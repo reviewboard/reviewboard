@@ -26,7 +26,6 @@ from reviewboard.scmtools.git import GitDiffParser, strip_git_symlink_mode
 
 if TYPE_CHECKING:
     import subprocess
-    from typing import Any
 
     from reviewboard.diffviewer.parser import ParsedDiffFile
     from reviewboard.scmtools.core import (

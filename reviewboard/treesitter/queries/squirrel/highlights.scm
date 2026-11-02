@@ -110,7 +110,7 @@
 ; Types
 
 ((identifier) @type
- (#lua-match? @type "^[A-Z]"))
+ (#match? @type "^[A-Z]"))
 
 (class_declaration
   (identifier) @type
@@ -215,7 +215,7 @@
   . (identifier) @constant)
 
 ((identifier) @constant
- (#lua-match? @constant "^_*[A-Z][A-Z%d_]*$"))
+ (#match? @constant "^_*[A-Z][A-Z\\d_]*$"))
 
 ; Operators
 
@@ -304,4 +304,4 @@
 (comment) @comment @spell
 
 ((comment) @comment.documentation
-  (#lua-match? @comment.documentation "^/[*][*][^*].*[*]/$"))
+  (#match? @comment.documentation "(?s)^/[*][*][^*].*[*]/$"))

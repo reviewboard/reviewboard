@@ -22,7 +22,7 @@
      <div class="rb-c-admin-cs-accounts__account__identity">
       <span class="rb-c-admin-cs-accounts__account__title">
        <span class="rb-c-admin-cs-accounts__account__name">
-        {{entry.account.username}}
+        {{entry.account.username|default:_("(unnamed account)")}}
        </span>
 {%    if entry.account.hosting_url %}
        <span class="rb-c-admin-cs-accounts__account__url">

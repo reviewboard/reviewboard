@@ -211,6 +211,31 @@ class GitHubPrivateOrgForm(GitHubRepositoryForm):
                     '&lt;repo_name&gt;/</code>'))
 
 
+class GitHubAppForm(GitHubRepositoryForm):
+    """Sub-form for repositories accessed through a GitHub App installation.
+
+    An installation account is bound to a single user or organization, so the
+    account's username is always the repository owner. Only the repository name
+    needs to be provided.
+
+    Version Added:
+        9.0
+    """
+
+    repo_name_field = 'github_app_repo_name'
+
+    github_app_repo_name = forms.CharField(
+        label=_('Repository name'),
+        max_length=64,
+        required=True,
+        widget=forms.TextInput(attrs={'size': '60'}),
+        help_text=_(
+            'The name of the repository. This is the <code>&lt;repo_name&gt;'
+            '</code> in <code>http://github.com/&lt;owner&gt;/&lt;repo_name'
+            '&gt;/</code>'
+        ))
+
+
 class GitHubAppReplaceKeyForm(forms.Form):
     """Form for replacing a GitHub App's private key.
 

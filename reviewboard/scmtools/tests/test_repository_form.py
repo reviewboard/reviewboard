@@ -5,7 +5,7 @@ import unittest
 from django import forms
 from django.contrib.auth.models import User
 from django.http import QueryDict
-from kgb import SpyAgency
+import kgb
 
 from reviewboard.hostingsvcs.base import hosting_service_registry
 from reviewboard.hostingsvcs.models import (
@@ -39,7 +39,7 @@ class HiddenTestService(TestService):
     visible = False
 
 
-class RepositoryFormTests(SpyAgency, TestCase):
+class RepositoryFormTests(kgb.SpyAgency, TestCase):
     """Unit tests for the repository form."""
 
     fixtures = ['test_scmtools']
@@ -1521,6 +1521,40 @@ class RepositoryFormTests(SpyAgency, TestCase):
                                  test_repo_name='testrepo',
                                  tool_name='Git')
 
+    def test_hosting_service_info_js_view(self) -> None:
+        """Testing RepositoryForm.hosting_service_info includes the hosting
+        service's repository form view
+        """
+        account = HostingServiceAccount.objects.create(username='testuser',
+                                                       service_name='test')
+        HostingServiceAccount.objects.create(
+            username='other',
+            service_name='self_hosted_test',
+            hosting_url='https://example.com')
+
+        self.spy_on(TestService.get_repository_form_js_view_data,
+                    owner=TestService,
+                    op=kgb.SpyOpReturn({'key': 'value'}))
+
+        form = self._build_form()
+        info = form.hosting_service_info['test']
+
+        self.assertEqual(info['js_view_class'],
+                         'RB.Admin.HostingServiceRepositoryFormView')
+        self.assertEqual(info['js_view_data'], {'key': 'value'})
+        self.assertSpyCalledWith(
+            TestService.get_repository_form_js_view_data,
+            [account])
+
+    def test_scmtool_info_js_view(self) -> None:
+        """Testing RepositoryForm.scmtool_info includes the SCMTool's
+        repository form view
+        """
+        form = self._build_form()
+
+        self.assertEqual(form.scmtool_info['git']['js_view_class'],
+                         'RB.Admin.SCMToolRepositoryFormView')
+
     def test_with_hosting_service_existing_account_needs_reauth(self):
         """Testing RepositoryForm with a hosting service and existing
         account needing re-authorization
@@ -2563,6 +2597,44 @@ class RepositoryFormTests(SpyAgency, TestCase):
                 'visible to any logged-in users. Uncheck this box to '
                 'grant access only to specific users and/or to users '
                 'who are members of specific invite-only review groups.')
+
+    def test_hosting_service_info_with_github(self) -> None:
+        """Testing RepositoryForm.hosting_service_info includes GitHub's
+        repository form view and account data
+        """
+        pat_account = HostingServiceAccount.objects.create(
+            username='testuser',
+            service_name='github')
+        installation_account = HostingServiceAccount.objects.create(
+            username='testorg',
+            service_name='github',
+            data={
+                'github_app': {
+                    'app_account_id': 1,
+                    'installation_id': 42,
+                    'owner_id': 100,
+                    'owner_login': 'testorg',
+                    'owner_type': 'organization',
+                    'repository_selection': 'all',
+                    'role': 'installation',
+                    'status': 'active',
+                },
+            })
+
+        form = self._build_form()
+        info = form.hosting_service_info['github']
+
+        self.assertEqual(info['js_view_class'],
+                         'RB.Admin.GitHubRepositoryFormView')
+        self.assertEqual(
+            info['js_view_data'],
+            {
+                'accountLabels': {
+                    str(pat_account.pk): 'testuser (PAT)',
+                    str(installation_account.pk): 'testorg',
+                },
+                'appAccountIDs': [installation_account.pk],
+            })
 
     def test_extra_data_with_new_repo(self):
         """Testing RepositoryForm preserves extra_data by default on new
