@@ -659,7 +659,10 @@ class BaseHostingServiceConnectUI:
                 **params,
             })
             actions.append({
-                'description': account.username,
+                'description': (
+                    _('Using {account}')
+                    .format(account=account.username)
+                ),
                 'label': (
                     _('Add a repository from {host}')
                     .format(host=host)
