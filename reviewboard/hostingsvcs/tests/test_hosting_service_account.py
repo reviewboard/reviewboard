@@ -39,3 +39,27 @@ class HostingServiceAccountTests(TestCase):
 
         with self.assertRaisesMessage(MissingHostingServiceError, message):
             account.service
+
+    def test_str(self) -> None:
+        """Testing HostingServiceAccount.__str__"""
+        account = HostingServiceAccount(service_name='github',
+                                        username='user1')
+
+        self.assertEqual(str(account), 'user1')
+
+    def test_str_with_hosting_url(self) -> None:
+        """Testing HostingServiceAccount.__str__ with a hosting URL"""
+        account = HostingServiceAccount(service_name='gitlab',
+                                        username='user1',
+                                        hosting_url='https://example.com')
+
+        self.assertEqual(str(account), 'user1 (https://example.com)')
+
+    def test_str_without_username(self) -> None:
+        """Testing HostingServiceAccount.__str__ without a username"""
+        account = HostingServiceAccount(service_name='gitlab',
+                                        username='',
+                                        hosting_url='https://example.com')
+
+        self.assertEqual(str(account),
+                         '(unnamed account) (https://example.com)')

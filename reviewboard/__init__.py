@@ -26,11 +26,7 @@ def get_manual_url():
     return f'https://www.reviewboard.org/docs/manual/{manual_ver}/'
 
 
-def initialize(
-    load_extensions: bool = True,
-    setup_logging: bool = True,
-    setup_templates: bool = True,
-) -> None:
+def initialize(*args, **kwargs) -> None:
     """Begin initialization of Review Board.
 
     This sets up the logging, generates cache serial numbers, loads extensions,
@@ -40,6 +36,15 @@ def initialize(
     This must be called at some point before most features will work, but it
     will be called automatically in a standard install. If you are writing
     an extension or management command, you do not need to call this yourself.
+
+    Version Changed:
+        9.0:
+        * All arguments should now be passed as keyword arguments. Support for
+          positional arguments is deprecated and will be removed in
+          Review Board 11.
+
+        * This now wraps :py:func:`reviewboard.process.initialize`. This
+          function is still the primary way to initialize Review Board.
 
     Args:
         load_extensions (bool, optional):
@@ -61,81 +66,14 @@ def initialize(
             Keep in mind that many pieces of functionality, such as avatars
             and some management commands, may be impacted by this setting.
     """
-    import logging
-    import os
+    # NOTE: Since this is the primary method for initialization, we continue
+    #       to document the arguments independently above. We pass them as
+    #       *args, **kwargs so that we can benefit from
+    #       @deprecate_non_keyword_only_args in the wrapped function, while
+    #       importing all this lazily.
+    from reviewboard.process import initialize as _initialize
 
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE',
-                          'reviewboard.settings')
-
-    import settings_local
-
-    # Set RBSITE_PYTHON_PATH to the path we need for any RB-bundled
-    # scripts we may call.
-    os.environ['RBSITE_PYTHONPATH'] = os.path.dirname(settings_local.__file__)
-
-    from django import setup
-    from django.apps import apps
-
-    if not apps.ready:
-        setup()
-
-    from django.conf import settings
-    from django.db import DatabaseError
-    from djblets import log
-    from djblets.cache.serials import generate_ajax_serial
-    from djblets.siteconfig.models import SiteConfiguration
-
-    from reviewboard import signals
-    from reviewboard.admin.siteconfig import load_site_config
-    from reviewboard.extensions.base import get_extension_manager
-
-    is_running_test = getattr(settings, 'RUNNING_TEST', False)
-
-    if setup_logging and not is_running_test:
-        # Set up logging.
-        log.init_logging()
-
-    load_site_config()
-
-    if (setup_templates or load_extensions) and not is_running_test:
-        if settings.DEBUG:
-            logging.debug('Log file for Review Board v%s (PID %s)' %
-                          (get_version_string(), os.getpid()))
-
-        # Generate the AJAX serial, used for AJAX request caching.
-        generate_ajax_serial()
-
-        # Store the AJAX serial as a template serial, so we have a reference
-        # to the real serial last modified timestamp of our templates. This
-        # is useful since the extension manager will be modifying AJAX_SERIAL
-        # to prevent stale caches for templates using hooks. Not all templates
-        # use hooks, and may want to base cache keys off TEMPLATE_SERIAL
-        # instead.
-        #
-        # We only want to do this once, so we don't end up replacing it
-        # later with a modified AJAX_SERIAL later.
-        if not getattr(settings, 'TEMPLATE_SERIAL', None):
-            settings.TEMPLATE_SERIAL = settings.AJAX_SERIAL
-
-    siteconfig = SiteConfiguration.objects.get_current()
-
-    if load_extensions and not is_running_test:
-        installed_version = get_version_string()
-
-        if siteconfig.version == installed_version:
-            # Load all extensions
-            try:
-                get_extension_manager().load()
-            except DatabaseError:
-                # This database is from a time before extensions, so don't
-                # attempt to load any extensions yet.
-                pass
-        else:
-            logging.warning('Extensions will not be loaded. The site must '
-                            'be upgraded from Review Board %s to %s.',
-                            siteconfig.version, installed_version)
-
-    signals.initializing.send(sender=None)
+    _initialize(*args, **kwargs)
 
 
 def finalize_setup(
@@ -146,8 +84,13 @@ def finalize_setup(
     This should only be called by Review Board install or upgrade code.
 
     Version Changed:
+        9.0:
+        * This has been moved to :py:func:`reviewboard.upgrade.finalize_setup`
+          and will be removed in Review Board 11.
+
+    Version Changed:
         5.0:
-            Removed the ``register_scmtools`` argument.
+        Removed the ``register_scmtools`` argument.
 
     Version Added:
         4.0:
@@ -156,15 +99,19 @@ def finalize_setup(
         is_upgrade (bool, optional):
             Whether this is finalizing an upgrade, rather than a new install.
     """
-    from reviewboard import signals
-    from reviewboard.admin.management.sites import init_siteconfig
+    from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
+    from reviewboard.upgrade import finalize_setup as _finalize_setup
 
-    # Update the recorded product version.
-    init_siteconfig()
+    # We're avoiding decorating the methods in this module to keep side
+    # effects to a minimum, so we'll explicitly log a deprecation warning
+    # here.
+    RemovedInReviewBoard11_0Warning.warn(
+        'reviewboard.finalize_setup has been moved to '
+        'reviewboard.upgrade.finalize_setup. The old function will be '
+        'removed in Review Board 11.'
+    )
 
-    # Notify anything else that needs to listen.
-    signals.finalized_setup.send(sender=None,
-                                 is_upgrade=is_upgrade)
+    _finalize_setup(is_upgrade=is_upgrade)
 
 
 __all__ = [

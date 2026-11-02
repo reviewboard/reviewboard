@@ -63,7 +63,26 @@
  </thead>
 
 {% block table_content %}
-{%  if is_diff %}
+{%  if too_large %}
+ <thead>
+  <tr>
+   <td colspan="{% if is_diff %}4{% else %}2{% endif %}">
+    <div class="review-ui-error">
+     <div class="rb-icon rb-icon-warning"></div>
+{%   with download_url=review_ui.obj.get_raw_download_url %}
+{%    if download_url %}
+{%     blocktrans %}
+     This file is too large to display. You can <a href="{{download_url}}">download it</a> instead.
+{%     endblocktrans %}
+{%    else %}
+{%     trans "This file is too large to display." %}
+{%    endif %}
+{%   endwith %}
+    </div>
+   </td>
+  </tr>
+ </thead>
+{%  elif is_diff %}
 {%   for chunk in chunks %}
  <tbody {% attr "class" %}{% if chunk.change != "equal" %}{{chunk.change}}{% if chunk.meta.whitespace_chunk %} whitespace-chunk{% endif %}{% endif %}{% endattr %}>
 {%    diff_lines 0 chunk True line_fmt anchor_fmt '' '' moved_fmt %}

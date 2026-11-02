@@ -45,6 +45,7 @@ from reviewboard.hostingsvcs.github.accounts import (
 )
 from reviewboard.hostingsvcs.github.client import GitHubClient, get_github_urls
 from reviewboard.hostingsvcs.github.forms import (
+    GitHubAppForm,
     GitHubAuthForm,
     GitHubPrivateForm,
     GitHubPrivateOrgForm,
@@ -65,6 +66,7 @@ if TYPE_CHECKING:
     from django.urls import _AnyURL
     from django.utils.safestring import SafeString
     from typelets.django.strings import StrOrPromise
+    from typelets.json import JSONDict
 
     from reviewboard.hostingsvcs.base.bug_tracker import (
         BugInfo,
@@ -81,6 +83,7 @@ if TYPE_CHECKING:
     from reviewboard.scmtools.models import Repository
 
     GitHubPlanName: TypeAlias = Literal[
+        'app',
         'public',
         'public-org',
         'private',
@@ -252,7 +255,11 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
                     avatar_url = ''
                     is_app_install = False
 
+                add_actions = self.get_add_object_actions(request,
+                                                          account=account)
+
                 connected_accounts.append({
+                    'add_repository_url': add_actions[0]['url'],
                     'avatar_url': avatar_url,
                     'is_app_install': is_app_install,
                     'username': account.username,
@@ -709,6 +716,7 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
     connect_ui_cls = GitHubConnectUI
     has_repository_hook_instructions = True
     needs_authorization = True
+    repository_form_js_view_class = 'RB.Admin.GitHubRepositoryFormView'
     supported_scmtools: ClassVar[Sequence[str]] = ['Git']
     supports_bug_info = True
     supports_bug_trackers = True
@@ -779,6 +787,29 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             'bug_tracker_field': 'http://github.com/'
                                  '%(github_private_org_name)s/'
                                  '%(github_private_org_repo_name)s/'
+                                 'issues#issue/%%s',
+        }),
+
+        # This plan is only offered when the selected hosting account is a
+        # GitHub App installation. The installation is bound to a single user
+        # or organization, so the account's username is always the repository
+        # owner, and public/private doesn't affect access.
+        ('app', {
+            'name': _('GitHub App'),
+            'form': GitHubAppForm,
+            'repository_fields': {
+                'Git': {
+                    'path': 'https://github.com/'
+                            '%(hosting_account_username)s/'
+                            '%(github_app_repo_name)s.git',
+                    'mirror_path': 'git@github.com:'
+                                   '%(hosting_account_username)s/'
+                                   '%(github_app_repo_name)s.git',
+                },
+            },
+            'bug_tracker_field': 'http://github.com/'
+                                 '%(hosting_account_username)s/'
+                                 '%(github_app_repo_name)s/'
                                  'issues#issue/%%s',
         }),
     ]
@@ -869,7 +900,7 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         plan_prefix = '{}_{}'.format(cls.plan_field_prefix,
                                      plan.replace('-', '_'))
 
-        if plan in {'public', 'private'}:
+        if plan in {'app', 'public', 'private'}:
             owner = repository.hosting_account.username
         elif plan in {'public-org', 'private-org'}:
             owner = extra_data[f'{plan_prefix}_name']
@@ -879,6 +910,44 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         return GitHubRepositoryIDs(
             owner=owner,
             name=extra_data[f'{plan_prefix}_repo_name'])
+
+    @classmethod
+    def get_repository_form_js_view_data(
+        cls,
+        accounts: Sequence[HostingServiceAccount],
+    ) -> JSONDict:
+        """Return data for the repository form's JavaScript view.
+
+        This lists the accounts that are GitHub App installations, which
+        only use the ``app`` plan. It also provides labels that tell
+        installations and Personal Access Token accounts apart.
+
+        Version Added:
+            9.0
+
+        Args:
+            accounts (list of
+                      reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The GitHub accounts offered in the form.
+
+        Returns:
+            dict:
+            The data for ``RB.Admin.GitHubRepositoryFormView``.
+        """
+        connect_ui = cls.connect_ui
+
+        return {
+            'accountLabels': {
+                str(account.pk):
+                    str(connect_ui.get_account_filter_label(account))
+                for account in accounts
+            },
+            'appAccountIDs': [
+                account.pk
+                for account in accounts
+                if is_installation_account(account)
+            ],
+        }
 
     def get_api_url(
         self,
@@ -967,7 +1036,7 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
         # Resolve the owner and repository name from the plan-specific
         # form fields. Nothing has been saved yet, so the canonical keys
         # read by get_repository_ids() are not available.
-        if plan in {'public', 'private'}:
+        if plan in {'app', 'public', 'private'}:
             owner = self.account.username
         elif plan in {'public-org', 'private-org'}:
             owner = self.get_plan_field(plan, kwargs, 'name')
@@ -983,19 +1052,28 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             repo_info = rsp.json
         except HostingServiceError as e:
             if e.http_code == 404:
-                if plan in {'public', 'private'}:
-                    raise RepositoryError(
-                        gettext('A repository with this name was not found, '
-                                'or your user may not own it.'))
+                if plan == 'app':
+                    raise RepositoryError(gettext(
+                        'A repository with this name was not found, or the '
+                        'GitHub App installation may not have access to it.'
+                    ))
+                elif plan in {'public', 'private'}:
+                    raise RepositoryError(gettext(
+                        'A repository with this name was not found, or your '
+                        'user may not own it.'
+                    ))
                 elif plan == 'public-org':
-                    raise RepositoryError(
-                        gettext('A repository with this organization or '
-                                'name was not found.'))
+                    raise RepositoryError(gettext(
+                        'A repository with this organization or name was not '
+                        'found.'
+                    ))
                 elif plan == 'private-org':
                     raise RepositoryError(
-                        gettext('A repository with this organization or name '
-                                'was not found, or your user may not have '
-                                'access to it.'),
+                        gettext(
+                            'A repository with this organization or name was '
+                            'not found, or your user may not have access to '
+                            'it.'
+                        ),
                         help_link=self._ORG_ACCESS_SUPPORT_URL,
                         help_link_text=gettext(
                             'Get help on granting access.'))
@@ -1006,13 +1084,15 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             is_private = repo_info['private']
 
             if is_private and plan in {'public', 'public-org'}:
-                raise RepositoryError(
-                    gettext('This is a private repository, but you have '
-                            'selected a public plan.'))
+                raise RepositoryError(gettext(
+                    'This is a private repository, but you have selected a '
+                    'public plan.'
+                ))
             elif not is_private and plan in {'private', 'private-org'}:
-                raise RepositoryError(
-                    gettext('This is a public repository, but you have '
-                            'selected a private plan.'))
+                raise RepositoryError(gettext(
+                    'This is a public repository, but you have selected a '
+                    'private plan.'
+                ))
 
         # Make a request to an endpoint that requires the "Contents" permission
         # to verify that a fine-grained PAT has the correct permissions. We

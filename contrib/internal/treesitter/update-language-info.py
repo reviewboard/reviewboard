@@ -13,17 +13,16 @@ import logging
 import subprocess
 import sys
 from collections import defaultdict
-from dataclasses import dataclass
-from functools import reduce
 from inspect import cleandoc
 from pathlib import Path
-from shutil import copy2
 from typing import TYPE_CHECKING, get_args
 
 from tree_sitter_language_pack import SupportedLanguage
 
+from reviewboard.treesitter.query_utils import apply_standard_query_edits
+
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Mapping, Sequence
+    from collections.abc import Mapping, Sequence
 
     from typelets.json import JSONDict
 
@@ -371,28 +370,191 @@ LANGUAGE_MIME_TYPES: Mapping[str, list[str]] = {
 #: For these languages, we pull highlights.scm and injections.scm files out of
 #: the grammar implementation, instead of using queries from nvim-treesitter.
 UPSTREAM_GRAMMAR_QUERIES: set[tuple[str, str]] = {
+    ('abl', 'highlights.scm'),
+    ('aiken', 'highlights.scm'),
+    ('al', 'highlights.scm'),
+    ('applescript', 'highlights.scm'),
+    ('asciidoc', 'highlights.scm'),
+    ('asciidoc', 'injections.scm'),
+    ('avro', 'highlights.scm'),
+    ('ballerina', 'highlights.scm'),
+    ('baml', 'highlights.scm'),
+    ('baml', 'injections.scm'),
+    ('bsl', 'highlights.scm'),
+    ('bsl', 'injections.scm'),
+    ('caddy', 'highlights.scm'),
+    ('cedar', 'highlights.scm'),
+    ('cedarschema', 'highlights.scm'),
+    ('cel', 'highlights.scm'),
+    ('cel', 'injections.scm'),
+    ('chuck', 'highlights.scm'),
     ('clarity', 'highlights.scm'),
     ('cmake', 'highlights.scm'),
+    ('csharp', 'highlights.scm'),
+    ('cst', 'highlights.scm'),
+    ('cypher', 'highlights.scm'),
+    ('cython', 'highlights.scm'),
+    ('cython', 'injections.scm'),
+    ('d2', 'highlights.scm'),
+    ('d2', 'injections.scm'),
+    ('dotenv', 'highlights.scm'),
+    ('eiffel', 'highlights.scm'),
     ('elisp', 'highlights.scm'),
+    ('fsharp_signature', 'highlights.scm'),
+    ('fusion', 'highlights.scm'),
+    ('gcode', 'highlights.scm'),
+    ('gherkin', 'highlights.scm'),
+    ('haml', 'highlights.scm'),
+    ('haml', 'injections.scm'),
+    ('haxe', 'highlights.scm'),
+    ('haxe', 'injections.scm'),
+    ('jai', 'highlights.scm'),
     ('janet', 'highlights.scm'),
-    ('org', 'highlights.scm'),
+    ('koka', 'highlights.scm'),
+    ('koka', 'injections.scm'),
+    ('lean', 'highlights.scm'),
+    ('lean', 'injections.scm'),
+    ('less', 'highlights.scm'),
+    ('llvm_mir', 'highlights.scm'),
     ('magik', 'highlights.scm'),
+    ('mojo', 'highlights.scm'),
+    ('moonbit', 'highlights.scm'),
+    ('moonbit', 'injections.scm'),
+    ('motoko', 'highlights.scm'),
+    ('nim', 'highlights.scm'),
+    ('norg_meta', 'highlights.scm'),
+    ('nushell', 'highlights.scm'),
+    ('nushell', 'injections.scm'),
+    ('openscad', 'highlights.scm'),
+    ('openscad', 'injections.scm'),
+    ('org', 'highlights.scm'),
+    ('penrose', 'highlights.scm'),
+    ('penrose', 'injections.scm'),
     ('pgn', 'highlights.scm'),
+    ('picat', 'highlights.scm'),
+    ('postgres', 'highlights.scm'),
+    ('postgres', 'injections.scm'),
     ('prisma', 'highlights.scm'),
+    ('promela', 'highlights.scm'),
+    ('reason', 'highlights.scm'),
+    ('reason', 'injections.scm'),
+    ('roc', 'highlights.scm'),
+    ('rshtml', 'highlights.scm'),
+    ('rshtml', 'injections.scm'),
+    ('sas', 'highlights.scm'),
     ('scss', 'highlights.scm'),
+    ('slim', 'highlights.scm'),
+    ('slim', 'injections.scm'),
+    ('smalltalk', 'highlights.scm'),
+    ('sml', 'highlights.scm'),
+    ('spicedb', 'highlights.scm'),
+    ('spicedb', 'injections.scm'),
+    ('sql_bigquery', 'highlights.scm'),
     ('squirrel', 'highlights.scm'),
     ('squirrel', 'injections.scm'),
+    ('stan', 'highlights.scm'),
     ('svelte', 'highlights.scm'),
     ('svelte', 'injections.scm'),
+    ('sysml', 'highlights.scm'),
     ('tablegen', 'highlights.scm'),
+    ('tmux', 'highlights.scm'),
+    ('tmux', 'injections.scm'),
     ('v', 'highlights.scm'),
+    ('vala', 'highlights.scm'),
+    ('wdl', 'highlights.scm'),
+    ('wdl', 'injections.scm'),
+    ('wolfram', 'highlights.scm'),
+    ('x86asm', 'highlights.scm'),
+    ('xquery', 'highlights.scm'),
     ('zig', 'highlights.scm'),
     ('zig', 'injections.scm'),
+    ('ziggy', 'highlights.scm'),
+    ('ziggy_schema', 'highlights.scm'),
 
-    # These are broken even in the vendor queries.
-    # 'haxe',
+    # These are broken even in the upstream queries.
     # 'netlinx',
     # 'vhdl',
+}
+
+
+#: Extra file suffixes and file names for each language.
+#:
+#: tree-sitter-language-pack only lists file extensions for each language.
+#: These fill in file names and extensions that it doesn't list. They are
+#: written as-is, without adding a leading dot.
+#:
+#: Some of these also mark a suffix as shared by more than one language (such
+#: as ``.m`` for MATLAB and Objective-C). Shared suffixes aren't matched to a
+#: language unless they're listed in ``LANGUAGE_OVERRIDES``, so content-based
+#: detection gets to decide.
+#:
+#: Version Added:
+#:     9.0
+EXTRA_FILE_SUFFIXES: Mapping[str, list[str]] = {
+    'apex': ['.apex', '.cls'],
+    'asm': ['.assembly'],
+    'bash': ['.bash_profile', '.bashrc', '.ebuild', '.eclass'],
+    'chatito': ['.chatl'],
+    'clojure': ['.bb'],
+    'cmake': ['CMakeLists.txt'],
+    'cuda': ['.cuh'],
+    'd': ['.dd'],
+    'dockerfile': ['Containerfile', 'Dockerfile', 'dockerfile', '.container',
+                   '.docker'],
+    'embeddedtemplate': ['.ejs'],
+    'erlang': ['rebar.config', '.app', '.app.src', '.escript'],
+    'fortran': ['.F90', '.F95'],
+    'gitignore': ['.fdignore', '.ignore', '.rgignore'],
+    'glsl': ['.frag', '.fsh', '.vert', '.vsh'],
+    'gomod': ['go.mod'],
+    'gosum': ['go.sum'],
+    'haskell': ['.hs-boot'],
+    'heex': ['.neex'],
+    'hyprlang': ['.conf'],
+    'kconfig': ['Kconfig'],
+    'latex': ['.aux', '.cls', '.sty'],
+    'linkerscript': ['.ld', '.ldscript'],
+    'llvm': ['.llvm'],
+    'make': ['GNUmakefile', 'MAKEFILE', 'Makefile', 'makefile', '.dsp',
+             '.mak'],
+    'matlab': ['.m'],
+    'netlinx': ['.axb', '.lib'],
+    'nim': ['.nimble'],
+    'objc': ['.objc'],
+    'pascal': ['.dpr', '.lpr', '.pp'],
+    'pem': ['.cer', '.crt', '.csr', '.key'],
+    'perl': ['.t'],
+    'pymanifest': ['MANIFEST.in'],
+    'qmldir': ['qmldir'],
+    'r': ['.R'],
+    'requirements': ['requirements.txt', '.pip'],
+    'scala': ['.sbt'],
+    'scheme': ['.ss'],
+    'sparql': ['.rq'],
+    'tcl': ['.tk', '.tm'],
+    'udev': ['.rules'],
+    'ungrammar': ['.ungram'],
+    'v': ['v.mod', '.vsh'],
+    'xcompose': ['Compose', 'XCompose', '.XCompose'],
+    'xml': ['.rng', '.svg', '.xsd'],
+}
+
+
+#: File suffixes that should never be matched to a language.
+#:
+#: tree-sitter-language-pack lists some common, generic extensions for niche
+#: languages (such as ``.txt`` for Vim help files). Most files with these
+#: extensions are something else, so we leave them out and let content-based
+#: detection decide.
+#:
+#: Version Added:
+#:     9.0
+EXCLUDED_FILE_SUFFIXES: set[str] = {
+    '.inc',
+    '.mod',
+    '.pro',
+    '.res',
+    '.txt',
 }
 
 
@@ -402,175 +564,29 @@ UPSTREAM_GRAMMAR_QUERIES: set[tuple[str, str]] = {
 module_dir = Path(__file__).parents[3] / 'reviewboard' / 'treesitter'
 
 
-@dataclass
-class GrammarInfo:
-    """Information about a grammar.
-
-    Version Added:
-        9.0
-    """
-
-    #: A list of filename suffixes that this language applies to.
-    file_suffixes: list[str]
-
-    #: A regular expression to check against the first line of the file.
-    first_line_regex: str | None
-
-    #: The grammar name.
-    name: str
-
-
-def load_grammar_info(
-    base_path: Path,
-    data: JSONDict,
-) -> GrammarInfo:
-    """Load grammar info from JSON data.
+def load_language_definitions(
+    language_pack_path: Path,
+) -> JSONDict:
+    """Load the language definitions from tree-sitter-language-pack.
 
     Version Added:
         9.0
 
     Args:
-        base_path (pathlib.Path):
-            The path to the grammar checkout.
-
-        data (typelets.json.JSONDict):
-            The loaded grammar data.
+        language_pack_path (pathlib.Path):
+            The path to the tree-sitter-language-pack checkout.
 
     Returns:
-        GrammarInfo:
-        The loaded grammar info.
-    """
-    file_suffixes = data.get('file-types')
-
-    if file_suffixes is None:
-        file_suffixes = []
-
-    if not isinstance(file_suffixes, list):
-        logger.warning(
-            'Invalid data for key "file-types" in file suffixes %r from %s',
-            file_suffixes, base_path)
-        file_suffixes = []
-
-    first_line_regex = data.get('first-line-regex')
-
-    if first_line_regex is not None and not isinstance(first_line_regex, str):
-        logger.warning(
-            'Invalid data "%s" for key "first-line-regex" in data from %s',
-            first_line_regex, base_path)
-        first_line_regex = None
-
-    return GrammarInfo(
-        name=base_path.stem,
-        file_suffixes=file_suffixes,
-        first_line_regex=first_line_regex)
-
-
-def get_grammars(
-    path: Path,
-) -> Iterator[GrammarInfo]:
-    """Yield the grammar blobs for a package.
-
-    Version Added:
-        9.0
-
-    Args:
-        path (pathlib.Path):
-            The path to the grammar.
-
-    Yields:
         typelets.json.JSONDict:
-        The loaded info about the grammar.
+        A mapping from language name to its definition. Each definition
+        includes the file extensions, the grammar repository, and the
+        grammar revision.
     """
-    try:
-        with (path / 'tree-sitter.json').open() as f:
-            p = json.load(f)
+    definitions_path = (language_pack_path / 'sources' /
+                        'language_definitions.json')
 
-            for grammar in p['grammars']:
-                yield load_grammar_info(path, grammar)
-    except OSError:
-        # No tree-sitter.json file present.
-        pass
-
-    try:
-        with (path / 'package.json').open() as f:
-            p = json.load(f)
-
-            if 'tree-sitter' in p:
-                for grammar in p['tree-sitter']:
-                    yield load_grammar_info(path, grammar)
-    except OSError:
-        # No package.json file present.
-        pass
-
-
-def load_grammars(
-    vendor_path: Path,
-    languages: set[str],
-) -> dict[str, GrammarInfo]:
-    """Load the grammar information.
-
-    Version Added:
-        9.0
-
-    Args:
-        vendor_path (pathlib.Path):
-            The path to the vendor directory.
-
-        languages (set of str):
-            The set of languages to load grammars for.
-
-    Returns:
-        dict:
-        A mapping from grammar name to grammar information.
-    """
-    # tree-sitter-language-pack directly depends on these Python packages, and
-    # therefore those don't get cloned into vendor. We therefore hardcode the
-    # data for these:
-    #   * tree-sitter-c-sharp
-    #   * tree-sitter-embedded-template
-    #   * tree-sitter-yaml
-    result: dict[str, list[GrammarInfo]] = defaultdict(list, {
-        'csharp': [
-            GrammarInfo(file_suffixes=['cs'], first_line_regex=None,
-                        name='csharp'),
-        ],
-        'embeddedtemplate': [
-            GrammarInfo(file_suffixes=['ejs', 'erb'], first_line_regex=None,
-                        name='embeddedtemplate'),
-        ],
-        'yaml': [
-            GrammarInfo(file_suffixes=['yml', 'yaml'], first_line_regex=None,
-                        name='yaml'),
-        ],
-    })
-
-    for language in languages:
-        subdir = vendor_path / language
-
-        for grammar in get_grammars(subdir):
-            result[grammar.name].append(grammar)
-
-    def merge_info(
-        a: GrammarInfo,
-        b: GrammarInfo,
-    ) -> GrammarInfo:
-        if a.name != b.name:
-            raise ValueError(
-                f'Error while merging GrammarInfo: names {a.name} and '
-                f'{b.name} do not match!')
-
-        return GrammarInfo(
-            file_suffixes=list(
-                set(a.file_suffixes) | set(b.file_suffixes)
-            ),
-            first_line_regex=a.first_line_regex or b.first_line_regex,
-            name=a.name,
-        )
-
-    return {
-        name: reduce(merge_info, infos)
-        for name, infos in result.items()
-    }
+    with definitions_path.open() as f:
+        return json.load(f)
 
 
 def get_git_revision(
@@ -654,37 +670,57 @@ def write_lock_file(
 
 
 def copy_queries(
-    vendor_path: Path,
+    language_pack_path: Path,
+    parsers_path: Path,
+    definitions: JSONDict,
 ) -> None:
-    """Copy queries files from vendor directories.
+    """Copy queries files from the tree-sitter-language-pack parsers.
 
     Args:
-        vendor_path (pathlib.Path):
-            Th path to the vendor directory.
+        language_pack_path (pathlib.Path):
+            The path to the tree-sitter-language-pack checkout.
+
+        parsers_path (pathlib.Path):
+            The path to the parsers in the tree-sitter-language-pack checkout.
+
+        definitions (typelets.json.JSONDict):
+            The language definitions from tree-sitter-language-pack.
     """
+    parsers_path = language_pack_path / 'parsers'
     lock_data: JSONDict = {}
 
     for language, filename in UPSTREAM_GRAMMAR_QUERIES:
-        repo_path = vendor_path / language
-        queries_path = repo_path / 'queries' / filename
+        queries_path = parsers_path / language / 'queries' / filename
         target_dir = module_dir / 'queries' / language
 
         if not queries_path.exists():
             logger.warning('Queries file %s does not exist',
                            queries_path)
+            continue
 
         if not target_dir.exists():
             target_dir.mkdir()
 
-        git_remote = get_git_remote(repo_path)
-        git_revision = get_git_revision(repo_path)
+        # Upstream queries are written for nvim-treesitter, so they need
+        # the same rewrites (such as lua-match? to match?) as queries
+        # pulled in by update-queries.py.
+        (target_dir / filename).write_bytes(
+            apply_standard_query_edits(queries_path.read_bytes()))
 
-        copy2(queries_path, target_dir)
+        definition = definitions[language]
 
-        lock_data[f'{language}/{filename}'] = {
-            'commit': git_revision,
-            'remote': git_remote,
-        }
+        if 'local' in definition:
+            # The grammar lives inside tree-sitter-language-pack itself.
+            lock_data[f'{language}/{filename}'] = {
+                'commit': get_git_revision(language_pack_path),
+                'path': definition['local'],
+                'remote': get_git_remote(language_pack_path),
+            }
+        else:
+            lock_data[f'{language}/{filename}'] = {
+                'commit': definition['rev'],
+                'remote': definition['repo'],
+            }
 
     write_lock_file(lock_data)
 
@@ -719,19 +755,24 @@ def main() -> None:
     tree_sitter_language_pack_path = \
         Path(args.tree_sitter_language_pack_checkout)
 
-    vendor_path = tree_sitter_language_pack_path / 'vendor'
+    parsers_path = tree_sitter_language_pack_path / 'parsers'
 
-    if not vendor_path.exists():
+    if not parsers_path.exists():
         sys.stderr.write(
-            f'Path {vendor_path} does not exist. Did you run '
+            f'Path {parsers_path} does not exist. Did you run '
             f'scripts/clone_vendors.py in your tree-sitter-language-pack '
             f'checkout?'
         )
         sys.exit(1)
 
     languages = set(args.language or get_args(SupportedLanguage))
-
-    grammars = load_grammars(vendor_path, languages)
+    definitions = load_language_definitions(tree_sitter_language_pack_path)
+    language_extensions: dict[str, list[str]] = {
+        lang: definitions[lang].get('extensions', [])
+        for lang in languages
+        if lang in definitions
+    }
+    language_keys = sorted(language_extensions.keys())
 
     with open(module_dir / '_languages.py', 'w', encoding='utf-8') as f:
         f.write(cleandoc('''
@@ -759,7 +800,7 @@ def main() -> None:
 
         mime_to_lang = {}
 
-        for lang in sorted(grammars.keys()):
+        for lang in language_keys:
             mime_types = LANGUAGE_MIME_TYPES.get(lang, [])
 
             for mime_type in mime_types:
@@ -781,17 +822,16 @@ def main() -> None:
 
         suffix_to_langs: dict[str, list[str]] = defaultdict(list)
 
-        for lang in sorted(grammars.keys()):
-            info = grammars[lang]
-            if info.file_suffixes:
-                for suffix in info.file_suffixes:
-                    # If the suffix is very short, we want to enforce it being
-                    # a file extension. Otherwise we can have issues like
-                    # {'t': ['perl']} matching .txt files.
-                    if len(suffix) <= 4 and not suffix.startswith('.'):
-                        suffix = f'.{suffix}'
+        for lang in language_keys:
+            suffixes = {
+                f'.{extension}'
+                for extension in language_extensions[lang]
+            }
+            suffixes.update(EXTRA_FILE_SUFFIXES.get(lang, []))
+            suffixes -= EXCLUDED_FILE_SUFFIXES
 
-                    suffix_to_langs[suffix].append(lang)
+            for suffix in suffixes:
+                suffix_to_langs[suffix].append(lang)
 
         # Sort by suffix length (longest first), then alphabetically.
         sorted_suffixes = sorted(suffix_to_langs.keys(),
@@ -803,7 +843,7 @@ def main() -> None:
 
         f.write('})\n')
 
-    copy_queries(vendor_path)
+    copy_queries(tree_sitter_language_pack_path, parsers_path, definitions)
 
 
 if __name__ == '__main__':

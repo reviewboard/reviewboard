@@ -99,7 +99,7 @@ base_package_dependencies: _DependencyMap = {
     # Queries for tree-sitter are tightly bound to grammar versions. When
     # updating this, make sure to run reviewboard.treesitter.tests.test_queries
     # to verify that all queries load properly.
-    'tree-sitter-language-pack': '==0.9.0',
+    'tree-sitter-language-pack': '==1.22.1',
 
     'tqdm': '~=4.66.2',
     'Whoosh': '>=2.6',

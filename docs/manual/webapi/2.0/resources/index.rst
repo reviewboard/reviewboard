@@ -13,6 +13,17 @@ API and Server State
    server-info
 
 
+Bug Trackers
+============
+
+.. toctree::
+   :maxdepth: 1
+
+   bug-tracker-list
+   bug-tracker
+   bug-tracker-bug-list
+
+
 Default Reviewers
 =================
 

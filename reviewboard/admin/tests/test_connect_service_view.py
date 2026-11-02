@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 from typing import TYPE_CHECKING
-from unittest import skip
 
 from django.urls import reverse
 
@@ -53,6 +52,52 @@ class ConnectServiceViewTests(TestCase):
         # dialog header (client-side), not in this fragment.
         self.assertIn(b'hosting_account_username', response.content)
 
+    def test_get_with_existing_accounts(self) -> None:
+        """Testing ConnectServiceView GET with existing accounts offers to use
+        them or link another
+        """
+        account = HostingServiceAccount.objects.create(
+            hosting_url='https://scm.example.com/',
+            service_name='test',
+            username='myuser')
+        HostingServiceAccount.objects.create(
+            service_name='test',
+            username='hidden-user',
+            visible=False)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self._get_url('test'))
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content
+        self.assertIn(b'Add a repository from scm.example.com', content)
+        self.assertIn(b'Create a new bug tracker on scm.example.com', content)
+        self.assertIn(b'hosting_account=%d' % account.pk, content)
+        self.assertIn(
+            b'href="/admin/connected-services/test/connect/?method=new" '
+            b'data-connect-page',
+            content)
+        self.assertNotIn(b'hidden-user', content)
+        self.assertNotIn(b'hosting_account_username', content)
+
+    def test_get_with_existing_accounts_and_method_new(self) -> None:
+        """Testing ConnectServiceView GET with existing accounts and
+        ?method=new renders the form
+        """
+        HostingServiceAccount.objects.create(
+            service_name='test',
+            username='myuser')
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self._get_url('test'), {
+            'method': 'new',
+        })
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'hosting_account_username', response.content)
+        self.assertNotIn(b'Link another account', response.content)
+
     def test_get_with_unknown_service(self) -> None:
         """Testing ConnectServiceView GET with an unknown service"""
         self.client.login(username='admin', password='admin')
@@ -85,12 +130,11 @@ class ConnectServiceViewTests(TestCase):
         self.assertIn(b'method=pat', content)
         self.assertNotIn(b'hosting_account_username', content)
 
-    @skip('Disabled until implementation is complete')
     def test_get_with_github_connected_accounts(self) -> None:
         """Testing ConnectServiceView GET for GitHub renders "Add a
         repository" options for connected accounts
         """
-        HostingServiceAccount.objects.create(
+        account = HostingServiceAccount.objects.create(
             service_name='github',
             username='acme-org',
             data={
@@ -111,6 +155,12 @@ class ConnectServiceViewTests(TestCase):
         content = response.content
         self.assertIn(b'Add a repository for acme-org', content)
         self.assertIn(b'https://example.com/avatar.png', content)
+        self.assertIn(
+            b'href="/admin/db/scmtools/repository/add/?hosting_type=github'
+            b'&amp;hosting_account=%d&amp;'
+            b'next=%%2Fadmin%%2Fconnected-services%%2F"'
+            % account.pk,
+            content)
 
     def test_get_with_github_pat_method(self) -> None:
         """Testing ConnectServiceView GET for GitHub with ?method=pat renders
@@ -135,11 +185,105 @@ class ConnectServiceViewTests(TestCase):
 
         rsp = json.loads(response.content)
         self.assertTrue(rsp['success'])
-        self.assertEqual(rsp['redirect'], reverse('connected-services-list'))
+        self.assertNotIn('redirect', rsp)
 
         account = HostingServiceAccount.objects.get(service_name='test',
                                                     username='myuser')
         self.assertTrue(account.is_authorized)
+
+        # The success step offers the next actions for the account, and
+        # reloads the list when closed.
+        html = rsp['html']
+        self.assertIn('Connected to Test Service', html)
+        self.assertIn(
+            f'data-wizard-close-url="{reverse("connected-services-list")}"',
+            html)
+        self.assertIn(
+            '/admin/db/scmtools/repository/add/?hosting_type=test&amp;'
+            f'hosting_account={account.pk}&amp;'
+            'next=%2Fadmin%2Fconnected-services%2F',
+            html)
+        self.assertIn(
+            '/admin/db/hostingsvcs/configuredbugtracker/add/?'
+            f'service_name=test&amp;hosting_account={account.pk}&amp;'
+            'next=%2Fadmin%2Fconnected-services%2F',
+            html)
+
+    def test_post_with_bug_tracker_service(self) -> None:
+        """Testing ConnectServiceView POST with a bug tracker service offers
+        only a bug tracker
+        """
+        class BugTrackerTestService(TestService):
+            hosting_service_id = 'test-bug-tracker'
+            name = 'Test Bug Tracker'
+            supports_repositories = False
+
+            # Don't reuse the parent class's cached connect UI.
+            _connect_ui = None
+
+        hosting_service_registry.register(BugTrackerTestService)
+
+        try:
+            self.client.login(username='admin', password='admin')
+            response = self.client.post(
+                self._get_url('test-bug-tracker'),
+                {
+                    'hosting_account_username': 'myuser',
+                    'hosting_account_password': 'mypass',
+                })
+        finally:
+            hosting_service_registry.unregister(BugTrackerTestService)
+
+        self.assertEqual(response.status_code, 200)
+
+        rsp = json.loads(response.content)
+        self.assertTrue(rsp['success'])
+
+        html = rsp['html']
+        self.assertIn('Create a new bug tracker on Test Bug Tracker', html)
+        self.assertNotIn('Add a repository from', html)
+
+    def test_add_object_actions_with_hosting_url(self) -> None:
+        """Testing BaseHostingServiceConnectUI.get_add_object_actions with a
+        self-hosted account labels actions with the server
+        """
+        account = HostingServiceAccount.objects.create(
+            hosting_url='https://tracker.example.com/',
+            service_name='test',
+            username='myuser')
+
+        actions = TestService.connect_ui.get_add_object_actions(
+            self.create_http_request(),
+            account=account)
+
+        self.assertEqual(
+            [
+                (action['label'], action['description'])
+                for action in actions
+            ],
+            [
+                ('Add a repository from tracker.example.com', 'myuser'),
+                ('Create a new bug tracker on tracker.example.com', 'myuser'),
+            ])
+
+    def test_add_object_actions_with_local_site_account(self) -> None:
+        """Testing BaseHostingServiceConnectUI.get_add_object_actions with a
+        Local Site account includes the Local Site
+        """
+        local_site = self.create_local_site()
+        account = HostingServiceAccount.objects.create(
+            local_site=local_site,
+            service_name='test',
+            username='myuser')
+
+        actions = TestService.connect_ui.get_add_object_actions(
+            self.create_http_request(),
+            account=account)
+
+        self.assertEqual(len(actions), 2)
+
+        for action in actions:
+            self.assertIn(f'local_site={local_site.pk}', action['url'])
 
     def test_post_with_authorization_error(self) -> None:
         """Testing ConnectServiceView POST surfaces an AuthorizationError"""
@@ -200,6 +344,89 @@ class ConnectServiceViewTests(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertFalse(
             HostingServiceAccount.objects.filter(username='myuser').exists())
+
+    def test_get_with_authenticated_bug_tracker_service(self) -> None:
+        """Testing ConnectServiceView GET with a bug tracker service that
+        connects accounts
+        """
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get(self._get_url('jira'))
+
+        # The deployment choice is offered first. JIRA configurations
+        # require an account, so there is no link to configure one
+        # without linking.
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'?deployment=cloud', response.content)
+        self.assertIn(b'?deployment=dc', response.content)
+        self.assertNotIn(b'/jira/bug-trackers/add/', response.content)
+
+    def test_get_jira_with_existing_accounts(self) -> None:
+        """Testing ConnectServiceView GET for JIRA with existing accounts
+        offers them before the deployment choice
+        """
+        account = HostingServiceAccount.objects.create(
+            hosting_url='https://jira.example.com/',
+            service_name='jira',
+            username='myuser')
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self._get_url('jira'))
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content
+        self.assertIn(b'Create a new bug tracker on jira.example.com',
+                      content)
+        self.assertIn(b'hosting_account=%d' % account.pk, content)
+        self.assertIn(b'Link a JIRA Cloud account', content)
+        self.assertIn(b'Link a JIRA Data Center account', content)
+
+        # The account comes before the deployment choices.
+        self.assertLess(content.index(b'jira.example.com'),
+                        content.index(b'?deployment=cloud'))
+
+    def test_get_jira_cloud_form(self) -> None:
+        """Testing ConnectServiceView GET with the JIRA Cloud deployment"""
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get(self._get_url('jira'),
+                                   {'deployment': 'cloud'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'jira_cloud_site', response.content)
+        self.assertIn(b'hosting_account_username', response.content)
+        self.assertIn(b'API token', response.content)
+
+        # The server URL field belongs to the Data Center flow.
+        self.assertNotIn(b'name="jira_server_url"', response.content)
+
+    def test_get_jira_dc_form(self) -> None:
+        """Testing ConnectServiceView GET with the JIRA Data Center
+        deployment
+        """
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get(self._get_url('jira'),
+                                   {'deployment': 'dc'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'name="jira_server_url"', response.content)
+        self.assertIn(b'hosting_account_username', response.content)
+
+        # The site name field belongs to the Cloud flow.
+        self.assertNotIn(b'name="jira_cloud_site"', response.content)
+
+    def test_get_bugzilla_form(self) -> None:
+        """Testing ConnectServiceView GET with Bugzilla"""
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get(self._get_url('bugzilla'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'name="bugzilla_url"', response.content)
+        self.assertIn(b'hosting_account_username', response.content)
+        self.assertIn(b'API key', response.content)
 
     def _get_url(
         self,

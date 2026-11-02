@@ -7,6 +7,8 @@
  (old_style_twic_section_comment)
 ] @comment
 
+(command) @number
+
 (tagpair_delimiter_open) @punctuation.bracket
 (tagpair_delimiter_close) @punctuation.bracket
 (tagpair_key) @type

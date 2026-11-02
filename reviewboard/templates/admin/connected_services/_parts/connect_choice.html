@@ -1,0 +1,21 @@
+{% load i18n %}
+
+<h1>
+{% blocktrans %}
+ How do you want to connect to {{service_name}}?
+{% endblocktrans %}
+</h1>
+
+<ul class="rb-c-connect-wizard__options">
+{% include "admin/connected_services/_parts/connect_add_actions.html" with add_actions=existing_account_actions %}
+ <li class="rb-c-connect-wizard__option">
+  <a href="{{link_account_url}}" data-connect-page>
+   <h2>{% trans "Link another account" %}</h2>
+   <p>
+{% blocktrans %}
+    Connect a new {{service_name}} account.
+{% endblocktrans %}
+   </p>
+  </a>
+ </li>
+</ul>

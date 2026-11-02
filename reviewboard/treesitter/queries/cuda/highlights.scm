@@ -149,7 +149,7 @@
 
 ((field_expression
   (field_identifier) @property) @_parent
-  (#not-has-parent? @_parent template_method function_declarator call_expression))
+  (#not-has-parent? @_parent function_declarator call_expression))
 
 (field_designator) @property
 
@@ -622,7 +622,9 @@
 [
   "__host__"
   "__device__"
+  "__tile__"
   "__global__"
+  "__tile_global__"
   "__managed__"
   "__forceinline__"
   "__noinline__"

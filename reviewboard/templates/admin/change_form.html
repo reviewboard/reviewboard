@@ -59,6 +59,9 @@
 {%  if is_popup %}
  <input type="hidden" name="_popup" value="1">
 {%  endif %}
+{%  if add and request.GET.next %}
+ <input type="hidden" name="next" value="{{request.GET.next}}">
+{%  endif %}
 
 {%  block form-alerts %}
 {%   if errors %}

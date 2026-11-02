@@ -42,6 +42,18 @@ use.
   Sticking something in double-quotes will search for the exact phrase instead
   of splitting it up into terms.
 
+* **Wildcards**:
+
+  ``*`` matches any number of characters, and ``?`` matches a single character.
+  Searching for ``java*`` will match "java" and "javascript". A wildcard term
+  needs at least 3 characters before the first wildcard. Shorter ones, like
+  ``ja*``, are ignored.
+
+* **Ranges**:
+
+  The Whoosh query language allows ranges, such as ``[10 TO 20]``. Review Board's
+  search supports numeric or date ranges, but ignores text ranges.
+
 There are a number of other operators you can use to tweak the results. For a
 full explanation of the Whoosh query syntax (including a couple features not
 mentioned here), see `The default query language`_.

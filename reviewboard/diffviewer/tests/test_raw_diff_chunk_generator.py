@@ -234,6 +234,9 @@ class RawDiffChunkGeneratorTests(kgb.SpyAgency, TestCase):
             modified_filename='foo.pl',
             diff_settings=DiffSettings.create())
 
+        # Perl has real queries, so simulate a language without them.
+        self.spy_on(interesting_lines._get_interesting_lines_via_ts,
+                    op=kgb.SpyOpReturn(None))
         self.spy_on(interesting_lines._get_interesting_lines_via_regex)
 
         chunks = list(generator.get_chunks())

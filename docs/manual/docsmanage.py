@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(__file__, '..', '..'))
 sys.path.insert(0, os.path.dirname(__file__))
 
 from django.core.management import execute_from_command_line
-from reviewboard import finalize_setup
+from reviewboard.upgrade import finalize_setup
 
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'reviewboard.settings')
