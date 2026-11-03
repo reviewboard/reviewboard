@@ -162,6 +162,7 @@ class TextBasedReviewUITests(kgb.SpyAgency, TestCase):
                 make_cache_key([
                     'text-attachment-diff',
                     view_mode,
+                    '1',
                     str(self.attachment.pk),
                     str(new_attachment.pk),
                     state_hash,
