@@ -11,6 +11,7 @@ from django.utils.translation import gettext, gettext_lazy as _
 from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.hostingsvcs.errors import (AuthorizationError,
@@ -51,7 +52,7 @@ class UnfuddleForm(BaseHostingServiceRepositoryForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class Unfuddle(BaseHostingService):
+class Unfuddle(BaseHostingService, BaseBugTracker):
     """Hosting service support for Unfuddle.
 
     Unfuddle is a source hosting service that supports Git and Subversion
@@ -61,9 +62,7 @@ class Unfuddle(BaseHostingService):
     hosting_service_id = 'unfuddle'
     name = 'Unfuddle'
 
-    # TODO: This service currently doesn't implement BaseBugTracker, but once
-    # it does, uncomment this:
-    # bugs_in_repo = True
+    bugs_in_repo = True
     form = UnfuddleForm
     needs_authorization = True
     supported_scmtools = ['Git', 'Subversion']

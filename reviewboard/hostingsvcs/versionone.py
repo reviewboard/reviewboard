@@ -6,6 +6,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
@@ -28,7 +29,7 @@ class VersionOneForm(BaseHostingServiceRepositoryForm):
         validators=[validate_bug_tracker_base_hosting_url])
 
 
-class VersionOne(BaseHostingService):
+class VersionOne(BaseHostingService, BaseBugTracker):
     """Hosting service for VersionOne."""
 
     hosting_service_id = 'versionone'
