@@ -88,7 +88,13 @@
     }
 
     ul, ol {
-      padding-left: 2em;
+      /* Each list item is its own row, so nesting is set on each one. */
+      padding-left: calc(2em * (var(--md-list-depth, 0) + 1));
+    }
+
+    /* Content after a nested list continues its item without a bullet. */
+    li.md-list-continuation {
+      list-style: none;
     }
   }
 }

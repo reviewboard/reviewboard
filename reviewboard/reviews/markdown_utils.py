@@ -12,11 +12,19 @@ from djblets.siteconfig.models import SiteConfiguration
 from markdown import markdown
 
 
-# Keyword arguments used when calling a Markdown renderer function.
-#
-# We use XHTML instead of HTML5 to ensure the results can be parsed by an
-# XML parser, needed for doing diffs in change descriptions and the Markdown
-# review UI.
+#: Keyword arguments used when calling a Markdown renderer function.
+#:
+#: We use XHTML instead of HTML5 to ensure the results can be parsed by an
+#: XML parser, needed for doing diffs in change descriptions and the Markdown
+#: review UI.
+#:
+#: Comments on Markdown file attachments store row numbers, and these
+#: options decide how content is split into rows. A change that adds,
+#: removes, merges, or splits blocks, or changes their text, will move those
+#: comments. Bump MarkdownReviewUI.rendered_lines_version for any such
+#: change, and keep a frozen copy of the old rendering in
+#: :py:mod:`reviewboard.reviews.ui.legacy_markdown` so older comments can
+#: be mapped.
 MARKDOWN_KWARGS = {
     'enable_attributes': False,
     'output_format': 'xhtml',

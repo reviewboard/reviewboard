@@ -432,7 +432,7 @@ class RawDiffChunkGenerator:
 
     def get_chunks(
         self,
-        cache_key: (str | None) = None,
+        cache_key: (str | Sequence[str] | None) = None,
     ) -> Iterator[DiffChunk]:
         """Yield the chunks for the given diff information.
 
