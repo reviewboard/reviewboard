@@ -207,6 +207,7 @@
  *      <div class="rb-c-admin-cs-card__header">...</div>
  *      <div class="rb-c-admin-cs-card__body">
  *       [<div class="rb-c-admin-cs-service-items">...</div> ...]
+ *       [<div class="rb-c-admin-cs-card__empty">...</div>]
  *       [<details class="rb-c-admin-cs-accounts-section">...</details>]
  *      </div>
  *     </li>
@@ -235,6 +236,23 @@
   }
 
   /**
+   * The message shown when a service has no repositories or bug trackers.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-cs-card__empty">
+   *      <p>...</p>
+   *     </div>
+   */
+  &__empty {
+    color: var(--ink-p-fg-weak);
+    padding: var(--ink-u-spacing-std);
+
+    p {
+      margin: 0;
+    }
+  }
+
+  /**
    * The header for a connected service card.
    *
    * This sits at the top of the entry's card. It identifies the service and
@@ -244,7 +262,7 @@
    * Structure:
    *     <div class="rb-c-admin-cs-card__header">
    *      <div class="rb-c-admin-cs-service">...</div>
-   *      ...
+   *      [<a class="rb-c-admin-cs-card__add">...</a>]
    *     </div>
    */
   &__header {
@@ -261,6 +279,15 @@
     >:first-child {
       flex: 1;
     }
+  }
+
+  /**
+   * The link to add to the service, in the card header.
+   *
+   * The padding gives it a larger click target.
+   */
+  &__add {
+    padding: var(--ink-u-spacing-s);
   }
 
   &__form-actions {

@@ -353,9 +353,66 @@ class BaseHostingServiceConnectUI:
             if getattr(account, 'repository_count', 0)
         ]
 
+        total_repository_count = sum(
+            cast(int, entry['repository_count'])
+            for entry in accounts_data
+        )
+
+        from reviewboard.hostingsvcs.bug_tracker_forms import \
+            is_bug_tracker_configurable
+
+        # In-repo bug trackers are part of the repository, so only standalone
+        # bug trackers are mentioned.
+        links_repositories = service.supports_repositories
+        links_bug_trackers = is_bug_tracker_configurable(service)
+
+        # The service's page in the connect wizard. It offers the existing
+        # accounts' add actions and connecting another account. The wizard only
+        # offers services that connect an account.
+        connect_url: (str | None) = None
+        connect_label: (StrOrPromise | None) = None
+
+        if service.visible and service.needs_authorization:
+            connect_url = reverse(
+                'connected-services-connect',
+                kwargs={
+                    'service_id': service.hosting_service_id,
+                })
+
+            if links_repositories and links_bug_trackers:
+                connect_label = _(
+                    'Add a repository or bug tracker, or connect another '
+                    'account'
+                )
+            elif links_repositories:
+                connect_label = _(
+                    'Add a repository or connect another account'
+                )
+            elif links_bug_trackers:
+                connect_label = _(
+                    'Add a bug tracker or connect another account'
+                )
+            else:
+                connect_label = _('Connect another account')
+
+        empty_message: (StrOrPromise | None) = None
+
+        if (visible_account_count and
+            not total_repository_count and
+            not bug_tracker_count):
+            if links_repositories and links_bug_trackers:
+                empty_message = _('No linked repositories or bug trackers.')
+            elif links_repositories:
+                empty_message = _('No linked repositories.')
+            elif links_bug_trackers:
+                empty_message = _('No linked bug trackers.')
+
         return {
             'accounts_data': accounts_data,
             'bug_tracker_count': bug_tracker_count,
+            'connect_label': connect_label,
+            'connect_url': connect_url,
+            'empty_message': empty_message,
             'filter_accounts': filter_accounts,
             'service_id': service.hosting_service_id,
             'service_name': service.name,
@@ -365,10 +422,7 @@ class BaseHostingServiceConnectUI:
             # Services can set this to show the accounts section even with
             # no visible accounts, such as for service-level controls.
             'show_accounts_section': visible_account_count > 0,
-            'total_repository_count': sum(
-                cast(int, entry['repository_count'])
-                for entry in accounts_data
-            ),
+            'total_repository_count': total_repository_count,
             'visible_account_count': visible_account_count,
         }
 

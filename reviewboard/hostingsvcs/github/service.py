@@ -324,7 +324,6 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
             app_account = None
 
         github_app_create_url: (str | None) = None
-        github_app_install_url: (str | None) = None
         github_app_replace_key_url: (str | None) = None
         github_app_settings_url: (str | None) = None
 
@@ -338,13 +337,6 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
                     'hosting_service_id': service.hosting_service_id,
                 })
         else:
-            github_app_install_url = local_site_reverse(
-                'github-app-install',
-                local_site=app_account.local_site,
-                kwargs={
-                    'account_id': app_account.pk,
-                    'hosting_service_id': service.hosting_service_id,
-                })
             github_app_replace_key_url = local_site_reverse(
                 'github-app-replace-key',
                 local_site=app_account.local_site,
@@ -395,7 +387,6 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
         return {
             **context,
             'github_app_create_url': github_app_create_url,
-            'github_app_install_url': github_app_install_url,
             'github_app_installed': app_account is not None,
             'github_app_replace_key_url': github_app_replace_key_url,
             'github_app_settings_url': github_app_settings_url,

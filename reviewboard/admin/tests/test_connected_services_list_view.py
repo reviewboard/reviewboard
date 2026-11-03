@@ -78,6 +78,102 @@ class ConnectedServicesListViewTests(TestCase):
         # repositories list.
         self.assertNotIn(b'data-item-type="repositories"', response.content)
 
+    def test_get_empty_state(self) -> None:
+        """Testing ConnectedServicesListView GET shows an empty state for a
+        service with no repositories
+        """
+        HostingServiceAccount.objects.create(
+            service_name='github',
+            username='user1',
+            visible=True)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        # GitHub's bug tracker is part of the repository, so only
+        # repositories are mentioned.
+        self.assertIn(b'No linked repositories.', response.content)
+
+    def test_get_empty_state_for_bug_tracker_service(self) -> None:
+        """Testing ConnectedServicesListView GET shows an empty state for a
+        bug tracker service with no bug trackers
+        """
+        HostingServiceAccount.objects.create(
+            service_name='jira',
+            username='user1',
+            hosting_url='https://jira.example.com',
+            visible=True)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'No linked bug trackers.', response.content)
+        self.assertIn(
+            b'title="Add a bug tracker or connect another account"',
+            response.content)
+
+    def test_get_add_button(self) -> None:
+        """Testing ConnectedServicesListView GET shows an add button that
+        opens the service's connect page
+        """
+        HostingServiceAccount.objects.create(
+            service_name='github',
+            username='user1',
+            visible=True)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        connect_url = reverse('connected-services-connect',
+                              kwargs={'service_id': 'github'})
+        self.assertIn(
+            f'<a class="rb-c-admin-cs-card__add" href="{connect_url}"\n'
+            f'     data-wizard-connect-url="{connect_url}"\n'
+            f'     aria-label="Add a repository or connect another account" '
+            f'title="Add a repository or connect another account">',
+            response.content.decode('utf-8'))
+
+    def test_get_no_add_button_without_connect_page(self) -> None:
+        """Testing ConnectedServicesListView GET omits the add button for a
+        service that doesn't connect accounts
+        """
+        self.create_bug_tracker(
+            service_name='trac',
+            settings={
+                'trac_url': 'https://trac.example.com',
+            })
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(b'data-item-type="bug-trackers"', response.content)
+        self.assertNotIn(
+            reverse('connected-services-connect',
+                    kwargs={'service_id': 'trac'}).encode('utf-8'),
+            response.content)
+
+    def test_get_no_empty_state_with_repositories(self) -> None:
+        """Testing ConnectedServicesListView GET omits the empty state for a
+        service with repositories
+        """
+        account = HostingServiceAccount.objects.create(
+            service_name='bitbucket',
+            username='user1',
+            visible=True)
+        self.create_repository(hosting_account=account)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(b'rb-c-admin-cs-card__empty', response.content)
+
     def test_get_with_account_without_username(self) -> None:
         """Testing ConnectedServicesListView GET with a hosting account that
         has no username
@@ -491,7 +587,6 @@ class ConnectedServicesListViewTests(TestCase):
         self.assertIn('<details class="rb-c-admin-cs-accounts-section">',
                       content)
         self.assertIn('GitHub App connected', content)
-        self.assertIn('Install app into another organization', content)
 
     def test_get_sorts_entries_by_service_name(self) -> None:
         """Testing ConnectedServicesListView GET sorts entries by service

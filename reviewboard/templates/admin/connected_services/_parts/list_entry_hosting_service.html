@@ -7,6 +7,13 @@
 {%  include "admin/connected_services/_parts/service.html" %}
   </div>
 {% endblock service_header %}
+{% if connect_url %}
+  <a class="rb-c-admin-cs-card__add" href="{{connect_url}}"
+     data-wizard-connect-url="{{connect_url}}"
+     aria-label="{{connect_label}}" title="{{connect_label}}">
+   <span class="ink-i-add" aria-hidden="true"></span>
+  </a>
+{% endif %}
  </div>
 
  <div class="rb-c-admin-cs-card__body">
@@ -28,6 +35,12 @@
 {%   include "admin/connected_services/_parts/service_repositories.html" %}
 {%  endif %}
 {% endblock service_items %}
+
+{% if empty_message %}
+  <div class="rb-c-admin-cs-card__empty">
+   <p>{{empty_message}}</p>
+  </div>
+{% endif %}
 
 {% if show_accounts_section %}
   <details class="rb-c-admin-cs-accounts-section"{% if needs_attention %} open{% endif %}>
