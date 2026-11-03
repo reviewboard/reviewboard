@@ -399,6 +399,10 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
             'github_app_installed': app_account is not None,
             'github_app_replace_key_url': github_app_replace_key_url,
             'github_app_settings_url': github_app_settings_url,
+
+            # The App controls live in the accounts section, and are shown even
+            # when there are no visible accounts.
+            'show_accounts_section': True,
         }
 
     def get_connected_services_list_account_menu_items(

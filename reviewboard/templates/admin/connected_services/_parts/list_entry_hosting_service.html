@@ -9,39 +9,7 @@
 {% endblock service_header %}
  </div>
 
-{% block service_controls %}{% endblock %}
-
  <div class="rb-c-admin-cs-card__body">
-{% if has_visible_accounts %}
-  <ul class="rb-c-admin-cs-accounts">
-{% block service_accounts %}
-{%  for entry in accounts_data %}
-{%   if entry.account.visible %}
-   <li class="rb-c-admin-cs-accounts__account">
-    <div class="rb-c-admin-cs-accounts__account__main">
-     <div class="rb-c-admin-cs-accounts__account__identity">
-      <span class="rb-c-admin-cs-accounts__account__title">
-       <span class="rb-c-admin-cs-accounts__account__name">
-        {{entry.account.username|default:_("(unnamed account)")}}
-       </span>
-{%    if entry.account.hosting_url %}
-       <span class="rb-c-admin-cs-accounts__account__url">
-        ({{entry.account.hosting_url}})
-       </span>
-{%    endif %}
-      </span>
-     </div>
-     <div class="rb-c-admin-cs-accounts__account__actions">
-{%    include "admin/connected_services/_parts/account_menu.html" %}
-     </div>
-    </div>
-   </li>
-{%   endif %}
-{%  endfor %}
-{% endblock service_accounts %}
-  </ul>
-{% endif %}
-
 {% block service_bug_trackers %}
 {%  if bug_tracker_count %}
   <div class="rb-c-admin-cs-service-items"
@@ -60,5 +28,45 @@
 {%   include "admin/connected_services/_parts/service_repositories.html" %}
 {%  endif %}
 {% endblock service_items %}
+
+{% if show_accounts_section %}
+  <details class="rb-c-admin-cs-accounts-section"{% if needs_attention %} open{% endif %}>
+   <summary class="rb-c-admin-cs-accounts-section__summary">
+{%  blocktrans trimmed count counter=visible_account_count %}
+    {{counter}} connected account
+{%  plural %}
+    {{counter}} connected accounts
+{%  endblocktrans %}
+   </summary>
+{% block service_controls %}{% endblock %}
+   <ul class="rb-c-admin-cs-accounts">
+{% block service_accounts %}
+{%  for entry in accounts_data %}
+{%   if entry.account.visible %}
+    <li class="rb-c-admin-cs-accounts__account">
+     <div class="rb-c-admin-cs-accounts__account__main">
+      <div class="rb-c-admin-cs-accounts__account__identity">
+       <span class="rb-c-admin-cs-accounts__account__title">
+        <span class="rb-c-admin-cs-accounts__account__name">
+         {{entry.account.username|default:_("(unnamed account)")}}
+        </span>
+{%    if entry.account.hosting_url %}
+        <span class="rb-c-admin-cs-accounts__account__url">
+         ({{entry.account.hosting_url}})
+        </span>
+{%    endif %}
+       </span>
+      </div>
+      <div class="rb-c-admin-cs-accounts__account__actions">
+{%    include "admin/connected_services/_parts/account_menu.html" %}
+      </div>
+     </div>
+    </li>
+{%   endif %}
+{%  endfor %}
+{% endblock service_accounts %}
+   </ul>
+  </details>
+{% endif %}
  </div>
 </li>

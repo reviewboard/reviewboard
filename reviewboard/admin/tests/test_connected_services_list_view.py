@@ -400,6 +400,99 @@ class ConnectedServicesListViewTests(TestCase):
         self.assertEqual(len(response.context['attention_items']), 2)
         self.assertIn(b'2 connections need attention', response.content)
 
+    def test_get_accounts_collapsed_by_default(self) -> None:
+        """Testing ConnectedServicesListView GET renders accounts in a
+        collapsed section
+        """
+        HostingServiceAccount.objects.create(
+            service_name='bitbucket',
+            username='user1',
+            visible=True)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content.decode('utf-8')
+        self.assertIn('<details class="rb-c-admin-cs-accounts-section">',
+                      content)
+        self.assertIn('1 connected account\n', content)
+        self.assertLess(content.index('rb-c-admin-cs-accounts-section'),
+                        content.index('rb-c-admin-cs-accounts__account'))
+
+    def test_get_accounts_open_with_attention_item(self) -> None:
+        """Testing ConnectedServicesListView GET opens the accounts section
+        when an account needs attention
+        """
+        HostingServiceAccount.objects.create(
+            service_name='github',
+            username='acme-org',
+            visible=True,
+            data={
+                'github_app': {
+                    'role': 'installation',
+                    'status': 'suspended',
+                    'app_account_id': 1,
+                    'installation_id': 42,
+                    'owner_login': 'acme-org',
+                    'owner_type': 'organization',
+                },
+            })
+        HostingServiceAccount.objects.create(
+            service_name='bitbucket',
+            username='user1',
+            visible=True)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        # Only the service needing attention is opened.
+        content = response.content.decode('utf-8')
+        self.assertEqual(
+            content.count(
+                '<details class="rb-c-admin-cs-accounts-section" open>'),
+            1)
+        self.assertEqual(
+            content.count('<details class="rb-c-admin-cs-accounts-section">'),
+            1)
+
+    def test_get_github_app_record_only_shows_accounts_section(self) -> None:
+        """Testing ConnectedServicesListView GET shows the GitHub accounts
+        section when the only account is the invisible App record
+        """
+        HostingServiceAccount.objects.create(
+            service_name='github',
+            username='rb-app',
+            visible=False,
+            data={
+                'github_app': {
+                    'app_id': 12345,
+                    'app_slug': 'rb-app',
+                    'client_id': 'Iv1.abc123',
+                    'client_secret': 'theclientsecret',
+                    'html_url': 'https://github.com/apps/rb-app',
+                    'owner_login': 'myorg',
+                    'owner_type': 'organization',
+                    'private_key': 'not-a-real-key',
+                    'role': 'app',
+                    'webhook_secret': 'thewebhooksecret',
+                },
+            })
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+
+        content = response.content.decode('utf-8')
+        self.assertIn('<details class="rb-c-admin-cs-accounts-section">',
+                      content)
+        self.assertIn('GitHub App connected', content)
+        self.assertIn('Install app into another organization', content)
+
     def test_get_sorts_entries_by_service_name(self) -> None:
         """Testing ConnectedServicesListView GET sorts entries by service
         name

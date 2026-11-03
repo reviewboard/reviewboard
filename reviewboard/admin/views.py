@@ -501,6 +501,12 @@ class ConnectedServicesListView(View):
                         service=service,
                     )
 
+            service_attention_items = \
+                service.connect_ui.get_connected_services_list_attention_items(
+                    request,
+                    accounts=accounts)
+            attention_items += service_attention_items
+
             entries.append((
                 (service.name or '').lower(),
                 service.connect_ui.render_connected_services_list_entry(
@@ -509,12 +515,9 @@ class ConnectedServicesListView(View):
                     bug_tracker_count=bug_tracker_count,
                     bug_trackers_html=bug_trackers_html,
                     repositories_html=repositories_html,
+                    needs_attention=bool(service_attention_items),
                 ),
             ))
-            attention_items += \
-                service.connect_ui.get_connected_services_list_attention_items(
-                    request,
-                    accounts=accounts)
 
         # Add entries for services that have bug tracker configurations but no
         # accounts, such as anonymous bug trackers.

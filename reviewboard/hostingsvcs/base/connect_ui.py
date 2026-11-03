@@ -238,6 +238,7 @@ class BaseHostingServiceConnectUI:
         accounts: Sequence[HostingServiceAccount],
         bug_tracker_count: int = 0,
         bug_trackers_html: str = '',
+        needs_attention: bool = False,
         repositories_html: str = '',
     ) -> SafeString:
         """Render the services list entry for this hosting service.
@@ -257,6 +258,10 @@ class BaseHostingServiceConnectUI:
             bug_trackers_html (str, optional):
                 The rendered first page of the service's bug trackers.
 
+            needs_attention (bool, optional):
+                Whether any of the service's accounts need attention. This
+                opens the accounts list by default.
+
             repositories_html (str, optional):
                 The rendered first page of the service's repositories.
 
@@ -270,6 +275,7 @@ class BaseHostingServiceConnectUI:
             bug_tracker_count=bug_tracker_count)
         context.update({
             'bug_trackers_html': bug_trackers_html,
+            'needs_attention': needs_attention,
             'repositories_html': repositories_html,
         })
 
@@ -327,6 +333,12 @@ class BaseHostingServiceConnectUI:
             for account in accounts
         ]
 
+        visible_account_count = sum(
+            1
+            for account in accounts
+            if account.visible
+        )
+
         # The accounts offered in the repository filter dropdown. This covers
         # every account contributing rows to the list, so any row can be
         # isolated. Accounts are not filtered by visibility here: the list
@@ -345,18 +357,19 @@ class BaseHostingServiceConnectUI:
             'accounts_data': accounts_data,
             'bug_tracker_count': bug_tracker_count,
             'filter_accounts': filter_accounts,
-            'has_visible_accounts': any(
-                account.visible
-                for account in accounts
-            ),
             'service_id': service.hosting_service_id,
             'service_name': service.name,
             'service_logo': service.logo_image,
             'service_type': service_type,
+
+            # Services can set this to show the accounts section even with
+            # no visible accounts, such as for service-level controls.
+            'show_accounts_section': visible_account_count > 0,
             'total_repository_count': sum(
                 cast(int, entry['repository_count'])
                 for entry in accounts_data
             ),
+            'visible_account_count': visible_account_count,
         }
 
     def get_connected_services_list_account_detail(
