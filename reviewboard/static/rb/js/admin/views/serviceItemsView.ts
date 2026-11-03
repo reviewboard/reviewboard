@@ -1,5 +1,5 @@
 /**
- * View for a hosting service's expandable items list.
+ * View for a hosting service's items list.
  *
  * Version Added:
  *     9.0
@@ -88,17 +88,18 @@ export interface ServiceItemsViewOptions {
 
 
 /**
- * View for a hosting service's expandable items list.
+ * View for a hosting service's items list.
  *
  * This backs one ``.rb-c-admin-cs-service-items`` block on the Connected
- * Services admin page. Clicking the disclosure header expands a panel
- * listing the service's items (repositories or bug tracker configurations),
- * fetched from an admin endpoint as an HTML fragment.
+ * Services admin page. The block lists the service's items (repositories or
+ * bug tracker configurations). The server renders the first page into it.
  *
- * When the service has no more items than fit on a page, the panel just shows
- * the list. When there are more, it also builds a search box, an account
- * filter (when there are multiple connected accounts), and a paginator. Those
- * controls persist across fetches; only the list itself is swapped.
+ * When the service has no more items than fit on a page, the view does
+ * nothing more. When there are more, it builds a search box, an account
+ * filter (when there are multiple connected accounts), and a paginator.
+ * Searching, filtering and paging fetch new pages from an admin endpoint as
+ * HTML fragments. The controls persist across fetches; only the list itself
+ * is swapped.
  *
  * Version Added:
  *     9.0
@@ -128,20 +129,11 @@ export class ServiceItemsView extends BaseView<
     /** The debounced search handler. */
     #debouncedSearch: () => void;
 
-    /** Whether the panel is currently expanded. */
-    #expanded = false;
-
-    /** The disclosure button that expands and collapses the panel. */
-    #headerEl: (HTMLButtonElement | null) = null;
-
     /** The items endpoint URL, resolved for this service. */
     #itemsURL: string;
 
     /** The URL template for the items endpoint. */
     #itemsURLTemplate: string;
-
-    /** Whether the panel has been built and loaded once. */
-    #loaded = false;
 
     /** The total number of pages, from the last fetch. */
     #numPages = 1;
@@ -152,13 +144,13 @@ export class ServiceItemsView extends BaseView<
     /** The paginator's container element, when built. */
     #paginatorEl: (HTMLElement | null) = null;
 
-    /** The panel element that holds the expanded content. */
+    /** The panel element that holds the list and its controls. */
     #panelEl: HTMLElement;
 
     /** The number of items the endpoint returns per page. */
     #perPage: number;
 
-    /** The container the fetched list fragment is rendered into. */
+    /** The container the list fragment is rendered into. */
     #resultsEl: (HTMLElement | null) = null;
 
     /** A monotonic token used to drop stale fetch responses. */
@@ -205,6 +197,8 @@ export class ServiceItemsView extends BaseView<
             parseInt(el.dataset.itemCount ?? '0', 10) || 0;
         this.#panelEl = el.querySelector<HTMLElement>(
             '.rb-c-admin-cs-service-items__panel');
+        this.#resultsEl = el.querySelector<HTMLElement>(
+            '.rb-c-admin-cs-service-items__results-container');
 
         const accountsEl = el.querySelector(
             '.rb-c-admin-cs-service-items__accounts');
@@ -223,62 +217,12 @@ export class ServiceItemsView extends BaseView<
 
         this.#debouncedSearch = _.debounce(() => this.#onSearchInput(), 300);
 
-        this.#headerEl = el.querySelector<HTMLButtonElement>(
-            '.rb-c-admin-cs-service-items__header');
-
-        if (this.#headerEl) {
-            this.#headerEl.addEventListener('click', () => this.#toggle());
-        }
-    }
-
-    /**
-     * Toggle the panel open or closed.
-     *
-     * The content is loaded the first time the panel is opened. Later toggles
-     * just show or hide the already-loaded panel.
-     */
-    #toggle() {
-        const expanded = !this.#expanded;
-        this.#expanded = expanded;
-
-        const disclosure = this.el.querySelector(
-            '.rb-c-admin-cs-service-items__disclosure');
-
-        if (disclosure) {
-            disclosure.classList.toggle('-is-open', expanded);
-        }
-
-        this.#headerEl?.setAttribute('aria-expanded', String(expanded));
-
-        this.#panelEl.hidden = !expanded;
-
-        if (expanded && !this.#loaded) {
-            this.#load();
-        }
-    }
-
-    /**
-     * Build the panel and load the first page.
-     */
-    #load() {
-        this.#loaded = true;
-
-        const paginated = (this.#totalCount > this.#perPage);
-
-        if (paginated) {
+        if (this.#panelEl && this.#totalCount > this.#perPage) {
+            this.#numPages = Math.ceil(this.#totalCount / this.#perPage);
             this.#buildFilterUI();
-        }
-
-        this.#resultsEl = paint<HTMLDivElement>`
-            <div class="rb-c-admin-cs-service-items__results-container"/>
-        `;
-        this.#panelEl.appendChild(this.#resultsEl);
-
-        if (paginated) {
             this.#buildPaginator();
+            this.#updatePaginator();
         }
-
-        this.#fetchPage(1);
     }
 
     /**
@@ -322,7 +266,7 @@ export class ServiceItemsView extends BaseView<
             filterEl.appendChild(selectEl);
         }
 
-        this.#panelEl.appendChild(filterEl);
+        this.#panelEl.prepend(filterEl);
     }
 
     /**

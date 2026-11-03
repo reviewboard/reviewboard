@@ -237,6 +237,8 @@ class BaseHostingServiceConnectUI:
         *,
         accounts: Sequence[HostingServiceAccount],
         bug_tracker_count: int = 0,
+        bug_trackers_html: str = '',
+        repositories_html: str = '',
     ) -> SafeString:
         """Render the services list entry for this hosting service.
 
@@ -252,16 +254,28 @@ class BaseHostingServiceConnectUI:
                 The number of bug tracker configurations for this hosting
                 service.
 
+            bug_trackers_html (str, optional):
+                The rendered first page of the service's bug trackers.
+
+            repositories_html (str, optional):
+                The rendered first page of the service's repositories.
+
         Returns:
             django.utils.safestring.SafeString:
             The rendered entry for the connected services list page.
         """
+        context = self.make_connected_services_list_entry_context(
+            request,
+            accounts=accounts,
+            bug_tracker_count=bug_tracker_count)
+        context.update({
+            'bug_trackers_html': bug_trackers_html,
+            'repositories_html': repositories_html,
+        })
+
         return render_to_string(
             self.connected_services_list_entry_template,
-            self.make_connected_services_list_entry_context(
-                request,
-                accounts=accounts,
-                bug_tracker_count=bug_tracker_count),
+            context,
             request=request)
 
     def make_connected_services_list_entry_context(

@@ -453,21 +453,15 @@
 /**
  * The section for the list of actual connected items in a service.
  *
- * This contains a disclosure row and a list of the connected items
- * (repositories, bug trackers, etc).
+ * This contains a list of the connected items (repositories, bug trackers,
+ * etc). The first page of the list is rendered by the server.
  *
  * Structure:
  *     <div class="rb-c-admin-cs-service-items"
  *          data-item-type="..."
  *          data-service-id="..."
  *          data-item-count="...">
- *      <button class="rb-c-admin-cs-service-items__header" type="button"
- *              aria-expanded="true" aria-controls="ID">
- *       <span class="rb-c-admin-cs-service-items__disclosure -is-open"
- *             aria-hidden="true"></span>
- *       N connected repositories
- *      </button>
- *      <div class="rb-c-admin-cs-service-items__panel" id="ID">
+ *      <div class="rb-c-admin-cs-service-items__panel">
  *       [<div class="rb-c-admin-cs-service-items__filter">...</div>]
  *       <div class="rb-c-admin-cs-service-items__results-container">
  *        ...
@@ -489,23 +483,6 @@
    */
   &:first-child {
     border-top: 0;
-  }
-
-  /**
-   * The disclosure triangle.
-   *
-   * Modifiers:
-   *     -is-open:
-   *         Whether the disclosure is open.
-   */
-  &__disclosure {
-    #ink-ns-ui.icons.svg-icon(@icon: var(--rb-i-caret-right);
-                              @size: var(--ink-u-icon-sm));
-
-    &.-is-open {
-      #ink-ns-ui.icons.svg-icon(@icon: var(--rb-i-caret-down);
-                                @size: var(--ink-u-icon-sm));
-    }
   }
 
   /**
@@ -539,31 +516,6 @@
     }
   }
 
-  &__header {
-    align-items: center;
-    background: var(--ink-p-grey-150);
-    border: 0;
-    color: var(--ink-p-fg);
-    cursor: pointer;
-    display: flex;
-
-    /*
-     * This is a <button>, so it needs the page's font rather than the UA's
-     * default button font. This has to stay ahead of `font-weight`, which
-     * the `font` shorthand would otherwise reset.
-     */
-    font: inherit;
-    font-weight: bold;
-    gap: var(--ink-u-spacing-xs);
-    justify-content: flex-start;
-    padding: var(--ink-u-spacing-std);
-    text-align: left;
-
-    &:hover {
-      background-color: var(--ink-p-grey-200);
-    }
-  }
-
   /**
    * The paginator shown below a large repository list.
    *
@@ -591,17 +543,8 @@
    * the fetched list, and the paginator.
    */
   &__panel {
-    border-top: 1px solid var(--ink-p-container-border-color-weak);
     display: flex;
     flex-direction: column;
-
-    /*
-     * An explicit `display` overrides the `hidden` attribute's UA
-     * `display: none`, so restore it while the panel is collapsed.
-     */
-    &[hidden] {
-      display: none;
-    }
   }
 
   /**

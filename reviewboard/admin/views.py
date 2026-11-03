@@ -481,12 +481,35 @@ class ConnectedServicesListView(View):
             else:
                 bug_tracker_count = 0
 
+            # The first page of each list is rendered inline, so the page shows
+            # them without extra requests.
+            repositories_html = ''
+            bug_trackers_html = ''
+
+            if any(getattr(account, 'repository_count', 0)
+                   for account in accounts):
+                repositories_html, _page = \
+                    ConnectedServiceRepositoriesView.render_page(
+                        request,
+                        service=service,
+                    )
+
+            if bug_tracker_count:
+                bug_trackers_html, _page = \
+                    ConnectedServiceBugTrackersView.render_page(
+                        request,
+                        service=service,
+                    )
+
             entries.append((
                 (service.name or '').lower(),
                 service.connect_ui.render_connected_services_list_entry(
                     request,
                     accounts=accounts,
-                    bug_tracker_count=bug_tracker_count),
+                    bug_tracker_count=bug_tracker_count,
+                    bug_trackers_html=bug_trackers_html,
+                    repositories_html=repositories_html,
+                ),
             ))
             attention_items += \
                 service.connect_ui.get_connected_services_list_attention_items(
@@ -502,12 +525,20 @@ class ConnectedServicesListView(View):
             if not service or not is_bug_tracker_configurable(service):
                 continue
 
+            bug_trackers_html, _page = \
+                ConnectedServiceBugTrackersView.render_page(
+                    request,
+                    service=service,
+                )
+
             entries.append((
                 (service.name or '').lower(),
                 service.connect_ui.render_connected_services_list_entry(
                     request,
                     accounts=[],
-                    bug_tracker_count=bug_tracker_count),
+                    bug_tracker_count=bug_tracker_count,
+                    bug_trackers_html=bug_trackers_html,
+                ),
             ))
 
         return entries, attention_items

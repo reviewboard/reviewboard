@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import re
 
 from django.urls import reverse
 
@@ -76,8 +75,8 @@ class ConnectedServicesListViewTests(TestCase):
         self.assertIn(b'user1', response.content)
 
         # An account with no connected repositories does not show the
-        # repositories row.
-        self.assertNotIn(b'connected repositor', response.content)
+        # repositories list.
+        self.assertNotIn(b'data-item-type="repositories"', response.content)
 
     def test_get_with_account_without_username(self) -> None:
         """Testing ConnectedServicesListView GET with a hosting account that
@@ -110,11 +109,11 @@ class ConnectedServicesListViewTests(TestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn(b'2 connected repositories', response.content)
+        self.assertIn(b'data-item-count="2"', response.content)
 
-    def test_get_repositories_disclosure_is_an_accessible_button(self) -> None:
-        """Testing ConnectedServicesListView GET renders the repositories
-        disclosure as a button wired to the panel it controls
+    def test_get_renders_first_repositories_page_inline(self) -> None:
+        """Testing ConnectedServicesListView GET renders the first page of
+        repositories inline
         """
         account = HostingServiceAccount.objects.create(
             service_name='github',
@@ -130,27 +129,11 @@ class ConnectedServicesListViewTests(TestCase):
 
         content = response.content.decode('utf-8')
 
-        # The disclosure must be a real button, so it's reachable and
-        # operable by keyboard without any scripted key handling.
-        m = re.search(
-            r'<button class="rb-c-admin-cs-service-items__header"'
-            r'\s+type="button"'
-            r'\s+aria-expanded="false"'
-            r'\s+aria-controls="(?P<panel_id>[^"]+)">',
-            content)
-        self.assertIsNotNone(m)
-        assert m is not None
-
-        # aria-controls has to name the panel that actually gets shown, or
-        # assistive tech is pointed at nothing.
-        panel_m = re.search(
-            r'<div class="rb-c-admin-cs-service-items__panel"\s+'
-            r'id="(?P<panel_id>[^"]+)"',
-            content)
-        self.assertIsNotNone(panel_m)
-        assert panel_m is not None
-
-        self.assertEqual(m.group('panel_id'), panel_m.group('panel_id'))
+        # The list is shown right away, without a disclosure or a fetch.
+        self.assertNotIn('aria-expanded', content)
+        self.assertLess(
+            content.index('rb-c-admin-cs-service-items__results-container'),
+            content.index('Test Repo'))
 
     def test_get_repository_count_totals_across_accounts(self) -> None:
         """Testing ConnectedServicesListView GET totals the repository count
@@ -178,7 +161,7 @@ class ConnectedServicesListViewTests(TestCase):
 
         # The single card shows the service-wide total, not a per-account
         # count.
-        self.assertIn(b'3 connected repositories', response.content)
+        self.assertIn(b'data-item-count="3"', response.content)
 
     def test_get_filter_accounts_covers_every_listed_repository(self) -> None:
         """Testing ConnectedServicesListView GET offers a filter option for
@@ -560,11 +543,11 @@ class ConnectedServicesListViewBugTrackerTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.context['service_entries']), 1)
 
-        # The configurations are behind a disclosure whose content is
-        # fetched from the bug trackers endpoint.
-        self.assertIn(b'2 bug trackers', response.content)
+        # The first page of configurations is rendered inline.
         self.assertIn(b'data-item-type="bug-trackers"', response.content)
         self.assertIn(b'data-item-count="2"', response.content)
+        self.assertIn(b'My Splat Tracker', response.content)
+        self.assertIn(b'My Disabled Tracker', response.content)
 
         # There are no accounts, so the accounts list is omitted
         # entirely rather than rendering as an empty block.
@@ -575,15 +558,15 @@ class ConnectedServicesListViewBugTrackerTests(TestCase):
         configurations for in-repo services
         """
         HostingServiceAccount.objects.create(
-            service_name='gitlab',
+            service_name='github',
             username='user1',
             visible=True)
 
         # Such rows come from migrating repositories that used another
         # hosting service's bug tracker.
         ConfiguredBugTracker.objects.create(
-            name='GitLab Issues',
-            service_name='gitlab',
+            name='GitHub Issues',
+            service_name='github',
             settings={})
 
         response = self.client.get(self.url)
@@ -593,7 +576,8 @@ class ConnectedServicesListViewBugTrackerTests(TestCase):
         # The account renders, but the tracker is managed through the
         # repository configuration, not here.
         self.assertIn(b'user1', response.content)
-        self.assertNotIn(b'GitLab Issues', response.content)
+        self.assertNotIn(b'GitHub Issues', response.content)
+        self.assertNotIn(b'data-item-type="bug-trackers"', response.content)
 
     def test_get_never_lists_sentinel(self) -> None:
         """Testing ConnectedServicesListView GET never lists the sentinel
