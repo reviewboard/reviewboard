@@ -96,5 +96,22 @@
     li.md-list-continuation {
       list-style: none;
     }
+
+    /*
+     * Each table row is its own table, with column widths set in "ch"
+     * units. The widths include 2ch for this padding.
+     */
+    table {
+      border-collapse: collapse;
+
+      th, td {
+        /* Keep headers the same size, so the "ch" widths fit. */
+        font-size: inherit;
+        overflow-wrap: anywhere;
+        padding: 0 1ch;
+        text-align: left;
+        vertical-align: top;
+      }
+    }
   }
 }

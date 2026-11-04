@@ -86,6 +86,26 @@ _WHITESPACE_RE = re.compile(r'\s+')
 #:     9.0
 _NEWLINE_RE = re.compile(r'\s*\n\s*')
 
+#: The smallest width of a table column, in characters.
+#:
+#: Version Added:
+#:     9.0
+_MIN_COLUMN_WIDTH = 3
+
+#: The largest width of a table column, in characters.
+#:
+#: Any columns longer than this will wrap.
+#:
+#: Version Added:
+#:     9.0
+_MAX_COLUMN_WIDTH = 40
+
+#: Extra width for each table column's padding, in characters.
+#:
+#: Version Added:
+#:     9.0
+_COLUMN_PADDING = 2
+
 #: A character that stands in for content without text.
 _PLACEHOLDER = '￼'
 
@@ -301,23 +321,8 @@ def _split_node(
                 )
                 number += 1
     elif tag == 'table':
-        for tr in element.getElementsByTagName('tr'):
-            parent = tr.parentNode
-
-            if isinstance(parent, Element) and parent.tagName == 'thead':
-                section = 'thead'
-            else:
-                section = 'tbody'
-
-            cells = ''.join(
-                cell.toxml()
-                for cell in tr.childNodes
-                if isinstance(cell, Element)
-            )
-
-            rows.append(_wrap_quote(
-                f'<table><{section}><tr>{cells}</tr></{section}></table>',
-                quote_depth))
+        for row in _split_table(element):
+            rows.append(_wrap_quote(row, quote_depth))
     elif tag == 'blockquote':
         for child in element.childNodes:
             _split_node(child, rows, list_depth, quote_depth + 1)
@@ -366,6 +371,77 @@ def _split_code(
         rows.append(f'<div class="{css_class}"><pre>{line}</pre></div>')
 
     return rows
+
+
+def _split_table(
+    element: Element,
+) -> list[str]:
+    """Split a table into one row per table row.
+
+    Each row is its own table. They all get the same column widths, based
+    on the longest text in each column, so the columns line up.
+
+    Args:
+        element (xml.dom.minidom.Element):
+            The ``<table>`` element.
+
+    Returns:
+        list of str:
+        The HTML for each row.
+    """
+    table_rows: list[tuple[str, list[Element]]] = []
+    col_widths: list[int] = []
+
+    for tr in element.getElementsByTagName('tr'):
+        parent = tr.parentNode
+
+        if isinstance(parent, Element) and parent.tagName == 'thead':
+            section = 'thead'
+        else:
+            section = 'tbody'
+
+        cells = [
+            cell
+            for cell in tr.childNodes
+            if isinstance(cell, Element)
+        ]
+        table_rows.append((section, cells))
+
+        for i, cell in enumerate(cells):
+            text_len = len(unescape(strip_tags(cell.toxml())).strip())
+            width = min(max(text_len, _MIN_COLUMN_WIDTH), _MAX_COLUMN_WIDTH)
+
+            if i < len(col_widths):
+                col_widths[i] = max(col_widths[i], width)
+            else:
+                col_widths.append(width)
+
+    # Widths are in "ch" units, with room for cell padding.
+    widths = [
+        width + _COLUMN_PADDING
+        for width in col_widths
+    ]
+    cols = ''.join(
+        f'<col style="width: {width}ch"/>'
+        for width in widths
+    )
+    table_start = (
+        f'<table style="table-layout: fixed; width: {sum(widths)}ch">'
+        f'<colgroup>{cols}</colgroup>'
+    )
+
+    return [
+        '%s<%s><tr>%s</tr></%s></table>' % (
+            table_start,
+            section,
+            ''.join(
+                cell.toxml()
+                for cell in cells
+            ),
+            section,
+        )
+        for section, cells in table_rows
+    ]
 
 
 def _split_list_item(

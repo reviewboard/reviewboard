@@ -93,13 +93,36 @@ class RenderMarkdownBlocksTests(TestCase):
                                    '| 1 | 2 |\n'
                                    '| 3 | 4 |\n'),
             [
-                '<table><thead><tr><th>A</th><th>B</th></tr></thead>'
-                '</table>',
-                '<table><tbody><tr><td>1</td><td>2</td></tr></tbody>'
-                '</table>',
-                '<table><tbody><tr><td>3</td><td>4</td></tr></tbody>'
-                '</table>',
+                '<table style="table-layout: fixed; width: 10ch">'
+                '<colgroup><col style="width: 5ch"/><col style="width: 5ch"/>'
+                '</colgroup>'
+                '<thead><tr><th>A</th><th>B</th></tr></thead></table>',
+                '<table style="table-layout: fixed; width: 10ch">'
+                '<colgroup><col style="width: 5ch"/><col style="width: 5ch"/>'
+                '</colgroup>'
+                '<tbody><tr><td>1</td><td>2</td></tr></tbody></table>',
+                '<table style="table-layout: fixed; width: 10ch">'
+                '<colgroup><col style="width: 5ch"/><col style="width: 5ch"/>'
+                '</colgroup>'
+                '<tbody><tr><td>3</td><td>4</td></tr></tbody></table>',
             ])
+
+    def test_table_column_widths(self) -> None:
+        """Testing render_markdown_blocks sizes table columns by their
+        longest text
+        """
+        long_text = 'x' * 50
+        rows = render_markdown_blocks(
+            f'| A | Longer header |\n'
+            f'|---|---|\n'
+            f'| 1 | {long_text} |\n')
+
+        # Column 1 is the minimum width. Column 2 is capped.
+        for row in rows:
+            self.assertTrue(row.startswith(
+                '<table style="table-layout: fixed; width: 47ch">'
+                '<colgroup><col style="width: 5ch"/>'
+                '<col style="width: 42ch"/></colgroup>'))
 
     def test_code(self) -> None:
         """Testing render_markdown_blocks with code blocks"""
