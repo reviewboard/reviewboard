@@ -81,6 +81,7 @@ _MARKDOWN_KWARGS = {
             }
         ),
         'pymdownx.highlight',
+        'pymdownx.magiclink',
         'pymdownx.superfences',
     ],
     'extension_configs': {

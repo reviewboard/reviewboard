@@ -96,6 +96,17 @@ class RenderMarkdownBlocksTests(TestCase):
                 'data-md-gap="block"><li>b</li></ul></blockquote>',
             ])
 
+    def test_bare_urls(self) -> None:
+        """Testing render_markdown_blocks links bare URLs"""
+        self.assertEqual(
+            render_markdown_blocks('See https://example.com/a and '
+                                   'www.example.com.\n'),
+            [
+                '<p>See <a href="https://example.com/a">'
+                'https://example.com/a</a> and '
+                '<a href="http://www.example.com">www.example.com</a>.</p>',
+            ])
+
     def test_table(self) -> None:
         """Testing render_markdown_blocks with a table"""
         self.assertEqual(
