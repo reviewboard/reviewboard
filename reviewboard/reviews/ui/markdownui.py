@@ -10,14 +10,18 @@ from typing import TYPE_CHECKING, cast
 from xml.dom.minidom import Element, Node, Text
 
 from django.utils.encoding import force_bytes, force_str
-from django.utils.html import strip_tags
+from django.utils.html import escape, strip_tags
 from django.utils.translation import gettext as _
 from djblets.cache.backend import cache_memoize
 from djblets.markdown import get_markdown_element_tree
 from markdown import markdown
-from pygments.lexers import TextLexer
+from markdown.extensions.codehilite import CodeHilite
+from pygments import highlight
+from pygments.lexers import TextLexer, get_lexer_by_name
+from pygments.util import ClassNotFound
 
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.diffviewer.chunk_generator import NoWrapperHtmlFormatter
 from reviewboard.reviews.chunk_generators import MarkdownDiffChunkGenerator
 from reviewboard.reviews.markdown_utils import (
     MARKDOWN_KWARGS,
@@ -26,6 +30,9 @@ from reviewboard.reviews.markdown_utils import (
 )
 from reviewboard.reviews.ui.legacy_markdown import iter_legacy_markdown_lines
 from reviewboard.reviews.ui.text import TextBasedReviewUI
+from reviewboard.treesitter.core import get_parser
+from reviewboard.treesitter.highlight import highlight as ts_highlight
+from reviewboard.treesitter.language import get_language_name_for_info_string
 
 if TYPE_CHECKING:
     from collections.abc import Iterator, Sequence
@@ -42,8 +49,16 @@ logger = logging.getLogger(__name__)
 
 #: Options for rendering Markdown file attachments.
 #:
-#: This drops the extensions that keep the render lined up with the source
-#: text, so paragraphs are shown as normal flowing text.
+#: This drops the following extensions:
+#:
+#: ``nl2br`` and ``wysiwig``
+#:     These extensions keep the render lined up with the source text, and we
+#:     use them in comments and review request fields. For reviewing the actual
+#:     content of markdown files, we want to render as blocks instead of making
+#:     it look like the source.
+#:
+#: ``codehilite``
+#:     Code blocks are highlighted via treesitter while splitting rows.
 #:
 #: Version Added:
 #:     9.0
@@ -53,8 +68,9 @@ _MARKDOWN_KWARGS = {
         extension
         for extension in cast(list[str], MARKDOWN_KWARGS['extensions'])
         if extension not in {
-            'markdown.extensions.nl2br',
             'djblets.markdown.extensions.wysiwyg',
+            'markdown.extensions.codehilite',
+            'markdown.extensions.nl2br',
         }
     ],
 }
@@ -300,7 +316,7 @@ def _split_node(
     element = node
     tag = element.tagName
 
-    if tag == 'div' and 'codehilite' in element.getAttribute('class'):
+    if tag == 'pre':
         for row in _split_code(element):
             rows.append(_wrap_quote(row, quote_depth))
     elif tag in {'ul', 'ol'}:
@@ -336,25 +352,54 @@ def _split_node(
 def _split_code(
     element: Element,
 ) -> Sequence[str]:
-    """Split a highlighted code block into one row per line.
+    """Split a code block into one highlighted row per line.
 
     Args:
         element (xml.dom.minidom.Element):
-            The ``<div class="codehilite">`` element.
+            The ``<pre>`` element.
 
     Returns:
         list of str:
         The HTML for each line.
     """
-    content = element.getElementsByTagName('pre')[0].toxml()
+    code_elements = element.getElementsByTagName('code')
 
-    # Strip the <pre> and the <code> wrapper. The wrapper spans the whole
-    # block, so it can't be split across rows.
-    content = re.sub(r'^<pre>(?:<span/>)?(?:<code>)?', '', content)
-    content = re.sub(r'(?:</code>)?</pre>$', '', content)
-    content = content.removesuffix('\n')
+    if code_elements:
+        code_element = code_elements[0]
+    else:
+        code_element = element
 
-    lines = content.split('\n')
+    # Fenced code blocks name their language as "language-<name>".
+    info_string = ''
+
+    for css_class in code_element.getAttribute('class').split():
+        if css_class.startswith('language-'):
+            info_string = css_class[len('language-'):]
+            break
+
+    # Trim the code the same way codehilite did for the original rows, so
+    # comments on those rows still line up. It strips blank lines around the
+    # code. For code without a language, it also reads the language from a
+    # first line like ":::python" or "#!python" and removes it.
+    hiliter = CodeHilite(_get_element_text(code_element).strip('\n'))
+
+    if not info_string:
+        # This is private, but it's the same code that made the original rows,
+        # so the two always agree.
+        hiliter._parseHeader()  # type: ignore
+        info_string = hiliter.lang or ''
+
+    code = hiliter.src
+
+    code_lines = code.split('\n')
+    lines = _highlight_code(code, code_lines, info_string)
+
+    if lines is None:
+        lines = [
+            escape(line)
+            for line in code_lines
+        ]
+
     num_lines = len(lines)
     rows: list[str] = []
 
@@ -442,6 +487,87 @@ def _split_table(
         )
         for section, cells in table_rows
     ]
+
+
+def _highlight_code(
+    code: str,
+    code_lines: Sequence[str],
+    info_string: str,
+) -> Sequence[str] | None:
+    """Return syntax-highlighted lines for a code block.
+
+    This uses tree-sitter when it supports the language, and Pygments
+    otherwise.
+
+    Args:
+        code (str):
+            The code to highlight.
+
+        code_lines (list of str):
+            The code, split into lines.
+
+        info_string (str):
+            The language named on the code fence. This may be empty.
+
+    Returns:
+        list of str:
+        The highlighted lines, or ``None`` if the code can't be highlighted.
+    """
+    if not info_string:
+        return None
+
+    language_name = get_language_name_for_info_string(info_string)
+
+    if language_name:
+        content = code.encode()
+
+        try:
+            tree = get_parser(language_name).parse(content)
+            lines = ts_highlight(content, code_lines, tree, language_name)
+
+            if lines:
+                return lines
+        except Exception as e:
+            logger.exception('Tree-sitter highlighting failed for a %s code '
+                             'block in Markdown: %s',
+                             language_name, e)
+
+    try:
+        lexer = get_lexer_by_name(info_string)
+    except ClassNotFound:
+        return None
+
+    lines = highlight(code, lexer, NoWrapperHtmlFormatter()).splitlines()
+
+    if len(lines) != len(code_lines):
+        # Line counts must match, or rows would be lost.
+        return None
+
+    return lines
+
+
+def _get_element_text(
+    element: Element,
+) -> str:
+    """Return all text inside an element.
+
+    Args:
+        element (xml.dom.minidom.Element):
+            The element.
+
+    Returns:
+        str:
+        The text.
+    """
+    parts: list[str] = []
+
+    for child in element.childNodes:
+        if isinstance(child, Text):
+            parts.append(child.data)
+        elif isinstance(child, Element):
+            parts.append(_get_element_text(child))
+
+    return ''.join(parts)
 
 
 def _split_list_item(

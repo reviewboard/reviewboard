@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.test.client import RequestFactory
+from django.utils.html import strip_tags
 
 from reviewboard.reviews.ui.markdownui import (
     MarkdownReviewUI,
@@ -17,6 +18,8 @@ from reviewboard.reviews.ui.markdownui import (
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from reviewboard.attachments.models import FileAttachment
 
 
@@ -144,6 +147,80 @@ class RenderMarkdownBlocksTests(TestCase):
                 '<div class="codehilite codehilite-multiline-end">'
                 '<pre>b</pre></div>',
                 '<div class="codehilite"><pre>c</pre></div>',
+            ])
+
+    def test_code_with_tree_sitter(self) -> None:
+        """Testing render_markdown_blocks highlights code with tree-sitter"""
+        self.assertEqual(
+            render_markdown_blocks('```py\n'
+                                   's = """a\n'
+                                   'b"""\n'
+                                   '```\n'),
+            [
+                '<div class="codehilite codehilite-multiline-start"><pre>'
+                '<span class="ts-variable">s</span> '
+                '<span class="ts-operator">=</span> '
+                '<span class="ts-string">&quot;&quot;&quot;a</span>'
+                '</pre></div>',
+                '<div class="codehilite codehilite-multiline-end"><pre>'
+                '<span class="ts-string">b&quot;&quot;&quot;</span>'
+                '</pre></div>',
+            ])
+
+    def test_code_with_pygments(self) -> None:
+        """Testing render_markdown_blocks highlights code with Pygments for
+        languages tree-sitter doesn't support
+        """
+        self.assertEqual(
+            render_markdown_blocks('```apl\n'
+                                   '1 2\n'
+                                   '```\n'),
+            [
+                '<div class="codehilite"><pre>'
+                '<span class="m">1</span><span class="w"> </span>'
+                '<span class="m">2</span>'
+                '</pre></div>',
+            ])
+
+    def test_code_with_unknown_language(self) -> None:
+        """Testing render_markdown_blocks with code in an unknown language"""
+        self.assertEqual(
+            render_markdown_blocks('```xyzzy\n'
+                                   '<b>\n'
+                                   '```\n'),
+            [
+                '<div class="codehilite"><pre>&lt;b&gt;</pre></div>',
+            ])
+
+    def test_code_with_language_marker(self) -> None:
+        """Testing render_markdown_blocks with a language marker line in
+        indented code
+        """
+        for marker in (':::python', '#!python'):
+            with self.subTest(marker=marker):
+                self.assertEqual(
+                    render_markdown_blocks(f'    {marker}\n'
+                                           f'    x = 1\n'),
+                    [
+                        '<div class="codehilite"><pre>'
+                        '<span class="ts-variable">x</span> '
+                        '<span class="ts-operator">=</span> '
+                        '<span class="ts-number">1</span>'
+                        '</pre></div>',
+                    ])
+
+    def test_code_with_blank_lines_around_code(self) -> None:
+        """Testing render_markdown_blocks with blank lines at the start and
+        end of a code block
+        """
+        self.assertEqual(
+            render_markdown_blocks('```\n'
+                                   '\n'
+                                   'x\n'
+                                   '\n'
+                                   '```\n'),
+            [
+                '<div class="codehilite"><pre>x</pre></div>',
             ])
 
 
@@ -453,6 +530,43 @@ class MarkdownReviewUITests(TestCase):
             }),
             (2, 4))
 
+    def test_get_comment_line_range_legacy_after_code(self) -> None:
+        """Testing MarkdownReviewUI.get_comment_line_range with legacy
+        rendered comments after code blocks that codehilite trimmed
+        """
+        contents = {
+            'colon marker': b'    :::python\n    x = 1\n',
+            'shebang marker': b'    #!python\n    x = 1\n',
+            'shebang path': b'    #!/usr/bin/env python\n    x = 1\n',
+            'blank lines': b'```\n\nx = 1\n\n```\n',
+        }
+
+        for name, code in contents.items():
+            with self.subTest(name):
+                attachment = self.create_file_attachment(
+                    self.review_request,
+                    orig_filename='code.md',
+                    mimetype='text/x-markdown',
+                    file_content=code + b'\nA\n\nB\n\nC\n')
+                review_ui = MarkdownReviewUI(
+                    review_request=self.review_request,
+                    obj=attachment)
+                legacy_rows = review_ui._get_legacy_rendered_lines()
+                rows = review_ui.get_rendered_lines()
+
+                # Each paragraph's legacy row maps to its current row.
+                for text in ('A', 'B', 'C'):
+                    legacy_row_num = self._find_row_num(legacy_rows, text)
+                    row_num = self._find_row_num(rows, text)
+
+                    self.assertEqual(
+                        review_ui.get_comment_line_range({
+                            'beginLineNum': legacy_row_num,
+                            'endLineNum': legacy_row_num,
+                            'viewMode': 'rendered',
+                        }),
+                        (row_num, row_num))
+
     def test_get_comment_line_range_legacy_with_diff(self) -> None:
         """Testing MarkdownReviewUI.get_comment_line_range with a legacy
         rendered comment on a diff
@@ -540,6 +654,33 @@ class MarkdownReviewUITests(TestCase):
         self.assertEqual(data['endLineNum'], 3)
         self.assertEqual(data.get('renderVersion'), 2)
         self.assertEqual(data['viewMode'], 'rendered')
+
+    def _find_row_num(
+        self,
+        rows: Sequence[str],
+        text: str,
+    ) -> int:
+        """Return the 1-based number of the row with the given text.
+
+        Version Added:
+            9.0
+
+        Args:
+            rows (list of str):
+                The rendered rows.
+
+            text (str):
+                The text of the row to find.
+
+        Returns:
+            int:
+            The row number.
+        """
+        for i, row in enumerate(rows):
+            if strip_tags(row) == text:
+                return i + 1
+
+        self.fail(f'No row has the text {text!r}')
 
     def _create_new_revision(
         self,
