@@ -268,6 +268,46 @@
     padding-block: 0;
   }
 
+  /* Task checkboxes go where the bullet would be. */
+  .task-list-item {
+    list-style: none;
+  }
+
+  /*
+   * The checkbox is drawn like a checkbox in a form. It holds a character for
+   * its state, which is still read by screen readers. The character is moved
+   * out of the box and clipped, so it stays hidden even when a diff highlights
+   * it as a change.
+   */
+  .task-list-checkbox {
+    border: 1px solid var(--ink-p-fg-weak);
+    border-radius: var(--ink-u-border-radius-xs);
+    box-sizing: border-box;
+    display: inline-block;
+    height: 1.1em;
+    line-height: 1.1em;
+    margin-inline: -1.5em 0.4em;
+    overflow: hidden;
+    position: relative;
+    text-indent: 200%;
+    vertical-align: -0.2em;
+    white-space: nowrap;
+    width: 1.1em;
+
+    &.-is-checked {
+      background: var(--ink-p-accent-primary-bg);
+      border-color: var(--ink-p-accent-primary-bg);
+
+      &::after {
+        inset: 0;
+        position: absolute;
+        #ink-ns-ui.icons.svg-icon(@icon: var(--ink-i-check);
+                                  @color: var(--ink-p-accent-primary-fg);
+                                  @size: 100%);
+      }
+    }
+  }
+
   /*
    * Each block in a blockquote is its own row, wrapped in its own blockquote.
    * Making each one a formatting root keeps the gaps of blocks inside it

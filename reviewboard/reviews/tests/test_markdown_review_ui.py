@@ -84,6 +84,22 @@ class RenderMarkdownBlocksTests(TestCase):
                 '<li class="md-list-continuation"><p>Text</p></li></ul>',
             ])
 
+    def test_task_list(self) -> None:
+        """Testing render_markdown_blocks with a task list"""
+        self.assertEqual(
+            render_markdown_blocks('- [ ] a <input type="checkbox"/>\n'
+                                   '- [x] b\n'),
+            [
+                '<ul style="--md-list-depth: 0">'
+                '<li class="task-list-item">'
+                '<span class="task-list-checkbox">\u2610</span> a '
+                '&lt;input type="checkbox"/&gt;</li></ul>',
+                '<ul style="--md-list-depth: 0" data-md-gap="item">'
+                '<li class="task-list-item">'
+                '<span class="task-list-checkbox -is-checked">\u2611</span> '
+                'b</li></ul>',
+            ])
+
     def test_blockquote(self) -> None:
         """Testing render_markdown_blocks with a blockquote"""
         self.assertEqual(

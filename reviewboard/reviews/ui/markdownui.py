@@ -83,6 +83,7 @@ _MARKDOWN_KWARGS = {
         'pymdownx.highlight',
         'pymdownx.magiclink',
         'pymdownx.superfences',
+        'pymdownx.tasklist',
     ],
     'extension_configs': {
         **MARKDOWN_KWARGS['extension_configs'],
@@ -118,6 +119,13 @@ _WHITESPACE_RE = re.compile(r'\s+')
 #: Version Added:
 #:     9.0
 _NEWLINE_RE = re.compile(r'\s*\n\s*')
+
+#: Regex to find tasklist checkboxes.
+#:
+#: Version Added:
+#:     9.0
+_TASK_CHECKBOX_RE = re.compile(
+    r'<input type="checkbox" disabled(?P<checked> checked)?/>')
 
 #: The smallest width of a table column, in characters.
 #:
@@ -187,7 +195,14 @@ def render_markdown_blocks(
         list of str:
         The HTML for each row.
     """
-    html = clean_markdown_html(markdown(force_str(text), **_MARKDOWN_KWARGS))
+    html = markdown(force_str(text), **_MARKDOWN_KWARGS)
+
+    # Task checkboxes aren't allowed through the sanitizer, so they're shown as
+    # characters instead. HTML typed in the text is escaped by now, so only
+    # checkboxes from task lists match.
+    html = _TASK_CHECKBOX_RE.sub(_replace_task_checkbox, html)
+
+    html = clean_markdown_html(html)
     rows: list[str] = []
 
     for i, node in enumerate(
@@ -210,6 +225,28 @@ def render_markdown_blocks(
             rows[i] = _NEWLINE_RE.sub(' ', row)
 
     return rows
+
+
+def _replace_task_checkbox(
+    m: re.Match[str],
+) -> str:
+    """Return a character to show in place of a task's checkbox.
+
+    Version Added:
+        9.0
+
+    Args:
+        m (re.Match):
+            The match for the checkbox.
+
+    Returns:
+        str:
+        The HTML for the checkbox.
+    """
+    if m.group('checked'):
+        return '<span class="task-list-checkbox -is-checked">\u2611</span>'
+    else:
+        return '<span class="task-list-checkbox">\u2610</span>'
 
 
 def get_row_text_ranges(
@@ -714,6 +751,8 @@ def _split_list_item(
     else:
         start_attr = ''
 
+    # Task list items have a class, so they can be shown without bullets.
+    li_class = li.getAttribute('class')
     content: list[str] = []
     is_first_row = True
 
@@ -731,12 +770,15 @@ def _split_list_item(
         # The first row always shows, so the item keeps its bullet. Later
         # rows continue the item without a bullet.
         if is_first_row or html:
-            if is_first_row:
-                li_attrs = ''
-                row_gap = gap
-            else:
+            if not is_first_row:
                 li_attrs = ' class="md-list-continuation"'
                 row_gap = ('block', quote_depth)
+            elif li_class:
+                li_attrs = f' class="{escape(li_class)}"'
+                row_gap = gap
+            else:
+                li_attrs = ''
+                row_gap = gap
 
             rows.append(_wrap_quote(
                 f'<{list_tag}{start_attr}'
