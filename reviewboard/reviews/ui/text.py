@@ -300,7 +300,7 @@ class TextBasedReviewUI(ReviewUI[
 
         return data
 
-    def generate_highlighted_text(self) -> list[str]:
+    def generate_highlighted_text(self) -> Sequence[str]:
         """Generate syntax-highlighted text for the file.
 
         This will render the text file to HTML, applying any syntax
@@ -319,7 +319,7 @@ class TextBasedReviewUI(ReviewUI[
         lines = highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
 
         return [
-            '<pre>%s</pre>' % line
+            f'<pre>{line}</pre>'
             for line in lines
         ]
 

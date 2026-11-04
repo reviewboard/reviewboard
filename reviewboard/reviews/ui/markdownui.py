@@ -796,30 +796,47 @@ class MarkdownReviewUI(TextBasedReviewUI):
 
         return data
 
-    def get_source_lexer(
-        self,
-        filename: str,
-        data: str,
-    ) -> Lexer:
-        """Return the lexer for the Source tab.
+    def generate_highlighted_text(self) -> Sequence[str]:
+        """Generate syntax-highlighted text for the file.
 
-        This shows the source as plain text.
+        This highlights the Markdown with tree-sitter, including code in fenced
+        code blocks. If that fails, we'll fall back to the Pygments
+        implementation in the parent class.
 
         Version Added:
             9.0
 
-        Args:
-            filename (str):
-                The filename of the file.
-
-            data (str):
-                The contents of the file.
-
         Returns:
-            pygments.lexers.TextLexer:
-            The plain-text lexer.
+            list of str:
+            The syntax-highlighted text, split into lines.
         """
-        return TextLexer()
+        try:
+            text = force_str(self.get_text())
+        except UnicodeDecodeError:
+            return super().generate_highlighted_text()
+
+        # Split lines the way Pygments did before, so comments on the source
+        # view stay on the same lines.
+        text = text.replace('\r\n', '\n').replace('\r', '\n').strip('\n')
+        lines = text.split('\n')
+        content = text.encode()
+
+        try:
+            tree = get_parser('markdown').parse(content)
+            highlighted = ts_highlight(content, lines, tree, 'markdown')
+        except Exception as e:
+            logger.exception('Tree-sitter highlighting failed for file '
+                             'attachment %d: %s',
+                             self.obj.pk, e)
+            highlighted = None
+
+        if not highlighted or len(highlighted) != len(lines):
+            return super().generate_highlighted_text()
+
+        return [
+            f'<pre>{line}</pre>'
+            for line in highlighted
+        ]
 
     def _iter_legacy_rendered_lines(self) -> Iterator[str]:
         """Generate the rendered rows in the version 1 layout.

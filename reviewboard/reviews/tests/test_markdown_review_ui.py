@@ -353,10 +353,37 @@ class MarkdownReviewUITests(TestCase):
         self.assertNotIn('diff_revision', extra_context)
         self.assertNotIn('source_chunks', extra_context)
         self.assertNotIn('rendered_chunks', extra_context)
-        self.assertEqual(extra_context['text_lines'],
-                         ['<pre>And **this** is revision 2.</pre>'])
+        self.assertEqual(
+            extra_context['text_lines'],
+            [
+                '<pre>And <span class="ts-markup-strong">**this**</span> is '
+                'revision 2.</pre>',
+            ])
         self.assertEqual(extra_context['rendered_lines'],
                          ['<p>And <strong>this</strong> is revision 2.</p>'])
+
+    def test_generate_highlighted_text_lines(self) -> None:
+        """Testing MarkdownReviewUI.generate_highlighted_text splits lines the
+        same way Pygments did
+        """
+        attachment = self.create_file_attachment(
+            self.review_request,
+            attachment_history=self.attachment_history,
+            attachment_revision=1,
+            orig_filename='revision2.md',
+            mimetype='text/x-markdown',
+            file_content=b'\n\n# Title\r\nText\r\n\n\n')
+        review_ui = MarkdownReviewUI(review_request=self.review_request,
+                                     obj=attachment)
+
+        # Blank lines at the start and end are dropped, and Windows line
+        # endings are normalized, so source comments stay on their lines.
+        self.assertEqual(
+            review_ui.generate_highlighted_text(),
+            [
+                '<pre><span class="ts-markup-heading"># Title</span></pre>',
+                '<pre>Text</pre>',
+            ])
 
     def test_get_extra_context_with_diff(self) -> None:
         """Testing MarkdownReviewUI.get_extra_context with diff_against_obj"""
