@@ -4,8 +4,93 @@ from __future__ import annotations
 
 from django.test.client import RequestFactory
 
-from reviewboard.reviews.ui.markdownui import MarkdownReviewUI
+from reviewboard.reviews.ui.markdownui import (
+    MarkdownReviewUI,
+    get_row_text_ranges,
+    map_text_ranges,
+)
 from reviewboard.testing import TestCase
+
+
+class GetRowTextRangesTests(TestCase):
+    """Unit tests for get_row_text_ranges.
+
+    Version Added:
+        9.0
+    """
+
+    def test_get_row_text_ranges(self) -> None:
+        """Testing get_row_text_ranges"""
+        self.assertEqual(
+            get_row_text_ranges([
+                '<p>Two words</p>',
+                '\n',
+                '<p><img alt="" src="https://example.com/i.png"/></p>',
+                '<hr/>',
+                '<p>&lt;b&gt;</p>',
+                '<div class="codehilite"><pre>x = 1</pre></div>',
+                '<div class="codehilite"><pre></pre></div>',
+            ]),
+            [
+                (0, 8),
+                (8, 8),
+                (8, 9),
+                (9, 10),
+                (10, 13),
+                (13, 17),
+                (17, 18),
+            ])
+
+    def test_get_row_text_ranges_legacy_code_end(self) -> None:
+        """Testing get_row_text_ranges with the legacy row closing a code
+        block
+        """
+        self.assertEqual(
+            get_row_text_ranges([
+                '<div class="codehilite codehilite-multiline-start">'
+                '<pre><span/><code>a</pre></div>',
+                '<div class="codehilite codehilite-multiline-end">'
+                '<pre></code></pre></div>',
+            ]),
+            [
+                (0, 2),
+                (2, 2),
+            ])
+
+
+class MapTextRangesTests(TestCase):
+    """Unit tests for map_text_ranges.
+
+    Version Added:
+        9.0
+    """
+
+    def test_merged(self) -> None:
+        """Testing map_text_ranges with rows merged together"""
+        self.assertEqual(
+            map_text_ranges([(0, 3), (3, 6), (6, 9)],
+                            [(0, 6), (6, 9)]),
+            [(0, 0), (0, 0), (1, 1)])
+
+    def test_split(self) -> None:
+        """Testing map_text_ranges with a row split apart"""
+        self.assertEqual(
+            map_text_ranges([(0, 3), (3, 9)],
+                            [(0, 3), (3, 5), (5, 9)]),
+            [(0, 0), (1, 2)])
+
+    def test_rows_without_text(self) -> None:
+        """Testing map_text_ranges with rows without text"""
+        self.assertEqual(
+            map_text_ranges([(0, 0), (0, 3), (3, 3), (3, 3), (3, 6)],
+                            [(0, 3), (3, 6)]),
+            [(0, 0), (0, 0), (0, 0), (0, 0), (1, 1)])
+
+    def test_no_new_rows(self) -> None:
+        """Testing map_text_ranges with no new rows"""
+        self.assertEqual(
+            map_text_ranges([(0, 3)], []),
+            [(0, 0)])
 
 
 class MarkdownReviewUITests(TestCase):
