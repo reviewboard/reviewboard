@@ -295,10 +295,16 @@ class RawDiffChunkGeneratorTests(kgb.SpyAgency, TestCase):
                     (
                         1,
                         1,
-                        'This is <span class="gs">**bold**</span>',
+                        (
+                            'This is <span class="ts-markup-strong">**bold**'
+                            '</span>'
+                        ),
                         [(9, 16)],
                         1,
-                        'This is <span class="ge">*italic*</span>',
+                        (
+                            'This is <span class="ts-markup-italic">*italic*'
+                            '</span>'
+                        ),
                         [(9, 16)],
                         False,
                         None,
@@ -369,7 +375,7 @@ class RawDiffChunkGeneratorTests(kgb.SpyAgency, TestCase):
         """
         class MyRawDiffChunkGenerator(RawDiffChunkGenerator):
             STYLED_EXT_BLACKLIST = (
-                '.md',
+                '.dylan',
             )
 
         old = b'This is **bold**'
@@ -379,8 +385,8 @@ class RawDiffChunkGeneratorTests(kgb.SpyAgency, TestCase):
 
         generator = MyRawDiffChunkGenerator(old=old,
                                             new=new,
-                                            orig_filename='file1.md',
-                                            modified_filename='file2.md',
+                                            orig_filename='file1.dylan',
+                                            modified_filename='file2.dylan',
                                             diff_settings=diff_settings)
         chunks = list(generator.get_chunks())
 

@@ -1,8 +1,8 @@
-# TreeSitter Markdown Test
+<span class="ts-markup-heading"># TreeSitter Markdown Test</span>
 
-This is a **sample Markdown file** for testing TreeSitter highlighting with code block injections.
+This is a <span class="ts-markup-strong">**sample Markdown file**</span> for testing TreeSitter highlighting with code block injections.
 
-## Python Example
+<span class="ts-markup-heading">## Python Example</span>
 
 Here&#39;s a simple Python function:
 
@@ -21,7 +21,7 @@ Here&#39;s a simple Python function:
     <span class="ts-variable"><span class="ts-function-call"><span class="ts-function-builtin">print</span></span></span>(<span class="ts-string">f&quot;fibonacci({<span class="ts-variable">i</span>}) = {<span class="ts-variable"><span class="ts-function-call">fibonacci</span></span>(<span class="ts-variable">i</span>)}&quot;</span>)
 ```
 
-## JavaScript Example
+<span class="ts-markup-heading">## JavaScript Example</span>
 
 And here&#39;s some JavaScript code:
 
@@ -59,7 +59,7 @@ And here&#39;s some JavaScript code:
 }
 ```
 
-## Shell Script Example
+<span class="ts-markup-heading">## Shell Script Example</span>
 
 Here&#39;s a bash script:
 
@@ -95,7 +95,7 @@ Here&#39;s a bash script:
 <span class="ts-keyword">fi</span>
 ```
 
-## SQL Example
+<span class="ts-markup-heading">## SQL Example</span>
 
 Some SQL queries:
 
@@ -129,7 +129,7 @@ Some SQL queries:
 <span class="ts-keyword">ORDER</span> <span class="ts-keyword">BY</span> <span class="ts-variable">post_count</span> DESC, u.<span class="ts-variable">username</span> ASC;
 ```
 
-## JSON Example
+<span class="ts-markup-heading">## JSON Example</span>
 
 Configuration file:
 
@@ -165,16 +165,16 @@ Configuration file:
 }
 ```
 
-## Conclusion
+<span class="ts-markup-heading">## Conclusion</span>
 
 This document demonstrates various programming languages embedded in Markdown using fenced code blocks. TreeSitter should be able to highlight both the Markdown syntax and the injected code within each block.
 
-### Features tested:
-- **Markdown** basic syntax (headers, bold, lists)
-- **Python** code highlighting
-- **JavaScript** with classes and async/await
-- **Bash** shell scripting
-- **SQL** queries with comments
-- **JSON** configuration
+<span class="ts-markup-heading">### Features tested:</span>
+<span class="ts-markup-list">- </span><span class="ts-markup-strong">**Markdown**</span> basic syntax (headers, bold, lists)
+<span class="ts-markup-list">- </span><span class="ts-markup-strong">**Python**</span> code highlighting
+<span class="ts-markup-list">- </span><span class="ts-markup-strong">**JavaScript**</span> with classes and async/await
+<span class="ts-markup-list">- </span><span class="ts-markup-strong">**Bash**</span> shell scripting
+<span class="ts-markup-list">- </span><span class="ts-markup-strong">**SQL**</span> queries with comments
+<span class="ts-markup-list">- </span><span class="ts-markup-strong">**JSON**</span> configuration
 
 Each code block should maintain proper syntax highlighting for its respective language while being embedded within the Markdown document structure.

@@ -98,11 +98,12 @@ class MarkdownReviewUITests(TestCase):
                         (
                             1,
                             1,
-                            'This is revision <span class="ge">*1*</span>.',
+                            'This is revision '
+                            '<span class="ts-markup-italic">*1*</span>.',
                             [(0, 1), (4, 4), (17, 20)],
                             1,
-                            'And <span class="gs">**this**</span> is '
-                            'revision 2.',
+                            'And <span class="ts-markup-strong">**this**'
+                            '</span> is revision 2.',
                             [(0, 7), (10, 12), (25, 26)],
                             False,
                             None,
