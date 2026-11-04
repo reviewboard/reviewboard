@@ -32,12 +32,13 @@
       font-weight: bold;
     }
 
-    tbody:last-child tr:last-child {
-      td:last-child {
+    /* Only this table's cells, not those of tables inside them. */
+    > tbody:last-child > tr:last-child {
+      > td:last-child {
         border-radius: 0 0 @box-inner-border-radius 0;
       }
 
-      th:first-child {
+      > th:first-child {
         border-radius: 0 0 0 @box-inner-border-radius;
       }
     }
@@ -313,16 +314,71 @@
     padding: 0 0.3em;
   }
 
+  /*
+   * Each table row is its own table, so each one draws its part of the
+   * box. The header row has the top, body rows have a line above them,
+   * and the last row has the bottom.
+   *
+   * Cells keep their 1ch side padding, since the column widths include it.
+   */
   table {
+    background: var(--ink-c-data-table-body-bg);
+    border: var(--ink-c-data-table-border);
+    border-block: 0;
+    color: var(--ink-c-data-table-body-fg);
+
+    thead {
+      background: var(--ink-c-data-table-header-bg);
+      color: var(--ink-c-data-table-header-fg);
+    }
+
+    th, td {
+      padding-block: var(--ink-c-data-table-cell-padding-vert);
+    }
+
     th {
-      border-bottom: 1px solid var(--ink-p-container-border-color);
       font-weight: bold;
     }
 
-    td {
-      border-bottom: 1px solid var(--ink-p-container-border-color);
+    &:has(> thead) {
+      border-top: var(--ink-c-data-table-border);
+    }
+
+    &:has(> tbody) {
+      border-top: var(--ink-c-data-table-row-border);
     }
   }
+
+  /*
+   * A table ends when the next row on the same side isn't a table row,
+   * or starts a new block. Diff chunks are separate <tbody>s, so the next
+   * row may be the first one in the next chunk.
+   *
+   * The bottom line is a shadow, not a border, so the last row is the
+   * same height as the rows next to it on the other side of a diff.
+   *
+   * The 2nd and 4th cells hold each side of a diff. :has() can't be
+   * nested, so the gap check uses :not().
+   */
+  .md-table-end(@cell) {
+    @cont: ~"td:nth-child(@{cell}) table:not([data-md-gap], [data-md-gap] table)";
+
+    /* I'M SO SORRY PLEASE FORGIVE ME */
+    > tbody > tr:not(:has(+ tr > @{cont})):not(tbody:has(+ tbody > tr:first-child > @{cont}) > tr:last-child) > td:nth-child(@{cell}) table :is(th, td) {
+      box-shadow: inset 0 -1px 0 var(--ink-c-data-table-border-color);
+    }
+
+    /*
+     * The first row of each diff chunk has a line above it. Cover it with
+     * the table's own line, so the table doesn't break between chunks.
+     */
+    > tbody > tr.first > @{cont} {
+      margin-top: -1px;
+    }
+  }
+
+  .md-table-end(2);
+  .md-table-end(4);
 
   /*
    * Code blocks are one row per line. Each line draws its part of the box: the
