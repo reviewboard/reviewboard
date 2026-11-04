@@ -158,6 +158,22 @@ class RenderMarkdownBlocksTests(TestCase):
                 '<pre>c</pre></div>',
             ])
 
+    def test_code_in_blockquote(self) -> None:
+        """Testing render_markdown_blocks with a code fence in a blockquote"""
+        self.assertEqual(
+            render_markdown_blocks('> ```\n'
+                                   '> <a>\n'
+                                   '> b\n'
+                                   '> ```\n'),
+            [
+                '<blockquote><div class="codehilite '
+                'codehilite-multiline-start"><pre>&lt;a&gt;</pre></div>'
+                '</blockquote>',
+                '<blockquote><div class="codehilite '
+                'codehilite-multiline-end"><pre>b</pre></div>'
+                '</blockquote>',
+            ])
+
     def test_gaps(self) -> None:
         """Testing render_markdown_blocks marks gaps between blocks"""
         self.assertEqual(

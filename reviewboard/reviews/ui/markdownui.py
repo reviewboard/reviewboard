@@ -61,19 +61,34 @@ logger = logging.getLogger(__name__)
 #: ``codehilite``
 #:     Code blocks are highlighted via treesitter while splitting rows.
 #:
+#: ``fenced_code``
+#:     We replace this with ``pymdownx.superfences``, which also handles fenced
+#:     code blocks inside lists and blockquotes.
+#:
 #: Version Added:
 #:     9.0
 _MARKDOWN_KWARGS = {
     **MARKDOWN_KWARGS,
     'extensions': [
-        extension
-        for extension in cast(list[str], MARKDOWN_KWARGS['extensions'])
-        if extension not in {
-            'djblets.markdown.extensions.wysiwyg',
-            'markdown.extensions.codehilite',
-            'markdown.extensions.nl2br',
-        }
+        *(
+            extension
+            for extension in cast(list[str], MARKDOWN_KWARGS['extensions'])
+            if extension not in {
+                'djblets.markdown.extensions.wysiwyg',
+                'markdown.extensions.codehilite',
+                'markdown.extensions.fenced_code',
+                'markdown.extensions.nl2br',
+            }
+        ),
+        'pymdownx.highlight',
+        'pymdownx.superfences',
     ],
+    'extension_configs': {
+        **MARKDOWN_KWARGS['extension_configs'],
+        'pymdownx.highlight': {
+            'use_pygments': False,
+        },
+    },
 }
 
 
