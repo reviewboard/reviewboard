@@ -9,6 +9,9 @@ from django.core.files.base import ContentFile
 from django.test.client import RequestFactory
 from django.utils.html import strip_tags
 
+from reviewboard.attachments.models import FileAttachment
+from reviewboard.diffviewer.settings import DiffSettings
+from reviewboard.reviews.chunk_generators import MarkdownDiffChunkGenerator
 from reviewboard.reviews.ui.markdownui import (
     MarkdownReviewUI,
     get_row_text_ranges,
@@ -36,8 +39,8 @@ class RenderMarkdownBlocksTests(TestCase):
             render_markdown_blocks('# Title\n\nOne\ntwo.\n\n\nThree.\n'),
             [
                 '<h1>Title</h1>',
-                '<p>One two.</p>',
-                '<p>Three.</p>',
+                '<p data-md-gap="block">One two.</p>',
+                '<p data-md-gap="block">Three.</p>',
             ])
 
     def test_lists(self) -> None:
@@ -53,11 +56,15 @@ class RenderMarkdownBlocksTests(TestCase):
                                    '2. y\n'),
             [
                 '<ul style="--md-list-depth: 0"><li>a</li></ul>',
-                '<ul style="--md-list-depth: 1"><li>b</li></ul>',
-                '<ul style="--md-list-depth: 0"><li>c</li></ul>',
-                '<p>Text</p>',
-                '<ol start="1" style="--md-list-depth: 0"><li>x</li></ol>',
-                '<ol start="2" style="--md-list-depth: 0"><li>y</li></ol>',
+                '<ul style="--md-list-depth: 1" data-md-gap="item">'
+                '<li>b</li></ul>',
+                '<ul style="--md-list-depth: 0" data-md-gap="item">'
+                '<li>c</li></ul>',
+                '<p data-md-gap="block">Text</p>',
+                '<ol start="1" style="--md-list-depth: 0" data-md-gap="block">'
+                '<li>x</li></ol>',
+                '<ol start="2" style="--md-list-depth: 0" data-md-gap="item">'
+                '<li>y</li></ol>',
             ])
 
     def test_lists_with_content_after_nested_list(self) -> None:
@@ -71,8 +78,9 @@ class RenderMarkdownBlocksTests(TestCase):
                                    '    Text\n'),
             [
                 '<ul style="--md-list-depth: 0"><li><p>a</p></li></ul>',
-                '<ul style="--md-list-depth: 1"><li>b</li></ul>',
-                '<ul style="--md-list-depth: 0">'
+                '<ul style="--md-list-depth: 1" data-md-gap="item">'
+                '<li>b</li></ul>',
+                '<ul style="--md-list-depth: 0" data-md-gap="block">'
                 '<li class="md-list-continuation"><p>Text</p></li></ul>',
             ])
 
@@ -84,8 +92,8 @@ class RenderMarkdownBlocksTests(TestCase):
                                    '> - b\n'),
             [
                 '<blockquote><p>a</p></blockquote>',
-                '<blockquote><ul style="--md-list-depth: 0"><li>b</li></ul>'
-                '</blockquote>',
+                '<blockquote><ul style="--md-list-depth: 0" '
+                'data-md-gap="block"><li>b</li></ul></blockquote>',
             ])
 
     def test_table(self) -> None:
@@ -146,7 +154,53 @@ class RenderMarkdownBlocksTests(TestCase):
                 '<pre></pre></div>',
                 '<div class="codehilite codehilite-multiline-end">'
                 '<pre>b</pre></div>',
-                '<div class="codehilite"><pre>c</pre></div>',
+                '<div class="codehilite" data-md-gap="block">'
+                '<pre>c</pre></div>',
+            ])
+
+    def test_gaps(self) -> None:
+        """Testing render_markdown_blocks marks gaps between blocks"""
+        self.assertEqual(
+            render_markdown_blocks('# Title\n'
+                                   '\n'
+                                   '- a\n'
+                                   '    - b\n'
+                                   '\n'
+                                   '> q1\n'
+                                   '>\n'
+                                   '> > nested\n'
+                                   '> >\n'
+                                   '> > n2\n'
+                                   '\n'
+                                   '```\n'
+                                   'x\n'
+                                   'y\n'
+                                   '```\n'
+                                   '\n'
+                                   '---\n'),
+            [
+                '<h1>Title</h1>',
+                '<ul style="--md-list-depth: 0" data-md-gap="block">'
+                '<li>a</li></ul>',
+                '<ul style="--md-list-depth: 1" data-md-gap="item">'
+                '<li>b</li></ul>',
+
+                # The quote's gap goes on its blockquote.
+                '<blockquote data-md-gap="block"><p>q1</p></blockquote>',
+
+                # The nested quote's gap goes on its own blockquote, inside
+                # the outer one.
+                '<blockquote><blockquote data-md-gap="block">'
+                '<p>nested</p></blockquote></blockquote>',
+                '<blockquote><blockquote><p data-md-gap="block">n2</p>'
+                '</blockquote></blockquote>',
+
+                # Only the first line of code gets a gap.
+                '<div class="codehilite codehilite-multiline-start" '
+                'data-md-gap="block"><pre>x</pre></div>',
+                '<div class="codehilite codehilite-multiline-end">'
+                '<pre>y</pre></div>',
+                '<hr data-md-gap="block"/>',
             ])
 
     def test_code_with_tree_sitter(self) -> None:
@@ -222,6 +276,45 @@ class RenderMarkdownBlocksTests(TestCase):
             [
                 '<div class="codehilite"><pre>x</pre></div>',
             ])
+
+
+class MarkdownDiffChunkGeneratorTests(TestCase):
+    """Unit tests for MarkdownDiffChunkGenerator.
+
+    Version Added:
+        9.0
+    """
+
+    def test_ignores_gaps(self) -> None:
+        """Testing MarkdownDiffChunkGenerator ignores gaps when comparing
+        rows
+        """
+        old_rows = render_markdown_blocks('Intro\n\nText\n')
+        new_rows = render_markdown_blocks('Text\n')
+
+        # Only the gap differs on the "Text" row.
+        self.assertEqual(old_rows[1], '<p data-md-gap="block">Text</p>')
+        self.assertEqual(new_rows[0], '<p>Text</p>')
+
+        generator = MarkdownDiffChunkGenerator(
+            old=[row.encode() for row in old_rows],
+            new=[row.encode() for row in new_rows],
+            orig_filename='old.md',
+            modified_filename='new.md',
+            diff_settings=DiffSettings.create())
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(
+            [
+                chunk['change']
+                for chunk in chunks
+            ],
+            ['delete', 'equal'])
+
+        # Each side still shows its own gap.
+        line = chunks[1]['lines'][0]
+        self.assertEqual(line[2], '<p data-md-gap="block">Text</p>')
+        self.assertEqual(line[5], '<p>Text</p>')
 
 
 class GetRowTextRangesTests(TestCase):
@@ -499,8 +592,8 @@ class MarkdownReviewUITests(TestCase):
             review_ui.get_rendered_lines(),
             [
                 '<h1>Title</h1>',
-                '<p>New text</p>',
-                '<p>More</p>',
+                '<p data-md-gap="block">New text</p>',
+                '<p data-md-gap="block">More</p>',
             ])
         self.assertEqual(
             review_ui.get_comment_line_range({

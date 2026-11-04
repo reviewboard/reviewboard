@@ -116,10 +116,70 @@
  * Rendered rows.
  *
  * Each row is one block: a heading, paragraph, list item, table row, or line
- * of code.
+ * of code. Rows sit right against each other, so an owl-style rule can't space
+ * them. Instead, the server marks each block that follows another block in the
+ * same container with a ``data-md-gap`` attribute, and the gap is a margin on
+ * that element.
  */
 .review-ui-box .markdown-review-ui .text-review-ui-rendered-table {
+  @md-block-gap: 0.8em;
+  @md-heading-gap: 1.2em;
+  @md-item-gap: 0.25em;
   @md-code-padding: 0.3em;
+  @md-row-padding: 0.25em;
+
+  /*
+   * The last row of a block has some padding below it (see below), so it
+   * doesn't sit right against the edge of a changed chunk in a diff. That
+   * padding is part of the gap before the next block.
+   */
+  [data-md-gap="block"] {
+    margin-block-start: @md-block-gap - @md-row-padding;
+  }
+
+  [data-md-gap="item"] {
+    margin-block-start: @md-item-gap - @md-row-padding;
+  }
+
+  :is(h1, h2, h3, h4, h5, h6)[data-md-gap="block"] {
+    margin-block-start: @md-heading-gap - @md-row-padding;
+  }
+
+  /* Rows in a blockquote have no padding, to keep its border whole. */
+  blockquote {
+    [data-md-gap="block"] {
+      margin-block-start: @md-block-gap;
+    }
+
+    [data-md-gap="item"] {
+      margin-block-start: @md-item-gap;
+    }
+
+    :is(h1, h2, h3, h4, h5, h6)[data-md-gap="block"] {
+      margin-block-start: @md-heading-gap;
+    }
+  }
+
+  /*
+   * Pad the bottom of each row, unless the block in it goes on into the
+   * next row (code, tables, and blockquotes). That's checked across the
+   * whole row, so both sides of a diff stay the same height.
+   */
+  @md-next-table: ~"td table:not([data-md-gap], [data-md-gap] table)";
+  @md-next-quote: ~"td > blockquote:not([data-md-gap])";
+  @md-next-quote-pre: ~"td > pre > blockquote:not([data-md-gap])";
+
+  > tbody > tr:not(
+      :has(> td :is(.codehilite-multiline-start, .codehilite-multiline-middle)),
+      :has(+ tr > @{md-next-table}, + tr > @{md-next-quote}, + tr > @{md-next-quote-pre}),
+      tbody:has(
+        + tbody > tr:first-child > @{md-next-table},
+        + tbody > tr:first-child > @{md-next-quote},
+        + tbody > tr:first-child > @{md-next-quote-pre}
+      ) > tr:last-child
+  ) > td {
+    padding-bottom: @md-row-padding;
+  }
 
   /*
    * Line up line numbers with the first line of text in each block.
@@ -141,6 +201,10 @@
 
   > tbody > tr > th:has(+ td @{code-start}) {
     padding-top: @md-code-padding;
+  }
+
+  > tbody > tr > th:has(+ td [data-md-gap="block"]):has(+ td @{code-start}) {
+    padding-top: @md-block-gap - @md-row-padding + @md-code-padding;
   }
 
   > tbody > tr > td {
@@ -204,19 +268,26 @@
   }
 
   /*
-   * Each block in a blockquote is its own row, wrapped in its own blockquote,
-   * so the border continues across rows.
+   * Each block in a blockquote is its own row, wrapped in its own blockquote.
+   * Making each one a formatting root keeps the gaps of blocks inside it
+   * within its border, so the border stays continuous.
    */
   blockquote {
     border-left: 3px solid var(--ink-p-fg-weak);
+    display: flow-root;
     margin: 0;
     padding: 0 0 0 1em;
   }
 
+  /*
+   * A rule has no height of its own, so it would sit at the bottom of its
+   * row, under the gap. Add the same space below it (less the row's own
+   * padding) to keep it in the middle of the row.
+   */
   hr {
     border: 0;
     border-top: 1px solid var(--ink-p-container-border-color);
-    margin: 0;
+    margin: 0 0 (@md-block-gap - 2 * @md-row-padding);
   }
 
   img {

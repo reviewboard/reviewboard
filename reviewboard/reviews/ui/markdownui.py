@@ -6,7 +6,7 @@ import logging
 import re
 from bisect import bisect_right
 from html import unescape
-from typing import TYPE_CHECKING, cast
+from typing import Literal, TYPE_CHECKING, cast
 from xml.dom.minidom import Element, Node, Text
 
 from django.utils.encoding import force_bytes, force_str
@@ -35,7 +35,8 @@ from reviewboard.treesitter.highlight import highlight as ts_highlight
 from reviewboard.treesitter.language import get_language_name_for_info_string
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator, Sequence
+    from collections.abc import Iterable, Iterator, Sequence
+    from typing import TypeAlias
 
     from pygments.lexers import Lexer
     from typelets.json import JSONDict
@@ -81,7 +82,7 @@ _MARKDOWN_KWARGS = {
 #: Version Added:
 #:     9.0
 _CODE_ROW_RE = re.compile(
-    r'^<div class="codehilite[^"]*"><pre>(?P<content>.*)</pre></div>$',
+    r'^<div class="codehilite[^"]*"[^>]*><pre>(?P<content>.*)</pre></div>$',
     re.S)
 
 #: Regex to find a row that does not include any text content.
@@ -122,6 +123,23 @@ _MAX_COLUMN_WIDTH = 40
 #:     9.0
 _COLUMN_PADDING = 2
 
+#: Type for where a gap goes before a row.
+#:
+#: This is a 2-tuple of:
+#:
+#: Tuple:
+#:     0 (str):
+#:         The kind of gap. This will be "block" for a block after another
+#:         block in the same container, or "item" for a list item after
+#:         another list item.
+#:
+#:     1 (int):
+#:         The blockquote depth of the container that the gap is in.
+#:
+#: Version Added:
+#:     9.0
+_Gap: TypeAlias = tuple[Literal['block', 'item'], int]
+
 #: A character that stands in for content without text.
 _PLACEHOLDER = '￼'
 
@@ -134,6 +152,13 @@ def render_markdown_blocks(
     Each heading, paragraph, list item, table row, and line of code becomes a
     row. Blocks inside a blockquote become their own rows, each wrapped in a
     blockquote.
+
+    A row that starts a block after another block in the same container gets a
+    ``data-md-gap`` attribute, so CSS can space blocks apart. This works like
+    a ``* + *`` rule in normal HTML, which can't be used here since each row
+    is in its own table cell. The attribute goes on the element for the block
+    at that container's level, which is the blockquote for a quote, and is
+    ``"item"`` between list items or ``"block"`` otherwise.
 
     Version Added:
         9.0
@@ -149,8 +174,15 @@ def render_markdown_blocks(
     html = clean_markdown_html(markdown(force_str(text), **_MARKDOWN_KWARGS))
     rows: list[str] = []
 
-    for node in get_markdown_element_tree(html):
-        _split_node(node, rows)
+    for i, node in enumerate(
+        _get_block_nodes(get_markdown_element_tree(html))
+    ):
+        if i == 0:
+            gap = None
+        else:
+            gap = ('block', 0)
+
+        _split_node(node, rows, gap=gap)
 
     # Rows are shown inside <pre> in diffs, so line breaks from the source
     # would show there. In HTML, they're only spaces.
@@ -284,13 +316,49 @@ def _get_row_text(
     return _WHITESPACE_RE.sub('', text) + suffix
 
 
+def _get_block_nodes(
+    nodes: Iterable[Node],
+) -> list[Node]:
+    """Return the nodes that are blocks.
+
+    This skips whitespace between blocks, and empty paragraphs.
+
+    Version Added:
+        9.0
+
+    Args:
+        nodes (list of xml.dom.minidom.Node):
+            The nodes to filter.
+
+    Returns:
+        list of xml.dom.minidom.Node:
+        The nodes that are blocks.
+    """
+    result: list[Node] = []
+
+    for node in nodes:
+        if isinstance(node, Text):
+            if node.data.strip():
+                result.append(node)
+        elif isinstance(node, Element):
+            if node.tagName != 'p' or node.hasChildNodes():
+                result.append(node)
+
+    return result
+
+
 def _split_node(
     node: Node,
     rows: list[str],
     list_depth: int = 0,
     quote_depth: int = 0,
+    gap: (_Gap | None) = None,
 ) -> None:
     """Split a node of rendered Markdown into rows.
+
+    Version Changed:
+        9.0:
+        Added the ``gap`` argument.
 
     Args:
         node (xml.dom.minidom.Node):
@@ -304,11 +372,15 @@ def _split_node(
 
         quote_depth (int, optional):
             How deeply nested blockquotes are at this point.
+
+        gap (tuple, optional):
+            The gap to put before the node's first row, if any.
+
+            Version Added:
+                9.0
     """
     if isinstance(node, Text):
-        if node.data.strip():
-            rows.append(_wrap_quote(node.toxml(), quote_depth))
-
+        rows.append(_wrap_quote(node.toxml(), quote_depth, gap))
         return
     elif not isinstance(node, Element):
         return
@@ -317,8 +389,11 @@ def _split_node(
     tag = element.tagName
 
     if tag == 'pre':
-        for row in _split_code(element):
-            rows.append(_wrap_quote(row, quote_depth))
+        for i, row in enumerate(_split_code(element)):
+            if i > 0:
+                gap = None
+
+            rows.append(_wrap_quote(row, quote_depth, gap))
     elif tag in {'ul', 'ol'}:
         try:
             number = int(element.getAttribute('start') or 1)
@@ -334,19 +409,24 @@ def _split_node(
                     rows=rows,
                     list_depth=list_depth,
                     quote_depth=quote_depth,
+                    gap=gap,
                 )
                 number += 1
+                gap = ('item', quote_depth)
     elif tag == 'table':
-        for row in _split_table(element):
-            rows.append(_wrap_quote(row, quote_depth))
+        for i, row in enumerate(_split_table(element)):
+            if i > 0:
+                gap = None
+
+            rows.append(_wrap_quote(row, quote_depth, gap))
     elif tag == 'blockquote':
-        for child in element.childNodes:
-            _split_node(child, rows, list_depth, quote_depth + 1)
-    elif tag == 'p' and not element.hasChildNodes():
-        # Skip empty paragraphs.
-        pass
+        # The first block in the quote takes the quote's own gap, which
+        # goes on the quote's blockquote wrapper.
+        for child in _get_block_nodes(element.childNodes):
+            _split_node(child, rows, list_depth, quote_depth + 1, gap)
+            gap = ('block', quote_depth + 1)
     else:
-        rows.append(_wrap_quote(element.toxml(), quote_depth))
+        rows.append(_wrap_quote(element.toxml(), quote_depth, gap))
 
 
 def _split_code(
@@ -578,10 +658,15 @@ def _split_list_item(
     rows: list[str],
     list_depth: int,
     quote_depth: int,
+    gap: _Gap | None,
 ) -> None:
     """Split a list item into rows.
 
     The item's own content is one row. Nested lists become their own rows.
+
+    Version Changed:
+        9.0:
+        Added the ``gap`` argument.
 
     Args:
         li (xml.dom.minidom.Element):
@@ -601,6 +686,12 @@ def _split_list_item(
 
         quote_depth (int):
             How deeply nested blockquotes are at this point.
+
+        gap (tuple):
+            The gap to put before the item, if any.
+
+            Version Added:
+                9.0
     """
     if list_tag == 'ol':
         start_attr = f' start="{number}"'
@@ -626,28 +717,37 @@ def _split_list_item(
         if is_first_row or html:
             if is_first_row:
                 li_attrs = ''
+                row_gap = gap
             else:
                 li_attrs = ' class="md-list-continuation"'
+                row_gap = ('block', quote_depth)
 
             rows.append(_wrap_quote(
                 f'<{list_tag}{start_attr}'
                 f' style="--md-list-depth: {list_depth}">'
                 f'<li{li_attrs}>{html}</li>'
                 f'</{list_tag}>',
-                quote_depth))
+                quote_depth,
+                row_gap))
 
         content = []
         is_first_row = False
 
         if child is not None:
-            _split_node(child, rows, list_depth + 1, quote_depth)
+            _split_node(child, rows, list_depth + 1, quote_depth,
+                        ('item', quote_depth))
 
 
 def _wrap_quote(
     row: str,
     quote_depth: int,
+    gap: (_Gap | None) = None,
 ) -> str:
-    """Wrap a row in blockquotes.
+    """Wrap a row in blockquotes, and mark its gap.
+
+    Version Changed:
+        9.0:
+        Added the ``gap`` argument.
 
     Args:
         row (str):
@@ -656,14 +756,68 @@ def _wrap_quote(
         quote_depth (int):
             The number of blockquotes to wrap the row in.
 
+        gap (tuple, optional):
+            The gap to put before the row, if any.
+
+            Version Added:
+                9.0
+
     Returns:
         str:
         The wrapped row.
     """
-    open_quotes = '<blockquote>' * quote_depth
-    close_quotes = '</blockquote>' * quote_depth
+    gap_kind = ''
+    gap_depth = -1
 
-    return f'{open_quotes}{row}{close_quotes}'
+    if gap is not None:
+        gap_kind, gap_depth = gap
+
+    if gap_depth == quote_depth:
+        row = _add_gap(row, gap_kind)
+
+    # The blockquote at each level is a block in the container one level
+    # up, so it holds the gap for that container.
+    for level in range(quote_depth, 0, -1):
+        if gap_depth == level - 1:
+            row = f'<blockquote data-md-gap="{gap_kind}">{row}</blockquote>'
+        else:
+            row = f'<blockquote>{row}</blockquote>'
+
+    return row
+
+
+def _add_gap(
+    row: str,
+    gap_kind: str,
+) -> str:
+    """Add a gap attribute to the first element in a row.
+
+    Version Added:
+        9.0
+
+    Args:
+        row (str):
+            The HTML for the row.
+
+        gap_kind (str):
+            The kind of gap.
+
+    Returns:
+        str:
+        The row with the attribute added.
+    """
+    attr = f' data-md-gap="{gap_kind}"'
+
+    if not row.startswith('<'):
+        # Bare text needs a block to hold the gap.
+        return f'<div{attr}>{row}</div>'
+
+    tag_end = row.index('>')
+
+    if row[tag_end - 1] == '/':
+        tag_end -= 1
+
+    return row[:tag_end] + attr + row[tag_end:]
 
 
 class MarkdownReviewUI(TextBasedReviewUI):
