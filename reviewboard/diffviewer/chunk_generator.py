@@ -604,7 +604,8 @@ class RawDiffChunkGenerator:
             for pattern in self.diff_settings.include_space_patterns
         )
 
-        self.differ = get_differ(old_lines, new_lines,
+        self.differ = get_differ(self.get_comparison_lines(old_lines),
+                                 self.get_comparison_lines(new_lines),
                                  ignore_space=ignore_space,
                                  compat_version=self.diff_compat)
 
@@ -828,6 +829,29 @@ class RawDiffChunkGenerator:
         del lines[-1]
 
         return s_str, lines
+
+    def get_comparison_lines(
+        self,
+        lines: Sequence[str],
+    ) -> Sequence[str]:
+        """Return the lines to compare when finding changes.
+
+        By default, lines are compared as they are. Subclasses can override
+        this to ignore parts of lines that shouldn't count as changes. The
+        lines shown in the diff are not affected.
+
+        Version Added:
+            9.0
+
+        Args:
+            lines (list of str):
+                The lines of one side of the diff.
+
+        Returns:
+            list of str:
+            The lines to compare. This must be the same length as ``lines``.
+        """
+        return lines
 
     def normalize_source_list(
         self,

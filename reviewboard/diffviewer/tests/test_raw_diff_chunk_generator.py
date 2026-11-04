@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import kgb
 from tree_sitter import QueryError
 
@@ -9,6 +11,9 @@ from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.testing import TestCase
 from reviewboard.treesitter.highlight import highlight
 from reviewboard.treesitter.language import get_language_name_for_file
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class RawDiffChunkGeneratorTests(kgb.SpyAgency, TestCase):
@@ -368,6 +373,39 @@ class RawDiffChunkGeneratorTests(kgb.SpyAgency, TestCase):
             }
         )
 
+    def test_get_chunks_with_get_comparison_lines(self) -> None:
+        """Testing RawDiffChunkGenerator.get_chunks with
+        get_comparison_lines overridden
+        """
+        class MyRawDiffChunkGenerator(RawDiffChunkGenerator):
+            def get_comparison_lines(
+                self,
+                lines: Sequence[str],
+            ) -> Sequence[str]:
+                return [
+                    line.lower()
+                    for line in lines
+                ]
+
+        generator = MyRawDiffChunkGenerator(
+            old=b'Hello\nworld\n',
+            new=b'HELLO\nthere\n',
+            orig_filename='file1.txt',
+            modified_filename='file2.txt',
+            diff_settings=DiffSettings.create(syntax_highlighting=False))
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(
+            [
+                chunk['change']
+                for chunk in chunks
+            ],
+            ['equal', 'replace'])
+
+        # Each side still shows its own text.
+        line = chunks[0]['lines'][0]
+        self.assertEqual(line[2], 'Hello')
+        self.assertEqual(line[5], 'HELLO')
 
     def test_get_chunks_with_syntax_highlighting_blacklisted(self):
         """Testing RawDiffChunkGenerator.get_chunks with syntax highlighting
