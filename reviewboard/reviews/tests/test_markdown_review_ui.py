@@ -84,6 +84,17 @@ class RenderMarkdownBlocksTests(TestCase):
                 '<li class="md-list-continuation"><p>Text</p></li></ul>',
             ])
 
+    def test_lists_two_space_nesting(self) -> None:
+        """Testing render_markdown_blocks with lists nested by 2 spaces"""
+        self.assertEqual(
+            render_markdown_blocks('- a\n'
+                                   '  - b\n'),
+            [
+                '<ul style="--md-list-depth: 0"><li>a</li></ul>',
+                '<ul style="--md-list-depth: 1" data-md-gap="item">'
+                '<li>b</li></ul>',
+            ])
+
     def test_task_list(self) -> None:
         """Testing render_markdown_blocks with a task list"""
         self.assertEqual(

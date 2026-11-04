@@ -23,6 +23,7 @@ from pygments.util import ClassNotFound
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.chunk_generator import NoWrapperHtmlFormatter
 from reviewboard.reviews.chunk_generators import MarkdownDiffChunkGenerator
+from reviewboard.reviews.markdown_lists import ListIndentExtension
 from reviewboard.reviews.markdown_utils import (
     MARKDOWN_KWARGS,
     clean_markdown_html,
@@ -85,6 +86,7 @@ _MARKDOWN_KWARGS = {
         'pymdownx.quotes',
         'pymdownx.superfences',
         'pymdownx.tasklist',
+        ListIndentExtension(),
     ],
     'extension_configs': {
         **MARKDOWN_KWARGS['extension_configs'],
