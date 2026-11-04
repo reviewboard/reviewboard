@@ -82,6 +82,7 @@ _MARKDOWN_KWARGS = {
         ),
         'pymdownx.highlight',
         'pymdownx.magiclink',
+        'pymdownx.quotes',
         'pymdownx.superfences',
         'pymdownx.tasklist',
     ],
@@ -89,6 +90,9 @@ _MARKDOWN_KWARGS = {
         **MARKDOWN_KWARGS['extension_configs'],
         'pymdownx.highlight': {
             'use_pygments': False,
+        },
+        'pymdownx.quotes': {
+            'callouts': True,
         },
     },
 }
@@ -174,8 +178,8 @@ def render_markdown_blocks(
     """Render Markdown and split it into reviewable rows.
 
     Each heading, paragraph, list item, table row, and line of code becomes a
-    row. Blocks inside a blockquote become their own rows, each wrapped in a
-    blockquote.
+    row. Blocks inside a blockquote or alert become their own rows, each
+    wrapped in a blockquote. Alerts will keep their classes.
 
     A row that starts a block after another block in the same container gets a
     ``data-md-gap`` attribute, so CSS can space blocks apart. This works like
@@ -404,14 +408,15 @@ def _split_node(
     node: Node,
     rows: list[str],
     list_depth: int = 0,
-    quote_depth: int = 0,
+    quotes: tuple[str, ...] = (),
     gap: (_Gap | None) = None,
 ) -> None:
     """Split a node of rendered Markdown into rows.
 
     Version Changed:
         9.0:
-        Added the ``gap`` argument.
+        - Added the ``gap`` argument.
+        - Changed the ``quote_depth`` argument to ``quotes``.
 
     Args:
         node (xml.dom.minidom.Node):
@@ -423,8 +428,9 @@ def _split_node(
         list_depth (int, optional):
             How deeply nested lists are at this point.
 
-        quote_depth (int, optional):
-            How deeply nested blockquotes are at this point.
+        quotes (tuple of str, optional):
+            The class of each blockquote this is in, from the outside in.
+            Normal blockquotes have an empty class.
 
         gap (tuple, optional):
             The gap to put before the node's first row, if any.
@@ -433,7 +439,7 @@ def _split_node(
                 9.0
     """
     if isinstance(node, Text):
-        rows.append(_wrap_quote(node.toxml(), quote_depth, gap))
+        rows.append(_wrap_quote(node.toxml(), quotes, gap))
         return
     elif not isinstance(node, Element):
         return
@@ -446,7 +452,7 @@ def _split_node(
             if i > 0:
                 gap = None
 
-            rows.append(_wrap_quote(row, quote_depth, gap))
+            rows.append(_wrap_quote(row, quotes, gap))
     elif tag in {'ul', 'ol'}:
         try:
             number = int(element.getAttribute('start') or 1)
@@ -461,25 +467,53 @@ def _split_node(
                     number=number,
                     rows=rows,
                     list_depth=list_depth,
-                    quote_depth=quote_depth,
+                    quotes=quotes,
                     gap=gap,
                 )
                 number += 1
-                gap = ('item', quote_depth)
+                gap = ('item', len(quotes))
     elif tag == 'table':
         for i, row in enumerate(_split_table(element)):
             if i > 0:
                 gap = None
 
-            rows.append(_wrap_quote(row, quote_depth, gap))
-    elif tag == 'blockquote':
+            rows.append(_wrap_quote(row, quotes, gap))
+    elif tag == 'blockquote' or _is_alert(element):
+        if tag == 'blockquote':
+            inner_quotes = (*quotes, '')
+        else:
+            inner_quotes = (*quotes, element.getAttribute('class'))
+
         # The first block in the quote takes the quote's own gap, which
         # goes on the quote's blockquote wrapper.
         for child in _get_block_nodes(element.childNodes):
-            _split_node(child, rows, list_depth, quote_depth + 1, gap)
-            gap = ('block', quote_depth + 1)
+            _split_node(child, rows, list_depth, inner_quotes, gap)
+            gap = ('block', len(inner_quotes))
     else:
-        rows.append(_wrap_quote(element.toxml(), quote_depth, gap))
+        rows.append(_wrap_quote(element.toxml(), quotes, gap))
+
+
+def _is_alert(
+    element: Element,
+) -> bool:
+    """Return whether an element is an alert.
+
+    Alerts are blockquotes starting with "[!NOTE]" or another type. They're
+    rendered as ``<div class="admonition note">``.
+
+    Version Added:
+        9.0
+
+    Args:
+        element (xml.dom.minidom.Element):
+            The element.
+
+    Returns:
+        bool:
+        Whether the element is an alert.
+    """
+    return (element.tagName == 'div' and
+            'admonition' in element.getAttribute('class').split())
 
 
 def _split_code(
@@ -710,7 +744,7 @@ def _split_list_item(
     number: int,
     rows: list[str],
     list_depth: int,
-    quote_depth: int,
+    quotes: tuple[str, ...],
     gap: _Gap | None,
 ) -> None:
     """Split a list item into rows.
@@ -719,7 +753,8 @@ def _split_list_item(
 
     Version Changed:
         9.0:
-        Added the ``gap`` argument.
+        - Added the ``gap`` argument.
+        - Changed the ``quote_depth`` argument to ``quotes``.
 
     Args:
         li (xml.dom.minidom.Element):
@@ -737,8 +772,8 @@ def _split_list_item(
         list_depth (int):
             How deeply nested this item's list is.
 
-        quote_depth (int):
-            How deeply nested blockquotes are at this point.
+        quotes (tuple of str):
+            The class of each blockquote this is in, from the outside in.
 
         gap (tuple):
             The gap to put before the item, if any.
@@ -772,7 +807,7 @@ def _split_list_item(
         if is_first_row or html:
             if not is_first_row:
                 li_attrs = ' class="md-list-continuation"'
-                row_gap = ('block', quote_depth)
+                row_gap = ('block', len(quotes))
             elif li_class:
                 li_attrs = f' class="{escape(li_class)}"'
                 row_gap = gap
@@ -785,34 +820,36 @@ def _split_list_item(
                 f' style="--md-list-depth: {list_depth}">'
                 f'<li{li_attrs}>{html}</li>'
                 f'</{list_tag}>',
-                quote_depth,
+                quotes,
                 row_gap))
 
         content = []
         is_first_row = False
 
         if child is not None:
-            _split_node(child, rows, list_depth + 1, quote_depth,
-                        ('item', quote_depth))
+            _split_node(child, rows, list_depth + 1, quotes,
+                        ('item', len(quotes)))
 
 
 def _wrap_quote(
     row: str,
-    quote_depth: int,
+    quotes: tuple[str, ...],
     gap: (_Gap | None) = None,
 ) -> str:
     """Wrap a row in blockquotes, and mark its gap.
 
     Version Changed:
         9.0:
-        Added the ``gap`` argument.
+        - Added the ``gap`` argument.
+        - Changed the ``quote_depth`` argument to ``quotes``.
 
     Args:
         row (str):
             The HTML for the row.
 
-        quote_depth (int):
-            The number of blockquotes to wrap the row in.
+        quotes (tuple of str):
+            The class of each blockquote to wrap the row in, from the
+            outside in.
 
         gap (tuple, optional):
             The gap to put before the row, if any.
@@ -830,16 +867,22 @@ def _wrap_quote(
     if gap is not None:
         gap_kind, gap_depth = gap
 
-    if gap_depth == quote_depth:
+    if gap_depth == len(quotes):
         row = _add_gap(row, gap_kind)
 
     # The blockquote at each level is a block in the container one level
     # up, so it holds the gap for that container.
-    for level in range(quote_depth, 0, -1):
+    for level in range(len(quotes), 0, -1):
+        attrs = ''
+        quote_class = quotes[level - 1]
+
+        if quote_class:
+            attrs += f' class="{escape(quote_class)}"'
+
         if gap_depth == level - 1:
-            row = f'<blockquote data-md-gap="{gap_kind}">{row}</blockquote>'
-        else:
-            row = f'<blockquote>{row}</blockquote>'
+            attrs += f' data-md-gap="{gap_kind}"'
+
+        row = f'<blockquote{attrs}>{row}</blockquote>'
 
     return row
 

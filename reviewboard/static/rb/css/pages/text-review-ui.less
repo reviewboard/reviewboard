@@ -128,6 +128,7 @@
   @md-item-gap: 0.25em;
   @md-code-padding: 0.3em;
   @md-row-padding: 0.25em;
+  @md-alert-padding: 0.5em;
 
   /*
    * The last row of a block has some padding below it (see below), so it
@@ -321,6 +322,80 @@
   }
 
   /*
+   * Alerts ("> [!NOTE]") are blockquotes styled like ink alerts. ink has
+   * no type for "important", so it and any other types use the standard
+   * look.
+   */
+  blockquote.admonition {
+    --_md-alert-bg: var(--ink-c-alert-standard-bg);
+    --_md-alert-border-color: var(--ink-c-alert-standard-border-color);
+    --_md-alert-fg: var(--ink-c-alert-standard-fg);
+    --_md-alert-icon: var(--ink-c-alert-standard-icon);
+
+    background: var(--_md-alert-bg);
+    border-left-color: var(--_md-alert-border-color);
+    color: var(--_md-alert-fg);
+    padding-inline-end: 1em;
+
+    /* An alert's first row is always its title. */
+    &:has(> .admonition-title) {
+      padding-top: @md-alert-padding;
+    }
+
+    /*
+     * Typed alerts have light backgrounds, even in dark mode. Text that
+     * normally follows the mode needs its colors for light backgrounds.
+     */
+    .md-alert-type(@type) {
+      --_md-alert-bg: ~"var(--ink-c-alert-@{type}-bg)";
+      --_md-alert-border-color: ~"var(--ink-c-alert-@{type}-border-color)";
+      --_md-alert-fg: ~"var(--ink-c-alert-@{type}-fg)";
+      --_md-alert-icon: ~"var(--ink-c-alert-@{type}-icon)";
+      --ink-p-fg-weak: var(--ink-p-fg-weak-on-light);
+      --ink-p-link-fg: var(--ink-p-link-fg-on-light);
+      --ink-p-link-hover-fg: var(--ink-p-link-hover-fg-on-light);
+    }
+
+    &.note {
+      .md-alert-type(info);
+    }
+
+    &.tip {
+      .md-alert-type(success);
+    }
+
+    &.warning {
+      .md-alert-type(warning);
+    }
+
+    &.caution {
+      .md-alert-type(error);
+    }
+
+    .admonition-title {
+      font-weight: bold;
+
+      &::before {
+        margin-right: 0.35em;
+        vertical-align: text-bottom;
+        #ink-ns-ui.icons.svg-icon(@icon: var(--_md-alert-icon);
+                                  @size: 1.2em);
+      }
+    }
+
+    /*
+     * Code has no background of its own in dark mode, which doesn't work
+     * on a light alert. Put it over the normal page color instead. In dark
+     * mode the code background is "inherit", which drops the image layer
+     * and leaves just that color.
+     */
+    :is(.codehilite, code) {
+      background-color: var(--ink-p-container-bg);
+      background-image: linear-gradient(var(--ink-p-code-literal-bg) 0 0);
+    }
+  }
+
+  /*
    * A rule has no height of its own, so it would sit at the bottom of its
    * row, under the gap. Add the same space below it (less the row's own
    * padding) to keep it in the middle of the row.
@@ -421,6 +496,29 @@
   .md-table-end(4);
 
   /*
+   * An alert ends when the next row on the same side doesn't continue it. This
+   * works like the table check above.
+   */
+  .md-alert-end(@cell) {
+    @cont: ~"td:nth-child(@{cell}) > blockquote.admonition:not([data-md-gap])";
+    @cont-pre: ~"td:nth-child(@{cell}) > pre > blockquote.admonition:not([data-md-gap])";
+
+    /*
+     * Perhaps you forgave me above? I don't think there's any forgiveness
+     * possible now.
+     */
+    > tbody > tr:not(:has(+ tr > @{cont}, + tr > @{cont-pre})):not(tbody:has(+ tbody > tr:first-child > @{cont}, + tbody > tr:first-child > @{cont-pre}) > tr:last-child) > td:nth-child(@{cell}) {
+      > blockquote.admonition,
+      > pre > blockquote.admonition {
+        padding-bottom: @md-alert-padding;
+      }
+    }
+  }
+
+  .md-alert-end(2);
+  .md-alert-end(4);
+
+  /*
    * Code blocks are one row per line. Each line draws its part of the box: the
    * first line has the top, the last line has the bottom.
    *
@@ -480,6 +578,19 @@
   /* Let the color of changed lines show through code blocks. */
   > tbody:is(.insert, .delete, .replace) .codehilite {
     background: transparent;
+  }
+
+  /*
+   * The same goes for alerts. Their text goes back to normal colors, since
+   * it may no longer be on a light background.
+   */
+  > tbody:is(.insert, .delete, .replace) blockquote.admonition {
+    --ink-p-fg-weak: inherit;
+    --ink-p-link-fg: inherit;
+    --ink-p-link-hover-fg: inherit;
+
+    background: transparent;
+    color: var(--ink-p-fg);
   }
 
   /*

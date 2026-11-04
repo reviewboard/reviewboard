@@ -123,6 +123,26 @@ class RenderMarkdownBlocksTests(TestCase):
                 '<a href="http://www.example.com">www.example.com</a>.</p>',
             ])
 
+    def test_alert(self) -> None:
+        """Testing render_markdown_blocks with an alert"""
+        self.assertEqual(
+            render_markdown_blocks('> [!TIP]\n'
+                                   '> a\n'
+                                   '>\n'
+                                   '> > b\n'
+                                   '\n'
+                                   '> c\n'),
+            [
+                '<blockquote class="admonition tip">'
+                '<p class="admonition-title">Tip</p></blockquote>',
+                '<blockquote class="admonition tip">'
+                '<p data-md-gap="block">a</p></blockquote>',
+                '<blockquote class="admonition tip">'
+                '<blockquote data-md-gap="block"><p>b</p></blockquote>'
+                '</blockquote>',
+                '<blockquote data-md-gap="block"><p>c</p></blockquote>',
+            ])
+
     def test_table(self) -> None:
         """Testing render_markdown_blocks with a table"""
         self.assertEqual(
