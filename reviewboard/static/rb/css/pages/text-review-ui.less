@@ -83,10 +83,6 @@
       padding: 0;
     }
 
-    h1 {
-      font-size: 2em;
-    }
-
     ul, ol {
       /* Each list item is its own row, so nesting is set on each one. */
       padding-left: calc(2em * (var(--md-list-depth, 0) + 1));
@@ -114,4 +110,233 @@
       }
     }
   }
+}
+
+/*
+ * Rendered rows.
+ *
+ * Each row is one block: a heading, paragraph, list item, table row, or line
+ * of code.
+ */
+.review-ui-box .markdown-review-ui .text-review-ui-rendered-table {
+  @md-code-padding: 0.3em;
+
+  /*
+   * Line up line numbers with the first line of text in each block.
+   *
+   * Their vertical padding would make rows taller than their blocks, leaving
+   * breaks in blockquote borders and code boxes.
+   */
+  > tbody > tr > th {
+    padding-block: 0;
+    vertical-align: baseline;
+  }
+
+  /*
+   * Code rows are aligned to the top (see below), so line numbers for the
+   * first line of a code block need to match the space above it. Each side of
+   * a diff is handled separately.
+   */
+  @code-start: ~".codehilite:not(.codehilite-multiline-middle, .codehilite-multiline-end)";
+
+  > tbody > tr > th:has(+ td @{code-start}) {
+    padding-top: @md-code-padding;
+  }
+
+  > tbody > tr > td {
+    font-size: var(--ink-u-font-sm);
+    line-height: 1.5;
+    padding: 0 0.5em;
+    vertical-align: baseline;
+
+    /*
+     * Empty lines of code have no baseline, so lining up on one would open
+     * gaps in the code box.
+     */
+    &:has(.codehilite) {
+      vertical-align: top;
+    }
+
+    /* In diffs, each row is wrapped in a <pre>. Show it as normal text. */
+    > pre {
+      font: inherit;
+      margin: 0;
+      overflow-wrap: anywhere;
+      padding: 0;
+      white-space: normal;
+      word-break: normal;
+    }
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    padding: 0;
+  }
+
+  h1 {
+    font-size: var(--ink-u-font-l);
+  }
+
+  h2 {
+    font-size: var(--ink-u-font-ml);
+  }
+
+  h3 {
+    font-size: var(--ink-u-font-m);
+  }
+
+  h4 {
+    font-size: var(--ink-u-font-sm);
+  }
+
+  h5, h6 {
+    font-size: var(--ink-u-font-s);
+  }
+
+  p {
+    margin: 0;
+    padding: 0;
+  }
+
+  ul, ol {
+    margin: 0;
+    padding-block: 0;
+  }
+
+  /*
+   * Each block in a blockquote is its own row, wrapped in its own blockquote,
+   * so the border continues across rows.
+   */
+  blockquote {
+    border-left: 3px solid var(--ink-p-fg-weak);
+    margin: 0;
+    padding: 0 0 0 1em;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid var(--ink-p-container-border-color);
+    margin: 0;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .emoji {
+    height: 1.25em;
+    vertical-align: -0.25em;
+    width: auto;
+  }
+
+  /* Inline code uses the same styles as in other parts of the UI. */
+  :not(pre) > code {
+    background: var(--ink-p-code-literal-bg);
+    border: var(--rb-u-inline-code-border-size)
+            var(--ink-p-code-literal-border-color)
+            solid;
+    border-radius: var(--rb-u-inline-code-border-radius);
+    color: var(--ink-p-code-literal-fg);
+    font-family: var(--ink-ff-monospace);
+    padding: 0 0.3em;
+  }
+
+  table {
+    th {
+      border-bottom: 1px solid var(--ink-p-container-border-color);
+      font-weight: bold;
+    }
+
+    td {
+      border-bottom: 1px solid var(--ink-p-container-border-color);
+    }
+  }
+
+  /*
+   * Code blocks are one row per line. Each line draws its part of the box: the
+   * first line has the top, the last line has the bottom.
+   *
+   * Code blocks in list items stay in the item's row, so they aren't split
+   * into lines. Give them the same box as other code blocks.
+   */
+  li pre {
+    background: var(--ink-p-code-literal-bg);
+    border: var(--rb-g-code-block-border);
+    border-radius: var(--rb-u-code-block-border-radius);
+    color: var(--rb-theme-rich-text-code-fg);
+    font-family: var(--ink-ff-monospace);
+    margin: 0;
+    padding: 0.3em 1ch;
+    white-space: pre-wrap;
+  }
+
+  .codehilite {
+    background: var(--ink-p-code-literal-bg);
+    border: var(--rb-g-code-block-border);
+    border-radius: var(--rb-u-code-block-border-radius);
+    color: var(--rb-theme-rich-text-code-fg);
+    padding: @md-code-padding 1ch;
+
+    pre {
+      font-family: var(--ink-ff-monospace);
+      margin: 0;
+      min-height: 1lh;
+      overflow-wrap: anywhere;
+      padding: 0;
+      white-space: pre-wrap;
+    }
+
+    &.codehilite-multiline-start {
+      border-bottom: 0;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      padding-bottom: 0;
+    }
+
+    &.codehilite-multiline-middle {
+      border-bottom: 0;
+      border-radius: 0;
+      border-top: 0;
+      padding-bottom: 0;
+      padding-top: 0;
+    }
+
+    &.codehilite-multiline-end {
+      border-top: 0;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      padding-top: 0;
+    }
+  }
+
+  /* Let the color of changed lines show through code blocks. */
+  > tbody:is(.insert, .delete, .replace) .codehilite {
+    background: transparent;
+  }
+
+  /*
+   * When lines are only added to one side, the other side has empty cells. If
+   * that side's code block is still open, draw its sides across those cells
+   * so the box doesn't break.
+   *
+   * The 2nd and 4th cells hold each side of a diff.
+   */
+  .md-code-gap(@cell) {
+    @open: ~"td:nth-child(@{cell}) :is(.codehilite-multiline-start, .codehilite-multiline-middle)";
+
+    > tbody:has(> tr:last-child > @{open}) + tbody:is(.insert, .delete) > tr > td:nth-child(@{cell}):has(> pre:empty) {
+      position: relative;
+
+      &::before {
+        border-inline: var(--rb-g-code-block-border);
+        content: '';
+        inset: 0 0.5em;
+        position: absolute;
+      }
+    }
+  }
+
+  .md-code-gap(2);
+  .md-code-gap(4);
 }
