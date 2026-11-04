@@ -12,6 +12,7 @@ from django.utils.translation import gettext_lazy as _, gettext
 from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.client import HostingServiceClient
 from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
@@ -334,7 +335,7 @@ class CodebaseHQClient(HostingServiceClient['CodebaseHQ']):
         return result
 
 
-class CodebaseHQ(BaseHostingService[CodebaseHQClient]):
+class CodebaseHQ(BaseHostingService[CodebaseHQClient], BaseBugTracker):
     """Repository hosting support for Codebase.
 
     Codebase is a repository hosting service that supports Subversion, Git,
@@ -348,9 +349,7 @@ class CodebaseHQ(BaseHostingService[CodebaseHQClient]):
     name = 'Codebase HQ'
 
     auth_form = CodebaseHQAuthForm
-    # TODO: This service currently doesn't implement BaseBugTracker, but once
-    # it does, uncomment this:
-    # bugs_in_repo = True
+    bugs_in_repo = True
     form = CodebaseHQForm
     needs_authorization = True
     supported_scmtools = ['Git', 'Subversion', 'Mercurial']

@@ -96,13 +96,4 @@
 </li>
 {%   endif %}
 {%  endfor %}
-
-{%  if github_app_installed %}
-<li class="rb-c-admin-cs-accounts__account">
- <a href="{{github_app_install_url}}">
-  <span class="ink-i-add"></span>
-  {% trans "Install app into another organization" %}
- </a>
-</li>
-{%  endif %}
 {% endblock service_accounts %}

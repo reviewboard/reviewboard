@@ -3,6 +3,7 @@
 
 {% block content %}
 {% include "notifications/reply_email_content.html" %}
+<p>- {% if reply.user.first_name != "" %}{{reply.user.first_name}}{% else %}{{reply.user.username}}{% endif %}</p>
 {% endblock %}
 
 {% block footer %}

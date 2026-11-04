@@ -6,6 +6,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import (
     BaseBugTrackerConfigForm,
     BaseHostingServiceRepositoryForm,
@@ -64,7 +65,7 @@ class TracBugTrackerConfigForm(BaseBugTrackerConfigForm):
         return self.cleaned_data['trac_url'].rstrip('/')
 
 
-class Trac(BaseHostingService):
+class Trac(BaseHostingService, BaseBugTracker):
     """Hosting service for Trac."""
 
     hosting_service_id = 'trac'

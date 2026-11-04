@@ -5,6 +5,7 @@ from __future__ import annotations
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
@@ -19,7 +20,7 @@ class GoogleCodeForm(BaseHostingServiceRepositoryForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class GoogleCode(BaseHostingService):
+class GoogleCode(BaseHostingService, BaseBugTracker):
     """Hosting service support for Google Code.
 
     This was a hosting service for Mercurial and Subversion provided by

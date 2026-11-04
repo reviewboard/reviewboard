@@ -57,6 +57,7 @@ from reviewboard.ssh.utils import humanize_key
 if TYPE_CHECKING:
     from typing import ClassVar
 
+    from django.core.paginator import Page
     from django.http import HttpRequest
     from django.utils.safestring import SafeString
 
@@ -480,17 +481,43 @@ class ConnectedServicesListView(View):
             else:
                 bug_tracker_count = 0
 
+            # The first page of each list is rendered inline, so the page shows
+            # them without extra requests.
+            repositories_html = ''
+            bug_trackers_html = ''
+
+            if any(getattr(account, 'repository_count', 0)
+                   for account in accounts):
+                repositories_html, _page = \
+                    ConnectedServiceRepositoriesView.render_page(
+                        request,
+                        service=service,
+                    )
+
+            if bug_tracker_count:
+                bug_trackers_html, _page = \
+                    ConnectedServiceBugTrackersView.render_page(
+                        request,
+                        service=service,
+                    )
+
+            service_attention_items = \
+                service.connect_ui.get_connected_services_list_attention_items(
+                    request,
+                    accounts=accounts)
+            attention_items += service_attention_items
+
             entries.append((
                 (service.name or '').lower(),
                 service.connect_ui.render_connected_services_list_entry(
                     request,
                     accounts=accounts,
-                    bug_tracker_count=bug_tracker_count),
+                    bug_tracker_count=bug_tracker_count,
+                    bug_trackers_html=bug_trackers_html,
+                    repositories_html=repositories_html,
+                    needs_attention=bool(service_attention_items),
+                ),
             ))
-            attention_items += \
-                service.connect_ui.get_connected_services_list_attention_items(
-                    request,
-                    accounts=accounts)
 
         # Add entries for services that have bug tracker configurations but no
         # accounts, such as anonymous bug trackers.
@@ -501,12 +528,20 @@ class ConnectedServicesListView(View):
             if not service or not is_bug_tracker_configurable(service):
                 continue
 
+            bug_trackers_html, _page = \
+                ConnectedServiceBugTrackersView.render_page(
+                    request,
+                    service=service,
+                )
+
             entries.append((
                 (service.name or '').lower(),
                 service.connect_ui.render_connected_services_list_entry(
                     request,
                     accounts=[],
-                    bug_tracker_count=bug_tracker_count),
+                    bug_tracker_count=bug_tracker_count,
+                    bug_trackers_html=bug_trackers_html,
+                ),
             ))
 
         return entries, attention_items
@@ -598,23 +633,13 @@ class ConnectedServiceRepositoriesView(View):
                 The service was not registered, or the account ID was not a
                 valid ID.
         """
-        # Let the hosting service customize how each repository's path is
-        # displayed (for example, showing "owner/repo" instead of a clone URL).
         service = hosting_service_registry.get_hosting_service(service_id)
 
         if service is None:
             raise Http404
 
-        # This spans all Local Sites, matching the accounts shown on the
-        # Connected Services page, and intentionally includes invisible and
-        # archived repositories so the list agrees with the header count.
-        repositories = (
-            Repository.objects
-            .filter(hosting_account__service_name=service_id)
-            .select_related('hosting_account')
-        )
-
         account_id = request.GET.get('account')
+        account_pk: (int | None) = None
 
         if account_id:
             # An unparsable ID would otherwise reach the database and raise a
@@ -624,9 +649,76 @@ class ConnectedServiceRepositoriesView(View):
             except ValueError:
                 raise Http404 from None
 
-            repositories = repositories.filter(hosting_account__pk=account_pk)
+        html, page = self.render_page(
+            request,
+            service=service,
+            page_number=request.GET.get('page', 1),
+            account_pk=account_pk,
+            search=request.GET.get('q', '').strip(),
+        )
+        paginator = page.paginator
 
-        search = request.GET.get('q', '').strip()
+        return HttpResponse(
+            html,
+            headers={
+                'X-Total-Count': str(paginator.count),
+                'X-Page-Number': str(page.number),
+                'X-Num-Pages': str(paginator.num_pages),
+            })
+
+    @classmethod
+    def render_page(
+        cls,
+        request: HttpRequest,
+        *,
+        service: type[BaseHostingService],
+        page_number: (int | str) = 1,
+        account_pk: (int | None) = None,
+        search: str = '',
+    ) -> tuple[SafeString, Page[Repository]]:
+        """Render a page of a service's repositories.
+
+        This is used by the endpoint, and by the "Connected Services" page to
+        render the first page inline.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            service (type):
+                The hosting service to list repositories for.
+
+            page_number (int or str, optional):
+                The 1-based page number. An invalid page shows the first page.
+
+            account_pk (int, optional):
+                The ID of an account to limit the list to.
+
+            search (str, optional):
+                Text to match against repository names and paths.
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (django.utils.safestring.SafeString):
+                    The rendered repository list.
+
+                1 (django.core.paginator.Page):
+                    The page that was rendered.
+        """
+        # This spans all Local Sites, matching the accounts shown on the
+        # Connected Services page, and intentionally includes invisible and
+        # archived repositories so the list agrees with the header count.
+        repositories = (
+            Repository.objects
+            .filter(hosting_account__service_name=service.hosting_service_id)
+            .select_related('hosting_account')
+        )
+
+        if account_pk is not None:
+            repositories = repositories.filter(hosting_account__pk=account_pk)
 
         if search:
             repositories = repositories.filter(
@@ -636,15 +728,17 @@ class ConnectedServiceRepositoriesView(View):
 
         repositories = repositories.order_by('name')
 
-        paginator = Paginator(repositories, self.repositories_per_page)
+        paginator = Paginator(repositories, cls.repositories_per_page)
 
         try:
-            page = paginator.page(request.GET.get('page', 1))
+            page = paginator.page(page_number)
         except (EmptyPage, PageNotAnInteger):
             page = paginator.page(1)
 
         page_repositories = list(page.object_list)
 
+        # Let the hosting service customize how each repository's path is
+        # displayed (for example, showing "owner/repo" instead of a clone URL).
         for repository in page_repositories:
             repository.display_path = \
                 service.connect_ui.get_repository_display_path(repository)
@@ -658,13 +752,7 @@ class ConnectedServiceRepositoriesView(View):
             },
             request=request)
 
-        return HttpResponse(
-            html,
-            headers={
-                'X-Total-Count': str(paginator.count),
-                'X-Page-Number': str(page.number),
-                'X-Num-Pages': str(paginator.num_pages),
-            })
+        return html, page
 
 
 @method_decorator(staff_member_required, name='dispatch')
@@ -729,26 +817,77 @@ class ConnectedServiceBugTrackersView(View):
             not is_bug_tracker_configurable(service)):
             raise Http404
 
+        html, page = self.render_page(
+            request,
+            service=service,
+            page_number=request.GET.get('page', 1),
+            search=request.GET.get('q', '').strip(),
+        )
+        paginator = page.paginator
+
+        response = HttpResponse(html)
+        response['X-Total-Count'] = str(paginator.count)
+        response['X-Page-Number'] = str(page.number)
+        response['X-Num-Pages'] = str(paginator.num_pages)
+
+        return response
+
+    @classmethod
+    def render_page(
+        cls,
+        request: HttpRequest,
+        *,
+        service: type[BaseHostingService],
+        page_number: (int | str) = 1,
+        search: str = '',
+    ) -> tuple[SafeString, Page[ConfiguredBugTracker]]:
+        """Render a page of a service's bug tracker configurations.
+
+        This is used by the endpoint, and by the "Connected Services" page to
+        render the first page inline.
+
+        Args:
+            request (django.http.HttpRequest):
+                The HTTP request from the client.
+
+            service (type):
+                The hosting service to list bug trackers for.
+
+            page_number (int or str, optional):
+                The 1-based page number. An invalid page shows the first page.
+
+            search (str, optional):
+                Text to match against bug tracker names.
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (django.utils.safestring.SafeString):
+                    The rendered bug tracker list.
+
+                1 (django.core.paginator.Page):
+                    The page that was rendered.
+        """
         # This spans all Local Sites, matching the entries shown on the
         # Connected Services page.
         bug_trackers = (
             ConfiguredBugTracker.objects
             .accessible(local_site=LocalSite.ALL)
-            .filter(service_name=service_id)
+            .filter(service_name=service.hosting_service_id)
             .select_related('hosting_account')
         )
-
-        search = request.GET.get('q', '').strip()
 
         if search:
             bug_trackers = bug_trackers.filter(name__icontains=search)
 
         bug_trackers = bug_trackers.order_by('name')
 
-        paginator = Paginator(bug_trackers, self.bug_trackers_per_page)
+        paginator = Paginator(bug_trackers, cls.bug_trackers_per_page)
 
         try:
-            page = paginator.page(request.GET.get('page', 1))
+            page = paginator.page(page_number)
         except (EmptyPage, PageNotAnInteger):
             page = paginator.page(1)
 
@@ -768,12 +907,7 @@ class ConnectedServiceBugTrackersView(View):
             },
             request=request)
 
-        response = HttpResponse(html)
-        response['X-Total-Count'] = str(paginator.count)
-        response['X-Page-Number'] = str(page.number)
-        response['X-Num-Pages'] = str(paginator.num_pages)
-
-        return response
+        return html, page
 
 
 def _save_hosting_auth_form(

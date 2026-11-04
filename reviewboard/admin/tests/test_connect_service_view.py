@@ -262,8 +262,14 @@ class ConnectServiceViewTests(TestCase):
                 for action in actions
             ],
             [
-                ('Add a repository from tracker.example.com', 'myuser'),
-                ('Create a new bug tracker on tracker.example.com', 'myuser'),
+                (
+                    'Add a repository from tracker.example.com',
+                    'Using myuser',
+                ),
+                (
+                    'Create a new bug tracker on tracker.example.com',
+                    'Using myuser',
+                ),
             ])
 
     def test_add_object_actions_with_local_site_account(self) -> None:

@@ -26,3 +26,14 @@ class TracTests(HostingServiceTestCase[Trac]):
                 'trac_url': 'http://trac.example.com',
             }),
             'http://trac.example.com/ticket/%s')
+
+    def test_get_bug_url(self) -> None:
+        """Testing Trac.get_bug_url with a bug tracker configuration"""
+        config = self.create_bug_tracker(
+            service_name='trac',
+            settings={
+                'trac_url': 'http://trac.example.com',
+            })
+
+        self.assertEqual(config.get_bug_url('123'),
+                         'http://trac.example.com/ticket/123')

@@ -45,6 +45,12 @@ class GetBugTrackerServiceChoicesTests(TestCase):
         # through standalone configurations.
         self.assertNotIn('github', choices)
         self.assertNotIn('forgejo', choices)
+        self.assertNotIn('gitlab', choices)
+        self.assertNotIn('bitbucket', choices)
+        self.assertNotIn('assembla', choices)
+        self.assertNotIn('unfuddle', choices)
+        self.assertNotIn('codebasehq', choices)
+        self.assertNotIn('sourceforge', choices)
 
         # Non-bug-tracker services never appear.
         self.assertNotIn('gerrit', choices)
