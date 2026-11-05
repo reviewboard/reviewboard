@@ -162,16 +162,23 @@
   text-decoration: none;
 }
 
-/* Pygments: Error */
-.err {
+/*
+ * Pygments: Error
+ * CodeMirror: Error
+ */
+.err,
+.cm-s-rb .cm-error {
+  color: inherit;
 }
 
 /*
  * Pygments: Operator
+ * CodeMirror: Bracket
  * CodeMirror: Operator
  * Tree sitter: operator
  */
 .o,
+.cm-s-rb .cm-bracket,
 .cm-s-rb .cm-operator,
 .ts-operator {
   color: inherit;
@@ -188,8 +195,12 @@
     var(--if-dark, #ff7100);
 }
 
-/* Pygments: Generic.Deleted */
-.gd {
+/*
+ * Pygments: Generic.Deleted
+ * CodeMirror: Negative (removed lines in diffs)
+ */
+.gd,
+.cm-s-rb .cm-negative {
   color: var(--rb-p-diff-delete-text-fg);
 }
 
@@ -231,8 +242,12 @@
   text-decoration: line-through;
 }
 
-/* Pygments: Generic.Inserted */
-.gi {
+/*
+ * Pygments: Generic.Inserted
+ * CodeMirror: Positive (added lines in diffs)
+ */
+.gi,
+.cm-s-rb .cm-positive {
   color: var(--rb-p-diff-insert-text-fg);
 }
 
@@ -411,8 +426,12 @@
   font-weight: bold;
 }
 
-/* Pygments: Name.Class */
-.nc {
+/*
+ * Pygments: Name.Class
+ * CodeMirror: Qualifier (CSS class selectors, ...)
+ */
+.nc,
+.cm-s-rb .cm-qualifier {
   color: inherit;
 }
 
@@ -590,4 +609,32 @@
     var(--if-dark, #ff6060);
   font-weight: bold;
   font-style: italic;
+}
+
+
+/*
+ * CodeMirror: Markdown
+ *
+ * These follow how the text looks once it's saved and rendered. Headings
+ * and quoted text use the normal text color. The Markdown markup around
+ * them (heading and quote markers, rules, task list boxes and link URLs)
+ * uses the weak text color.
+ *
+ * NOTE: These must come last, since task list boxes and link URLs also
+ * have the Meta, Property or String classes.
+ */
+.cm-s-rb {
+  .cm-header,
+  .cm-quote {
+    color: inherit;
+  }
+
+  .cm-formatting-header,
+  .cm-formatting-quote,
+  .cm-formatting-task,
+  .cm-hr,
+  .cm-url {
+    color: var(--ink-p-fg-weak);
+    font-weight: normal;
+  }
 }
