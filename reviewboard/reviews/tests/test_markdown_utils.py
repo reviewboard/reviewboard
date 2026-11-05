@@ -490,6 +490,29 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
             '<li>Item 3</li>\n'
             '</ol>')
 
+    def test_render_markdown_with_lists_ordered_after_unordered(
+        self,
+    ) -> None:
+        """Testing render_markdown with an ordered list after an unordered
+        list
+        """
+        self.assertEqual(
+            render_markdown(
+                '- a\n'
+                '- b\n'
+                '\n'
+                '1. c\n'
+                '2. d\n'
+            ),
+            '<ul>\n'
+            '<li>a</li>\n'
+            '<li>b</li>\n'
+            '</ul>\n'
+            '<ol>\n'
+            '<li>c</li>\n'
+            '<li>d</li>\n'
+            '</ol>')
+
     def test_render_markdown_with_lists_two_space_nesting(self) -> None:
         """Testing render_markdown with lists nested by 2 spaces"""
         self.assertEqual(
