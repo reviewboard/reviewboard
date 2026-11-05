@@ -49,6 +49,80 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
             lambda content: render_markdown_from_file(
                 io.BytesIO(content.encode('utf-8'))))
 
+    def test_render_markdown_with_blockquotes_after_blank_line(self) -> None:
+        """Testing render_markdown with a blank line before a blockquote"""
+        self.assertEqual(
+            render_markdown(
+                'text\n'
+                '\n'
+                '> quote\n'
+                '\n'
+                '\n'
+                '\n'
+                '> another\n'
+            ),
+            '<p>text</p>\n'
+            '<blockquote>\n'
+            '<p>quote</p>\n'
+            '</blockquote>\n'
+            '<p></p>\n'
+            '<p></p>\n'
+            '<blockquote>\n'
+            '<p>another</p>\n'
+            '</blockquote>')
+
+    def test_render_markdown_with_blockquotes_blank_lines_inside(
+        self,
+    ) -> None:
+        """Testing render_markdown with blank lines at the start and end of
+        a blockquote
+        """
+        self.assertEqual(
+            render_markdown(
+                '>\n'
+                '> quote\n'
+                '>\n'
+                '>\n'
+                '> more\n'
+                '>\n'
+            ),
+            '<blockquote>\n'
+            '<p>quote</p>\n'
+            '<p></p>\n'
+            '<p>more</p>\n'
+            '</blockquote>')
+
+    def test_render_markdown_with_blockquotes_after_text(self) -> None:
+        """Testing render_markdown with a blockquote right after text"""
+        self.assertEqual(
+            render_markdown(
+                'text\n'
+                '> quote\n'
+                '> > nested\n'
+            ),
+            '<p>text</p>\n'
+            '<blockquote>\n'
+            '<p>quote</p>\n'
+            '<blockquote>\n'
+            '<p>nested</p>\n'
+            '</blockquote>\n'
+            '</blockquote>')
+
+    def test_render_markdown_with_alerts_after_text(self) -> None:
+        """Testing render_markdown with an alert right after text"""
+        self.assertEqual(
+            render_markdown(
+                'text\n'
+                '> [!NOTE]\n'
+                '>\n'
+                '> note\n'
+            ),
+            '<p>text</p>\n'
+            '<blockquote class="admonition note">\n'
+            '<p class="admonition-title">Note</p>\n'
+            '<p>note</p>\n'
+            '</blockquote>')
+
     def test_render_markdown_with_bold(self):
         """Testing render_markdown with bold"""
         self.assertEqual(
@@ -84,8 +158,6 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
                 '> [!WARNING]\n'
                 '> Be careful.\n'
             ),
-            '<p></p>\n'
-            '<p></p>\n'
             '<blockquote class="admonition warning">\n'
             '<p class="admonition-title">Warning</p>\n'
             '<p>Be careful.</p>\n'
@@ -99,10 +171,6 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
         self.assertEqual(
             list(iter_markdown_lines(html)),
             [
-                '<p/>',
-                '\n',
-                '<p/>',
-                '\n',
                 '<blockquote class="admonition note">\n'
                 '<p class="admonition-title">Note</p>\n'
                 '<p>Hello</p>\n'
@@ -116,8 +184,6 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
                 '> here is a line\n'
                 '> and another\n'
             ),
-            '<p></p>\n'
-            '<p></p>\n'
             '<blockquote>\n'
             '<p>here is a line<br />\n'
             'and another</p>\n'
@@ -180,8 +246,6 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
                 '> a\n'
                 '> ```\n'
             ),
-            '<p></p>\n'
-            '<p></p>\n'
             '<blockquote>\n'
             '<div class="codehilite"><pre><code>a\n'
             '</code></pre></div>\n'
@@ -219,8 +283,6 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
             '<div class="codehilite"><pre><code>a\n'
             '</code></pre></div>\n'
             '<p>text</p>\n'
-            '<p></p>\n'
-            '<p></p>\n'
             '<blockquote>\n'
             '<div class="codehilite"><pre><code>b\n'
             '</code></pre></div>\n'
