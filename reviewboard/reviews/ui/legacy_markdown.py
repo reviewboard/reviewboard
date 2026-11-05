@@ -1,4 +1,4 @@
-"""The original row splitter for rendered Markdown file attachments.
+"""The original rendering for Markdown file attachments.
 
 This is a copy of the row splitter implementation that was used for comments
 that were created on markdown files with render version 1 (see
@@ -13,10 +13,79 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pymdownx.emoji
+from django.utils.encoding import force_str
 from djblets.markdown import get_markdown_element_tree
+from markdown import markdown
+
+from reviewboard.reviews.markdown_utils import clean_markdown_html
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+
+
+#: The Markdown options used to render rows before render version 2.
+#:
+#: This is a frozen copy of ``MARKDOWN_KWARGS`` from Review Board 8.
+#: Comments made before render version 2 store row numbers from this
+#: rendering, so it must not change.
+#:
+#: Version Added:
+#:     9.0
+_LEGACY_MARKDOWN_KWARGS = {
+    'enable_attributes': False,
+    'output_format': 'xhtml',
+    'lazy_ol': False,
+    'extensions': [
+        'markdown.extensions.fenced_code',
+        'markdown.extensions.codehilite',
+        'markdown.extensions.sane_lists',
+        'markdown.extensions.tables',
+        'markdown.extensions.nl2br',
+        'pymdownx.tilde',
+        'pymdownx.emoji',
+        'djblets.markdown.extensions.escape_html',
+        'djblets.markdown.extensions.wysiwyg',
+    ],
+    'extension_configs': {
+        'markdown.extensions.codehilite': {
+            'guess_lang': False,
+            'linenums': False,
+        },
+        'pymdownx.emoji': {
+            'emoji_index': pymdownx.emoji.gemoji,
+            'options': {
+                'classes': 'emoji',
+                'image_path': ('https://github.githubassets.com/images/icons/'
+                               'emoji/unicode/'),
+                'non_standard_image_path': ('https://github.githubassets.com/'
+                                            'images/icons/emoji/'),
+            },
+        },
+    },
+}
+
+
+def render_legacy_markdown(
+    text: str | bytes,
+) -> str:
+    """Render Markdown the way rows were rendered before version 2.
+
+    Version Added:
+        9.0
+
+    Args:
+        text (str or bytes):
+            The Markdown text.
+
+            If this is bytes, it must be UTF-8.
+
+    Returns:
+        str:
+        The sanitized XHTML.
+    """
+    return clean_markdown_html(markdown(force_str(text),
+                                        **_LEGACY_MARKDOWN_KWARGS))
 
 
 def iter_legacy_markdown_lines(

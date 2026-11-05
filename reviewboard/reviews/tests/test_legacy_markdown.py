@@ -6,7 +6,10 @@ Version Added:
 
 from __future__ import annotations
 
-from reviewboard.reviews.ui.legacy_markdown import iter_legacy_markdown_lines
+from reviewboard.reviews.ui.legacy_markdown import (
+    iter_legacy_markdown_lines,
+    render_legacy_markdown,
+)
 from reviewboard.testing import TestCase
 
 
@@ -66,3 +69,37 @@ class IterLegacyMarkdownLinesTests(TestCase):
                 '\n',
                 '<blockquote>\n<p>Quote</p>\n</blockquote>',
             ])
+
+
+class RenderLegacyMarkdownTests(TestCase):
+    """Unit tests for render_legacy_markdown.
+
+    Version Added:
+        9.0
+    """
+
+    def test_render(self) -> None:
+        """Testing render_legacy_markdown keeps the original rendering"""
+        self.assertEqual(
+            render_legacy_markdown(
+                'One\n'
+                'two\n'
+                '\n'
+                '```python\n'
+                'x = 1\n'
+                '```\n'
+                '\n'
+                '- a\n'
+                '  - b\n'
+            ),
+            '<p>One<br />\ntwo</p>\n'
+            '<p></p>\n'
+            '<div class="codehilite"><pre><span></span><code>'
+            '<span class="n">x</span> <span class="o">=</span> '
+            '<span class="mi">1</span>\n'
+            '</code></pre></div>\n'
+            '<p></p>\n'
+            '<ul>\n'
+            '<li>a</li>\n'
+            '<li>b</li>\n'
+            '</ul>')

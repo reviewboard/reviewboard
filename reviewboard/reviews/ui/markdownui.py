@@ -27,9 +27,11 @@ from reviewboard.reviews.markdown_lists import ListIndentExtension
 from reviewboard.reviews.markdown_utils import (
     MARKDOWN_KWARGS,
     clean_markdown_html,
-    render_markdown,
 )
-from reviewboard.reviews.ui.legacy_markdown import iter_legacy_markdown_lines
+from reviewboard.reviews.ui.legacy_markdown import (
+    iter_legacy_markdown_lines,
+    render_legacy_markdown,
+)
 from reviewboard.reviews.ui.text import TextBasedReviewUI
 from reviewboard.treesitter.core import get_parser
 from reviewboard.treesitter.highlight import highlight as ts_highlight
@@ -1109,7 +1111,7 @@ class MarkdownReviewUI(TextBasedReviewUI):
 
         with self.obj.file as f:
             f.open()
-            rendered = render_markdown(f.read())
+            rendered = render_legacy_markdown(f.read())
 
         try:
             yield from iter_legacy_markdown_lines(rendered)
