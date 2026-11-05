@@ -16,17 +16,15 @@ from djblets.cache.backend import cache_memoize
 from djblets.markdown import get_markdown_element_tree
 from markdown import markdown
 from markdown.extensions.codehilite import CodeHilite
-from pygments import highlight
-from pygments.lexers import TextLexer, get_lexer_by_name
-from pygments.util import ClassNotFound
 
 from reviewboard.attachments.models import FileAttachment
-from reviewboard.diffviewer.chunk_generator import NoWrapperHtmlFormatter
 from reviewboard.reviews.chunk_generators import MarkdownDiffChunkGenerator
 from reviewboard.reviews.markdown_lists import ListIndentExtension
 from reviewboard.reviews.markdown_utils import (
     MARKDOWN_KWARGS,
     clean_markdown_html,
+    highlight_code_block,
+    replace_task_checkboxes,
 )
 from reviewboard.reviews.ui.legacy_markdown import (
     iter_legacy_markdown_lines,
@@ -35,13 +33,11 @@ from reviewboard.reviews.ui.legacy_markdown import (
 from reviewboard.reviews.ui.text import TextBasedReviewUI
 from reviewboard.treesitter.core import get_parser
 from reviewboard.treesitter.highlight import highlight as ts_highlight
-from reviewboard.treesitter.language import get_language_name_for_info_string
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
     from typing import TypeAlias
 
-    from pygments.lexers import Lexer
     from typelets.json import JSONDict
 
     from reviewboard.reviews.models import FileAttachmentComment
@@ -128,13 +124,6 @@ _WHITESPACE_RE = re.compile(r'\s+')
 #:     9.0
 _NEWLINE_RE = re.compile(r'\s*\n\s*')
 
-#: Regex to find tasklist checkboxes.
-#:
-#: Version Added:
-#:     9.0
-_TASK_CHECKBOX_RE = re.compile(
-    r'<input type="checkbox" disabled(?P<checked> checked)?/>')
-
 #: The smallest width of a table column, in characters.
 #:
 #: Version Added:
@@ -208,7 +197,7 @@ def render_markdown_blocks(
     # Task checkboxes aren't allowed through the sanitizer, so they're shown as
     # characters instead. HTML typed in the text is escaped by now, so only
     # checkboxes from task lists match.
-    html = _TASK_CHECKBOX_RE.sub(_replace_task_checkbox, html)
+    html = replace_task_checkboxes(html)
 
     html = clean_markdown_html(html)
     rows: list[str] = []
@@ -233,28 +222,6 @@ def render_markdown_blocks(
             rows[i] = _NEWLINE_RE.sub(' ', row)
 
     return rows
-
-
-def _replace_task_checkbox(
-    m: re.Match[str],
-) -> str:
-    """Return a character to show in place of a task's checkbox.
-
-    Version Added:
-        9.0
-
-    Args:
-        m (re.Match):
-            The match for the checkbox.
-
-    Returns:
-        str:
-        The HTML for the checkbox.
-    """
-    if m.group('checked'):
-        return '<span class="task-list-checkbox -is-checked">\u2611</span>'
-    else:
-        return '<span class="task-list-checkbox">\u2610</span>'
 
 
 def get_row_text_ranges(
@@ -563,7 +530,7 @@ def _split_code(
     code = hiliter.src
 
     code_lines = code.split('\n')
-    lines = _highlight_code(code, code_lines, info_string)
+    lines = highlight_code_block(code, code_lines, info_string)
 
     if lines is None:
         lines = [
@@ -658,63 +625,6 @@ def _split_table(
         )
         for section, cells in table_rows
     ]
-
-
-def _highlight_code(
-    code: str,
-    code_lines: Sequence[str],
-    info_string: str,
-) -> Sequence[str] | None:
-    """Return syntax-highlighted lines for a code block.
-
-    This uses tree-sitter when it supports the language, and Pygments
-    otherwise.
-
-    Args:
-        code (str):
-            The code to highlight.
-
-        code_lines (list of str):
-            The code, split into lines.
-
-        info_string (str):
-            The language named on the code fence. This may be empty.
-
-    Returns:
-        list of str:
-        The highlighted lines, or ``None`` if the code can't be highlighted.
-    """
-    if not info_string:
-        return None
-
-    language_name = get_language_name_for_info_string(info_string)
-
-    if language_name:
-        content = code.encode()
-
-        try:
-            tree = get_parser(language_name).parse(content)
-            lines = ts_highlight(content, code_lines, tree, language_name)
-
-            if lines:
-                return lines
-        except Exception as e:
-            logger.exception('Tree-sitter highlighting failed for a %s code '
-                             'block in Markdown: %s',
-                             language_name, e)
-
-    try:
-        lexer = get_lexer_by_name(info_string)
-    except ClassNotFound:
-        return None
-
-    lines = highlight(code, lexer, NoWrapperHtmlFormatter()).splitlines()
-
-    if len(lines) != len(code_lines):
-        # Line counts must match, or rows would be lost.
-        return None
-
-    return lines
 
 
 def _get_element_text(

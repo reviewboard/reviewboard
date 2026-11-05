@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import logging
+import re
+from typing import TYPE_CHECKING
+
 import pymdownx.emoji
 from bleach.sanitizer import Cleaner
 from django.conf import settings
@@ -10,6 +14,20 @@ from django.utils.html import escape
 from djblets import markdown as djblets_markdown
 from djblets.siteconfig.models import SiteConfiguration
 from markdown import markdown
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import get_lexer_by_name
+from pygments.util import ClassNotFound
+
+from reviewboard.treesitter.core import get_parser
+from reviewboard.treesitter.highlight import highlight as ts_highlight
+from reviewboard.treesitter.language import get_language_name_for_info_string
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+
+logger = logging.getLogger(__name__)
 
 
 #: Keyword arguments used when calling a Markdown renderer function.
@@ -118,6 +136,14 @@ SAFE_MARKDOWN_ATTRS = {
     'a': ['href', 'alt', 'title'],
     'img': ['src', 'alt', 'title'],
 }
+
+
+#: Regex to find task list checkboxes.
+#:
+#: Version Added:
+#:     9.0
+_TASK_CHECKBOX_RE = re.compile(
+    r'<input type="checkbox" disabled(?P<checked> checked)?/>')
 
 
 #: A list of protocols considered safe for URLs.
@@ -303,3 +329,109 @@ def render_markdown_from_file(f):
     """
     return clean_markdown_html(djblets_markdown.render_markdown_from_file(
         f, **MARKDOWN_KWARGS))
+
+
+def replace_task_checkboxes(
+    html: str,
+) -> str:
+    """Replace task list checkboxes with characters.
+
+    Checkboxes aren't allowed through the sanitizer, so they're shown as
+    characters instead. This must be called before
+    :py:func:`clean_markdown_html`. HTML typed in the text is escaped by
+    then, so only checkboxes from task lists are replaced.
+
+    Version Added:
+        9.0
+
+    Args:
+        html (str):
+            The rendered Markdown.
+
+    Returns:
+        str:
+        The HTML with checkboxes replaced.
+    """
+    return _TASK_CHECKBOX_RE.sub(_replace_task_checkbox, html)
+
+
+def _replace_task_checkbox(
+    m: re.Match[str],
+) -> str:
+    """Return a character to show in place of a task's checkbox.
+
+    Version Added:
+        9.0
+
+    Args:
+        m (re.Match):
+            The match for the checkbox.
+
+    Returns:
+        str:
+        The HTML for the checkbox.
+    """
+    if m.group('checked'):
+        return '<span class="task-list-checkbox -is-checked">\u2611</span>'
+    else:
+        return '<span class="task-list-checkbox">\u2610</span>'
+
+
+def highlight_code_block(
+    code: str,
+    code_lines: Sequence[str],
+    info_string: str,
+) -> Sequence[str] | None:
+    """Return syntax-highlighted lines for a code block.
+
+    This uses tree-sitter when it supports the language, and Pygments
+    otherwise.
+
+    Version Added:
+        9.0
+
+    Args:
+        code (str):
+            The code to highlight.
+
+        code_lines (list of str):
+            The code, split into lines.
+
+        info_string (str):
+            The language named on the code fence. This may be empty.
+
+    Returns:
+        list of str:
+        The highlighted lines, or ``None`` if the code can't be highlighted.
+    """
+    if not info_string:
+        return None
+
+    language_name = get_language_name_for_info_string(info_string)
+
+    if language_name:
+        content = code.encode()
+
+        try:
+            tree = get_parser(language_name).parse(content)
+            lines = ts_highlight(content, code_lines, tree, language_name)
+
+            if lines:
+                return lines
+        except Exception as e:
+            logger.exception('Tree-sitter highlighting failed for a %s code '
+                             'block in Markdown: %s',
+                             language_name, e)
+
+    try:
+        lexer = get_lexer_by_name(info_string)
+    except ClassNotFound:
+        return None
+
+    lines = highlight(code, lexer, HtmlFormatter(nowrap=True)).splitlines()
+
+    if len(lines) != len(code_lines):
+        # Line counts must match, or lines would be lost.
+        return None
+
+    return lines
