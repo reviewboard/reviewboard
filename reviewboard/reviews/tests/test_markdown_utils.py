@@ -6,7 +6,7 @@ import kgb
 from django.contrib.auth.models import User
 from django.test.utils import override_settings
 from django.utils.safestring import SafeString
-from markdown import __version_info__ as markdown_version_info
+from djblets.markdown import iter_markdown_lines
 
 from reviewboard.accounts.models import Profile
 from reviewboard.reviews.markdown_utils import (clean_markdown_html,
@@ -77,6 +77,38 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
             render_markdown('_**test**_'),
             '<p><em><strong>test</strong></em></p>')
 
+    def test_render_markdown_with_alerts(self) -> None:
+        """Testing render_markdown with alerts"""
+        self.assertEqual(
+            render_markdown(
+                '> [!WARNING]\n'
+                '> Be careful.\n'
+            ),
+            '<p></p>\n'
+            '<p></p>\n'
+            '<blockquote class="admonition warning">\n'
+            '<p class="admonition-title">Warning</p>\n'
+            '<p>Be careful.</p>\n'
+            '</blockquote>')
+
+    def test_render_markdown_with_alerts_split_into_lines(self) -> None:
+        """Testing render_markdown with alerts split into lines for diffs"""
+        html = render_markdown('> [!NOTE]\n'
+                               '> Hello\n')
+
+        self.assertEqual(
+            list(iter_markdown_lines(html)),
+            [
+                '<p/>',
+                '\n',
+                '<p/>',
+                '\n',
+                '<blockquote class="admonition note">\n'
+                '<p class="admonition-title">Note</p>\n'
+                '<p>Hello</p>\n'
+                '</blockquote>',
+            ])
+
     def test_render_markdown_with_blockquotes(self):
         """Testing render_markdown with blockquotes"""
         self.assertEqual(
@@ -93,34 +125,17 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
 
     def test_render_markdown_with_code_blocks(self):
         """Testing render_markdown with code blocks"""
-        if markdown_version_info[:2] >= (3, 2):
-            # Markdown 3.2 adds <code> around each line of code. See
-            # https://python-markdown.github.io/change_log/release-3.2/
-            expected_html1 = (
-                '<p></p>\n'
-                '<div class="codehilite"><pre><span></span>'
-                '<code>here is a generic code block\n'
-                '</code></pre></div>'
-            )
-            expected_html2 = (
-                '<p></p>\n'
-                '<div class="codehilite"><pre><span></span>'
-                '<code><span class="c1"># Here is a Python code block</span>\n'
-                '</code></pre></div>'
-            )
-        else:
-            expected_html1 = (
-                '<p></p>\n'
-                '<div class="codehilite"><pre><span></span>'
-                'here is a generic code block\n'
-                '</pre></div>'
-            )
-            expected_html2 = (
-                '<p></p>\n'
-                '<div class="codehilite"><pre><span></span>'
-                '<span class="c1"># Here is a Python code block</span>\n'
-                '</pre></div>'
-            )
+        expected_html1 = (
+            '<div class="codehilite"><pre>'
+            '<code>here is a generic code block\n'
+            '</code></pre></div>'
+        )
+        expected_html2 = (
+            '<div class="codehilite"><pre>'
+            '<code><span class="ts-comment"># Here is a Python code block'
+            '</span>\n'
+            '</code></pre></div>'
+        )
 
         self.assertEqual(
             render_markdown(
@@ -139,7 +154,9 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
             expected_html2)
 
     def test_render_markdown_with_code_blocks_shebang(self):
-        """Testing render_markdown with code blocks and shebang"""
+        """Testing render_markdown with code blocks and shebang does not
+        highlight
+        """
         self.assertEqual(
             render_markdown(
                 'test:\n'
@@ -148,11 +165,62 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
                 '    exit 0\n'
             ),
             '<p>test:</p>\n'
-            '<div class="codehilite"><pre><span></span>'
-            '<code><span class="ch">#!/bin/sh</span>\n'
-            '<span class="nb">exit</span><span class="w"> </span>'
-            '<span class="m">0</span>\n'
+            '<div class="codehilite"><pre>'
+            '<code>#!/bin/sh\n'
+            'exit 0\n'
             '</code></pre></div>')
+
+    def test_render_markdown_with_code_blocks_in_blockquote(self) -> None:
+        """Testing render_markdown with code blocks in a blockquote"""
+        self.assertEqual(
+            render_markdown(
+                '> ```\n'
+                '> a\n'
+                '> ```\n'
+            ),
+            '<p></p>\n'
+            '<p></p>\n'
+            '<blockquote>\n'
+            '<div class="codehilite"><pre><code>a\n'
+            '</code></pre></div>\n'
+            '</blockquote>')
+
+    def test_render_markdown_with_code_blocks_in_list(self) -> None:
+        """Testing render_markdown with code blocks in a list item"""
+        self.assertEqual(
+            render_markdown(
+                '- item\n'
+                '  ```\n'
+                '  x = 1\n'
+                '  ```\n'
+            ),
+            '<ul>\n'
+            '<li>item<div class="codehilite"><pre><code>x = 1\n'
+            '</code></pre></div></li>\n'
+            '</ul>')
+
+    def test_render_markdown_with_code_blocks_split_into_lines(self) -> None:
+        """Testing render_markdown with code blocks split into lines for
+        diffs
+        """
+        html = render_markdown('```\n'
+                               'a\n'
+                               '\n'
+                               'b\n'
+                               '```\n')
+
+        self.assertEqual(
+            list(iter_markdown_lines(html)),
+            [
+                '<div class="codehilite codehilite-multiline-start">'
+                '<pre><code>a</pre></div>',
+                '<div class="codehilite codehilite-multiline-middle">'
+                '<pre></pre></div>',
+                '<div class="codehilite codehilite-multiline-middle">'
+                '<pre>b</pre></div>',
+                '<div class="codehilite codehilite-multiline-end">'
+                '<pre></code></pre></div>',
+            ])
 
     def test_render_markdown_with_emojis(self):
         """Testing render_markdown with emojis"""
@@ -237,6 +305,13 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
             render_markdown('custom://example.com'),
             '<p>custom://example.com</p>')
 
+    def test_render_markdown_with_bare_urls(self) -> None:
+        """Testing render_markdown with bare URLs"""
+        self.assertEqual(
+            render_markdown('See https://example.com.'),
+            '<p>See <a href="https://example.com">https://example.com</a>.'
+            '</p>')
+
     @override_settings(ALLOWED_MARKDOWN_URL_PROTOCOLS=['custom', 'ftp'])
     def test_render_markdown_with_links_and_setting(self):
         """Testing render_markdown with links and
@@ -284,6 +359,20 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
             '<li>Item 3</li>\n'
             '</ol>')
 
+    def test_render_markdown_with_lists_two_space_nesting(self) -> None:
+        """Testing render_markdown with lists nested by 2 spaces"""
+        self.assertEqual(
+            render_markdown(
+                '- a\n'
+                '  - b\n'
+            ),
+            '<ul>\n'
+            '<li>a<ul>\n'
+            '<li>b</li>\n'
+            '</ul>\n'
+            '</li>\n'
+            '</ul>')
+
     def test_render_markdown_with_lists_unordered(self):
         """Testing render_markdown with unordered lists"""
         self.assertEqual(
@@ -317,6 +406,27 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
             '</li>\n'
             '<li>Item 3</li>\n'
             '</ul>')
+
+    def test_render_markdown_with_task_lists(self) -> None:
+        """Testing render_markdown with task lists"""
+        self.assertEqual(
+            render_markdown(
+                '- [ ] todo\n'
+                '- [x] done\n'
+            ),
+            '<ul class="task-list">\n'
+            '<li class="task-list-item">'
+            '<span class="task-list-checkbox">\u2610</span> todo</li>\n'
+            '<li class="task-list-item">'
+            '<span class="task-list-checkbox -is-checked">\u2611</span> '
+            'done</li>\n'
+            '</ul>')
+
+    def test_render_markdown_with_task_lists_typed_html(self) -> None:
+        """Testing render_markdown with typed checkbox HTML"""
+        self.assertEqual(
+            render_markdown('<input type="checkbox" disabled/>'),
+            '<p>&lt;input type="checkbox" disabled/&gt;</p>')
 
     def test_render_markdown_with_tables(self):
         """Testing render_markdown with tables"""
@@ -660,8 +770,8 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
                 r'<p><a>XSS32</a></p>',
 
                 r'<p>XSS33: &lt;http://\&lt;meta http-equiv=\"'
-                r'refresh\" content=\"0; url=http://example.com/\"&gt;&gt;'
-                r'</p>',
+                r'refresh\" content=\"0; url=<a href="http://example.com/">'
+                r'http://example.com/</a>\"&gt;&gt;</p>',
 
                 r'<p>XSS33: &lt;/http://&lt;?php&gt;&lt;\h1&gt;&lt;'
                 r'script:script&gt;confirm(2)</p>',
@@ -674,7 +784,8 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
                 r'&amp;#x27&amp;#x58&amp;#x53&amp;#x53&amp;#x27&amp;#x29&gt;'
                 r'</p>',
 
-                r'<p>XSS36: <em>http://example</em>@.1 style='
+                r'<p>XSS36: _<a href="http://example_@.1">http://example_@.1'
+                r'</a> style='
                 r'background-image:url(data:image/png;base64,ABCABCABCABC==);'
                 r'background-repeat:no-repeat;display:block;width:100%;'
                 r'height:100px; onclick=alert(unescape(/Oh%20No!/.source));'

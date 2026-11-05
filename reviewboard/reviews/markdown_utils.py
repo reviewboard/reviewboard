@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import re
+from html import unescape
 from typing import TYPE_CHECKING
 
 import pymdownx.emoji
@@ -14,20 +15,74 @@ from django.utils.html import escape
 from djblets import markdown as djblets_markdown
 from djblets.siteconfig.models import SiteConfiguration
 from markdown import markdown
+from markdown.extensions import Extension
+from markdown.treeprocessors import Treeprocessor
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
 from pygments.util import ClassNotFound
 
+from reviewboard.reviews.markdown_lists import ListIndentExtension
 from reviewboard.treesitter.core import get_parser
 from reviewboard.treesitter.highlight import highlight as ts_highlight
 from reviewboard.treesitter.language import get_language_name_for_info_string
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+    from xml.etree.ElementTree import Element
+
+    from markdown import Markdown
 
 
 logger = logging.getLogger(__name__)
+
+
+class _AlertBlockquoteTreeprocessor(Treeprocessor):
+    """Renders alerts as blockquotes.
+
+    Version Added:
+        9.0
+    """
+
+    def run(
+        self,
+        root: Element,
+    ) -> None:
+        """Change each alert's element to a blockquote.
+
+        Args:
+            root (xml.etree.ElementTree.Element):
+                The root of the rendered tree.
+        """
+        for element in root.iter('div'):
+            if 'admonition' in element.get('class', '').split():
+                element.tag = 'blockquote'
+
+
+class _AlertBlockquoteExtension(Extension):
+    """Renders alerts as blockquotes instead of divs.
+
+    Code that splits rendered Markdown into lines treats a top-level div as
+    a code block. Alerts are blockquotes in the source, and this keeps them
+    that way. Places that don't style alerts, such as some e-mail clients,
+    still show a blockquote.
+
+    Version Added:
+        9.0
+    """
+
+    def extendMarkdown(  # noqa: N802
+        self,
+        md: Markdown,
+    ) -> None:
+        """Add the treeprocessor to the Markdown instance.
+
+        Args:
+            md (markdown.Markdown):
+                The Markdown instance.
+        """
+        md.treeprocessors.register(_AlertBlockquoteTreeprocessor(md),
+                                   'alert_blockquote', 0)
 
 
 #: Keyword arguments used when calling a Markdown renderer function.
@@ -48,8 +103,6 @@ MARKDOWN_KWARGS = {
     'output_format': 'xhtml',
     'lazy_ol': False,
     'extensions': [
-        'markdown.extensions.fenced_code',
-        'markdown.extensions.codehilite',
         'markdown.extensions.sane_lists',
         'markdown.extensions.tables',
         'markdown.extensions.nl2br',
@@ -57,12 +110,15 @@ MARKDOWN_KWARGS = {
         'pymdownx.emoji',
         'djblets.markdown.extensions.escape_html',
         'djblets.markdown.extensions.wysiwyg',
+        'pymdownx.highlight',
+        'pymdownx.magiclink',
+        'pymdownx.quotes',
+        'pymdownx.superfences',
+        'pymdownx.tasklist',
+        ListIndentExtension(),
+        _AlertBlockquoteExtension(),
     ],
     'extension_configs': {
-        'markdown.extensions.codehilite': {
-            'guess_lang': False,
-            'linenums': False,
-        },
         'pymdownx.emoji': {
             'emoji_index': pymdownx.emoji.gemoji,
             'options': {
@@ -72,6 +128,12 @@ MARKDOWN_KWARGS = {
                 'non_standard_image_path': ('https://github.githubassets.com/'
                                             'images/icons/emoji/'),
             },
+        },
+        'pymdownx.highlight': {
+            'use_pygments': False,
+        },
+        'pymdownx.quotes': {
+            'callouts': True,
         },
     },
 }
@@ -137,6 +199,19 @@ SAFE_MARKDOWN_ATTRS = {
     'img': ['src', 'alt', 'title'],
 }
 
+
+#: Regex to find code blocks in rendered Markdown.
+#:
+#: This also takes any line break just before the block. That comes from a
+#: fence inside a list item, and would show as an extra blank line.
+#:
+#: Version Added:
+#:     9.0
+_CODE_BLOCK_RE = re.compile(
+    r'(?:<br />\s*)?'
+    r'<pre class="highlight"><code(?: class="language-(?P<lang>[^"]+)")?>'
+    r'(?P<code>.*?)</code></pre>',
+    re.S)
 
 #: Regex to find task list checkboxes.
 #:
@@ -305,7 +380,11 @@ def render_markdown(text):
         unicode:
         The Markdown-rendered XHTML.
     """
-    return clean_markdown_html(markdown(force_str(text), **MARKDOWN_KWARGS))
+    html = markdown(force_str(text), **MARKDOWN_KWARGS)
+    html = _CODE_BLOCK_RE.sub(_replace_code_block, html)
+    html = replace_task_checkboxes(html)
+
+    return clean_markdown_html(html)
 
 
 def render_markdown_from_file(f):
@@ -327,8 +406,39 @@ def render_markdown_from_file(f):
         unicode:
         The Markdown-rendered XHTML.
     """
-    return clean_markdown_html(djblets_markdown.render_markdown_from_file(
-        f, **MARKDOWN_KWARGS))
+    return render_markdown(f.read())
+
+
+def _replace_code_block(
+    m: re.Match[str],
+) -> str:
+    """Return a highlighted code block.
+
+    Code blocks are split into lines when diffing fields, so this uses
+    the same layout as the ``codehilite`` extension. Each line of code is
+    on its own line in the HTML.
+
+    Version Added:
+        9.0
+
+    Args:
+        m (re.Match):
+            The match for the code block.
+
+    Returns:
+        str:
+        The HTML for the code block.
+    """
+    code_html = m.group('code')
+    code = unescape(code_html)
+    lines = highlight_code_block(code, code.split('\n'), m.group('lang') or '')
+
+    if lines is None:
+        lines = code_html.split('\n')
+
+    inner = '\n'.join(lines)
+
+    return f'<div class="codehilite"><pre><code>{inner}\n</code></pre></div>'
 
 
 def replace_task_checkboxes(

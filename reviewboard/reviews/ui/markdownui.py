@@ -19,7 +19,6 @@ from markdown.extensions.codehilite import CodeHilite
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.chunk_generators import MarkdownDiffChunkGenerator
-from reviewboard.reviews.markdown_lists import ListIndentExtension
 from reviewboard.reviews.markdown_utils import (
     MARKDOWN_KWARGS,
     clean_markdown_html,
@@ -38,6 +37,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable, Iterator, Sequence
     from typing import TypeAlias
 
+    from markdown.extensions import Extension
     from typelets.json import JSONDict
 
     from reviewboard.reviews.models import FileAttachmentComment
@@ -49,52 +49,24 @@ logger = logging.getLogger(__name__)
 
 #: Options for rendering Markdown file attachments.
 #:
-#: This drops the following extensions:
-#:
-#: ``nl2br`` and ``wysiwig``
-#:     These extensions keep the render lined up with the source text, and we
-#:     use them in comments and review request fields. For reviewing the actual
-#:     content of markdown files, we want to render as blocks instead of making
-#:     it look like the source.
-#:
-#: ``codehilite``
-#:     Code blocks are highlighted via treesitter while splitting rows.
-#:
-#: ``fenced_code``
-#:     We replace this with ``pymdownx.superfences``, which also handles fenced
-#:     code blocks inside lists and blockquotes.
+#: This drops the ``nl2br`` and ``wysiwyg`` extensions. They keep the render
+#: lined up with the source text, and we use them in comments and review
+#: request fields. For reviewing the actual content of Markdown files, we
+#: want to render as blocks instead of making it look like the source.
 #:
 #: Version Added:
 #:     9.0
 _MARKDOWN_KWARGS = {
     **MARKDOWN_KWARGS,
     'extensions': [
-        *(
-            extension
-            for extension in cast(list[str], MARKDOWN_KWARGS['extensions'])
-            if extension not in {
-                'djblets.markdown.extensions.wysiwyg',
-                'markdown.extensions.codehilite',
-                'markdown.extensions.fenced_code',
-                'markdown.extensions.nl2br',
-            }
-        ),
-        'pymdownx.highlight',
-        'pymdownx.magiclink',
-        'pymdownx.quotes',
-        'pymdownx.superfences',
-        'pymdownx.tasklist',
-        ListIndentExtension(),
+        extension
+        for extension in cast('list[str | Extension]',
+                              MARKDOWN_KWARGS['extensions'])
+        if extension not in {
+            'djblets.markdown.extensions.wysiwyg',
+            'markdown.extensions.nl2br',
+        }
     ],
-    'extension_configs': {
-        **MARKDOWN_KWARGS['extension_configs'],
-        'pymdownx.highlight': {
-            'use_pygments': False,
-        },
-        'pymdownx.quotes': {
-            'callouts': True,
-        },
-    },
 }
 
 
@@ -449,11 +421,11 @@ def _split_node(
                 gap = None
 
             rows.append(_wrap_quote(row, quotes, gap))
-    elif tag == 'blockquote' or _is_alert(element):
-        if tag == 'blockquote':
-            inner_quotes = (*quotes, '')
-        else:
+    elif tag == 'blockquote':
+        if _is_alert(element):
             inner_quotes = (*quotes, element.getAttribute('class'))
+        else:
+            inner_quotes = (*quotes, '')
 
         # The first block in the quote takes the quote's own gap, which
         # goes on the quote's blockquote wrapper.
@@ -470,7 +442,7 @@ def _is_alert(
     """Return whether an element is an alert.
 
     Alerts are blockquotes starting with "[!NOTE]" or another type. They're
-    rendered as ``<div class="admonition note">``.
+    rendered as ``<blockquote class="admonition note">``.
 
     Version Added:
         9.0
@@ -483,7 +455,7 @@ def _is_alert(
         bool:
         Whether the element is an alert.
     """
-    return (element.tagName == 'div' and
+    return (element.tagName == 'blockquote' and
             'admonition' in element.getAttribute('class').split())
 
 
