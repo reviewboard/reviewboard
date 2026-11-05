@@ -1,6 +1,7 @@
 @import (reference) "djblets/css/mixins/markdown.less";
 
 @import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/mixins/markdown.less";
 @import (reference) "rb/css/ui/colors.less";
 @import (reference) "rb/css/ui/menus.less";
 
@@ -344,6 +345,10 @@
     margin: calc(-1 * var(--codehilite-margin-vert))
             calc(-1 * var(--codehilite-margin-horiz));
     padding: var(--codehilite-margin-vert) var(--codehilite-margin-horiz);
+  }
+
+  :is(li, blockquote) .codehilite {
+    .rb-markdown-nested-code-block();
   }
 }
 
