@@ -126,11 +126,13 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
     def test_render_markdown_with_code_blocks(self):
         """Testing render_markdown with code blocks"""
         expected_html1 = (
+            '<p></p>\n'
             '<div class="codehilite"><pre>'
             '<code>here is a generic code block\n'
             '</code></pre></div>'
         )
         expected_html2 = (
+            '<p></p>\n'
             '<div class="codehilite"><pre>'
             '<code><span class="ts-comment"># Here is a Python code block'
             '</span>\n'
@@ -199,6 +201,71 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
             '</code></pre></div></li>\n'
             '</ul>')
 
+    def test_render_markdown_with_code_blocks_then_text(self) -> None:
+        """Testing render_markdown with text right after a code block"""
+        self.assertEqual(
+            render_markdown(
+                '```\n'
+                'a\n'
+                '```\n'
+                'text\n'
+                '\n'
+                '> ```\n'
+                '> b\n'
+                '> ```\n'
+                '> quoted\n'
+            ),
+            '<p></p>\n'
+            '<div class="codehilite"><pre><code>a\n'
+            '</code></pre></div>\n'
+            '<p>text</p>\n'
+            '<p></p>\n'
+            '<p></p>\n'
+            '<blockquote>\n'
+            '<div class="codehilite"><pre><code>b\n'
+            '</code></pre></div>\n'
+            '<p>quoted</p>\n'
+            '</blockquote>')
+
+    def test_render_markdown_with_code_blocks_then_text_in_list(self) -> None:
+        """Testing render_markdown with text right after a code block in a
+        list item
+        """
+        self.assertEqual(
+            render_markdown(
+                '- item\n'
+                '  ```\n'
+                '  x\n'
+                '  ```\n'
+                '  more\n'
+            ),
+            '<ul>\n'
+            '<li>item<div class="codehilite"><pre><code>x\n'
+            '</code></pre></div>\n'
+            '    more</li>\n'
+            '</ul>')
+
+    def test_render_markdown_with_code_blocks_back_to_back(self) -> None:
+        """Testing render_markdown with code blocks separated by a blank
+        line
+        """
+        self.assertEqual(
+            render_markdown(
+                '```\n'
+                'a\n'
+                '```\n'
+                '\n'
+                '```\n'
+                'b\n'
+                '```\n'
+            ),
+            '<p></p>\n'
+            '<div class="codehilite"><pre><code>a\n'
+            '</code></pre></div>\n'
+            '<p></p>\n'
+            '<div class="codehilite"><pre><code>b\n'
+            '</code></pre></div>')
+
     def test_render_markdown_with_code_blocks_split_into_lines(self) -> None:
         """Testing render_markdown with code blocks split into lines for
         diffs
@@ -212,6 +279,8 @@ class MarkdownUtilsTests(kgb.SpyAgency, TestCase):
         self.assertEqual(
             list(iter_markdown_lines(html)),
             [
+                '<p/>',
+                '\n',
                 '<div class="codehilite codehilite-multiline-start">'
                 '<pre><code>a</pre></div>',
                 '<div class="codehilite codehilite-multiline-middle">'

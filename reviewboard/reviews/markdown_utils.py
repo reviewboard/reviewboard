@@ -16,7 +16,9 @@ from djblets import markdown as djblets_markdown
 from djblets.siteconfig.models import SiteConfiguration
 from markdown import markdown
 from markdown.extensions import Extension
+from markdown.preprocessors import Preprocessor
 from markdown.treeprocessors import Treeprocessor
+from markdown.util import HTML_PLACEHOLDER
 from pygments import highlight
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
@@ -35,6 +37,17 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+#: Regex for a line holding only a placeholder for stashed HTML.
+#:
+#: This matches lines that aren't indented, optionally inside blockquotes.
+#: Indented placeholders are inside list items, and are left alone.
+#:
+#: Version Added:
+#:     9.0
+_STASH_LINE_RE = re.compile(
+    r'^(?P<quote>(?: {0,3}> ?)*)%s *$' % (HTML_PLACEHOLDER % r'\d+'))
 
 
 class _AlertBlockquoteTreeprocessor(Treeprocessor):
@@ -85,6 +98,112 @@ class _AlertBlockquoteExtension(Extension):
                                    'alert_blockquote', 0)
 
 
+class _FenceSpacingPreprocessor(Preprocessor):
+    """Adds blank lines around fenced code blocks.
+
+    Version Added:
+        9.0
+    """
+
+    def run(
+        self,
+        lines: list[str],
+    ) -> list[str]:
+        """Add a blank line before and after each fenced code block.
+
+        This is only done for code blocks that aren't in a list item. In a
+        list item, a blank line would split the item into paragraphs.
+
+        In a blockquote, blank lines are only added between the code block
+        and text next to it.
+
+        Between two code blocks, only the first one gets a blank line.
+        Otherwise the blank lines would add up and show as a tall gap.
+
+        Args:
+            lines (list of str):
+                The lines of Markdown.
+
+        Returns:
+            list of str:
+            The lines, with blank lines added.
+        """
+        result: list[str] = []
+        num_lines = len(lines)
+
+        # Whether the last line with content was a code block.
+        after_code = False
+
+        for i, line in enumerate(lines):
+            m = _STASH_LINE_RE.match(line)
+
+            if not m:
+                result.append(line)
+
+                if line.strip(' >'):
+                    after_code = False
+
+                continue
+
+            # Keep the blank lines inside the same blockquotes.
+            blank = m.group('quote').rstrip()
+
+            # In a blockquote, a blank line at the start or end would show
+            # as extra space inside the quote. Only add them next to text.
+            if blank:
+                add_before = bool(result and result[-1].strip(' >'))
+                add_after = (i + 1 < num_lines and
+                             bool(lines[i + 1].strip(' >')))
+            else:
+                add_before = not after_code
+                add_after = True
+
+            after_code = True
+
+            if add_before:
+                result.append(blank)
+
+            result.append(line)
+
+            if add_after:
+                result.append(blank)
+
+        return result
+
+
+class _FenceSpacingExtension(Extension):
+    """Adds blank lines around fenced code blocks.
+
+    ``pymdownx.superfences`` replaces each fenced code block with a
+    placeholder line, without blank lines around it. Text right after the
+    closing fence would then be part of the same paragraph as the code.
+
+    Python-Markdown's own ``fenced_code`` extension adds a blank line on
+    each side. Those end the paragraphs around the code, and the
+    ``wysiwyg`` extension shows them as space around the code block. This
+    does the same.
+
+    Version Added:
+        9.0
+    """
+
+    def extendMarkdown(  # noqa: N802
+        self,
+        md: Markdown,
+    ) -> None:
+        """Add the preprocessor to the Markdown instance.
+
+        This runs right after ``pymdownx.superfences`` pulls out fenced
+        code blocks.
+
+        Args:
+            md (markdown.Markdown):
+                The Markdown instance.
+        """
+        md.preprocessors.register(_FenceSpacingPreprocessor(md),
+                                  'fence_spacing', 24)
+
+
 #: Keyword arguments used when calling a Markdown renderer function.
 #:
 #: We use XHTML instead of HTML5 to ensure the results can be parsed by an
@@ -117,6 +236,7 @@ MARKDOWN_KWARGS = {
         'pymdownx.tasklist',
         ListIndentExtension(),
         _AlertBlockquoteExtension(),
+        _FenceSpacingExtension(),
     ],
     'extension_configs': {
         'pymdownx.emoji': {
@@ -202,15 +322,17 @@ SAFE_MARKDOWN_ATTRS = {
 
 #: Regex to find code blocks in rendered Markdown.
 #:
-#: This also takes any line break just before the block. That comes from a
-#: fence inside a list item, and would show as an extra blank line.
+#: This also takes any line break just before or after the block. Those
+#: come from a fence inside a list item, and would show as extra blank
+#: lines.
 #:
 #: Version Added:
 #:     9.0
 _CODE_BLOCK_RE = re.compile(
     r'(?:<br />\s*)?'
     r'<pre class="highlight"><code(?: class="language-(?P<lang>[^"]+)")?>'
-    r'(?P<code>.*?)</code></pre>',
+    r'(?P<code>.*?)</code></pre>'
+    r'(?:<br />)?',
     re.S)
 
 #: Regex to find task list checkboxes.

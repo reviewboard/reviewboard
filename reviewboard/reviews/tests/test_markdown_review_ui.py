@@ -232,6 +232,20 @@ class RenderMarkdownBlocksTests(TestCase):
                 '</blockquote>',
             ])
 
+    def test_code_then_text(self) -> None:
+        """Testing render_markdown_blocks with text right after a code
+        fence
+        """
+        self.assertEqual(
+            render_markdown_blocks('```\n'
+                                   'a\n'
+                                   '```\n'
+                                   'text\n'),
+            [
+                '<div class="codehilite"><pre>a</pre></div>',
+                '<p data-md-gap="block">text</p>',
+            ])
+
     def test_gaps(self) -> None:
         """Testing render_markdown_blocks marks gaps between blocks"""
         self.assertEqual(
