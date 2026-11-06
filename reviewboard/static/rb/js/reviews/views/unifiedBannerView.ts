@@ -706,33 +706,46 @@ export class UnifiedBannerView extends FloatingBannerView<
         const pendingReview = model.get('pendingReview');
         const reviewReplyDrafts = model.get('reviewReplyDrafts');
 
+        const publishButton = this.#publishButton;
         const reviews: number[] = [];
         const reviewRequests: number[] = [];
 
+        /* Mark the Publish button as busy and disable "Discard". */
+        publishButton.busy = true;
+        this.#$discardButton.prop('disabled', true);
+
         ClientCommChannel.getInstance().reload();
 
-        if (draftMode.hasReviewRequest) {
-            await reviewRequest.ready();
-            reviewRequests.push(reviewRequest.get('id'));
-        }
+        try {
+            if (draftMode.hasReviewRequest) {
+                await reviewRequest.ready();
+                reviewRequests.push(reviewRequest.get('id'));
+            }
 
-        if (draftMode.hasReview) {
-            await pendingReview.ready();
-            reviews.push(pendingReview.get('id'));
-        }
+            if (draftMode.hasReview) {
+                await pendingReview.ready();
+                reviews.push(pendingReview.get('id'));
+            }
 
-        if (draftMode.singleReviewReply !== undefined) {
-            const reply = reviewReplyDrafts[draftMode.singleReviewReply];
-            await reply.ready();
-            reviews.push(reply.get('id'));
-        } else if (draftMode.hasReviewReplies) {
-            for (const reply of reviewReplyDrafts) {
+            if (draftMode.singleReviewReply !== undefined) {
+                const reply = reviewReplyDrafts[draftMode.singleReviewReply];
                 await reply.ready();
                 reviews.push(reply.get('id'));
+            } else if (draftMode.hasReviewReplies) {
+                for (const reply of reviewReplyDrafts) {
+                    await reply.ready();
+                    reviews.push(reply.get('id'));
+                }
             }
-        }
 
-        await this.#reviewRequestEditorView.saveOpenEditors();
+            await this.#reviewRequestEditorView.saveOpenEditors();
+        } catch (err) {
+            /* Nothing was published, so let the user try again. */
+            publishButton.busy = false;
+            this.#$discardButton.prop('disabled', false);
+
+            throw err;
+        }
 
         try {
             await this.#runPublishBatch(reviewRequest.get('localSitePrefix'),
