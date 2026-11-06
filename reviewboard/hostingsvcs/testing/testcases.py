@@ -538,7 +538,7 @@ class HostingServiceTestCase(kgb.SpyAgency,
                 raise HTTPError(
                     url=url,
                     code=status_code,
-                    msg='',
+                    msg='Unknown error',
                     hdrs=headers,  # type:ignore
                     fp=io.BytesIO(payload))
             else:
