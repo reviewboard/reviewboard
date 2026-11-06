@@ -439,9 +439,9 @@ export class UnifiedBannerView extends FloatingBannerView<
      * This is used in unit tests to reset the state after tests run.
      */
     static resetInstance() {
-        if (this.instance !== null) {
-            this.instance.remove();
-            this.instance = null;
+        if (UnifiedBannerView.instance !== null) {
+            UnifiedBannerView.instance.remove();
+            UnifiedBannerView.instance = null;
         }
     }
 
