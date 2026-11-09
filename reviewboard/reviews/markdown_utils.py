@@ -448,12 +448,17 @@ SAFE_MARKDOWN_TAGS = [
 #: Anything not in this list will be removed when sanitizing the resulting
 #: HTML.
 #:
+#: Version Changed:
+#:     9.0:
+#:     Added ``start`` for ``ol``, so ordered lists keep their first number.
+#:
 #: Version Added:
 #:     3.0.22
 SAFE_MARKDOWN_ATTRS = {
     '*': ['class', 'id'],
     'a': ['href', 'alt', 'title'],
     'img': ['src', 'alt', 'title'],
+    'ol': ['start'],
 }
 
 

@@ -67,6 +67,19 @@ class RenderMarkdownBlocksTests(TestCase):
                 '<li>y</li></ol>',
             ])
 
+    def test_lists_with_start(self) -> None:
+        """Testing render_markdown_blocks with an ordered list that doesn't
+        start at 1
+        """
+        self.assertEqual(
+            render_markdown_blocks('3. a\n'
+                                   '4. b\n'),
+            [
+                '<ol start="3" style="--md-list-depth: 0"><li>a</li></ol>',
+                '<ol start="4" style="--md-list-depth: 0" data-md-gap="item">'
+                '<li>b</li></ol>',
+            ])
+
     def test_lists_with_content_after_nested_list(self) -> None:
         """Testing render_markdown_blocks with list item content after a
         nested list
