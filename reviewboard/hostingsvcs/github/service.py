@@ -830,7 +830,7 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
              views.GitHubAppReconnectView.as_view(),
              name='github-app-reconnect'),
         path('github-app/webhook/',
-             views.GitHubAppWebhookView.as_view(),
+             views.GitHubAppWebHookView.as_view(),
              name='github-app-webhook'),
     ]
     repository_url_patterns: ClassVar[Sequence[_AnyURL] | None] = [

@@ -12,8 +12,8 @@ from djblets.registries.errors import (AlreadyRegisteredError,
                                        RegistrationError)
 
 from reviewboard.hostingsvcs.github.webhooks import (
-    BaseGitHubAppWebhookHandler,
-    GitHubAppWebhookHandlerRegistry,
+    BaseGitHubAppWebHookHandler,
+    GitHubAppWebHookHandlerRegistry,
     merge_github_app_permissions,
 )
 from reviewboard.testing import TestCase
@@ -33,7 +33,7 @@ def _make_handler(
         (Mapping[str, GitHubAppPermissionLevel] | None) = None,
     event_labels: (Mapping[str, str] | None) = None,
     permission_labels: (Mapping[str, str] | None) = None,
-) -> BaseGitHubAppWebhookHandler:
+) -> BaseGitHubAppWebHookHandler:
     """Return a new handler instance.
 
     Args:
@@ -61,7 +61,7 @@ def _make_handler(
             This defaults to a label for ``pull_requests``.
 
     Returns:
-        reviewboard.hostingsvcs.github.webhooks.BaseGitHubAppWebhookHandler:
+        reviewboard.hostingsvcs.github.webhooks.BaseGitHubAppWebHookHandler:
         The new handler.
     """
     if events is None:
@@ -84,7 +84,7 @@ def _make_handler(
 
     handler_cls = type(
         'TestHandler',
-        (BaseGitHubAppWebhookHandler,),
+        (BaseGitHubAppWebHookHandler,),
         {
             'handler_id': handler_id,
             'events': events,
@@ -96,8 +96,8 @@ def _make_handler(
     return handler_cls()
 
 
-class GitHubAppWebhookHandlerRegistryTests(TestCase):
-    """Unit tests for GitHubAppWebhookHandlerRegistry.
+class GitHubAppWebHookHandlerRegistryTests(TestCase):
+    """Unit tests for GitHubAppWebHookHandlerRegistry.
 
     Version Added:
         9.0
@@ -107,10 +107,10 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
         """Set up the test."""
         super().setUp()
 
-        self.registry = GitHubAppWebhookHandlerRegistry()
+        self.registry = GitHubAppWebHookHandlerRegistry()
 
     def test_register(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.register"""
+        """Testing GitHubAppWebHookHandlerRegistry.register"""
         registry = self.registry
 
         handler = _make_handler()
@@ -120,7 +120,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
                       handler)
 
     def test_register_with_duplicate_handler_id(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.register with a duplicate
+        """Testing GitHubAppWebHookHandlerRegistry.register with a duplicate
         handler ID
         """
         registry = self.registry
@@ -131,7 +131,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
             registry.register(_make_handler(events={'push'}))
 
     def test_unregister(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.unregister"""
+        """Testing GitHubAppWebHookHandlerRegistry.unregister"""
         registry = self.registry
 
         handler = _make_handler()
@@ -143,7 +143,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
                          [])
 
     def test_register_with_empty_handler_id(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.register with empty
+        """Testing GitHubAppWebHookHandlerRegistry.register with empty
         handler_id
         """
         registry = self.registry
@@ -160,11 +160,11 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
         self.assertEqual(list(registry), [])
 
     def test_register_with_missing_handler_id(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.register with missing
+        """Testing GitHubAppWebHookHandlerRegistry.register with missing
         handler_id
         """
         registry = self.registry
-        handler = BaseGitHubAppWebhookHandler()
+        handler = BaseGitHubAppWebHookHandler()
         handler.events = {'push'}
 
         message = (
@@ -178,7 +178,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
         self.assertEqual(list(registry), [])
 
     def test_register_with_empty_events(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.register with empty
+        """Testing GitHubAppWebHookHandlerRegistry.register with empty
         events
         """
         registry = self.registry
@@ -195,7 +195,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
         self.assertEqual(list(registry), [])
 
     def test_register_with_events_not_set(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.register with events
+        """Testing GitHubAppWebHookHandlerRegistry.register with events
         that are not a set
         """
         registry = self.registry
@@ -213,7 +213,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
         self.assertEqual(list(registry), [])
 
     def test_register_with_invalid_permission_level(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.register with invalid
+        """Testing GitHubAppWebHookHandlerRegistry.register with invalid
         permission access level
         """
         registry = self.registry
@@ -231,7 +231,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
         self.assertEqual(list(registry), [])
 
     def test_get_handlers_for_event(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_handlers_for_event"""
+        """Testing GitHubAppWebHookHandlerRegistry.get_handlers_for_event"""
         registry = self.registry
 
         handler1 = _make_handler(handler_id='test-handler1',
@@ -250,7 +250,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
                          [handler2])
 
     def test_get_handlers_for_event_with_no_match(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_handlers_for_event
+        """Testing GitHubAppWebHookHandlerRegistry.get_handlers_for_event
         with no matching handlers
         """
         registry = self.registry
@@ -260,7 +260,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
         self.assertEqual(registry.get_handlers_for_event('ping'), [])
 
     def test_get_events(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_events"""
+        """Testing GitHubAppWebHookHandlerRegistry.get_events"""
         registry = self.registry
 
         registry.register(_make_handler(handler_id='test-handler1',
@@ -272,13 +272,13 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
                          {'issues', 'pull_request', 'push'})
 
     def test_get_events_with_no_handlers(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_events with no
+        """Testing GitHubAppWebHookHandlerRegistry.get_events with no
         handlers
         """
         self.assertEqual(self.registry.get_events(), set())
 
     def test_get_events_after_register(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_events is
+        """Testing GitHubAppWebHookHandlerRegistry.get_events is
         recomputed after registering a handler
         """
         registry = self.registry
@@ -294,7 +294,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
                          {'pull_request', 'push'})
 
     def test_get_events_after_unregister(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_events is
+        """Testing GitHubAppWebHookHandlerRegistry.get_events is
         recomputed after unregistering a handler
         """
         registry = self.registry
@@ -312,7 +312,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
         self.assertEqual(registry.get_events(), {'pull_request'})
 
     def test_get_required_permissions(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_required_permissions"""
+        """Testing GitHubAppWebHookHandlerRegistry.get_required_permissions"""
         registry = self.registry
 
         registry.register(_make_handler(
@@ -337,13 +337,13 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
             })
 
     def test_get_required_permissions_with_no_handlers(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_required_permissions
+        """Testing GitHubAppWebHookHandlerRegistry.get_required_permissions
         with no handlers
         """
         self.assertEqual(self.registry.get_required_permissions(), {})
 
     def test_get_event_labels(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_event_labels"""
+        """Testing GitHubAppWebHookHandlerRegistry.get_event_labels"""
         registry = self.registry
 
         registry.register(_make_handler(
@@ -367,13 +367,13 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
             })
 
     def test_get_event_labels_with_no_handlers(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_event_labels with no
+        """Testing GitHubAppWebHookHandlerRegistry.get_event_labels with no
         handlers
         """
         self.assertEqual(self.registry.get_event_labels(), {})
 
     def test_get_permission_labels(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_permission_labels"""
+        """Testing GitHubAppWebHookHandlerRegistry.get_permission_labels"""
         registry = self.registry
 
         registry.register(_make_handler(
@@ -396,7 +396,7 @@ class GitHubAppWebhookHandlerRegistryTests(TestCase):
             })
 
     def test_get_permission_labels_with_no_handlers(self) -> None:
-        """Testing GitHubAppWebhookHandlerRegistry.get_permission_labels with
+        """Testing GitHubAppWebHookHandlerRegistry.get_permission_labels with
         no handlers
         """
         self.assertEqual(self.registry.get_permission_labels(), {})

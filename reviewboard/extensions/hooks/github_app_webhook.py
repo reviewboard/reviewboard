@@ -9,13 +9,13 @@ from __future__ import annotations
 from djblets.extensions.hooks import BaseRegistryHook, ExtensionHookPoint
 
 from reviewboard.hostingsvcs.github.webhooks import (
-    BaseGitHubAppWebhookHandler,
+    BaseGitHubAppWebHookHandler,
     github_app_webhook_handler_registry,
 )
 
 
-class GitHubAppWebhookHandlerHook(
-    BaseRegistryHook[BaseGitHubAppWebhookHandler],
+class GitHubAppWebHookHandlerHook(
+    BaseRegistryHook[BaseGitHubAppWebHookHandler],
     metaclass=ExtensionHookPoint,
 ):
     """Extension hook for registering GitHub App webhook handlers.

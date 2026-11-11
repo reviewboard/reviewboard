@@ -20,7 +20,7 @@ from reviewboard.hostingsvcs.github import api, views
 from reviewboard.hostingsvcs.github.client import GitHubClient
 from reviewboard.hostingsvcs.github.forms import GitHubAppReplaceKeyForm
 from reviewboard.hostingsvcs.github.webhooks import (
-    BaseGitHubAppWebhookHandler,
+    BaseGitHubAppWebHookHandler,
     github_app_webhook_handler_registry,
 )
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -106,7 +106,7 @@ class GitHubAppCreateViewTests(GitHubTestCase):
         """Testing GitHubAppCreateView manifest includes events and
         permissions required by webhook handlers
         """
-        class PullRequestHandler(BaseGitHubAppWebhookHandler):
+        class PullRequestHandler(BaseGitHubAppWebHookHandler):
             handler_id = 'pull-request-handler'
             events = {'pull_request', 'push'}
             required_permissions = {
@@ -122,7 +122,7 @@ class GitHubAppCreateViewTests(GitHubTestCase):
                 'statuses': 'Commit statuses',
             }
 
-        class InstallationHandler(BaseGitHubAppWebhookHandler):
+        class InstallationHandler(BaseGitHubAppWebHookHandler):
             handler_id = 'installation-handler'
             events = {'installation', 'installation_repositories'}
             required_permissions = {

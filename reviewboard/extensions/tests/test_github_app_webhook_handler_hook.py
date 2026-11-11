@@ -1,4 +1,4 @@
-"""Unit tests for reviewboard.extensions.hooks.GitHubAppWebhookHandlerHook.
+"""Unit tests for reviewboard.extensions.hooks.GitHubAppWebHookHandlerHook.
 
 Version Added:
     9.0
@@ -6,15 +6,15 @@ Version Added:
 
 from __future__ import annotations
 
-from reviewboard.extensions.hooks import GitHubAppWebhookHandlerHook
+from reviewboard.extensions.hooks import GitHubAppWebHookHandlerHook
 from reviewboard.extensions.tests.testcases import BaseExtensionHookTestCase
 from reviewboard.hostingsvcs.github.webhooks import (
-    BaseGitHubAppWebhookHandler,
+    BaseGitHubAppWebHookHandler,
     github_app_webhook_handler_registry,
 )
 
 
-class _TestHandler(BaseGitHubAppWebhookHandler):
+class _TestHandler(BaseGitHubAppWebHookHandler):
     """A test handler.
 
     Version Added:
@@ -34,13 +34,13 @@ class _TestHandler(BaseGitHubAppWebhookHandler):
     }
 
 
-class GitHubAppWebhookHandlerHookTests(BaseExtensionHookTestCase):
-    """Testing GitHubAppWebhookHandlerHook."""
+class GitHubAppWebHookHandlerHookTests(BaseExtensionHookTestCase):
+    """Testing GitHubAppWebHookHandlerHook."""
 
     def test_register(self) -> None:
-        """Testing GitHubAppWebhookHandlerHook initializing"""
+        """Testing GitHubAppWebHookHandlerHook initializing"""
         handler = _TestHandler()
-        GitHubAppWebhookHandlerHook(self.extension, handler)
+        GitHubAppWebHookHandlerHook(self.extension, handler)
 
         self.assertIs(
             github_app_webhook_handler_registry.get('handler_id',
@@ -48,8 +48,8 @@ class GitHubAppWebhookHandlerHookTests(BaseExtensionHookTestCase):
             handler)
 
     def test_unregister(self) -> None:
-        """Testing GitHubAppWebhookHandlerHook uninitializing"""
-        hook = GitHubAppWebhookHandlerHook(self.extension,
+        """Testing GitHubAppWebHookHandlerHook uninitializing"""
+        hook = GitHubAppWebHookHandlerHook(self.extension,
                                            _TestHandler())
         hook.disable_hook()
 

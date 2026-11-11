@@ -56,7 +56,7 @@ class AppManifestResponse(BaseModel):
     owner: (AppManifestOwner | None) = None
 
 
-class AppWebhookPayload(BaseModel):
+class AppWebHookPayload(BaseModel):
     """Payload for a GitHub App webhook delivery.
 
     This covers the fields common to every type of delivery. Any other
@@ -72,14 +72,14 @@ class AppWebhookPayload(BaseModel):
     #: The installation the delivery is about.
     #:
     #: On some events, this is a lightweight object with only an ID, so
-    #: :py:attr:`WebhookInstallation.app_id` is not present.
-    installation: WebhookInstallation
+    #: :py:attr:`WebHookInstallation.app_id` is not present.
+    installation: WebHookInstallation
 
     #: The repository the event applies to, if any.
-    repository: (WebhookRepository | None) = None
+    repository: (WebHookRepository | None) = None
 
 
-class AppInstallationWebhookPayload(AppWebhookPayload):
+class AppInstallationWebHookPayload(AppWebHookPayload):
     """Payload for a GitHub App installation lifecycle webhook delivery.
 
     This covers the installation lifecycle events Review Board acts on:
@@ -365,7 +365,7 @@ class TreeResponse(BaseModel):
     truncated: bool
 
 
-class WebhookInstallation(BaseModel):
+class WebHookInstallation(BaseModel):
     """The ``installation`` object in a GitHub App webhook payload.
 
     Version Added:
@@ -382,7 +382,7 @@ class WebhookInstallation(BaseModel):
     id: (int | None) = None
 
 
-class WebhookRepository(BaseModel):
+class WebHookRepository(BaseModel):
     """The ``repository`` object in a GitHub App webhook payload.
 
     Version Added:

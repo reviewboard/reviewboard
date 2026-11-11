@@ -1,12 +1,12 @@
 .. _github-app-webhook-handler-hook:
 
 ===========================
-GitHubAppWebhookHandlerHook
+GitHubAppWebHookHandlerHook
 ===========================
 
 .. versionadded:: 9.0
 
-GitHub App Webhook Handlers provide a way for extensions to handle GitHub
+GitHub App WebHook Handlers provide a way for extensions to handle GitHub
 events on your repositories, such as pull requests being opened.
 
 .. TODO: Add this once we have more docs on connecting a GitHub App
@@ -20,33 +20,33 @@ events on your repositories, such as pull requests being opened.
 .. currentmodule:: reviewboard.hostingsvcs.github.webhooks
 
 
-Creating GitHub App Webhook Handlers
+Creating GitHub App WebHook Handlers
 ====================================
 
-To create a GitHub App Webhook Handler, you'll need to subclass
-:py:class:`BaseGitHubAppWebhookHandler` and pass an instance of it to
-:py:class:`~reviewboard.extensions.hooks.GitHubAppWebhookHandlerHook`.
+To create a GitHub App WebHook Handler, you'll need to subclass
+:py:class:`BaseGitHubAppWebHookHandler` and pass an instance of it to
+:py:class:`~reviewboard.extensions.hooks.GitHubAppWebHookHandlerHook`.
 
 You must set the following:
 
-* :py:attr:`~BaseGitHubAppWebhookHandler.handler_id`:
+* :py:attr:`~BaseGitHubAppWebHookHandler.handler_id`:
 
   A unique ID for the handler. This should be prefixed with a vendor or
   extension ID to avoid collisions.
 
-* :py:attr:`~BaseGitHubAppWebhookHandler.events`:
+* :py:attr:`~BaseGitHubAppWebHookHandler.events`:
 
   A set of the names of the `GitHub events`_ the handler supports.
 
-* :py:attr:`~BaseGitHubAppWebhookHandler.required_permissions`:
+* :py:attr:`~BaseGitHubAppWebHookHandler.required_permissions`:
 
   A mapping of the `GitHub App permissions`_ needed for those events to
   the access level required (``read``, ``write`` or ``admin``).
 
-* :py:attr:`~BaseGitHubAppWebhookHandler.event_labels`:
+* :py:attr:`~BaseGitHubAppWebHookHandler.event_labels`:
 
   A mapping of the event names in
-  :py:attr:`~BaseGitHubAppWebhookHandler.events` to labels that will be
+  :py:attr:`~BaseGitHubAppWebHookHandler.events` to labels that will be
   shown in the admin UI as the requested events for the App (e.g.
   ``pull_request`` -> ``Pull Request``).
 
@@ -54,10 +54,10 @@ You must set the following:
   over these, so you only need to set this for events that aren't already
   listed there.
 
-* :py:attr:`~BaseGitHubAppWebhookHandler.permission_labels`:
+* :py:attr:`~BaseGitHubAppWebHookHandler.permission_labels`:
 
   A mapping of the permissions in
-  :py:attr:`~BaseGitHubAppWebhookHandler.required_permissions` to labels
+  :py:attr:`~BaseGitHubAppWebHookHandler.required_permissions` to labels
   that will be shown in the admin UI as the requested permissions for the
   App (e.g. ``statuses`` -> ``Commit Statuses``).
 
@@ -66,8 +66,8 @@ You must set the following:
   listed there.
 
 Handlers must also implement
-:py:meth:`~BaseGitHubAppWebhookHandler.handle_event`, which is given a
-:py:class:`GitHubAppWebhookEvent`.
+:py:meth:`~BaseGitHubAppWebHookHandler.handle_event`, which is given a
+:py:class:`GitHubAppWebHookEvent`.
 
 Before calling a handler, Review Board will:
 
@@ -125,21 +125,21 @@ Example
     from typing import TYPE_CHECKING
 
     from reviewboard.extensions.base import Extension
-    from reviewboard.extensions.hooks import GitHubAppWebhookHandlerHook
+    from reviewboard.extensions.hooks import GitHubAppWebHookHandlerHook
     from reviewboard.hostingsvcs.github.webhooks import (
-        BaseGitHubAppWebhookHandler,
+        BaseGitHubAppWebHookHandler,
     )
 
     if TYPE_CHECKING:
         from reviewboard.hostingsvcs.github.webhooks import (
-            GitHubAppWebhookEvent,
+            GitHubAppWebHookEvent,
         )
 
 
     logger = logging.getLogger(__name__)
 
 
-    class PullRequestLogger(BaseGitHubAppWebhookHandler):
+    class PullRequestLogger(BaseGitHubAppWebHookHandler):
         handler_id = 'sample_extension.pull-request-logger'
         events = {'pull_request'}
         event_labels = {
@@ -154,7 +154,7 @@ Example
 
         def handle_event(
             self,
-            event: GitHubAppWebhookEvent,
+            event: GitHubAppWebHookEvent,
         ) -> None:
             repository = event.repository
 
@@ -173,4 +173,4 @@ Example
 
     class SampleExtension(Extension):
         def initialize(self) -> None:
-            GitHubAppWebhookHandlerHook(self, PullRequestLogger())
+            GitHubAppWebHookHandlerHook(self, PullRequestLogger())

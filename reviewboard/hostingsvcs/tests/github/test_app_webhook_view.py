@@ -14,9 +14,9 @@ from typing import TYPE_CHECKING
 
 import kgb
 
-from reviewboard.hostingsvcs.github.views import GitHubAppWebhookView
+from reviewboard.hostingsvcs.github.views import GitHubAppWebHookView
 from reviewboard.hostingsvcs.github.webhooks import (
-    BaseGitHubAppWebhookHandler,
+    BaseGitHubAppWebHookHandler,
     github_app_webhook_handler_registry,
 )
 from reviewboard.hostingsvcs.models import HostingServiceAccount
@@ -29,11 +29,11 @@ if TYPE_CHECKING:
 
     from django.test.client import _MonkeyPatchedWSGIResponse
 
-    from reviewboard.hostingsvcs.github.webhooks import GitHubAppWebhookEvent
+    from reviewboard.hostingsvcs.github.webhooks import GitHubAppWebHookEvent
     from reviewboard.scmtools.models import Repository
 
 
-class RecordingHandler(BaseGitHubAppWebhookHandler):
+class RecordingHandler(BaseGitHubAppWebHookHandler):
     """A webhook handler that records the events it receives.
 
     Version Added:
@@ -48,7 +48,7 @@ class RecordingHandler(BaseGitHubAppWebhookHandler):
     ######################
 
     #: The events received by the handler.
-    received: list[GitHubAppWebhookEvent]
+    received: list[GitHubAppWebHookEvent]
 
     #: The installation status seen when each event was received.
     statuses: list[str | None]
@@ -60,13 +60,13 @@ class RecordingHandler(BaseGitHubAppWebhookHandler):
 
     def handle_event(
         self,
-        event: GitHubAppWebhookEvent,
+        event: GitHubAppWebHookEvent,
     ) -> None:
         """Record an event.
 
         Args:
             event (reviewboard.hostingsvcs.github.webhooks.
-                   GitHubAppWebhookEvent):
+                   GitHubAppWebHookEvent):
                 The event to record.
         """
         self.received.append(event)
@@ -81,7 +81,7 @@ class RecordingHandler(BaseGitHubAppWebhookHandler):
                 installation_account.data['github_app']['status'])
 
 
-class FailingHandler(BaseGitHubAppWebhookHandler):
+class FailingHandler(BaseGitHubAppWebHookHandler):
     """A webhook handler that raises an error.
 
     Version Added:
@@ -93,13 +93,13 @@ class FailingHandler(BaseGitHubAppWebhookHandler):
 
     def handle_event(
         self,
-        event: GitHubAppWebhookEvent,
+        event: GitHubAppWebHookEvent,
     ) -> None:
         """Raise an error.
 
         Args:
             event (reviewboard.hostingsvcs.github.webhooks.
-                   GitHubAppWebhookEvent, unused):
+                   GitHubAppWebHookEvent, unused):
                 The event.
 
         Raises:
@@ -109,8 +109,8 @@ class FailingHandler(BaseGitHubAppWebhookHandler):
         raise Exception('Fail')
 
 
-class GitHubAppWebhookViewTests(GitHubTestCase):
-    """Unit tests for GitHubAppWebhookView.
+class GitHubAppWebHookViewTests(GitHubTestCase):
+    """Unit tests for GitHubAppWebHookView.
 
     Version Added:
         9.0
@@ -125,7 +125,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
             kwargs={'hosting_service_id': 'github'})
 
     def test_post_acknowledges_delivery(self) -> None:
-        """Testing GitHubAppWebhookView POST acknowledges the delivery"""
+        """Testing GitHubAppWebHookView POST acknowledges the delivery"""
         url = local_site_reverse('github-app-webhook',
                                  kwargs={'hosting_service_id': 'github'})
 
@@ -139,7 +139,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(response.status_code, 204)
 
     def test_get_not_allowed(self) -> None:
-        """Testing GitHubAppWebhookView rejects GET requests"""
+        """Testing GitHubAppWebHookView rejects GET requests"""
         url = local_site_reverse('github-app-webhook',
                                  kwargs={'hosting_service_id': 'github'})
         response = self.client.get(url)
@@ -147,7 +147,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(response.status_code, 405)
 
     def test_post_with_bad_signature(self) -> None:
-        """Testing GitHubAppWebhookView rejects a bad signature"""
+        """Testing GitHubAppWebHookView rejects a bad signature"""
         response = self._post_event(
             'installation',
             self._installation_payload('deleted'),
@@ -156,7 +156,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_post_with_missing_signature(self) -> None:
-        """Testing GitHubAppWebhookView rejects a missing signature"""
+        """Testing GitHubAppWebHookView rejects a missing signature"""
         self._create_app_installation_account()
 
         response = self._post_event(
@@ -167,7 +167,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_post_with_unknown_app_id(self) -> None:
-        """Testing GitHubAppWebhookView rejects an unknown app ID"""
+        """Testing GitHubAppWebHookView rejects an unknown app ID"""
         self._create_app_installation_account()
 
         response = self._post_event(
@@ -177,7 +177,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_post_with_empty_webhook_secret(self) -> None:
-        """Testing GitHubAppWebhookView rejects a delivery for an app record
+        """Testing GitHubAppWebHookView rejects a delivery for an app record
         stored without a webhook secret
         """
         app_account = self._create_app_installation_account()
@@ -194,7 +194,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_installation_deleted_marks_removed(self) -> None:
-        """Testing GitHubAppWebhookView marks an installation removed"""
+        """Testing GitHubAppWebHookView marks an installation removed"""
         installation = self._create_app_installation_account()
 
         response = self._post_event('installation',
@@ -206,7 +206,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(installation.data['github_app']['status'], 'removed')
 
     def test_installation_suspend_marks_suspended(self) -> None:
-        """Testing GitHubAppWebhookView marks an installation suspended"""
+        """Testing GitHubAppWebHookView marks an installation suspended"""
         installation = self._create_app_installation_account()
 
         response = self._post_event('installation',
@@ -219,7 +219,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
                          'suspended')
 
     def test_installation_unsuspend_marks_active(self) -> None:
-        """Testing GitHubAppWebhookView clears status on unsuspend"""
+        """Testing GitHubAppWebHookView clears status on unsuspend"""
         installation = self._create_app_installation_account(
             status='suspended')
 
@@ -232,7 +232,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(installation.data['github_app']['status'], 'active')
 
     def test_installation_created_heals_reinstall(self) -> None:
-        """Testing GitHubAppWebhookView heals a reinstall by owner ID
+        """Testing GitHubAppWebHookView heals a reinstall by owner ID
 
         A reinstall performed on the GitHub side issues a new installation ID.
         Matching on the stable owner ID lets the 'created' event update the
@@ -252,7 +252,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(github_app['installation_id'], 1234)
 
     def test_installation_created_without_existing_account(self) -> None:
-        """Testing GitHubAppWebhookView ignores 'created' with no account"""
+        """Testing GitHubAppWebHookView ignores 'created' with no account"""
         self._create_app_record_account()
 
         response = self._post_event('installation',
@@ -269,7 +269,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertNotIn('installation', roles)
 
     def test_installation_repositories_updates_selection(self) -> None:
-        """Testing GitHubAppWebhookView updates repository_selection"""
+        """Testing GitHubAppWebHookView updates repository_selection"""
         installation = self._create_app_installation_account()
 
         payload = self._installation_payload('added')
@@ -285,7 +285,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
             'selected')
 
     def test_unhandled_action_is_acknowledged(self) -> None:
-        """Testing GitHubAppWebhookView acknowledges an unhandled action"""
+        """Testing GitHubAppWebHookView acknowledges an unhandled action"""
         self._create_app_installation_account()
 
         response = self._post_event(
@@ -297,7 +297,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
     def test_installation_event_with_invalid_payload(
         self,
     ) -> None:
-        """Testing GitHubAppWebhookView rejects an installation event whose
+        """Testing GitHubAppWebHookView rejects an installation event whose
         payload passes base validation but fails installation validation
         """
         installation = self._create_app_installation_account()
@@ -323,13 +323,13 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(installation.data, old_data)
 
     def test_installation_event_with_error(self) -> None:
-        """Testing GitHubAppWebhookView raises errors from installation
+        """Testing GitHubAppWebHookView raises errors from installation
         event handling so GitHub reports a failed delivery
         """
         self._create_app_installation_account()
 
-        self.spy_on(GitHubAppWebhookView._handle_installation_event,
-                    owner=GitHubAppWebhookView,
+        self.spy_on(GitHubAppWebHookView._handle_installation_event,
+                    owner=GitHubAppWebHookView,
                     op=kgb.SpyOpRaise(Exception('fail')))
 
         with self.assertRaisesMessage(Exception, 'fail'):
@@ -337,7 +337,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
                              self._installation_payload('deleted'))
 
     def test_installation_target_renames_owner(self) -> None:
-        """Testing GitHubAppWebhookView refreshes the owner login on rename"""
+        """Testing GitHubAppWebHookView refreshes the owner login on rename"""
         installation = self._create_app_installation_account()
 
         response = self._post_event(
@@ -353,7 +353,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(installation.username, 'neworg')
 
     def test_installation_target_unknown_owner_ignored(self) -> None:
-        """Testing GitHubAppWebhookView ignores a rename for unknown owner"""
+        """Testing GitHubAppWebHookView ignores a rename for unknown owner"""
         installation = self._create_app_installation_account()
 
         response = self._post_event(
@@ -369,7 +369,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(installation.username, 'myorg')
 
     def test_unhandled_event(self) -> None:
-        """Testing GitHubAppWebhookView acknowledges an event with no
+        """Testing GitHubAppWebHookView acknowledges an event with no
         handlers without verifying it
         """
         handler = self._register_handler(RecordingHandler())
@@ -382,7 +382,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(handler.received, [])
 
     def test_handler_with_bad_signature(self) -> None:
-        """Testing GitHubAppWebhookView does not call handlers for a delivery
+        """Testing GitHubAppWebHookView does not call handlers for a delivery
         with a bad signature
         """
         self._create_app_installation_account()
@@ -402,7 +402,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
             'pull_request event (delivery delivery-1).')
 
     def test_handler_with_invalid_payload(self) -> None:
-        """Testing GitHubAppWebhookView rejects an invalid payload for an
+        """Testing GitHubAppWebHookView rejects an invalid payload for an
         event with handlers
         """
         handler = self._register_handler(RecordingHandler())
@@ -425,7 +425,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
             'delivery-1): '))
 
     def test_handler_receives_event(self) -> None:
-        """Testing GitHubAppWebhookView passes a verified event to its
+        """Testing GitHubAppWebHookView passes a verified event to its
         handlers
         """
         installation = self._create_app_installation_account()
@@ -451,7 +451,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertEqual(event.repository, repository)
 
     def test_handler_with_untracked_repository(self) -> None:
-        """Testing GitHubAppWebhookView passes no repository for a repository
+        """Testing GitHubAppWebHookView passes no repository for a repository
         not found in RB
         """
         installation = self._create_app_installation_account()
@@ -469,7 +469,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertIsNone(handler.received[0].repository)
 
     def test_handler_without_repository_in_payload(self) -> None:
-        """Testing GitHubAppWebhookView passes no repository for a payload
+        """Testing GitHubAppWebHookView passes no repository for a payload
         without one
         """
         installation = self._create_app_installation_account()
@@ -485,7 +485,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
         self.assertIsNone(handler.received[0].repository)
 
     def test_handler_with_error(self) -> None:
-        """Testing GitHubAppWebhookView logs a handler error and calls the
+        """Testing GitHubAppWebHookView logs a handler error and calls the
         remaining handlers
         """
         self._create_app_installation_account()
@@ -506,7 +506,7 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
             "handler 'failing-handler' (delivery delivery-1): Fail")
 
     def test_handler_for_builtin_event(self) -> None:
-        """Testing GitHubAppWebhookView calls handlers for a built-in event
+        """Testing GitHubAppWebHookView calls handlers for a built-in event
         after handling it
         """
         installation = self._create_app_installation_account()
@@ -528,16 +528,16 @@ class GitHubAppWebhookViewTests(GitHubTestCase):
 
     def _register_handler(
         self,
-        handler: BaseGitHubAppWebhookHandler,
-    ) -> BaseGitHubAppWebhookHandler:
+        handler: BaseGitHubAppWebHookHandler,
+    ) -> BaseGitHubAppWebHookHandler:
         """Register a webhook handler for the duration of the test.
 
         Args:
-            handler (BaseGitHubAppWebhookHandler):
+            handler (BaseGitHubAppWebHookHandler):
                 The handler to register.
 
         Returns:
-            BaseGitHubAppWebhookHandler:
+            BaseGitHubAppWebHookHandler:
             The registered handler.
         """
         github_app_webhook_handler_registry.register(handler)

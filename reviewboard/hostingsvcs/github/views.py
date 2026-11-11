@@ -64,7 +64,7 @@ from reviewboard.hostingsvcs.github.webhooks import (
     DEFAULT_GITHUB_APP_PERMISSIONS,
     DEFAULT_GITHUB_APP_PERMISSION_LABELS,
     GITHUB_APP_AUTO_DELIVERED_EVENTS,
-    GitHubAppWebhookEvent,
+    GitHubAppWebHookEvent,
     github_app_webhook_handler_registry,
     merge_github_app_permissions,
 )
@@ -90,7 +90,7 @@ if TYPE_CHECKING:
     from typelets.json import JSONDict
 
     from reviewboard.hostingsvcs.github.webhooks import \
-        BaseGitHubAppWebhookHandler
+        BaseGitHubAppWebHookHandler
 
 
 logger = logging.getLogger(__name__)
@@ -1634,7 +1634,7 @@ class GitHubAppReplaceKeyView(GitHubAppView):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
-class GitHubAppWebhookView(View):
+class GitHubAppWebHookView(View):
     """Receive webhook events from a GitHub App.
 
     A GitHub App has a single, app-wide webhook URL that receives events from
@@ -1690,7 +1690,7 @@ class GitHubAppWebhookView(View):
 
         try:
             raw_payload = json.loads(request.body)
-            payload = api.AppWebhookPayload.model_validate(raw_payload)
+            payload = api.AppWebHookPayload.model_validate(raw_payload)
         except (ValueError, ValidationError) as e:
             logger.warning(
                 'Could not decode GitHub App webhook payload '
@@ -1720,7 +1720,7 @@ class GitHubAppWebhookView(View):
         if event in _BUILTIN_INSTALLATION_EVENTS:
             try:
                 installation_payload = \
-                    api.AppInstallationWebhookPayload.model_validate(
+                    api.AppInstallationWebHookPayload.model_validate(
                         raw_payload)
             except ValidationError as e:
                 logger.warning(
@@ -1759,9 +1759,9 @@ class GitHubAppWebhookView(View):
         event: str,
         delivery_id: str,
         raw_payload: JSONDict,
-        payload: api.AppWebhookPayload,
+        payload: api.AppWebHookPayload,
         app_account: HostingServiceAccount,
-        handlers: Sequence[BaseGitHubAppWebhookHandler],
+        handlers: Sequence[BaseGitHubAppWebHookHandler],
     ) -> None:
         """Pass a webhook event to its registered handlers.
 
@@ -1775,7 +1775,7 @@ class GitHubAppWebhookView(View):
             raw_payload (dict):
                 The decoded payload of the event.
 
-            payload (reviewboard.hostingsvcs.github.api.AppWebhookPayload):
+            payload (reviewboard.hostingsvcs.github.api.AppWebHookPayload):
                 The parsed common fields of the payload.
 
             app_account (reviewboard.hostingsvcs.models.
@@ -1783,7 +1783,7 @@ class GitHubAppWebhookView(View):
                 The verified app-record account for this delivery.
 
             handlers (list of reviewboard.hostingsvcs.github.webhooks.
-                      BaseGitHubAppWebhookHandler):
+                      BaseGitHubAppWebHookHandler):
                 The handlers registered for the event.
         """
         installation = payload.installation
@@ -1801,7 +1801,7 @@ class GitHubAppWebhookView(View):
                 owner=repository_payload.owner.login,
                 name=repository_payload.name)
 
-        webhook_event = GitHubAppWebhookEvent(
+        webhook_event = GitHubAppWebHookEvent(
             event_name=event,
             delivery_id=delivery_id,
             payload=raw_payload,
@@ -1902,7 +1902,7 @@ class GitHubAppWebhookView(View):
     def _handle_installation_event(
         cls,
         app_account: HostingServiceAccount,
-        payload: api.AppInstallationWebhookPayload,
+        payload: api.AppInstallationWebHookPayload,
     ) -> None:
         """Handle an ``installation`` lifecycle event.
 
@@ -1916,7 +1916,7 @@ class GitHubAppWebhookView(View):
                 The verified app-record account for this delivery.
 
             payload (reviewboard.hostingsvcs.github.api.
-                     AppInstallationWebhookPayload):
+                     AppInstallationWebHookPayload):
                 The decoded webhook payload.
         """
         action = payload.action
@@ -1965,7 +1965,7 @@ class GitHubAppWebhookView(View):
     def _handle_installation_repositories_event(
         cls,
         app_account: HostingServiceAccount,
-        payload: api.AppInstallationWebhookPayload,
+        payload: api.AppInstallationWebHookPayload,
     ) -> None:
         """Handle an ``installation_repositories`` event.
 
@@ -1978,7 +1978,7 @@ class GitHubAppWebhookView(View):
                 The verified app-record account for this delivery.
 
             payload (reviewboard.hostingsvcs.github.api.
-                     AppInstallationWebhookPayload):
+                     AppInstallationWebHookPayload):
                 The decoded webhook payload.
         """
         repository_selection = payload.repository_selection
@@ -2009,7 +2009,7 @@ class GitHubAppWebhookView(View):
     def _handle_installation_target_event(
         cls,
         app_account: HostingServiceAccount,
-        payload: api.AppInstallationWebhookPayload,
+        payload: api.AppInstallationWebHookPayload,
     ) -> None:
         """Handle an ``installation_target`` event.
 
@@ -2024,7 +2024,7 @@ class GitHubAppWebhookView(View):
                 The verified app-record account for this delivery.
 
             payload (reviewboard.hostingsvcs.github.api.
-                     AppInstallationWebhookPayload):
+                     AppInstallationWebHookPayload):
                 The decoded webhook payload.
         """
         # On this event the renamed account is at the top level, not nested

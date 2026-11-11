@@ -48,7 +48,7 @@ GitHubAppPermissionLevel: TypeAlias = Literal['read', 'write', 'admin']
 #:
 #: These don't need to be requested, and won't be listed in the app manifest.
 #: Handlers can still list them in
-#: :py:attr:`BaseGitHubAppWebhookHandler.events` to receive them.
+#: :py:attr:`BaseGitHubAppWebHookHandler.events` to receive them.
 #:
 #: Version Added:
 #:     9.0
@@ -185,7 +185,7 @@ def merge_github_app_permission_labels(
 
 
 @dataclass(frozen=True, kw_only=True)
-class GitHubAppWebhookEvent:
+class GitHubAppWebHookEvent:
     """A GitHub App webhook event.
 
     Version Added:
@@ -220,7 +220,7 @@ class GitHubAppWebhookEvent:
     repository: Repository | None
 
 
-class BaseGitHubAppWebhookHandler:
+class BaseGitHubAppWebHookHandler:
     """Base class for a handler of GitHub App webhook events.
 
     Subclasses will list the events they handle and the GitHub App
@@ -262,12 +262,12 @@ class BaseGitHubAppWebhookHandler:
 
     def handle_event(
         self,
-        event: GitHubAppWebhookEvent,
+        event: GitHubAppWebHookEvent,
     ) -> None:
         """Handle an event delivered to the GitHub App webhook.
 
         Args:
-            event (GitHubAppWebhookEvent):
+            event (GitHubAppWebHookEvent):
                 The event that was delivered.
 
         Raises:
@@ -278,8 +278,8 @@ class BaseGitHubAppWebhookHandler:
         raise NotImplementedError
 
 
-class GitHubAppWebhookHandlerRegistry(
-    OrderedRegistry[BaseGitHubAppWebhookHandler],
+class GitHubAppWebHookHandlerRegistry(
+    OrderedRegistry[BaseGitHubAppWebHookHandler],
 ):
     """A registry for GitHub App webhook handlers.
 
@@ -321,7 +321,7 @@ class GitHubAppWebhookHandlerRegistry(
 
     def on_item_registering(
         self,
-        handler: BaseGitHubAppWebhookHandler,
+        handler: BaseGitHubAppWebHookHandler,
         /,
     ) -> None:
         """Handle pre-registration of a handler.
@@ -331,7 +331,7 @@ class GitHubAppWebhookHandlerRegistry(
         registered.
 
         Args:
-            handler (BaseGitHubAppWebhookHandler):
+            handler (BaseGitHubAppWebHookHandler):
                 The handler being registered.
 
         Raises:
@@ -366,7 +366,7 @@ class GitHubAppWebhookHandlerRegistry(
 
     def on_item_registered(
         self,
-        handler: BaseGitHubAppWebhookHandler,
+        handler: BaseGitHubAppWebHookHandler,
         /,
     ) -> None:
         """Handle post-registration of a handler.
@@ -374,7 +374,7 @@ class GitHubAppWebhookHandlerRegistry(
         This will reset the cached event names.
 
         Args:
-            handler (BaseGitHubAppWebhookHandler):
+            handler (BaseGitHubAppWebHookHandler):
                 The handler that was registered.
         """
         super().on_item_registered(handler)
@@ -383,7 +383,7 @@ class GitHubAppWebhookHandlerRegistry(
 
     def on_item_unregistered(
         self,
-        handler: BaseGitHubAppWebhookHandler,
+        handler: BaseGitHubAppWebHookHandler,
         /,
     ) -> None:
         """Handle post-unregistration of a handler.
@@ -391,7 +391,7 @@ class GitHubAppWebhookHandlerRegistry(
         This will reset the cached event names.
 
         Args:
-            handler (BaseGitHubAppWebhookHandler):
+            handler (BaseGitHubAppWebHookHandler):
                 The handler that was unregistered.
         """
         super().on_item_unregistered(handler)
@@ -401,7 +401,7 @@ class GitHubAppWebhookHandlerRegistry(
     def get_handlers_for_event(
         self,
         event: str,
-    ) -> Sequence[BaseGitHubAppWebhookHandler]:
+    ) -> Sequence[BaseGitHubAppWebHookHandler]:
         """Return the handlers registered for an event.
 
         Args:
@@ -409,7 +409,7 @@ class GitHubAppWebhookHandlerRegistry(
                 The name of the GitHub event.
 
         Returns:
-            list of BaseGitHubAppWebhookHandler:
+            list of BaseGitHubAppWebHookHandler:
             The handlers for the event, in the order they were registered.
         """
         return [
@@ -490,4 +490,4 @@ class GitHubAppWebhookHandlerRegistry(
 #:
 #: Version Added:
 #:     9.0
-github_app_webhook_handler_registry = GitHubAppWebhookHandlerRegistry()
+github_app_webhook_handler_registry = GitHubAppWebHookHandlerRegistry()
