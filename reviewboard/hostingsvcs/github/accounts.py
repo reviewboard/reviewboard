@@ -22,6 +22,8 @@ from enum import Enum
 from typing import Annotated, Literal, TYPE_CHECKING, cast
 from urllib.parse import quote as urlquote
 
+from django.core.cache import cache
+from djblets.cache.backend import cache_memoize, make_cache_key
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -33,6 +35,7 @@ from typelets.symbols import UNSET
 
 from reviewboard.hostingsvcs.errors import InvalidPlanError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
+from reviewboard.scmtools.models import Repository
 
 if TYPE_CHECKING:
     from typing import Final, TypeAlias
@@ -40,7 +43,6 @@ if TYPE_CHECKING:
     from typing_extensions import TypeIs
 
     from reviewboard.hostingsvcs.github import api
-    from reviewboard.scmtools.models import Repository
 
 
 logger = logging.getLogger(__name__)
@@ -202,6 +204,13 @@ _github_app_data_adapter: TypeAdapter[GitHubAppData] = \
 #: Version Added:
 #:     9.0
 _CACHE_ATTR: Final[str] = '_github_app_data_cache'
+
+
+#: The amount of time an installation's repos map is cached, in seconds.
+#:
+#: Version Added:
+#:     9.0
+_REPO_MAP_CACHE_EXPIRATION: Final[int] = 60 * 60  # 1 hour.
 
 
 def get_github_app_data(
@@ -532,23 +541,97 @@ def find_repository_for_installation(
         reviewboard.scmtools.models.Repository:
         The matching repository, or ``None`` if not found.
     """
-    from reviewboard.hostingsvcs.github.service import GitHub
-
-    # TODO: Maybe we should cache a map of (owner, name) to repository
-    # PKs. Would be worth it for accounts that have a lot of repos.
     owner = owner.lower()
-    name = name.lower()
 
     if owner != account.username.lower():
         return None
 
-    for repository in account.repositories.filter(archived=False):
-        try:
-            ids = GitHub.get_repository_ids(repository)
-        except (KeyError, InvalidPlanError):
-            continue
+    name = name.lower()
+    repositories = account.repositories.filter(archived=False)
+    cache_key = _get_repo_map_cache_key(account.pk)
 
-        if ids.name.lower() == name:
-            return repository
+    def _build_repo_map() -> dict[str, int]:
+        repository_map: dict[str, int] = {}
 
-    return None
+        for repository in repositories:
+            repository_name = _get_repo_name(repository)
+
+            if repository_name is not None:
+                repository_map[repository_name] = repository.pk
+
+        return repository_map
+
+    repository_map = cache_memoize(cache_key,
+                                   _build_repo_map,
+                                   expiration=_REPO_MAP_CACHE_EXPIRATION)
+    repository_pk = repository_map.get(name)
+
+    if repository_pk is None:
+        return None
+
+    try:
+        return repositories.get(pk=repository_pk)
+    except Repository.DoesNotExist:
+        return None
+
+
+def clear_installation_repositories_cache(
+    account_id: int,
+) -> None:
+    """Clear the cached repository names for an installation account.
+
+    Version Added:
+        9.0
+
+    Args:
+        account_id (int):
+            The ID of the installation account.
+    """
+    cache.delete(make_cache_key(_get_repo_map_cache_key(account_id)))
+
+
+def _get_repo_map_cache_key(
+    account_id: int,
+) -> list[str]:
+    """Return the cache key for an account's repository name map.
+
+    Version Added:
+        9.0
+
+    Args:
+        account_id (int):
+            The ID of the installation account.
+
+    Returns:
+        list of str:
+        The components of the cache key.
+    """
+    return [
+        'github-app-installation-repositories',
+        str(account_id),
+    ]
+
+
+def _get_repo_name(
+    repository: Repository,
+) -> str | None:
+    """Return the lowercase GitHub name of a repository.
+
+    Version Added:
+        9.0
+
+    Args:
+        repository (reviewboard.scmtools.models.Repository):
+            The repository.
+
+    Returns:
+        str:
+        The lowercase name of the repository on GitHub, or ``None`` if the
+        stored repository data is invalid.
+    """
+    from reviewboard.hostingsvcs.github.service import GitHub
+
+    try:
+        return GitHub.get_repository_ids(repository).name.lower()
+    except (KeyError, InvalidPlanError):
+        return None

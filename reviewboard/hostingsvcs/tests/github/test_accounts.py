@@ -271,6 +271,75 @@ class FindRepositoryForInstallationTests(GitHubTestCase):
             owner='myorg',
             name='otherrepo'))
 
+    def test_with_cached_match(self) -> None:
+        """Testing find_repository_for_installation with a cached match"""
+        installation = self._create_app_installation_account()
+        repository = self._create_org_repository(installation)
+
+        find_repository_for_installation(account=installation,
+                                         owner='myorg',
+                                         name='myrepo')
+
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                find_repository_for_installation(account=installation,
+                                                 owner='myorg',
+                                                 name='myrepo'),
+                repository)
+
+    def test_with_cached_no_match(self) -> None:
+        """Testing find_repository_for_installation with a cached map and no
+        matching repository
+        """
+        installation = self._create_app_installation_account()
+        self._create_org_repository(installation)
+
+        find_repository_for_installation(account=installation,
+                                         owner='myorg',
+                                         name='myrepo')
+
+        with self.assertNumQueries(0):
+            self.assertIsNone(find_repository_for_installation(
+                account=installation,
+                owner='myorg',
+                name='otherrepo'))
+
+    def test_with_cached_empty_map(self) -> None:
+        """Testing find_repository_for_installation caches the map for an
+        installation without repositories
+        """
+        installation = self._create_app_installation_account()
+
+        self.assertIsNone(find_repository_for_installation(
+            account=installation,
+            owner='myorg',
+            name='myrepo'))
+
+        with self.assertNumQueries(0):
+            self.assertIsNone(find_repository_for_installation(
+                account=installation,
+                owner='myorg',
+                name='myrepo'))
+
+    def test_with_repository_added_after_caching(self) -> None:
+        """Testing find_repository_for_installation finds a repository added
+        after the map was cached
+        """
+        installation = self._create_app_installation_account()
+
+        self.assertIsNone(find_repository_for_installation(
+            account=installation,
+            owner='myorg',
+            name='myrepo'))
+
+        repository = self._create_org_repository(installation)
+
+        self.assertEqual(
+            find_repository_for_installation(account=installation,
+                                             owner='myorg',
+                                             name='myrepo'),
+            repository)
+
     def _create_org_repository(
         self,
         installation: HostingServiceAccount,

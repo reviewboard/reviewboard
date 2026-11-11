@@ -17,6 +17,8 @@ from pydantic import ValidationError
 
 from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.hostingsvcs.github import api, views
+from reviewboard.hostingsvcs.github.accounts import \
+    find_repository_for_installation
 from reviewboard.hostingsvcs.github.client import GitHubClient
 from reviewboard.hostingsvcs.github.forms import GitHubAppReplaceKeyForm
 from reviewboard.hostingsvcs.github.webhooks import (
@@ -1066,6 +1068,35 @@ class GitHubAppInstallCallbackViewTests(GitHubTestCase):
             'github_public_org_repo_name': 'repo2',
             'repository_plan': 'public-org',
         })
+
+    def test_post_clears_repository_map_cache(self) -> None:
+        """Testing GitHubAppInstallCallbackView POST clears the cached
+        repository map for the installation
+        """
+        installation_account = self._create_app_installation_account()
+        pat_account = self.create_hosting_account()
+        repository = self._create_org_repo('repo1', 'myorg', pat_account)
+
+        # Cache the installation's map before the repository moves to it.
+        self.assertIsNone(find_repository_for_installation(
+            account=installation_account,
+            owner='myorg',
+            name='repo1'))
+
+        self.login_user(admin=True)
+        url = local_site_reverse('github-app-install-callback',
+                                 kwargs={'hosting_service_id': 'github'})
+        response = self.client.post(url, {
+            'account_id': installation_account.pk,
+            'repositories': [repository.pk],
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            find_repository_for_installation(account=installation_account,
+                                             owner='myorg',
+                                             name='repo1'),
+            repository)
 
     def test_post_ignores_non_candidate_repository(self) -> None:
         """Testing GitHubAppInstallCallbackView POST ignores non-candidates"""
