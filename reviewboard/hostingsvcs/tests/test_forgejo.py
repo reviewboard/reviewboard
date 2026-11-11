@@ -587,29 +587,57 @@ class ForgejoTests(ForgejoTestCase):
             'sha': 'commit456',
         }
 
-        tree_data = {
+        source_tree_data = {
             'page': 1,
-            'sha': 'tree123',
+            'sha': 'parent123',
             'total_count': 1,
             'tree': [
                 {
                     'path': 'file.py',
-                    'sha': 'file123',
+                    'sha': 'abc1234f19a64b4b30a87d4206aade58726b60e3',
                     'size': 100,
                     'type': 'blob',
-                }
+                },
             ],
-            'truncated': False
+            'truncated': False,
+        }
+
+        dest_tree_data = {
+            'page': 1,
+            'sha': 'tree123',
+            'total_count': 2,
+            'tree': [
+                {
+                    'path': 'file.py',
+                    'sha': 'def4567a3197223c6a0abb3355ea48891a1857bf',
+                    'size': 120,
+                    'type': 'blob',
+                },
+                {
+                    'path': 'new.py',
+                    'sha': '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b',
+                    'size': 10,
+                    'type': 'blob',
+                },
+            ],
+            'truncated': False,
         }
 
         diff_content = (
             b'diff --git a/file.py b/file.py\n'
-            b'index abc123..def456 100644\n'
+            b'index abc1234..def4567 100644\n'
             b'--- a/file.py\n'
             b'+++ b/file.py\n'
             b'@@ -1 +1,2 @@\n'
             b' print("Hello")\n'
             b'+print("World")\n'
+            b'diff --git a/new.py b/new.py\n'
+            b'new file mode 100644\n'
+            b'index 0000000..9a8b7c6\n'
+            b'--- /dev/null\n'
+            b'+++ b/new.py\n'
+            b'@@ -0,0 +1 @@\n'
+            b'+pass\n'
         )
 
         account = self.create_hosting_account()
@@ -626,11 +654,11 @@ class ForgejoTests(ForgejoTestCase):
                 'headers': {'Content-Type': 'text/plain'},
             },
             '/api/v1/repos/testuser/testrepo/git/trees/commit456': {
-                'payload': self.dump_json(tree_data),
+                'payload': self.dump_json(dest_tree_data),
                 'headers': {'Content-Type': 'application/json'},
             },
             '/api/v1/repos/testuser/testrepo/git/trees/parent123': {
-                'payload': self.dump_json(tree_data),
+                'payload': self.dump_json(source_tree_data),
                 'headers': {'Content-Type': 'application/json'},
             },
         })
@@ -643,7 +671,110 @@ class ForgejoTests(ForgejoTestCase):
         self.assertEqual(commit.id, 'commit456')
         self.assertEqual(commit.message, 'Add new feature')
         self.assertEqual(commit.parent, 'parent123')
-        self.assertIsNotNone(commit.diff)
+        self.assertEqual(
+            commit.diff,
+            b'diff --git a/file.py b/file.py\n'
+            b'index abc1234f19a64b4b30a87d4206aade58726b60e3'
+            b'..def4567a3197223c6a0abb3355ea48891a1857bf 100644\n'
+            b'--- a/file.py\n'
+            b'+++ b/file.py\n'
+            b'@@ -1 +1,2 @@\n'
+            b' print("Hello")\n'
+            b'+print("World")\n'
+            b'diff --git a/new.py b/new.py\n'
+            b'new file mode 100644\n'
+            b'index 0000000000000000000000000000000000000000'
+            b'..9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b\n'
+            b'--- /dev/null\n'
+            b'+++ b/new.py\n'
+            b'@@ -0,0 +1 @@\n'
+            b'+pass\n')
+
+    def test_get_change_with_root_commit(self) -> None:
+        """Testing Forgejo.get_change with a root commit"""
+        commit_data = {
+            'commit': {
+                'author': {
+                    'date': '2023-01-01T12:00:00Z',
+                    'email': 'user@example.com',
+                    'name': 'Test User',
+                },
+                'committer': {
+                    'date': '2023-01-01T12:00:00Z',
+                    'email': 'user@example.com',
+                    'name': 'Test User',
+                },
+                'message': 'Initial commit',
+                'tree': {
+                    'created': '2023-01-01T12:00:00Z',
+                    'sha': 'tree123',
+                    'url': 'https://forge.example.com/api/v1/repos/testuser/'
+                           'testrepo/git/trees/tree123',
+                },
+            },
+            'created': '2023-01-01T12:00:00Z',
+            'parents': [],
+            'sha': 'commit456',
+        }
+
+        tree_data = {
+            'page': 1,
+            'sha': 'tree123',
+            'total_count': 1,
+            'tree': [
+                {
+                    'path': 'README',
+                    'sha': '9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b',
+                    'size': 6,
+                    'type': 'blob',
+                },
+            ],
+            'truncated': False,
+        }
+
+        account = self.create_hosting_account()
+        repository = self.create_repository(hosting_account=account)
+        service = account.service
+
+        # There's no parent tree to fetch, so only 3 requests are made.
+        handler = self.make_handler_for_paths({
+            '/api/v1/repos/testuser/testrepo/git/commits/commit456': {
+                'payload': self.dump_json(commit_data),
+                'headers': {'Content-Type': 'application/json'},
+            },
+            '/api/v1/repos/testuser/testrepo/git/commits/commit456.diff': {
+                'payload': (
+                    b'diff --git a/README b/README\n'
+                    b'new file mode 100644\n'
+                    b'index 0000000..9a8b7c6\n'
+                    b'--- /dev/null\n'
+                    b'+++ b/README\n'
+                    b'@@ -0,0 +1 @@\n'
+                    b'+Hello\n'
+                ),
+                'headers': {'Content-Type': 'text/plain'},
+            },
+            '/api/v1/repos/testuser/testrepo/git/trees/commit456': {
+                'payload': self.dump_json(tree_data),
+                'headers': {'Content-Type': 'application/json'},
+            },
+        })
+
+        with self.setup_http_test(http_request_func=handler,
+                                  expected_http_calls=3):
+            commit = service.get_change(repository, 'commit456')
+
+        self.assertEqual(commit.parent, '')
+        self.assertEqual(
+            commit.diff,
+            b'diff --git a/README b/README\n'
+            b'new file mode 100644\n'
+            b'index 0000000000000000000000000000000000000000'
+            b'..9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b\n'
+            b'--- /dev/null\n'
+            b'+++ b/README\n'
+            b'@@ -0,0 +1 @@\n'
+            b'+Hello\n')
 
     def test_get_bug_info_uncached(self) -> None:
         """Testing Forgejo.get_bug_info_uncached"""
