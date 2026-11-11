@@ -144,7 +144,8 @@ class GitHubAppWebhookEvent:
 
     #: The ID of the delivery.
     #:
-    #: This is the value of the :mailheader:`X-GitHub-Delivery` header.
+    #: This is the value of the :mailheader:`X-GitHub-Delivery` header
+    #: or 'ID missing' if not included.
     delivery_id: str
 
     #: The decoded payload of the event.

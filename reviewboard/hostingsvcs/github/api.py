@@ -59,27 +59,38 @@ class AppManifestResponse(BaseModel):
 class AppWebhookPayload(BaseModel):
     """Payload for a GitHub App webhook delivery.
 
+    This covers the fields common to every type of delivery. Any other
+    fields in the delivery are ignored.
+
+    Version Added:
+        9.0
+    """
+
+    #: The event action.
+    action: str = ''
+
+    #: The installation the delivery is about.
+    #:
+    #: On some events, this is a lightweight object with only an ID, so
+    #: :py:attr:`WebhookInstallation.app_id` is not present.
+    installation: WebhookInstallation
+
+    #: The repository the event applies to, if any.
+    repository: (WebhookRepository | None) = None
+
+
+class AppInstallationWebhookPayload(AppWebhookPayload):
+    """Payload for a GitHub App installation lifecycle webhook delivery.
+
     This covers the installation lifecycle events Review Board acts on:
 
     * ``installation``
     * ``installation_repositories``
     * ``installation_target``
 
-    Only the fields the webhook handler reads are declared. Any other fields
-    in the delivery are ignored.
-
     Version Added:
         9.0
     """
-
-    #: The event action, sent on ``installation`` events.
-    action: str = ''
-
-    #: The installation the delivery is about.
-    #:
-    #: On ``installation_target`` events this is a lightweight object with only
-    #: an ID, so :py:attr:`WebhookInstallation.app_id` is not present.
-    installation: WebhookInstallation
 
     #: The repository selection, sent on ``installation_repositories`` events.
     repository_selection: Literal['all', 'selected', ''] = ''
@@ -369,3 +380,17 @@ class WebhookInstallation(BaseModel):
 
     #: The installation ID.
     id: (int | None) = None
+
+
+class WebhookRepository(BaseModel):
+    """The ``repository`` object in a GitHub App webhook payload.
+
+    Version Added:
+        9.0
+    """
+
+    #: The name of the repository.
+    name: str
+
+    #: The user or organization that owns the repository.
+    owner: RepositoryOwner

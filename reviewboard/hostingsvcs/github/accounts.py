@@ -31,6 +31,7 @@ from pydantic import (
 )
 from typelets.symbols import UNSET
 
+from reviewboard.hostingsvcs.errors import InvalidPlanError
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 
 if TYPE_CHECKING:
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
     from typing_extensions import TypeIs
 
     from reviewboard.hostingsvcs.github import api
+    from reviewboard.scmtools.models import Repository
 
 
 logger = logging.getLogger(__name__)
@@ -498,5 +500,55 @@ def find_installation_account(
                 return candidate
         elif installation_id and app_data.installation_id == installation_id:
             return candidate
+
+    return None
+
+
+def find_repository_for_installation(
+    *,
+    account: HostingServiceAccount,
+    owner: str,
+    name: str,
+) -> Repository | None:
+    """Return the repository connected through an installation.
+
+    This returns the repository connected through the installation
+    account with the given owner and name.
+
+    Version Added:
+        9.0
+
+    Args:
+        account (reviewboard.hostingsvcs.models.HostingServiceAccount):
+            The installation account the repository is connected through.
+
+        owner (str):
+            The login of the user or organization owning the repository.
+
+        name (str):
+            The name of the repository.
+
+    Returns:
+        reviewboard.scmtools.models.Repository:
+        The matching repository, or ``None`` if not found.
+    """
+    from reviewboard.hostingsvcs.github.service import GitHub
+
+    # TODO: Maybe we should cache a map of (owner, name) to repository
+    # PKs. Would be worth it for accounts that have a lot of repos.
+    owner = owner.lower()
+    name = name.lower()
+
+    if owner != account.username.lower():
+        return None
+
+    for repository in account.repositories.filter(archived=False):
+        try:
+            ids = GitHub.get_repository_ids(repository)
+        except (KeyError, InvalidPlanError):
+            continue
+
+        if ids.name.lower() == name:
+            return repository
 
     return None
