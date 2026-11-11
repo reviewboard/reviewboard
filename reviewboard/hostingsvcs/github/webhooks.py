@@ -18,7 +18,7 @@ from reviewboard.registries.registry import OrderedRegistry
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
-    from typing import ClassVar, TypeAlias
+    from typing import ClassVar, Final, TypeAlias
 
     from typelets.django.strings import StrOrPromise
     from typelets.json import JSONDict
@@ -42,6 +42,65 @@ INVALID_HANDLER = 'invalid_handler'
 #: Version Added:
 #:     9.0
 GitHubAppPermissionLevel: TypeAlias = Literal['read', 'write', 'admin']
+
+
+#: GitHub App webhook events that GitHub delivers to every app.
+#:
+#: These don't need to be requested, and won't be listed in the app manifest.
+#: Handlers can still list them in
+#: :py:attr:`BaseGitHubAppWebhookHandler.events` to receive them.
+#:
+#: Version Added:
+#:     9.0
+GITHUB_APP_AUTO_DELIVERED_EVENTS: Final[frozenset[str]] = frozenset({
+    'installation',
+    'installation_repositories',
+})
+
+
+#: GitHub App webhook events requested by Review Board.
+#:
+#: Version Added:
+#:     9.0
+DEFAULT_GITHUB_APP_EVENTS: Final[frozenset[str]] = frozenset({
+    'push',
+    'installation_target',
+})
+
+
+#: GitHub App permissions requested by Review Board.
+#:
+#: Version Added:
+#:     9.0
+DEFAULT_GITHUB_APP_PERMISSIONS: Final[
+    Mapping[str, GitHubAppPermissionLevel]] = {
+    'contents': 'read',
+    'metadata': 'read',
+}
+
+
+#: Localized labels for the default GitHub App webhook events.
+#:
+#: These are shown to admins when connecting a GitHub App.
+#:
+#: Version Added:
+#:     9.0
+DEFAULT_GITHUB_APP_EVENT_LABELS: Final[Mapping[str, StrOrPromise]] = {
+    'installation_target': _('Account renames'),
+    'push': _('Push'),
+}
+
+
+#: Localized labels for the default GitHub App permissions.
+#:
+#: These are shown to admins when connecting a GitHub App.
+#:
+#: Version Added:
+#:     9.0
+DEFAULT_GITHUB_APP_PERMISSION_LABELS: Final[Mapping[str, StrOrPromise]] = {
+    'contents': _('Repository contents'),
+    'metadata': _('Repository metadata'),
+}
 
 
 #: The ranking of GitHub App permission access levels.
@@ -189,13 +248,16 @@ class BaseGitHubAppWebhookHandler:
     #: Localized labels for the handler's events.
     #:
     #: This maps an event name to a label shown to admins when connecting
-    #: a GitHub App.
+    #: a GitHub App. Labels in :py:data:`DEFAULT_GITHUB_APP_EVENT_LABELS`
+    #: take precedence over these.
     event_labels: ClassVar[Mapping[str, StrOrPromise]] = {}
 
     #: Localized labels for the handler's required permissions.
     #:
     #: This maps a permission name to a label shown to admins when
-    #: connecting a GitHub App.
+    #: connecting a GitHub App. Labels in
+    #: :py:data:`DEFAULT_GITHUB_APP_PERMISSION_LABELS` take precedence over
+    #: these.
     permission_labels: ClassVar[Mapping[str, StrOrPromise]] = {}
 
     def handle_event(

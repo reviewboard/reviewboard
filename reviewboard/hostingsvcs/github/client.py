@@ -1006,11 +1006,9 @@ class GitHubClient(HostingServiceClient['GitHub']):
         * ``contents:read`` - File reads
           (:py:meth:`api_get_blob`, :py:meth:`api_get_tree`).
         * ``metadata:read`` - Always required by GitHub.
-        * ``pull_requests:read`` - Reserved for future pull request features.
 
         Future features may need additional scopes: commit statuses and checks
-        for build/review integration, and ``pull_requests:write`` for posting
-        to pull requests.
+        for build/review integration.
 
         Version Added:
             9.0

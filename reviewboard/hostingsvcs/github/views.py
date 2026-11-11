@@ -59,8 +59,14 @@ from reviewboard.hostingsvcs.github.app_auth import encrypt_app_private_key
 from reviewboard.hostingsvcs.github.client import get_github_urls
 from reviewboard.hostingsvcs.github.forms import GitHubAppReplaceKeyForm
 from reviewboard.hostingsvcs.github.webhooks import (
+    DEFAULT_GITHUB_APP_EVENTS,
+    DEFAULT_GITHUB_APP_EVENT_LABELS,
+    DEFAULT_GITHUB_APP_PERMISSIONS,
+    DEFAULT_GITHUB_APP_PERMISSION_LABELS,
+    GITHUB_APP_AUTO_DELIVERED_EVENTS,
     GitHubAppWebhookEvent,
     github_app_webhook_handler_registry,
+    merge_github_app_permissions,
 )
 from reviewboard.hostingsvcs.hook_utils import (
     close_all_review_requests,
@@ -90,15 +96,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-#: GitHub App webhook events handled in core Review Board.
+#: GitHub App installation events handled in core Review Board.
 #:
 #: Version Added:
 #:     9.0
-_BUILTIN_WEBHOOK_EVENTS: Final[frozenset[str]] = frozenset({
-    'installation',
-    'installation_repositories',
-    'installation_target',
-})
+_BUILTIN_INSTALLATION_EVENTS: Final[frozenset[str]] = (
+    GITHUB_APP_AUTO_DELIVERED_EVENTS | {'installation_target'})
 
 #: The session key used to store state across the app-creation redirect.
 #:
@@ -366,16 +369,20 @@ class GitHubAppCreateView(GitHubAppView):
         server_hostname = urlparse(build_server_url()).hostname
         assert server_hostname is not None
 
-        # 'installation' and 'installation_repositories' are delivered to
-        # every GitHub App automatically and are not listed here.
-        # 'installation_target' is a subscribable event, so it must be
-        # requested explicitly to receive account rename notifications.
-        default_events = ['push', 'installation_target']
-        default_permissions = {
-            'contents': 'read',
-            'metadata': 'read',
-            'pull_requests': 'read',
-        }
+        # Request the default events and permissions, plus any needed by
+        # registered webhook handlers. Events GitHub delivers to every app
+        # automatically are not listed.
+        handler_registry = github_app_webhook_handler_registry
+
+        # Keep a stable order for the app manifest and UI.
+        default_events = sorted(
+            (DEFAULT_GITHUB_APP_EVENTS | handler_registry.get_events()) -
+            GITHUB_APP_AUTO_DELIVERED_EVENTS)
+
+        default_permissions = merge_github_app_permissions([
+            DEFAULT_GITHUB_APP_PERMISSIONS,
+            handler_registry.get_required_permissions(),
+        ])
 
         manifest = {
             'default_events': default_events,
@@ -422,18 +429,17 @@ class GitHubAppCreateView(GitHubAppView):
         # the administrator can review it before anything is created. These are
         # derived from the manifest above to keep the two in sync.
         permission_labels = {
-            'contents': _('Repository contents'),
-            'metadata': _('Repository metadata'),
-            'pull_requests': _('Pull requests'),
+            **handler_registry.get_permission_labels(),
+            **DEFAULT_GITHUB_APP_PERMISSION_LABELS,
         }
         access_labels = {
+            'admin': _('Admin'),
             'read': _('Read-only'),
             'write': _('Read and write'),
         }
         event_labels = {
-            'installation_target': _('Account renames'),
-            'pull_request': _('Pull request'),
-            'push': _('Push'),
+            **handler_registry.get_event_labels(),
+            **DEFAULT_GITHUB_APP_EVENT_LABELS,
         }
 
         permissions = [
@@ -1678,7 +1684,7 @@ class GitHubAppWebhookView(View):
         # Acknowledge events that nothing handles, so GitHub keeps
         # considering the webhook healthy.
         if (event == 'ping' or
-            (event not in _BUILTIN_WEBHOOK_EVENTS and
+            (event not in _BUILTIN_INSTALLATION_EVENTS and
              event not in registry.get_events())):
             return HttpResponse(status=204)
 
@@ -1711,7 +1717,7 @@ class GitHubAppWebhookView(View):
 
             return HttpResponseBadRequest('Signature verification failed.')
 
-        if event in _BUILTIN_WEBHOOK_EVENTS:
+        if event in _BUILTIN_INSTALLATION_EVENTS:
             try:
                 installation_payload = \
                     api.AppInstallationWebhookPayload.model_validate(

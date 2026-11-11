@@ -19,6 +19,10 @@ from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.hostingsvcs.github import api, views
 from reviewboard.hostingsvcs.github.client import GitHubClient
 from reviewboard.hostingsvcs.github.forms import GitHubAppReplaceKeyForm
+from reviewboard.hostingsvcs.github.webhooks import (
+    BaseGitHubAppWebhookHandler,
+    github_app_webhook_handler_registry,
+)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.testing.paginator import TestPaginator
 from reviewboard.hostingsvcs.tests.github.base import GitHubTestCase
@@ -79,6 +83,102 @@ class GitHubAppCreateViewTests(GitHubTestCase):
 
         self.assertTrue(
             manifest['hook_attributes']['url'].endswith(webhook_url))
+
+    def test_manifest_events_and_permissions(self) -> None:
+        """Testing GitHubAppCreateView manifest events and permissions with
+        no webhook handlers registered
+        """
+        url = local_site_reverse('github-app-create',
+                                 kwargs={'hosting_service_id': 'github'})
+        response = self.client.get(url)
+        manifest = json.loads(response.context['manifest_json'])
+
+        self.assertEqual(manifest['default_events'],
+                         ['installation_target', 'push'])
+        self.assertEqual(
+            manifest['default_permissions'],
+            {
+                'contents': 'read',
+                'metadata': 'read',
+            })
+
+    def test_manifest_with_webhook_handlers(self) -> None:
+        """Testing GitHubAppCreateView manifest includes events and
+        permissions required by webhook handlers
+        """
+        class PullRequestHandler(BaseGitHubAppWebhookHandler):
+            handler_id = 'pull-request-handler'
+            events = {'pull_request', 'push'}
+            required_permissions = {
+                'pull_requests': 'write',
+                'statuses': 'write',
+            }
+            event_labels = {
+                'pull_request': 'Pull request',
+                'push': 'Custom push',
+            }
+            permission_labels = {
+                'pull_requests': 'Pull requests',
+                'statuses': 'Commit statuses',
+            }
+
+        class InstallationHandler(BaseGitHubAppWebhookHandler):
+            handler_id = 'installation-handler'
+            events = {'installation', 'installation_repositories'}
+            required_permissions = {
+                'contents': 'write',
+            }
+            event_labels = {
+                'installation': 'Installations',
+                'installation_repositories': 'Installation repositories',
+            }
+            permission_labels = {
+                'contents': 'Custom contents',
+            }
+
+        for handler in (PullRequestHandler(), InstallationHandler()):
+            github_app_webhook_handler_registry.register(handler)
+            self.addCleanup(github_app_webhook_handler_registry.unregister,
+                            handler)
+
+        url = local_site_reverse('github-app-create',
+                                 kwargs={'hosting_service_id': 'github'})
+        response = self.client.get(url)
+        manifest = json.loads(response.context['manifest_json'])
+
+        self.assertEqual(manifest['default_events'],
+                         ['installation_target', 'pull_request', 'push'])
+        self.assertEqual(
+            manifest['default_permissions'],
+            {
+                'contents': 'write',
+                'metadata': 'read',
+                'pull_requests': 'write',
+                'statuses': 'write',
+            })
+        self.assertEqual(
+            response.context['events'],
+            ['Account renames', 'Pull request', 'Push'])
+        self.assertEqual(
+            response.context['permissions'],
+            [
+                {
+                    'access': 'Read and write',
+                    'name': 'Repository contents',
+                },
+                {
+                    'access': 'Read-only',
+                    'name': 'Repository metadata',
+                },
+                {
+                    'access': 'Read and write',
+                    'name': 'Pull requests',
+                },
+                {
+                    'access': 'Read and write',
+                    'name': 'Commit statuses',
+                },
+            ])
 
 
 class GitHubAppCallbackViewTests(GitHubTestCase):
