@@ -93,6 +93,9 @@ Integration With Third-Party Tools Hooks
 :ref:`hosting-service-hook`:
   Adds support for new source code or bug tracker hosting services.
 
+:ref:`github-app-webhook-handler-hook`:
+  Adds a new handler for GitHub App webhook events.
+
 :ref:`scmtool-hook`:
   Adds a new version control system implementation.
 
@@ -256,6 +259,7 @@ Deprecated Hooks
    email-hook
    file-attachment-thumbnail-hook
    filediff-acl-hook
+   github-app-webhook-handler-hook
    hide-action-hook
    hosting-service-hook
    integration-hook
