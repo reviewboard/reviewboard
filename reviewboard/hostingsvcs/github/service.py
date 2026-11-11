@@ -56,6 +56,7 @@ from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.repository import RemoteRepository
 from reviewboard.scmtools.core import Branch, Commit
 from reviewboard.scmtools.crypto_utils import encrypt_password
+from reviewboard.scmtools.errors import FileNotFoundError
 from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
@@ -1313,9 +1314,15 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             Whether or not the file exists at the given revision in the
             repository.
         """
+        repo_api_url = self._get_repo_api_url(repository)
+        client = self.client
+
+        if client.has_cached_blob_sha(repo_api_url=repo_api_url,
+                                      blob_sha=revision):
+            return True
+
         try:
-            repo_api_url = self._get_repo_api_url(repository)
-            self.client.get_blob(
+            client.get_blob(
                 repo_api_url=repo_api_url,
                 path=path,
                 sha=revision)
@@ -1469,88 +1476,19 @@ class GitHub(BaseHostingService[GitHubClient], BaseBugTracker):
             repository=repository)
 
         commit = commit_rsp.commit
-        parent_revision = commit_rsp.parents[0].sha
 
-        # Step 2: Get the diff and tree from the "compare commits" API.
-        # If the commit has a parent commit, use GitHub's "compare two commits"
-        # API to get the diff. Otherwise, just use the commit we already have.
-        if parent_revision:
-            comparison = self.client.get_compare_commits(
-                repo_api_url=repo_api_url,
-                parent_id=parent_revision,
-                commit_id=revision,
-                repository=repository)
-            tree_sha = comparison.base_commit.commit.tree.sha
-            files = comparison.files
+        if commit_rsp.parents:
+            parent_revision = commit_rsp.parents[0].sha
         else:
-            tree_sha = commit.tree.sha
-            files = commit_rsp.files
+            # This is a root commit.
+            parent_revision = ''
 
-        # Step 3: Fetch the tree for the original commit, so that we can get
-        # full blob SHAs for each of the files in the diff.
-        tree_rsp = self.client.get_tree(
+        # Step 2: Get the diff.
+        diff = self.client.get_diff_content(
             repo_api_url=repo_api_url,
-            tree_sha=tree_sha,
-            recursive=True,
+            parent_id=parent_revision,
+            commit_id=revision,
             repository=repository)
-
-        file_shas = {
-            entry.path.encode('utf-8'): entry.sha.encode('utf-8')
-            for entry in tree_rsp.tree
-        }
-
-        diff = []
-
-        assert files is not None
-
-        for f in files:
-            filename = f.filename.encode('utf-8')
-            status = f.status
-
-            if not f.patch:
-                continue
-
-            diff.append(b'diff --git a/%s b/%s' % (filename, filename))
-
-            if status == 'modified':
-                old_sha = file_shas[filename]
-                new_sha = f.sha.encode('utf-8')
-                diff.append(b'index %s..%s 100644' % (old_sha, new_sha))
-                diff.append(b'--- a/%s' % filename)
-                diff.append(b'+++ b/%s' % filename)
-            elif status == 'added':
-                new_sha = f.sha.encode('utf-8')
-
-                diff.append(b'new file mode 100644')
-                diff.append(b'index %s..%s' % (b'0' * 40, new_sha))
-                diff.append(b'--- /dev/null')
-                diff.append(b'+++ b/%s' % filename)
-            elif status == 'removed':
-                old_sha = file_shas[filename]
-
-                diff.append(b'deleted file mode 100644')
-                diff.append(b'index %s..%s' % (old_sha, b'0' * 40))
-                diff.append(b'--- a/%s' % filename)
-                diff.append(b'+++ /dev/null')
-            elif status == 'renamed':
-                assert f.previous_filename is not None
-                old_filename = f.previous_filename.encode('utf-8')
-                old_sha = file_shas[old_filename]
-                new_sha = f.sha.encode('utf-8')
-
-                diff.append(b'rename from %s' % old_filename)
-                diff.append(b'rename to %s' % filename)
-                diff.append(b'index %s..%s' % (old_sha, new_sha))
-                diff.append(b'--- a/%s' % old_filename)
-                diff.append(b'+++ b/%s' % filename)
-
-            diff.append(f.patch.encode('utf-8'))
-
-        if diff and not diff[-1].endswith(b'\n'):
-            # Make sure there's a trailing newline.
-            diff.append(b'')
-
-        diff = b'\n'.join(diff)
 
         return Commit(author_name=commit.author.name,
                       id=revision,
