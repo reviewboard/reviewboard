@@ -163,9 +163,11 @@ class GitHubAppWebHookHandlerRegistryTests(TestCase):
         """Testing GitHubAppWebHookHandlerRegistry.register with missing
         handler_id
         """
+        class TestHandler(BaseGitHubAppWebHookHandler):
+            events = {'push'}
+
         registry = self.registry
-        handler = BaseGitHubAppWebHookHandler()
-        handler.events = {'push'}
+        handler = TestHandler()
 
         message = (
             f'Could not register GitHub App webhook handler {handler}: '
@@ -217,7 +219,9 @@ class GitHubAppWebHookHandlerRegistryTests(TestCase):
         permission access level
         """
         registry = self.registry
-        handler = _make_handler(required_permissions={'issues': 'blah'})
+        handler = _make_handler(
+            required_permissions={'issues': 'blah'},  # type: ignore
+        )
 
         message = (
             f"Could not register GitHub App webhook handler {handler}: "
@@ -441,8 +445,8 @@ class MergeGitHubAppPermissionsTests(TestCase):
             result = merge_github_app_permissions([
                 {'contents': 'read'},
                 {
-                    'contents': 'custom',
-                    'statuses': 'custom',
+                    'contents': 'custom',  # type: ignore
+                    'statuses': 'custom',  # type: ignore
                 },
             ])
 

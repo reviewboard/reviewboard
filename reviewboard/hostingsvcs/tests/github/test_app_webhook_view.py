@@ -10,7 +10,7 @@ import hashlib
 import hmac
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 import kgb
 
@@ -31,6 +31,9 @@ if TYPE_CHECKING:
 
     from reviewboard.hostingsvcs.github.webhooks import GitHubAppWebHookEvent
     from reviewboard.scmtools.models import Repository
+
+
+_THandler = TypeVar('_THandler', bound=BaseGitHubAppWebHookHandler)
 
 
 class RecordingHandler(BaseGitHubAppWebHookHandler):
@@ -528,8 +531,8 @@ class GitHubAppWebHookViewTests(GitHubTestCase):
 
     def _register_handler(
         self,
-        handler: BaseGitHubAppWebHookHandler,
-    ) -> BaseGitHubAppWebHookHandler:
+        handler: _THandler,
+    ) -> _THandler:
         """Register a webhook handler for the duration of the test.
 
         Args:

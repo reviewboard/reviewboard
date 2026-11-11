@@ -36,6 +36,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 if TYPE_CHECKING:
     from django.http import HttpResponse
+    from typelets.json import JSONDict, JSONList
 
 
 class ForgejoTestCase(HostingServiceTestCase[Forgejo]):
@@ -107,7 +108,7 @@ class ForgejoTests(ForgejoTestCase):
 
     def test_authorize_success(self) -> None:
         """Testing Forgejo.authorize with valid credentials"""
-        access_token_data = {
+        access_token_data: JSONDict = {
             'id': 1,
             'name': 'Review Board',
             'scopes': ['read:issue', 'read:organization', 'read:repository',
@@ -143,7 +144,7 @@ class ForgejoTests(ForgejoTestCase):
 
     def test_authorize_with_two_factor_auth(self) -> None:
         """Testing Forgejo.authorize with two-factor authentication code"""
-        access_token_data = {
+        access_token_data: JSONDict = {
             'id': 1,
             'name': 'Review Board',
             'scopes': ['read:issue', 'read:organization', 'read:repository',
@@ -344,7 +345,7 @@ class ForgejoTests(ForgejoTestCase):
         file_content = b'def main():\n    print("Hello, World!")\n'
         encoded_content = base64.b64encode(file_content).decode('utf-8')
 
-        blob_data = {
+        blob_data: JSONDict = {
             'content': encoded_content,
             'encoding': 'base64',
             'sha': 'abc123def456',
@@ -430,7 +431,7 @@ class ForgejoTests(ForgejoTestCase):
 
     def test_get_branches(self) -> None:
         """Testing Forgejo.get_branches"""
-        repo_data = {
+        repo_data: JSONDict = {
             'clone_url': 'https://forge.example.com/testuser/testrepo.git',
             'default_branch': 'main',
             'description': 'My repo',
@@ -439,7 +440,7 @@ class ForgejoTests(ForgejoTestCase):
             'private': False,
         }
 
-        refs_data = [
+        refs_data: JSONList = [
             {
                 'object': {
                     'sha': 'abc123',
@@ -495,7 +496,7 @@ class ForgejoTests(ForgejoTestCase):
 
     def test_get_commits(self) -> None:
         """Testing Forgejo.get_commits"""
-        commits_data = [
+        commits_data: JSONList = [
             {
                 'commit': {
                     'author': {
@@ -555,7 +556,7 @@ class ForgejoTests(ForgejoTestCase):
 
     def test_get_change(self) -> None:
         """Testing Forgejo.get_change"""
-        commit_data = {
+        commit_data: JSONDict = {
             'commit': {
                 'author': {
                     'date': '2023-01-01T12:00:00Z',
@@ -587,7 +588,7 @@ class ForgejoTests(ForgejoTestCase):
             'sha': 'commit456',
         }
 
-        source_tree_data = {
+        source_tree_data: JSONDict = {
             'page': 1,
             'sha': 'parent123',
             'total_count': 1,
@@ -602,7 +603,7 @@ class ForgejoTests(ForgejoTestCase):
             'truncated': False,
         }
 
-        dest_tree_data = {
+        dest_tree_data: JSONDict = {
             'page': 1,
             'sha': 'tree123',
             'total_count': 2,
@@ -692,7 +693,7 @@ class ForgejoTests(ForgejoTestCase):
 
     def test_get_change_with_root_commit(self) -> None:
         """Testing Forgejo.get_change with a root commit"""
-        commit_data = {
+        commit_data: JSONDict = {
             'commit': {
                 'author': {
                     'date': '2023-01-01T12:00:00Z',
@@ -717,7 +718,7 @@ class ForgejoTests(ForgejoTestCase):
             'sha': 'commit456',
         }
 
-        tree_data = {
+        tree_data: JSONDict = {
             'page': 1,
             'sha': 'tree123',
             'total_count': 1,
@@ -778,7 +779,7 @@ class ForgejoTests(ForgejoTestCase):
 
     def test_get_bug_info_uncached(self) -> None:
         """Testing Forgejo.get_bug_info_uncached"""
-        issue_data = {
+        issue_data: JSONDict = {
             'body': 'This is a test issue description with multiple lines.\n'
                     'It should be properly returned in the bug info.',
             'id': 123,
@@ -902,7 +903,7 @@ class ForgejoClientTests(ForgejoTestCase):
 
     def test_create_api_token(self) -> None:
         """Testing ForgejoClient.create_api_token"""
-        access_token_data = {
+        access_token_data: JSONDict = {
             'id': 1,
             'name': 'Review Board',
             'scopes': ['read:issue', 'read:organization', 'read:repository',
@@ -938,7 +939,7 @@ class ForgejoClientTests(ForgejoTestCase):
         file_content = b'print("Hello from Forgejo!")'
         encoded_content = base64.b64encode(file_content).decode('utf-8')
 
-        blob_data = {
+        blob_data: JSONDict = {
             'content': encoded_content,
             'encoding': 'base64',
             'sha': 'blob789',
@@ -972,7 +973,7 @@ class ForgejoClientTests(ForgejoTestCase):
 
     def test_get_blob_unsupported_encoding(self) -> None:
         """Testing ForgejoClient.get_blob with unsupported encoding"""
-        blob_data = {
+        blob_data: JSONDict = {
             'content': 'raw content',
             'encoding': 'raw',
             'sha': 'blob789',
