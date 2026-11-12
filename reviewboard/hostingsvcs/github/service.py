@@ -327,10 +327,11 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
         github_app_create_url: (str | None) = None
         github_app_replace_key_url: (str | None) = None
         github_app_settings_url: (str | None) = None
+        github_app_installed = app_account is not None
 
         service = self._hosting_service_cls
 
-        if app_account is None:
+        if not github_app_installed:
             github_app_create_url = local_site_reverse(
                 'github-app-create',
                 request=request,
@@ -338,6 +339,8 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
                     'hosting_service_id': service.hosting_service_id,
                 })
         else:
+            assert app_account is not None
+
             github_app_replace_key_url = local_site_reverse(
                 'github-app-replace-key',
                 local_site=app_account.local_site,
@@ -388,9 +391,13 @@ class GitHubConnectUI(BaseHostingServiceConnectUI):
         return {
             **context,
             'github_app_create_url': github_app_create_url,
-            'github_app_installed': app_account is not None,
+            'github_app_installed': github_app_installed,
             'github_app_replace_key_url': github_app_replace_key_url,
             'github_app_settings_url': github_app_settings_url,
+
+            # Open the accounts section when there's no App installed, so
+            # that the "No GitHub App configured" notice is visible.
+            'needs_attention': not github_app_installed,
 
             # The App controls live in the accounts section, and are shown even
             # when there are no visible accounts.
