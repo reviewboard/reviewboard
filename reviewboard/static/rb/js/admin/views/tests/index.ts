@@ -4,3 +4,4 @@ import './githubRepositoryFormViewTests';
 import './licenseViewTests';
 import './repositoryBugTrackersViewTests';
 import './repositoryFormViewTests';
+import './serviceItemsViewTests';

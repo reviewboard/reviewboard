@@ -5,6 +5,7 @@ from __future__ import annotations
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 
@@ -19,15 +20,13 @@ class SourceForgeForm(BaseHostingServiceRepositoryForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class SourceForge(BaseHostingService):
+class SourceForge(BaseHostingService, BaseBugTracker):
     """Hosting service for SourceForge."""
 
     hosting_service_id = 'sourceforge'
     name = 'SourceForge'
 
-    # TODO: This service currently doesn't implement BaseBugTracker, but once
-    # it does, uncomment this:
-    # bugs_in_repo = True
+    bugs_in_repo = True
     form = SourceForgeForm
     supported_scmtools = ['Bazaar', 'CVS', 'Mercurial', 'Subversion']
     supports_bug_trackers = True

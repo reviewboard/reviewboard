@@ -6,6 +6,7 @@ from django import forms
 from django.utils.translation import gettext_lazy as _
 
 from reviewboard.admin.validation import validate_bug_tracker_base_hosting_url
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import (
     BaseBugTrackerConfigForm,
     BaseHostingServiceRepositoryForm,
@@ -46,7 +47,7 @@ class RedmineBugTrackerConfigForm(BaseBugTrackerConfigForm):
         validators=[validate_bug_tracker_base_hosting_url])
 
 
-class Redmine(BaseHostingService):
+class Redmine(BaseHostingService, BaseBugTracker):
     """Hosting service for Redmine."""
 
     hosting_service_id = 'redmine'

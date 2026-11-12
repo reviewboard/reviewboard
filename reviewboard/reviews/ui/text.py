@@ -14,6 +14,7 @@ from djblets.cache.backend import cache_memoize
 from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
+from typing_extensions import NotRequired
 
 from reviewboard.attachments.mimetypes import TextMimetype
 from reviewboard.attachments.models import FileAttachment
@@ -56,6 +57,12 @@ class SerializedTextComment(SerializedComment):
     #: This will be either "source" or "rendered".
     viewMode: str
 
+    #: The version of the row layout used for the rendered view.
+    #:
+    #: Version Added:
+    #:     9.0
+    renderVersion: NotRequired[int]
+
 
 class TextBasedReviewUI(ReviewUI[
     FileAttachment,
@@ -92,6 +99,16 @@ class TextBasedReviewUI(ReviewUI[
     #:     8.1
     max_display_file_size: int = 1024 * 1024
 
+    #: The version of the row layout used for the rendered view.
+    #:
+    #: Comments on the rendered view store row numbers. Subclasses that
+    #: change how content is split into rows should bump this, and map
+    #: older row numbers in :py:meth:`get_comment_line_range`.
+    #:
+    #: Version Added:
+    #:     9.0
+    rendered_lines_version: int = 1
+
     js_model_class: str = 'RB.TextBasedReviewable'
     js_view_class: str = 'RB.TextBasedReviewableView'
 
@@ -110,6 +127,7 @@ class TextBasedReviewUI(ReviewUI[
 
         if self.can_render_text:
             data['viewMode'] = 'rendered'
+            data['renderVersion'] = self.rendered_lines_version
         else:
             data['viewMode'] = 'source'
 
@@ -217,11 +235,14 @@ class TextBasedReviewUI(ReviewUI[
             str:
             The file contents as a text string.
         """
-        return cast(
-            str,
-            cache_memoize('text-attachment-%d-string' % self.obj.pk,
-                          self._get_text_uncached,
-                          large_data=True))
+        return cache_memoize(
+            [
+                'text-attachment',
+                str(self.obj.pk),
+                'string',
+            ],
+            self._get_text_uncached,
+            large_data=True)
 
     def get_text_lines(self) -> Sequence[str]:
         """Return the file contents as syntax-highlighted lines.
@@ -232,9 +253,14 @@ class TextBasedReviewUI(ReviewUI[
         """
         return cast(
             Sequence[str],
-            cache_memoize('text-attachment-%d-lines' % self.obj.pk,
-                          lambda: list(self.generate_highlighted_text()),
-                          large_data=True))
+            cache_memoize(
+                [
+                    'text-attachment',
+                    str(self.obj.pk),
+                    'lines',
+                ],
+                lambda: list(self.generate_highlighted_text()),
+                large_data=True))
 
     def get_rendered_lines(self) -> list[str]:
         """Return the file contents as a render, based on the raw text.
@@ -248,11 +274,15 @@ class TextBasedReviewUI(ReviewUI[
             The rendered lines.
         """
         if self.can_render_text:
-            return cast(
-                list[str],
-                cache_memoize('text-attachment-%d-rendered' % self.obj.pk,
-                              lambda: list(self.generate_render()),
-                              large_data=True))
+            return cache_memoize(
+                [
+                    'text-attachment',
+                    str(self.obj.pk),
+                    'rendered',
+                    str(self.rendered_lines_version),
+                ],
+                lambda: list(self.generate_render()),
+                large_data=True)
         else:
             return []
 
@@ -270,7 +300,7 @@ class TextBasedReviewUI(ReviewUI[
 
         return data
 
-    def generate_highlighted_text(self) -> list[str]:
+    def generate_highlighted_text(self) -> Sequence[str]:
         """Generate syntax-highlighted text for the file.
 
         This will render the text file to HTML, applying any syntax
@@ -289,7 +319,7 @@ class TextBasedReviewUI(ReviewUI[
         lines = highlight(data, lexer, NoWrapperHtmlFormatter()).splitlines()
 
         return [
-            '<pre>%s</pre>' % line
+            f'<pre>{line}</pre>'
             for line in lines
         ]
 
@@ -366,6 +396,36 @@ class TextBasedReviewUI(ReviewUI[
 
         return result
 
+    def get_comment_line_range(
+        self,
+        extra_data: JSONDict,
+    ) -> tuple[int, int]:
+        """Return the first and last row numbers for a comment.
+
+        The row numbers are for the current row layout. Subclasses can
+        override this to map comments made on an older layout.
+
+        Version Added:
+            9.0
+
+        Args:
+            extra_data (dict):
+                The comment's extra data.
+
+        Returns:
+            tuple:
+            A 2-tuple of the first and last row numbers.
+
+        Raises:
+            KeyError:
+                The extra data is missing the line numbers.
+
+            ValueError:
+                A line number is not an integer.
+        """
+        return (int(extra_data['beginLineNum']),
+                int(extra_data['endLineNum']))
+
     def get_comment_thumbnail(
         self,
         comment: FileAttachmentComment,
@@ -384,16 +444,20 @@ class TextBasedReviewUI(ReviewUI[
             The rendered comment thumbnail.
         """
         try:
-            begin_line_num = int(comment.extra_data['beginLineNum'])
-            end_line_num = int(comment.extra_data['endLineNum'])
+            begin_line_num, end_line_num = \
+                self.get_comment_line_range(comment.extra_data)
             view_mode = comment.extra_data['viewMode']
         except (KeyError, ValueError):
             # This may be a comment from before we had review UIs. Or,
             # corrupted data. Either way, don't display anything.
             return None
 
-        cache_key = 'text-review-ui-comment-thumbnail-%s-%s' % (
-            self.obj.pk, comment.pk),
+        cache_key = [
+            'text-review-ui-comment-thumbnail',
+            str(self.obj.pk),
+            str(comment.pk),
+            str(self.rendered_lines_version),
+        ]
 
         return cast(
             str | None,
@@ -516,7 +580,8 @@ class TextBasedReviewUI(ReviewUI[
         base_url = super().get_comment_link_url(comment)
 
         try:
-            begin_line_num = int(comment.extra_data['beginLineNum'])
+            begin_line_num = \
+                self.get_comment_line_range(comment.extra_data)[0]
             view_mode = comment.extra_data['viewMode']
         except (KeyError, ValueError):
             # This may be a comment from before we had review UIs. Or,
@@ -591,6 +656,7 @@ class TextBasedReviewUI(ReviewUI[
         return [
             'text-attachment-diff',
             view_mode,
+            str(self.rendered_lines_version),
             str(self.diff_against_obj.pk),
             str(self.obj.pk),
             chunk_generator.diff_settings.state_hash,

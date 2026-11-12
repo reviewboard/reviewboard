@@ -17,8 +17,14 @@ from pydantic import ValidationError
 
 from reviewboard.hostingsvcs.errors import HostingServiceError
 from reviewboard.hostingsvcs.github import api, views
+from reviewboard.hostingsvcs.github.accounts import \
+    find_repository_for_installation
 from reviewboard.hostingsvcs.github.client import GitHubClient
 from reviewboard.hostingsvcs.github.forms import GitHubAppReplaceKeyForm
+from reviewboard.hostingsvcs.github.webhooks import (
+    BaseGitHubAppWebHookHandler,
+    github_app_webhook_handler_registry,
+)
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.testing.paginator import TestPaginator
 from reviewboard.hostingsvcs.tests.github.base import GitHubTestCase
@@ -79,6 +85,144 @@ class GitHubAppCreateViewTests(GitHubTestCase):
 
         self.assertTrue(
             manifest['hook_attributes']['url'].endswith(webhook_url))
+
+    def test_manifest_events_and_permissions(self) -> None:
+        """Testing GitHubAppCreateView manifest events and permissions with
+        no webhook handlers registered
+        """
+        url = local_site_reverse('github-app-create',
+                                 kwargs={'hosting_service_id': 'github'})
+        response = self.client.get(url)
+        manifest = json.loads(response.context['manifest_json'])
+
+        self.assertEqual(manifest['default_events'],
+                         ['installation_target', 'pull_request', 'push'])
+        self.assertEqual(
+            manifest['default_permissions'],
+            {
+                'checks': 'write',
+                'contents': 'read',
+                'metadata': 'read',
+                'pull_requests': 'read',
+            })
+
+    def test_manifest_with_webhook_handlers(self) -> None:
+        """Testing GitHubAppCreateView manifest includes events and
+        permissions required by webhook handlers
+        """
+        class PullRequestHandler(BaseGitHubAppWebHookHandler):
+            handler_id = 'pull-request-handler'
+            events = {
+                # A default event.
+                'push',
+
+                # A new event.
+                'status',
+            }
+            required_permissions = {
+                # A new permission.
+                'statuses': 'write',
+            }
+            event_labels = {
+                # A custom label on a default event.
+                'push': 'Custom push',
+
+                # A label for a new event.
+                'status': 'Commit Status',
+            }
+            permission_labels = {
+                # A label for a new permission.
+                'statuses': 'Commit statuses',
+            }
+
+        class InstallationHandler(BaseGitHubAppWebHookHandler):
+            handler_id = 'installation-handler'
+            events = {
+                # These are default events.
+                'installation',
+                'installation_repositories',
+            }
+            required_permissions = {
+                # A higher access level on a default permission.
+                'contents': 'write',
+            }
+            event_labels = {
+                'installation': 'Installations',
+                'installation_repositories': 'Installation repositories',
+            }
+            permission_labels = {
+                # A custom label on a default permission.
+                'contents': 'Custom contents',
+            }
+
+        for handler in (PullRequestHandler(), InstallationHandler()):
+            github_app_webhook_handler_registry.register(handler)
+            self.addCleanup(github_app_webhook_handler_registry.unregister,
+                            handler)
+
+        url = local_site_reverse('github-app-create',
+                                 kwargs={'hosting_service_id': 'github'})
+        response = self.client.get(url)
+        manifest = json.loads(response.context['manifest_json'])
+
+        self.assertEqual(
+            manifest['default_events'],
+            [
+                'installation_target',
+                'pull_request',
+                'push',
+                'status',
+            ])
+        self.assertEqual(
+            manifest['default_permissions'],
+            {
+                'checks': 'write',
+
+                # Use the higher access level from the handler instead of the
+                # default access level.
+                'contents': 'write',
+
+                'metadata': 'read',
+                'pull_requests': 'read',
+
+                # A new permission is included.
+                'statuses': 'write',
+            })
+        self.assertEqual(
+            response.context['events'],
+            [
+                'Account renames',
+                'Pull request',
+                'Push',
+                'Commit Status',
+            ])
+
+        self.assertEqual(
+            response.context['permissions'],
+            [
+                {
+                    'access': 'Read and write',
+                    'name': 'Checks',
+                },
+                {
+                    'access': 'Read and write',
+                    'name': 'Repository contents',
+                },
+                {
+                    'access': 'Read-only',
+                    'name': 'Repository metadata',
+                },
+                {
+                    'access': 'Read-only',
+                    'name': 'Pull requests',
+                },
+                {
+                    'access': 'Read and write',
+
+                    # Default label takes precedence over a custom one.
+                    'name': 'Commit statuses',
+                },
+            ])
 
 
 class GitHubAppCallbackViewTests(GitHubTestCase):
@@ -966,6 +1110,35 @@ class GitHubAppInstallCallbackViewTests(GitHubTestCase):
             'github_public_org_repo_name': 'repo2',
             'repository_plan': 'public-org',
         })
+
+    def test_post_clears_repository_map_cache(self) -> None:
+        """Testing GitHubAppInstallCallbackView POST clears the cached
+        repository map for the installation
+        """
+        installation_account = self._create_app_installation_account()
+        pat_account = self.create_hosting_account()
+        repository = self._create_org_repo('repo1', 'myorg', pat_account)
+
+        # Cache the installation's map before the repository moves to it.
+        self.assertIsNone(find_repository_for_installation(
+            account=installation_account,
+            owner='myorg',
+            name='repo1'))
+
+        self.login_user(admin=True)
+        url = local_site_reverse('github-app-install-callback',
+                                 kwargs={'hosting_service_id': 'github'})
+        response = self.client.post(url, {
+            'account_id': installation_account.pk,
+            'repositories': [repository.pk],
+        })
+
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(
+            find_repository_for_installation(account=installation_account,
+                                             owner='myorg',
+                                             name='repo1'),
+            repository)
 
     def test_post_ignores_non_candidate_repository(self) -> None:
         """Testing GitHubAppInstallCallbackView POST ignores non-candidates"""

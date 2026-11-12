@@ -237,6 +237,9 @@ class BaseHostingServiceConnectUI:
         *,
         accounts: Sequence[HostingServiceAccount],
         bug_tracker_count: int = 0,
+        bug_trackers_html: str = '',
+        needs_attention: bool = False,
+        repositories_html: str = '',
     ) -> SafeString:
         """Render the services list entry for this hosting service.
 
@@ -252,16 +255,34 @@ class BaseHostingServiceConnectUI:
                 The number of bug tracker configurations for this hosting
                 service.
 
+            bug_trackers_html (str, optional):
+                The rendered first page of the service's bug trackers.
+
+            needs_attention (bool, optional):
+                Whether any of the service's accounts need attention. This
+                opens the accounts list by default.
+
+            repositories_html (str, optional):
+                The rendered first page of the service's repositories.
+
         Returns:
             django.utils.safestring.SafeString:
             The rendered entry for the connected services list page.
         """
+        context = self.make_connected_services_list_entry_context(
+            request,
+            accounts=accounts,
+            bug_tracker_count=bug_tracker_count)
+        context.update({
+            'bug_trackers_html': bug_trackers_html,
+            'needs_attention': (needs_attention or
+                                context.get('needs_attention', False)),
+            'repositories_html': repositories_html,
+        })
+
         return render_to_string(
             self.connected_services_list_entry_template,
-            self.make_connected_services_list_entry_context(
-                request,
-                accounts=accounts,
-                bug_tracker_count=bug_tracker_count),
+            context,
             request=request)
 
     def make_connected_services_list_entry_context(
@@ -313,6 +334,12 @@ class BaseHostingServiceConnectUI:
             for account in accounts
         ]
 
+        visible_account_count = sum(
+            1
+            for account in accounts
+            if account.visible
+        )
+
         # The accounts offered in the repository filter dropdown. This covers
         # every account contributing rows to the list, so any row can be
         # isolated. Accounts are not filtered by visibility here: the list
@@ -327,22 +354,77 @@ class BaseHostingServiceConnectUI:
             if getattr(account, 'repository_count', 0)
         ]
 
+        total_repository_count = sum(
+            cast(int, entry['repository_count'])
+            for entry in accounts_data
+        )
+
+        from reviewboard.hostingsvcs.bug_tracker_forms import \
+            is_bug_tracker_configurable
+
+        # In-repo bug trackers are part of the repository, so only standalone
+        # bug trackers are mentioned.
+        links_repositories = service.supports_repositories
+        links_bug_trackers = is_bug_tracker_configurable(service)
+
+        # The service's page in the connect wizard. It offers the existing
+        # accounts' add actions and connecting another account. The wizard only
+        # offers services that connect an account.
+        connect_url: (str | None) = None
+        connect_label: (StrOrPromise | None) = None
+
+        if service.visible and service.needs_authorization:
+            connect_url = reverse(
+                'connected-services-connect',
+                kwargs={
+                    'service_id': service.hosting_service_id,
+                })
+
+            if links_repositories and links_bug_trackers:
+                connect_label = _(
+                    'Add a repository or bug tracker, or connect another '
+                    'account'
+                )
+            elif links_repositories:
+                connect_label = _(
+                    'Add a repository or connect another account'
+                )
+            elif links_bug_trackers:
+                connect_label = _(
+                    'Add a bug tracker or connect another account'
+                )
+            else:
+                connect_label = _('Connect another account')
+
+        empty_message: (StrOrPromise | None) = None
+
+        if (visible_account_count and
+            not total_repository_count and
+            not bug_tracker_count):
+            if links_repositories and links_bug_trackers:
+                empty_message = _('No linked repositories or bug trackers.')
+            elif links_repositories:
+                empty_message = _('No linked repositories.')
+            elif links_bug_trackers:
+                empty_message = _('No linked bug trackers.')
+
         return {
             'accounts_data': accounts_data,
             'bug_tracker_count': bug_tracker_count,
+            'connect_label': connect_label,
+            'connect_url': connect_url,
+            'empty_message': empty_message,
             'filter_accounts': filter_accounts,
-            'has_visible_accounts': any(
-                account.visible
-                for account in accounts
-            ),
             'service_id': service.hosting_service_id,
             'service_name': service.name,
             'service_logo': service.logo_image,
             'service_type': service_type,
-            'total_repository_count': sum(
-                cast(int, entry['repository_count'])
-                for entry in accounts_data
-            ),
+
+            # Services can set this to show the accounts section even with
+            # no visible accounts, such as for service-level controls.
+            'show_accounts_section': visible_account_count > 0,
+            'total_repository_count': total_repository_count,
+            'visible_account_count': visible_account_count,
         }
 
     def get_connected_services_list_account_detail(
@@ -659,7 +741,10 @@ class BaseHostingServiceConnectUI:
                 **params,
             })
             actions.append({
-                'description': account.username,
+                'description': (
+                    _('Using {account}')
+                    .format(account=account.username)
+                ),
                 'label': (
                     _('Add a repository from {host}')
                     .format(host=host)

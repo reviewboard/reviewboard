@@ -154,8 +154,10 @@
 
 /*
  * CodeMirror: Link
+ * Tree sitter: markup.link
  */
-.cm-s-rb .cm-link {
+.cm-s-rb .cm-link,
+.ts-markup-link {
   color: var(--ink-p-link-fg);
   text-decoration: none;
 }
@@ -191,8 +193,12 @@
   color: var(--rb-p-diff-delete-text-fg);
 }
 
-/* Pygments: Generic.Emph */
-.ge {
+/*
+ * Pygments: Generic.Emph
+ * Tree sitter: markup.italic
+ */
+.ge,
+.ts-markup-italic {
   font-style: italic;
 }
 
@@ -203,12 +209,26 @@
     var(--if-dark, #ff7979);
 }
 
-/* Pygments: Generic.Heading */
-.gh {
+/*
+ * Pygments: Generic.Heading
+ * Tree sitter: markup.heading
+ */
+.gh,
+.ts-markup-heading {
   color:
     var(--if-light, #000080)
     var(--if-dark, #ffa5ff);
   font-weight: bold;
+}
+
+/* Tree sitter: markup.quote */
+.ts-markup-quote {
+  color: var(--ink-p-fg-weak);
+}
+
+/* Tree sitter: markup.strikethrough */
+.ts-markup-strikethrough {
+  text-decoration: line-through;
 }
 
 /* Pygments: Generic.Inserted */
@@ -231,13 +251,21 @@
   font-weight: bold;
 }
 
-/* Pygments: Generic.Strong */
-.gs {
+/*
+ * Pygments: Generic.Strong
+ * Tree sitter: markup.strong
+ */
+.gs,
+.ts-markup-strong {
   font-weight: bold;
 }
 
-/* Pygments: Generic.Subheading */
-.gu {
+/*
+ * Pygments: Generic.Subheading
+ * Tree sitter: markup.list
+ */
+.gu,
+.ts-markup-list {
   color:
     var(--if-light, #800080)
     var(--if-dark, #ff6aff);
@@ -481,6 +509,7 @@
  * CodeMirror: String
  * CodeMirror: String 2
  * Tree sitter: string
+ * Tree sitter: markup.raw
  */
 .s,
 .s1,
@@ -491,6 +520,7 @@
 .sh,
 .cm-s-rb .cm-string,
 .cm-s-rb .cm-string-2,
+.ts-markup-raw,
 .ts-string {
   color:
     var(--if-light, #BB4444)

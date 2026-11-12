@@ -22,6 +22,7 @@ from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import build_server_url, get_server_url
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
     BaseHostingServiceRepositoryForm,
@@ -824,7 +825,7 @@ class BitbucketClient(HostingServiceClient['Bitbucket']):
                    quote(path)))
 
 
-class Bitbucket(BaseHostingService[BitbucketClient]):
+class Bitbucket(BaseHostingService[BitbucketClient], BaseBugTracker):
     """Hosting service support for Bitbucket.
 
     Bitbucket is a hosting service that supports Git and Mercurial
@@ -836,9 +837,7 @@ class Bitbucket(BaseHostingService[BitbucketClient]):
     name = 'Bitbucket'
 
     auth_form = BitbucketAuthForm
-    # TODO: This service currently doesn't implement BaseBugTracker, but once
-    # it does, uncomment this:
-    # bugs_in_repo = True
+    bugs_in_repo = True
     client_class = BitbucketClient
     has_repository_hook_instructions = True
     needs_authorization = True

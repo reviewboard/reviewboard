@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 from base64 import b64decode
 from typing import TypeVar, TYPE_CHECKING
 from urllib.error import HTTPError
@@ -33,6 +32,7 @@ from reviewboard.scmtools.errors import (
     FileNotFoundError,
     RepositoryNotFoundError,
 )
+from reviewboard.scmtools.git import expand_diff_blob_shas
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -58,12 +58,6 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
         8.0
     """
 
-    #: Regex for index lines in the diff.
-    _index_line_re: re.Pattern[bytes]
-
-    #: Regex for SHAs for deleted/added files.
-    _missing_file_sha_re: re.Pattern[str]
-
     def __init__(
         self,
         hosting_service: Forgejo,
@@ -77,9 +71,6 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
         super().__init__(hosting_service)
 
         self.account = hosting_service.account
-        self._index_line_re = re.compile(
-            br'^index (?P<a>[0-9a-f]+)..(?P<b>[0-9a-f]+)((?P<rest>\s.*)?)$')
-        self._missing_file_sha_re = re.compile(r'^0+$')
 
     def get_http_credentials(
         self,
@@ -610,7 +601,7 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
         diff_url = f'{repo_root}/git/commits/{url_revision}.diff'
 
         try:
-            diff = self.http_get(diff_url).data.splitlines()
+            diff = self.http_get(diff_url).data
         except HTTPError as e:
             logger.error('HTTP error fetching diff at %s (repository %s): %s',
                          diff_url, repository, e)
@@ -618,44 +609,16 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
             raise HostingServiceError(
                 'Failed to fetch diff data from Forgejo.')
 
-        all_shas = (
-            self._get_blob_shas_in_tree(repo_root, commit.sha, repository) |
-            self._get_blob_shas_in_tree(repo_root, parent, repository))
+        if parent:
+            source_shas = self._get_blob_shas_in_tree(repo_root, parent,
+                                                      repository)
+        else:
+            # This is a root commit. Every file is newly added, so there are
+            # no source blobs to look up.
+            source_shas = set()
 
-        diff_lines: list[bytes] = []
-        index_line_re = self._index_line_re
-        missing_file_sha_re = self._missing_file_sha_re
-
-        def expand_sha(
-            partial_sha: str,
-        ) -> str:
-            if missing_file_sha_re.match(partial_sha):
-                return '0' * 40
-
-            for full_sha in all_shas:
-                if full_sha.startswith(partial_sha):
-                    return full_sha
-
-            logger.warning('Unable to find full SHA for blob %s (repository '
-                           '%s)',
-                           partial_sha, repository)
-            return partial_sha
-
-        for line in diff:
-            m = index_line_re.match(line)
-
-            if m:
-                sha1 = expand_sha(m.group('a').decode())
-                sha2 = expand_sha(m.group('b').decode())
-                rest = m.group('rest') or b''
-
-                new_line = (b'index %s..%s%s'
-                            % (sha1.encode(), sha2.encode(), rest))
-
-                diff_lines.append(new_line)
-            else:
-                new_line = line
-                diff_lines.append(line)
+        dest_shas = self._get_blob_shas_in_tree(repo_root, commit.sha,
+                                                repository)
 
         return Commit(
             author_name=commit.commit.author.name,
@@ -663,7 +626,9 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
             date=commit.created,
             message=commit.commit.message,
             parent=parent,
-            diff=b'\n'.join(diff_lines),
+            diff=expand_diff_blob_shas(diff=diff,
+                                       blob_shas=source_shas | dest_shas,
+                                       repository=repository),
         )
 
     def get_bug_info(
@@ -856,7 +821,7 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
         repo_root: str,
         commit: str,
         repository: Repository,
-    ) -> set[str]:
+    ) -> set[bytes]:
         """Return all the SHAs in the tree for a given commit.
 
         Args:
@@ -870,7 +835,7 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
                 The repository.
 
         Returns:
-            set:
+            set of bytes:
             A set of all the blob SHAs in the tree.
 
         Raises:
@@ -879,7 +844,7 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
         """
         url_commit = urlquote(commit)
         url = f'{repo_root}/git/trees/{url_commit}'
-        result: set[str] = set()
+        result: set[bytes] = set()
 
         page = 1
 
@@ -897,7 +862,7 @@ class ForgejoClient(HostingServiceClient['Forgejo']):
                 break
 
             for entry in tree_page.tree:
-                result.add(entry.sha)
+                result.add(entry.sha.encode('utf-8'))
 
             if tree_page.truncated:
                 page += 1

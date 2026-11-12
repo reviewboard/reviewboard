@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, cast
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from django.core.cache import cache
+from django.template.loader import render_to_string
 from django.test.client import RequestFactory
 from django.urls import reverse
 from djblets.cache.backend import make_cache_key
@@ -656,6 +657,40 @@ class GitHubAppTests(GitHubTestCase):
 
         self.assertEqual(items, [])
 
+    def test_list_entry_needs_attention_without_app(self) -> None:
+        """Testing GitHubConnectUI.render_connected_services_list_entry
+        opens the accounts section when no GitHub App is installed
+        """
+        context = self._render_list_entry_context(
+            accounts=[self.create_hosting_account()])
+
+        self.assertFalse(context['github_app_installed'])
+        self.assertTrue(context['needs_attention'])
+
+    def test_list_entry_needs_attention_with_app(self) -> None:
+        """Testing GitHubConnectUI.render_connected_services_list_entry
+        leaves the accounts section closed when a GitHub App is installed
+        """
+        context = self._render_list_entry_context(
+            accounts=[self._create_app_record_account()])
+
+        self.assertTrue(context['github_app_installed'])
+        self.assertFalse(context['needs_attention'])
+
+    def test_list_entry_needs_attention_with_app_and_attention_items(
+        self,
+    ) -> None:
+        """Testing GitHubConnectUI.render_connected_services_list_entry
+        keeps needs_attention=True from the caller when a GitHub App is
+        installed
+        """
+        context = self._render_list_entry_context(
+            accounts=[self._create_app_record_account()],
+            needs_attention=True)
+
+        self.assertTrue(context['github_app_installed'])
+        self.assertTrue(context['needs_attention'])
+
     def test_mint_403_marks_installation_suspended(self) -> None:
         """Testing GitHubClient token minting marks the installation suspended
         when GitHub refuses with a 403 and reports a suspension
@@ -964,6 +999,40 @@ class GitHubAppTests(GitHubTestCase):
 
         with self.assertRaises(ValueError):
             encrypt_app_private_key(ec_pem)
+
+    def _render_list_entry_context(
+        self,
+        *,
+        accounts: list[HostingServiceAccount],
+        needs_attention: bool = False,
+    ) -> dict[str, Any]:
+        """Render the connected services list entry and return its context.
+
+        Version Added:
+            9.0
+
+        Args:
+            accounts (list of
+                      reviewboard.hostingsvcs.models.HostingServiceAccount):
+                The accounts to render the entry for.
+
+            needs_attention (bool, optional):
+                The ``needs_attention`` value to pass in.
+
+        Returns:
+            dict:
+            The context the list entry template was rendered with.
+        """
+        self.spy_on(render_to_string, call_original=False)
+
+        GitHub.connect_ui.render_connected_services_list_entry(
+            RequestFactory().get('/'),
+            accounts=accounts,
+            needs_attention=needs_attention)
+
+        self.assertSpyCalledOnce(render_to_string)
+
+        return render_to_string.last_call.kwargs['context']
 
     def _get_reconnect_view_url(
         self,

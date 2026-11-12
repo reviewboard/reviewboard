@@ -7,60 +7,25 @@
 {%  include "admin/connected_services/_parts/service.html" %}
   </div>
 {% endblock service_header %}
+{% if connect_url %}
+  <a class="rb-c-admin-cs-card__add" href="{{connect_url}}"
+     data-wizard-connect-url="{{connect_url}}"
+     aria-label="{{connect_label}}" title="{{connect_label}}">
+   <span class="ink-i-add" aria-hidden="true"></span>
+  </a>
+{% endif %}
  </div>
 
-{% block service_controls %}{% endblock %}
-
  <div class="rb-c-admin-cs-card__body">
-{% if has_visible_accounts %}
-  <ul class="rb-c-admin-cs-accounts">
-{% block service_accounts %}
-{%  for entry in accounts_data %}
-{%   if entry.account.visible %}
-   <li class="rb-c-admin-cs-accounts__account">
-    <div class="rb-c-admin-cs-accounts__account__main">
-     <div class="rb-c-admin-cs-accounts__account__identity">
-      <span class="rb-c-admin-cs-accounts__account__title">
-       <span class="rb-c-admin-cs-accounts__account__name">
-        {{entry.account.username|default:_("(unnamed account)")}}
-       </span>
-{%    if entry.account.hosting_url %}
-       <span class="rb-c-admin-cs-accounts__account__url">
-        ({{entry.account.hosting_url}})
-       </span>
-{%    endif %}
-      </span>
-     </div>
-     <div class="rb-c-admin-cs-accounts__account__actions">
-{%    include "admin/connected_services/_parts/account_menu.html" %}
-     </div>
-    </div>
-   </li>
-{%   endif %}
-{%  endfor %}
-{% endblock service_accounts %}
-  </ul>
-{% endif %}
-
 {% block service_bug_trackers %}
 {%  if bug_tracker_count %}
   <div class="rb-c-admin-cs-service-items"
        data-item-type="bug-trackers"
        data-service-id="{{service_id}}"
        data-item-count="{{bug_tracker_count}}">
-   <button class="rb-c-admin-cs-service-items__header" type="button"
-           aria-expanded="false"
-           aria-controls="cs-{{service_id}}-bug-trackers">
-    <span class="rb-c-admin-cs-service-items__disclosure"
-          aria-hidden="true"></span>
-{%   blocktrans trimmed count counter=bug_tracker_count %}
-    {{counter}} bug tracker
-{%   plural %}
-    {{counter}} bug trackers
-{%   endblocktrans %}
-   </button>
-   <div class="rb-c-admin-cs-service-items__panel"
-        id="cs-{{service_id}}-bug-trackers" hidden></div>
+   <div class="rb-c-admin-cs-service-items__panel">
+    <div class="rb-c-admin-cs-service-items__results-container">{{bug_trackers_html}}</div>
+   </div>
   </div>
 {%  endif %}
 {% endblock service_bug_trackers %}
@@ -70,5 +35,51 @@
 {%   include "admin/connected_services/_parts/service_repositories.html" %}
 {%  endif %}
 {% endblock service_items %}
+
+{% if empty_message %}
+  <div class="rb-c-admin-cs-card__empty">
+   <p>{{empty_message}}</p>
+  </div>
+{% endif %}
+
+{% if show_accounts_section %}
+  <details class="rb-c-admin-cs-accounts-section"{% if needs_attention %} open{% endif %}>
+   <summary class="rb-c-admin-cs-accounts-section__summary">
+{%  blocktrans trimmed count counter=visible_account_count %}
+    {{counter}} connected account
+{%  plural %}
+    {{counter}} connected accounts
+{%  endblocktrans %}
+   </summary>
+{% block service_controls %}{% endblock %}
+   <ul class="rb-c-admin-cs-accounts">
+{% block service_accounts %}
+{%  for entry in accounts_data %}
+{%   if entry.account.visible %}
+    <li class="rb-c-admin-cs-accounts__account">
+     <div class="rb-c-admin-cs-accounts__account__main">
+      <div class="rb-c-admin-cs-accounts__account__identity">
+       <span class="rb-c-admin-cs-accounts__account__title">
+        <span class="rb-c-admin-cs-accounts__account__name">
+         {{entry.account.username|default:_("(unnamed account)")}}
+        </span>
+{%    if entry.account.hosting_url %}
+        <span class="rb-c-admin-cs-accounts__account__url">
+         ({{entry.account.hosting_url}})
+        </span>
+{%    endif %}
+       </span>
+      </div>
+      <div class="rb-c-admin-cs-accounts__account__actions">
+{%    include "admin/connected_services/_parts/account_menu.html" %}
+      </div>
+     </div>
+    </li>
+{%   endif %}
+{%  endfor %}
+{% endblock service_accounts %}
+   </ul>
+  </details>
+{% endif %}
  </div>
 </li>

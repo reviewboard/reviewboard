@@ -1,6 +1,7 @@
 @import (reference) "djblets/css/mixins/markdown.less";
 
 @import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/mixins/markdown.less";
 
 
 /****************************************************************************
@@ -60,6 +61,10 @@
     }
   }
 
+  :is(li, blockquote) .codehilite {
+    .rb-markdown-nested-code-block();
+  }
+
   code {
     white-space: pre-wrap;
     border: 0;
@@ -86,6 +91,53 @@
       bottom: calc(-1 * var(--rb-u-inline-code-border-size));
       pointer-events: none;
       visibility: visible;
+    }
+  }
+
+  .rb-markdown-task-lists();
+  .rb-markdown-alerts();
+
+  blockquote {
+    border-left: 3px solid var(--ink-p-fg-weak);
+    margin-left: 0;
+  }
+
+  blockquote.admonition {
+    padding: 0.5em 1em;
+  }
+
+  /* Tables use the standard data table styles. */
+  table {
+    background: var(--ink-c-data-table-body-bg);
+    border: var(--ink-c-data-table-border);
+    border-collapse: collapse;
+    color: var(--ink-c-data-table-body-fg);
+    margin-left: 0;
+
+    thead {
+      background: var(--ink-c-data-table-header-bg);
+      color: var(--ink-c-data-table-header-fg);
+    }
+
+    th, td {
+      border: 0;
+      padding: var(--ink-c-data-table-cell-padding-vert) 1ch;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      font-weight: bold;
+    }
+
+    tbody tr {
+      border-top: var(--ink-c-data-table-row-border);
+    }
+
+    /* Undo the extra space the Djblets styles put around the header. */
+    thead tr:last-child th,
+    tbody tr:first-child td {
+      padding-block: var(--ink-c-data-table-cell-padding-vert);
     }
   }
 

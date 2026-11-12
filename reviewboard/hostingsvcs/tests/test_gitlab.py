@@ -1690,6 +1690,24 @@ class GitLabTests(GitLabTestCase):
         self.spy_on(service._get_api_version,
                     call_fake=lambda self, hosting_url: api_version)
 
+    def test_get_bug_url(self) -> None:
+        """Testing GitLab.get_bug_url with an in-repo bug tracker
+        configuration
+        """
+        config = self.create_bug_tracker(
+            service_name='gitlab',
+            hosting_account=self.create_hosting_account(data={}),
+            settings={
+                'hosting_account_username': 'myuser',
+                'hosting_url': 'https://gitlab.example.com',
+                'gitlab_personal_repo_name': 'myrepo',
+                'plan': 'personal',
+            })
+
+        self.assertEqual(
+            config.get_bug_url('42'),
+            'https://gitlab.example.com/myuser/myrepo/issues/42')
+
 
 class GitLabHostingURLWidgetTests(GitLabTestCase):
     """Unit tests for reviewboard.hostingsvcs.gitlab.GitLabHostingURLWidget."""

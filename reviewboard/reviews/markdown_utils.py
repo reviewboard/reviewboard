@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+import logging
+import re
+from html import unescape
+from typing import TYPE_CHECKING
+
 import pymdownx.emoji
 from bleach.sanitizer import Cleaner
 from django.conf import settings
@@ -10,20 +15,213 @@ from django.utils.html import escape
 from djblets import markdown as djblets_markdown
 from djblets.siteconfig.models import SiteConfiguration
 from markdown import markdown
+from markdown.extensions import Extension
+from markdown.preprocessors import Preprocessor
+from markdown.treeprocessors import Treeprocessor
+from markdown.util import HTML_PLACEHOLDER
+from pygments import highlight
+from pygments.formatters import HtmlFormatter
+from pygments.lexers import get_lexer_by_name
+from pygments.util import ClassNotFound
+
+from reviewboard.reviews.markdown_lists import ListIndentExtension
+from reviewboard.treesitter.core import get_parser
+from reviewboard.treesitter.highlight import highlight as ts_highlight
+from reviewboard.treesitter.language import get_language_name_for_info_string
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from xml.etree.ElementTree import Element
+
+    from markdown import Markdown
 
 
-# Keyword arguments used when calling a Markdown renderer function.
-#
-# We use XHTML instead of HTML5 to ensure the results can be parsed by an
-# XML parser, needed for doing diffs in change descriptions and the Markdown
-# review UI.
+logger = logging.getLogger(__name__)
+
+
+#: Regex for a line holding only a placeholder for stashed HTML.
+#:
+#: This matches lines that aren't indented, optionally inside blockquotes.
+#: Indented placeholders are inside list items, and are left alone.
+#:
+#: Version Added:
+#:     9.0
+_STASH_LINE_RE = re.compile(
+    r'^(?P<quote>(?: {0,3}> ?)*)%s *$' % (HTML_PLACEHOLDER % r'\d+'))
+
+
+class _AlertBlockquoteTreeprocessor(Treeprocessor):
+    """Renders alerts as blockquotes.
+
+    Version Added:
+        9.0
+    """
+
+    def run(
+        self,
+        root: Element,
+    ) -> None:
+        """Change each alert's element to a blockquote.
+
+        Args:
+            root (xml.etree.ElementTree.Element):
+                The root of the rendered tree.
+        """
+        for element in root.iter('div'):
+            if 'admonition' in element.get('class', '').split():
+                element.tag = 'blockquote'
+
+
+class _AlertBlockquoteExtension(Extension):
+    """Renders alerts as blockquotes instead of divs.
+
+    Code that splits rendered Markdown into lines treats a top-level div as
+    a code block. Alerts are blockquotes in the source, and this keeps them
+    that way. Places that don't style alerts, such as some e-mail clients,
+    still show a blockquote.
+
+    Version Added:
+        9.0
+    """
+
+    def extendMarkdown(  # noqa: N802
+        self,
+        md: Markdown,
+    ) -> None:
+        """Add the treeprocessor to the Markdown instance.
+
+        Args:
+            md (markdown.Markdown):
+                The Markdown instance.
+        """
+        md.treeprocessors.register(_AlertBlockquoteTreeprocessor(md),
+                                   'alert_blockquote', 0)
+
+
+class _FenceSpacingPreprocessor(Preprocessor):
+    """Adds blank lines around fenced code blocks.
+
+    Version Added:
+        9.0
+    """
+
+    def run(
+        self,
+        lines: list[str],
+    ) -> list[str]:
+        """Add a blank line before and after each fenced code block.
+
+        This is only done for code blocks that aren't in a list item. In a
+        list item, a blank line would split the item into paragraphs.
+
+        In a blockquote, blank lines are only added between the code block
+        and text next to it.
+
+        Between two code blocks, only the first one gets a blank line.
+        Otherwise the blank lines would add up and show as a tall gap.
+
+        Args:
+            lines (list of str):
+                The lines of Markdown.
+
+        Returns:
+            list of str:
+            The lines, with blank lines added.
+        """
+        result: list[str] = []
+        num_lines = len(lines)
+
+        # Whether the last line with content was a code block.
+        after_code = False
+
+        for i, line in enumerate(lines):
+            m = _STASH_LINE_RE.match(line)
+
+            if not m:
+                result.append(line)
+
+                if line.strip(' >'):
+                    after_code = False
+
+                continue
+
+            # Keep the blank lines inside the same blockquotes.
+            blank = m.group('quote').rstrip()
+
+            # In a blockquote, a blank line at the start or end would show
+            # as extra space inside the quote. Only add them next to text.
+            if blank:
+                add_before = bool(result and result[-1].strip(' >'))
+                add_after = (i + 1 < num_lines and
+                             bool(lines[i + 1].strip(' >')))
+            else:
+                add_before = not after_code
+                add_after = True
+
+            after_code = True
+
+            if add_before:
+                result.append(blank)
+
+            result.append(line)
+
+            if add_after:
+                result.append(blank)
+
+        return result
+
+
+class _FenceSpacingExtension(Extension):
+    """Adds blank lines around fenced code blocks.
+
+    ``pymdownx.superfences`` replaces each fenced code block with a
+    placeholder line, without blank lines around it. Text right after the
+    closing fence would then be part of the same paragraph as the code.
+
+    Python-Markdown's own ``fenced_code`` extension adds a blank line on
+    each side. Those end the paragraphs around the code, and the
+    ``wysiwyg`` extension shows them as space around the code block. This
+    does the same.
+
+    Version Added:
+        9.0
+    """
+
+    def extendMarkdown(  # noqa: N802
+        self,
+        md: Markdown,
+    ) -> None:
+        """Add the preprocessor to the Markdown instance.
+
+        This runs right after ``pymdownx.superfences`` pulls out fenced
+        code blocks.
+
+        Args:
+            md (markdown.Markdown):
+                The Markdown instance.
+        """
+        md.preprocessors.register(_FenceSpacingPreprocessor(md),
+                                  'fence_spacing', 24)
+
+
+#: Keyword arguments used when calling a Markdown renderer function.
+#:
+#: We use XHTML instead of HTML5 to ensure the results can be parsed by an
+#: XML parser, needed for doing diffs in change descriptions and the Markdown
+#: review UI.
+#:
+#: Comments on Markdown file attachments store row numbers, and these
+#: options decide how content is split into rows. A change that adds,
+#: removes, merges, or splits blocks, or changes their text, will move those
+#: comments. Bump MarkdownReviewUI.rendered_lines_version for any such
+#: change, and keep a frozen copy of the old rendering in
+#: :py:mod:`reviewboard.reviews.ui.legacy_markdown` so older comments can
+#: be mapped.
 MARKDOWN_KWARGS = {
     'enable_attributes': False,
     'output_format': 'xhtml',
     'lazy_ol': False,
     'extensions': [
-        'markdown.extensions.fenced_code',
-        'markdown.extensions.codehilite',
         'markdown.extensions.sane_lists',
         'markdown.extensions.tables',
         'markdown.extensions.nl2br',
@@ -31,12 +229,16 @@ MARKDOWN_KWARGS = {
         'pymdownx.emoji',
         'djblets.markdown.extensions.escape_html',
         'djblets.markdown.extensions.wysiwyg',
+        'pymdownx.highlight',
+        'pymdownx.magiclink',
+        'pymdownx.quotes',
+        'pymdownx.superfences',
+        'pymdownx.tasklist',
+        ListIndentExtension(),
+        _AlertBlockquoteExtension(),
+        _FenceSpacingExtension(),
     ],
     'extension_configs': {
-        'markdown.extensions.codehilite': {
-            'guess_lang': False,
-            'linenums': False,
-        },
         'pymdownx.emoji': {
             'emoji_index': pymdownx.emoji.gemoji,
             'options': {
@@ -46,6 +248,12 @@ MARKDOWN_KWARGS = {
                 'non_standard_image_path': ('https://github.githubassets.com/'
                                             'images/icons/emoji/'),
             },
+        },
+        'pymdownx.highlight': {
+            'use_pygments': False,
+        },
+        'pymdownx.quotes': {
+            'callouts': True,
         },
     },
 }
@@ -110,6 +318,29 @@ SAFE_MARKDOWN_ATTRS = {
     'a': ['href', 'alt', 'title'],
     'img': ['src', 'alt', 'title'],
 }
+
+
+#: Regex to find code blocks in rendered Markdown.
+#:
+#: This also takes any line break just before or after the block. Those
+#: come from a fence inside a list item, and would show as extra blank
+#: lines.
+#:
+#: Version Added:
+#:     9.0
+_CODE_BLOCK_RE = re.compile(
+    r'(?:<br />\s*)?'
+    r'<pre class="highlight"><code(?: class="language-(?P<lang>[^"]+)")?>'
+    r'(?P<code>.*?)</code></pre>'
+    r'(?:<br />)?',
+    re.S)
+
+#: Regex to find task list checkboxes.
+#:
+#: Version Added:
+#:     9.0
+_TASK_CHECKBOX_RE = re.compile(
+    r'<input type="checkbox" disabled(?P<checked> checked)?/>')
 
 
 #: A list of protocols considered safe for URLs.
@@ -271,7 +502,11 @@ def render_markdown(text):
         unicode:
         The Markdown-rendered XHTML.
     """
-    return clean_markdown_html(markdown(force_str(text), **MARKDOWN_KWARGS))
+    html = markdown(force_str(text), **MARKDOWN_KWARGS)
+    html = _CODE_BLOCK_RE.sub(_replace_code_block, html)
+    html = replace_task_checkboxes(html)
+
+    return clean_markdown_html(html)
 
 
 def render_markdown_from_file(f):
@@ -293,5 +528,142 @@ def render_markdown_from_file(f):
         unicode:
         The Markdown-rendered XHTML.
     """
-    return clean_markdown_html(djblets_markdown.render_markdown_from_file(
-        f, **MARKDOWN_KWARGS))
+    return render_markdown(f.read())
+
+
+def _replace_code_block(
+    m: re.Match[str],
+) -> str:
+    """Return a highlighted code block.
+
+    Code blocks are split into lines when diffing fields, so this uses
+    the same layout as the ``codehilite`` extension. Each line of code is
+    on its own line in the HTML.
+
+    Version Added:
+        9.0
+
+    Args:
+        m (re.Match):
+            The match for the code block.
+
+    Returns:
+        str:
+        The HTML for the code block.
+    """
+    code_html = m.group('code')
+    code = unescape(code_html)
+    lines = highlight_code_block(code, code.split('\n'), m.group('lang') or '')
+
+    if lines is None:
+        lines = code_html.split('\n')
+
+    inner = '\n'.join(lines)
+
+    return f'<div class="codehilite"><pre><code>{inner}\n</code></pre></div>'
+
+
+def replace_task_checkboxes(
+    html: str,
+) -> str:
+    """Replace task list checkboxes with characters.
+
+    Checkboxes aren't allowed through the sanitizer, so they're shown as
+    characters instead. This must be called before
+    :py:func:`clean_markdown_html`. HTML typed in the text is escaped by
+    then, so only checkboxes from task lists are replaced.
+
+    Version Added:
+        9.0
+
+    Args:
+        html (str):
+            The rendered Markdown.
+
+    Returns:
+        str:
+        The HTML with checkboxes replaced.
+    """
+    return _TASK_CHECKBOX_RE.sub(_replace_task_checkbox, html)
+
+
+def _replace_task_checkbox(
+    m: re.Match[str],
+) -> str:
+    """Return a character to show in place of a task's checkbox.
+
+    Version Added:
+        9.0
+
+    Args:
+        m (re.Match):
+            The match for the checkbox.
+
+    Returns:
+        str:
+        The HTML for the checkbox.
+    """
+    if m.group('checked'):
+        return '<span class="task-list-checkbox -is-checked">\u2611</span>'
+    else:
+        return '<span class="task-list-checkbox">\u2610</span>'
+
+
+def highlight_code_block(
+    code: str,
+    code_lines: Sequence[str],
+    info_string: str,
+) -> Sequence[str] | None:
+    """Return syntax-highlighted lines for a code block.
+
+    This uses tree-sitter when it supports the language, and Pygments
+    otherwise.
+
+    Version Added:
+        9.0
+
+    Args:
+        code (str):
+            The code to highlight.
+
+        code_lines (list of str):
+            The code, split into lines.
+
+        info_string (str):
+            The language named on the code fence. This may be empty.
+
+    Returns:
+        list of str:
+        The highlighted lines, or ``None`` if the code can't be highlighted.
+    """
+    if not info_string:
+        return None
+
+    language_name = get_language_name_for_info_string(info_string)
+
+    if language_name:
+        content = code.encode()
+
+        try:
+            tree = get_parser(language_name).parse(content)
+            lines = ts_highlight(content, code_lines, tree, language_name)
+
+            if lines:
+                return lines
+        except Exception as e:
+            logger.exception('Tree-sitter highlighting failed for a %s code '
+                             'block in Markdown: %s',
+                             language_name, e)
+
+    try:
+        lexer = get_lexer_by_name(info_string)
+    except ClassNotFound:
+        return None
+
+    lines = highlight(code, lexer, HtmlFormatter(nowrap=True)).splitlines()
+
+    if len(lines) != len(code_lines):
+        # Line counts must match, or lines would be lost.
+        return None
+
+    return lines

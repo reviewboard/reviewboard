@@ -44,7 +44,7 @@
 <span class="ts-string">    $0 -v -p 3.10          # Verbose setup with Python 3.10</span>
 <span class="ts-string">    $0 --dry-run           # Preview what would be done</span>
 <span class="ts-string"></span>
-<span class="ts-string"></span>EOF
+EOF
 }
 
 <span class="ts-comment"># Logging functions</span>
@@ -408,7 +408,7 @@
 <span class="ts-string">For more information, see the documentation at:</span>
 <span class="ts-string">https://example.com/docs/</span>
 <span class="ts-string"></span>
-<span class="ts-string"></span>EOF
+EOF
 }
 
 <span class="ts-comment"># Script entry point</span>

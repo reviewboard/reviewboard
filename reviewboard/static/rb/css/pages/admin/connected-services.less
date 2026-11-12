@@ -195,9 +195,9 @@
  *
  * This is used for entries in the connected services list as well as steps in
  * the process of connecting a new service. It's shown as a bordered card
- * containing a header that identifies the service and a body that lists the
- * linked accounts. An optional block of service-level controls may sit between
- * the header and the accounts.
+ * containing a header that identifies the service and a body. In the
+ * connected services list, the body lists the service's bug trackers and
+ * repositories, followed by its accounts in a collapsible section.
  *
  * Version Added:
  *     9.0
@@ -205,10 +205,11 @@
  * Structure:
  *     <li class="rb-c-admin-cs-card">
  *      <div class="rb-c-admin-cs-card__header">...</div>
- *      ...
- *      <div class="rb-c-admin-cs-card__body">...</div>
- *      <ul class="rb-c-admin-cs-accounts">...</ul>
- *      [<div class="rb-c-admin-cs-service-items">...</div>]
+ *      <div class="rb-c-admin-cs-card__body">
+ *       [<div class="rb-c-admin-cs-service-items">...</div> ...]
+ *       [<div class="rb-c-admin-cs-card__empty">...</div>]
+ *       [<details class="rb-c-admin-cs-accounts-section">...</details>]
+ *      </div>
  *     </li>
  */
 .rb-c-admin-cs-card {
@@ -235,6 +236,23 @@
   }
 
   /**
+   * The message shown when a service has no repositories or bug trackers.
+   *
+   * Structure:
+   *     <div class="rb-c-admin-cs-card__empty">
+   *      <p>...</p>
+   *     </div>
+   */
+  &__empty {
+    color: var(--ink-p-fg-weak);
+    padding: var(--ink-u-spacing-std);
+
+    p {
+      margin: 0;
+    }
+  }
+
+  /**
    * The header for a connected service card.
    *
    * This sits at the top of the entry's card. It identifies the service and
@@ -244,7 +262,7 @@
    * Structure:
    *     <div class="rb-c-admin-cs-card__header">
    *      <div class="rb-c-admin-cs-service">...</div>
-   *      ...
+   *      [<a class="rb-c-admin-cs-card__add">...</a>]
    *     </div>
    */
   &__header {
@@ -261,6 +279,15 @@
     >:first-child {
       flex: 1;
     }
+  }
+
+  /**
+   * The link to add to the service, in the card header.
+   *
+   * The padding gives it a larger click target.
+   */
+  &__add {
+    padding: var(--ink-u-spacing-s);
   }
 
   &__form-actions {
@@ -282,6 +309,68 @@
   background-color: var(--ink-p-grey-150);
   border-bottom: 1px solid var(--ink-p-container-border-color-weak);
   padding: var(--ink-u-spacing-std);
+}
+
+
+/**
+ * The collapsible section holding a service's accounts.
+ *
+ * This is collapsed by default, and opened by the server when an account
+ * needs attention.
+ *
+ * Structure:
+ *     <details class="rb-c-admin-cs-accounts-section" [open]>
+ *      <summary class="rb-c-admin-cs-accounts-section__summary">
+ *       N connected accounts
+ *      </summary>
+ *      [<div class="rb-c-admin-cs-service-controls">...</div>]
+ *      <ul class="rb-c-admin-cs-accounts">...</ul>
+ *     </details>
+ */
+.rb-c-admin-cs-accounts-section {
+  border-top: 1px solid var(--ink-p-container-border-color-weak);
+  overflow: clip;
+
+  /*
+   * When this leads the card body (such as a service with no items), the
+   * card header's bottom border already separates it.
+   */
+  &:first-child {
+    border-top: 0;
+  }
+
+  &__summary {
+    align-items: center;
+    background: var(--ink-p-grey-150);
+    cursor: pointer;
+    display: flex;
+    font-weight: bold;
+    gap: var(--ink-u-spacing-xs);
+    list-style: none;
+    padding: var(--ink-u-spacing-std);
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::before {
+      #ink-ns-ui.icons.svg-icon(@icon: var(--rb-i-caret-right);
+                                @size: var(--ink-u-icon-sm));
+    }
+
+    &:hover {
+      background-color: var(--ink-p-grey-200);
+    }
+  }
+
+  &[open] > &__summary {
+    border-bottom: 1px solid var(--ink-p-container-border-color-weak);
+
+    &::before {
+      #ink-ns-ui.icons.svg-icon(@icon: var(--rb-i-caret-down);
+                                @size: var(--ink-u-icon-sm));
+    }
+  }
 }
 
 
@@ -453,21 +542,15 @@
 /**
  * The section for the list of actual connected items in a service.
  *
- * This contains a disclosure row and a list of the connected items
- * (repositories, bug trackers, etc).
+ * This contains a list of the connected items (repositories, bug trackers,
+ * etc). The first page of the list is rendered by the server.
  *
  * Structure:
  *     <div class="rb-c-admin-cs-service-items"
  *          data-item-type="..."
  *          data-service-id="..."
  *          data-item-count="...">
- *      <button class="rb-c-admin-cs-service-items__header" type="button"
- *              aria-expanded="true" aria-controls="ID">
- *       <span class="rb-c-admin-cs-service-items__disclosure -is-open"
- *             aria-hidden="true"></span>
- *       N connected repositories
- *      </button>
- *      <div class="rb-c-admin-cs-service-items__panel" id="ID">
+ *      <div class="rb-c-admin-cs-service-items__panel">
  *       [<div class="rb-c-admin-cs-service-items__filter">...</div>]
  *       <div class="rb-c-admin-cs-service-items__results-container">
  *        ...
@@ -489,23 +572,6 @@
    */
   &:first-child {
     border-top: 0;
-  }
-
-  /**
-   * The disclosure triangle.
-   *
-   * Modifiers:
-   *     -is-open:
-   *         Whether the disclosure is open.
-   */
-  &__disclosure {
-    #ink-ns-ui.icons.svg-icon(@icon: var(--rb-i-caret-right);
-                              @size: var(--ink-u-icon-sm));
-
-    &.-is-open {
-      #ink-ns-ui.icons.svg-icon(@icon: var(--rb-i-caret-down);
-                                @size: var(--ink-u-icon-sm));
-    }
   }
 
   /**
@@ -539,31 +605,6 @@
     }
   }
 
-  &__header {
-    align-items: center;
-    background: var(--ink-p-grey-150);
-    border: 0;
-    color: var(--ink-p-fg);
-    cursor: pointer;
-    display: flex;
-
-    /*
-     * This is a <button>, so it needs the page's font rather than the UA's
-     * default button font. This has to stay ahead of `font-weight`, which
-     * the `font` shorthand would otherwise reset.
-     */
-    font: inherit;
-    font-weight: bold;
-    gap: var(--ink-u-spacing-xs);
-    justify-content: flex-start;
-    padding: var(--ink-u-spacing-std);
-    text-align: left;
-
-    &:hover {
-      background-color: var(--ink-p-grey-200);
-    }
-  }
-
   /**
    * The paginator shown below a large repository list.
    *
@@ -591,17 +632,8 @@
    * the fetched list, and the paginator.
    */
   &__panel {
-    border-top: 1px solid var(--ink-p-container-border-color-weak);
     display: flex;
     flex-direction: column;
-
-    /*
-     * An explicit `display` overrides the `hidden` attribute's UA
-     * `display: none`, so restore it while the panel is collapsed.
-     */
-    &[hidden] {
-      display: none;
-    }
   }
 
   /**
@@ -1104,10 +1136,14 @@
     gap: var(--ink-u-spacing-l);
   }
 
+  /*
+   * This sits inside the accounts section, below its summary. Match the
+   * summary's size so it doesn't outweigh the section heading.
+   */
   h2 {
     align-items: center;
     display: flex;
-    font-size: var(--ink-u-font-m);
+    font-size: inherit;
     gap: var(--ink-u-spacing-s);
     grid-area: header;
     margin: 0;

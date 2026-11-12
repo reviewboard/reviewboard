@@ -237,6 +237,7 @@ Hosting Service Integration
    reviewboard.hostingsvcs.base.repository
    reviewboard.hostingsvcs.errors
    reviewboard.hostingsvcs.forms
+   reviewboard.hostingsvcs.github.webhooks
    reviewboard.hostingsvcs.hook_utils
    reviewboard.hostingsvcs.models
    reviewboard.hostingsvcs.repository

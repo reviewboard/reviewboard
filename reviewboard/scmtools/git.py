@@ -8,6 +8,7 @@ import os
 import platform
 import re
 import stat
+from bisect import bisect_left
 from typing import Any, TYPE_CHECKING
 from urllib.parse import (quote as urlquote,
                           urlparse,
@@ -40,6 +41,22 @@ logger = logging.getLogger(__name__)
 
 
 GIT_DIFF_EMPTY_CHANGESET_SIZE = 3
+
+
+#: Regex for index lines in a Git diff.
+#:
+#: Version Added:
+#:     9.0
+_INDEX_LINE_RE = re.compile(
+    br'^index (?P<a>[0-9a-f]+)\.\.(?P<b>[0-9a-f]+)(?P<rest>[ \t][^\n]*)?$',
+    re.M)
+
+
+#: Regex for the null blob SHAs used for added/deleted files.
+#:
+#: Version Added:
+#:     9.0
+_NULL_SHA_RE = re.compile(br'^0+$')
 
 
 # Register these URI schemes so we can handle them properly.
@@ -1039,3 +1056,82 @@ def strip_git_symlink_mode(patch_data):
                                       patch_data[m.end('mode'):])
 
     return patch_data
+
+
+def expand_diff_blob_shas(
+    *,
+    diff: bytes,
+    blob_shas: set[bytes],
+    repository: (Repository | None) = None,
+) -> bytes:
+    """Return a Git diff with full blob SHAs in its ``index`` lines.
+
+    Some hosting services return Git diffs with abbreviated blob SHAs in
+    ``index`` lines, but we want full SHAs in order to look up the
+    original content of files. This expands each abbreviated SHA using
+    the full SHAs given in ``blob_shas``.
+
+    Version Added:
+        9.0
+
+    Args:
+        diff (bytes):
+            The raw diff to expand.
+
+        blob_shas (set of bytes):
+            The full blob SHAs to expand to. This should contain the SHAs
+            from the trees on both sides of the diff.
+
+        repository (reviewboard.scmtools.models.Repository, optional):
+            The repository the diff is for.
+
+    Returns:
+        bytes:
+        The diff, with full blob SHAs in the ``index`` lines.
+    """
+    sorted_shas = sorted(blob_shas)
+    num_shas = len(sorted_shas)
+
+    def _expand_sha(
+        partial_sha: bytes,
+    ) -> bytes:
+        if _NULL_SHA_RE.match(partial_sha):
+            # This is an added or deleted file.
+            return b'0' * 40
+
+        if len(partial_sha) == 40:
+            # This is already a full SHA.
+            return partial_sha
+
+        # Get the index to start searching at.
+        i = bisect_left(sorted_shas, partial_sha)
+
+        if i < num_shas and sorted_shas[i].startswith(partial_sha):
+            if (i + 1 < num_shas and
+                sorted_shas[i + 1].startswith(partial_sha)):
+                logger.warning(
+                    'Abbreviated blob SHA %s is ambiguous (repository %s). '
+                    'The original content of this file may not be '
+                    'viewable.',
+                    partial_sha.decode('utf-8'), repository)
+            else:
+                return sorted_shas[i]
+        else:
+            # This can happen if the hosting service truncated the tree.
+            logger.warning(
+                'Unable to find a full blob SHA for %s (repository %s). The '
+                'original content of this file may not be viewable.',
+                partial_sha.decode('utf-8'), repository)
+
+        return partial_sha
+
+    def _expand_index_line(
+        m: re.Match[bytes],
+    ) -> bytes:
+        return b'index %s..%s%s' % (
+            _expand_sha(m.group('a')),
+            _expand_sha(m.group('b')),
+            m.group('rest') or b'')
+
+    # Substitute only the index lines.
+    return _INDEX_LINE_RE.sub(_expand_index_line, diff)

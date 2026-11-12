@@ -43,6 +43,8 @@ from reviewboard.extensions.hooks.fields import (ReviewRequestFieldSetsHook,
 from reviewboard.extensions.hooks.file_attachment_thumbnail import \
     FileAttachmentThumbnailHook
 from reviewboard.extensions.hooks.filediff_acl import FileDiffACLHook
+from reviewboard.extensions.hooks.github_app_webhook import \
+    GitHubAppWebHookHandlerHook
 from reviewboard.extensions.hooks.hosting_service import HostingServiceHook
 from reviewboard.extensions.hooks.integration import IntegrationHook
 from reviewboard.extensions.hooks.license_provider import LicenseProviderHook
@@ -81,6 +83,7 @@ __all__ = [
     'ExtensionHook',
     'FileAttachmentThumbnailHook',
     'FileDiffACLHook',
+    'GitHubAppWebHookHandlerHook',
     'HeaderActionHook',
     'HeaderDropdownActionHook',
     'HideActionHook',

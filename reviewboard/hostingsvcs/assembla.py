@@ -10,6 +10,7 @@ from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.server import get_hostname
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import BaseHostingServiceRepositoryForm
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
 from reviewboard.scmtools.crypto_utils import (decrypt_password,
@@ -55,7 +56,7 @@ class AssemblaForm(BaseHostingServiceRepositoryForm):
             })
 
 
-class Assembla(BaseHostingService):
+class Assembla(BaseHostingService, BaseBugTracker):
     """Hosting service support for Assembla.com.
 
     Assembla is a hosting service that offers, amongst other features,
@@ -68,9 +69,7 @@ class Assembla(BaseHostingService):
     hosting_service_id = 'assembla'
     name = 'Assembla'
 
-    # TODO: This service currently doesn't implement BaseBugTracker, but once
-    # it does, uncomment this:
-    # bugs_in_repo = True
+    bugs_in_repo = True
     form = AssemblaForm
     needs_authorization = True
     supported_scmtools = ['Perforce', 'Subversion']

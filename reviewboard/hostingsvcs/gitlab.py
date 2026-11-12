@@ -19,6 +19,7 @@ from housekeeping import deprecate_non_keyword_only_args
 
 from reviewboard.admin.support import get_kb_url
 from reviewboard.deprecation import RemovedInReviewBoard10_0Warning
+from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
     BaseHostingServiceRepositoryForm,
@@ -249,7 +250,7 @@ class GitLabGroupForm(BaseHostingServiceRepositoryForm):
         widget=forms.TextInput(attrs={'size': '60'}))
 
 
-class GitLab(BaseHostingService):
+class GitLab(BaseHostingService, BaseBugTracker):
     """Hosting service support for GitLab.
 
     GitLab is a self-installed source hosting service that supports Git
@@ -261,9 +262,7 @@ class GitLab(BaseHostingService):
 
     auth_form = GitLabAuthForm
     bug_tracker_label = _('GitLab Issues')
-    # TODO: This service currently doesn't implement BaseBugTracker, but once
-    # it does, uncomment this:
-    # bugs_in_repo = True
+    bugs_in_repo = True
     needs_authorization = True
     self_hosted = True
     supported_scmtools = ['Git']

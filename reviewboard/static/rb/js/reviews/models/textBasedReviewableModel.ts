@@ -35,6 +35,16 @@ export interface TextBasedReviewableAttrs
      *     The rendered contents of the file, such as for Markdown.
      */
     viewMode: string;
+
+    /**
+     * The version of the row layout used for the rendered view.
+     *
+     * This is only set for reviewables with a rendered view.
+     *
+     * Version Added:
+     *     9.0
+     */
+    renderVersion?: number;
 }
 
 
@@ -54,6 +64,7 @@ export class TextBasedReviewable<
     static commentBlockModel = TextCommentBlock;
 
     static defaultCommentBlockFields = [
+        'renderVersion',
         'viewMode',
     ].concat(super.defaultCommentBlockFields);
 }
