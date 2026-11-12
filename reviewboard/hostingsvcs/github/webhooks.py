@@ -63,8 +63,9 @@ GITHUB_APP_AUTO_DELIVERED_EVENTS: Final[frozenset[str]] = frozenset({
 #: Version Added:
 #:     9.0
 DEFAULT_GITHUB_APP_EVENTS: Final[frozenset[str]] = frozenset({
-    'push',
     'installation_target',
+    'pull_request',
+    'push',
 })
 
 
@@ -74,8 +75,10 @@ DEFAULT_GITHUB_APP_EVENTS: Final[frozenset[str]] = frozenset({
 #:     9.0
 DEFAULT_GITHUB_APP_PERMISSIONS: Final[
     Mapping[str, GitHubAppPermissionLevel]] = {
+    'checks': 'write',
     'contents': 'read',
     'metadata': 'read',
+    'pull_requests': 'read',
 }
 
 
@@ -87,6 +90,7 @@ DEFAULT_GITHUB_APP_PERMISSIONS: Final[
 #:     9.0
 DEFAULT_GITHUB_APP_EVENT_LABELS: Final[Mapping[str, StrOrPromise]] = {
     'installation_target': _('Account renames'),
+    'pull_request': _('Pull request'),
     'push': _('Push'),
 }
 
@@ -98,8 +102,10 @@ DEFAULT_GITHUB_APP_EVENT_LABELS: Final[Mapping[str, StrOrPromise]] = {
 #: Version Added:
 #:     9.0
 DEFAULT_GITHUB_APP_PERMISSION_LABELS: Final[Mapping[str, StrOrPromise]] = {
+    'checks': _('Checks'),
     'contents': _('Repository contents'),
     'metadata': _('Repository metadata'),
+    'pull_requests': _('Pull requests'),
 }
 
 

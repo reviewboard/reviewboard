@@ -96,12 +96,14 @@ class GitHubAppCreateViewTests(GitHubTestCase):
         manifest = json.loads(response.context['manifest_json'])
 
         self.assertEqual(manifest['default_events'],
-                         ['installation_target', 'push'])
+                         ['installation_target', 'pull_request', 'push'])
         self.assertEqual(
             manifest['default_permissions'],
             {
+                'checks': 'write',
                 'contents': 'read',
                 'metadata': 'read',
+                'pull_requests': 'read',
             })
 
     def test_manifest_with_webhook_handlers(self) -> None:
@@ -110,24 +112,38 @@ class GitHubAppCreateViewTests(GitHubTestCase):
         """
         class PullRequestHandler(BaseGitHubAppWebHookHandler):
             handler_id = 'pull-request-handler'
-            events = {'pull_request', 'push'}
+            events = {
+                # A default event.
+                'push',
+
+                # A new event.
+                'status',
+            }
             required_permissions = {
-                'pull_requests': 'write',
+                # A new permission.
                 'statuses': 'write',
             }
             event_labels = {
-                'pull_request': 'Pull request',
+                # A custom label on a default event.
                 'push': 'Custom push',
+
+                # A label for a new event.
+                'status': 'Commit Status',
             }
             permission_labels = {
-                'pull_requests': 'Pull requests',
+                # A label for a new permission.
                 'statuses': 'Commit statuses',
             }
 
         class InstallationHandler(BaseGitHubAppWebHookHandler):
             handler_id = 'installation-handler'
-            events = {'installation', 'installation_repositories'}
+            events = {
+                # These are default events.
+                'installation',
+                'installation_repositories',
+            }
             required_permissions = {
+                # A higher access level on a default permission.
                 'contents': 'write',
             }
             event_labels = {
@@ -135,6 +151,7 @@ class GitHubAppCreateViewTests(GitHubTestCase):
                 'installation_repositories': 'Installation repositories',
             }
             permission_labels = {
+                # A custom label on a default permission.
                 'contents': 'Custom contents',
             }
 
@@ -148,22 +165,45 @@ class GitHubAppCreateViewTests(GitHubTestCase):
         response = self.client.get(url)
         manifest = json.loads(response.context['manifest_json'])
 
-        self.assertEqual(manifest['default_events'],
-                         ['installation_target', 'pull_request', 'push'])
+        self.assertEqual(
+            manifest['default_events'],
+            [
+                'installation_target',
+                'pull_request',
+                'push',
+                'status',
+            ])
         self.assertEqual(
             manifest['default_permissions'],
             {
+                'checks': 'write',
+
+                # Use the higher access level from the handler instead of the
+                # default access level.
                 'contents': 'write',
+
                 'metadata': 'read',
-                'pull_requests': 'write',
+                'pull_requests': 'read',
+
+                # A new permission is included.
                 'statuses': 'write',
             })
         self.assertEqual(
             response.context['events'],
-            ['Account renames', 'Pull request', 'Push'])
+            [
+                'Account renames',
+                'Pull request',
+                'Push',
+                'Commit Status',
+            ])
+
         self.assertEqual(
             response.context['permissions'],
             [
+                {
+                    'access': 'Read and write',
+                    'name': 'Checks',
+                },
                 {
                     'access': 'Read and write',
                     'name': 'Repository contents',
@@ -173,11 +213,13 @@ class GitHubAppCreateViewTests(GitHubTestCase):
                     'name': 'Repository metadata',
                 },
                 {
-                    'access': 'Read and write',
+                    'access': 'Read-only',
                     'name': 'Pull requests',
                 },
                 {
                     'access': 'Read and write',
+
+                    # Default label takes precedence over a custom one.
                     'name': 'Commit statuses',
                 },
             ])

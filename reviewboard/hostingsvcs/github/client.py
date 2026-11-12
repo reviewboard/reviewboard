@@ -1314,12 +1314,13 @@ class GitHubClient(HostingServiceClient['GitHub']):
         manifest in :py:mod:`reviewboard.hostingsvcs.github.views`), which
         map to the current repository operations:
 
+        * ``checks:write`` - Reserved for future build/review features.
         * ``contents:read`` - File reads
           (:py:meth:`api_get_blob`, :py:meth:`api_get_tree`).
         * ``metadata:read`` - Always required by GitHub.
+        * ``pull_requests:read`` - Reserved for future pull request features.
 
-        Future features may need additional scopes: commit statuses and checks
-        for build/review integration.
+        Future features may need additional scopes.
 
         Version Added:
             9.0
