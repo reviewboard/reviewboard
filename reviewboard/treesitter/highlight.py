@@ -47,6 +47,14 @@ HIGHLIGHT_CLASSES = {
     'constructor',
     'keyword',
     'keyword.import',
+    'markup.heading',
+    'markup.italic',
+    'markup.link',
+    'markup.list',
+    'markup.quote',
+    'markup.raw',
+    'markup.strikethrough',
+    'markup.strong',
     'number',
     'constant',
     'constant.builtin',
@@ -73,6 +81,10 @@ HIGHLIGHT_CLASSES = {
 #: Version Added:
 #:     9.0
 HIGHLIGHT_IGNORE = {
+    # A fenced code block. Its code is highlighted in its own language, and
+    # other text in it should look like plain code.
+    'markup.raw.block',
+
     'none',
     'punctuation',
     'punctuation.bracket',
@@ -238,7 +250,10 @@ def _get_nodes_by_line(
             for i in range(start_row + 1, end_row):
                 nodes_by_line[i].append((name, 0, len(lines[i])))
 
-            nodes_by_line[end_row].append((name, 0, end_char_col))
+            # A node that includes its trailing newline ends at the start
+            # of the next line. Don't leave an empty span there.
+            if end_char_col > 0:
+                nodes_by_line[end_row].append((name, 0, end_char_col))
 
         if DEBUG_TREESITTER and name in {
             'string.escape',

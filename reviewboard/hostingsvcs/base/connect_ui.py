@@ -275,7 +275,8 @@ class BaseHostingServiceConnectUI:
             bug_tracker_count=bug_tracker_count)
         context.update({
             'bug_trackers_html': bug_trackers_html,
-            'needs_attention': needs_attention,
+            'needs_attention': (needs_attention or
+                                context.get('needs_attention', False)),
             'repositories_html': repositories_html,
         })
 

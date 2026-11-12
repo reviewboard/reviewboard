@@ -5,6 +5,7 @@
 @import (reference) "rb/css/assets/paths.less";
 @import (reference) "rb/css/defs.less";
 @import (reference) "rb/css/syntax.less";
+@import (reference) "rb/css/mixins/markdown.less";
 @import (reference) "rb/css/mixins/upload-diff.less";
 @import (reference) "rb/css/ui/colors.less";
 
@@ -1305,6 +1306,10 @@ pre.reviewtext {
           margin: 0;
           padding: 0;
         }
+
+        /* Markdown file thumbnails. */
+        .rb-markdown-task-lists();
+        .rb-markdown-alerts();
       }
     }
 

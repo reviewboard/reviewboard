@@ -1310,66 +1310,47 @@ class GitHubTests(GitHubTestCase):
                 }),
             },
             f'/repos/myuser/myrepo/compare/{parent_sha}...{commit_sha}': {
-                'payload': self.dump_json({
-                    'base_commit': {
-                        'commit': {
-                            'author': {
-                                'date': '2013-06-25T23:31:22Z',
-                                'name': 'David Trowbridge',
-                            },
-                            'committer': {
-                                'date': '2013-06-25T23:31:22Z',
-                                'name': 'David Trowbridge',
-                            },
-                            'message': 'Base commit message',
-                            'tree': {'sha': tree_sha},
-                        },
-                    },
-                    'files': [
-                        {
-                            'sha': '4344b3ad41b171ea606e88e9665c34cca602affb',
-                            'filename': 'reviewboard/static/rb/css/defs.less',
-                            'status': 'modified',
-                            'patch': (
-                                '@@ -182,4 +182,6 @@\n'
-                                ' }\n'
-                                ' \n'
-                                '+.foo {\n'
-                                '+}\n'
-                                ' \n'
-                                ' table {'
-                            ),
-                        },
-                        {
-                            'sha': '8e3129277b018b169cb8d13771433fbcd165a17c',
-                            'filename': ('reviewboard/static/rb/css/'
-                                         'reviews.less'),
-                            'status': 'modified',
-                            'patch': (
-                                '@@ -1311,6 +1311,4 @@\n'
-                                ' }\n'
-                                ' \n'
-                                '-.bar {\n'
-                                '-}\n'
-                                ' \n'
-                                ' h1 {'
-                            ),
-                        },
-                        {
-                            'sha': '17ba0791499db908433b80f37c5fbc89b870084b',
-                            'filename': 'new_filename',
-                            'previous_filename': 'old_filename',
-                            'status': 'renamed',
-                            'patch': (
-                                '@@ -1,1 +1,1 @@\n'
-                                '- foo\n'
-                                '+ bar'
-                            ),
-                        },
-                    ],
-                }),
+                'payload': (
+                    b'diff --git a/reviewboard/static/rb/css/defs.less'
+                    b' b/reviewboard/static/rb/css/defs.less\n'
+                    b'index 830a40c..4344b3a 100644\n'
+                    b'--- a/reviewboard/static/rb/css/defs.less\n'
+                    b'+++ b/reviewboard/static/rb/css/defs.less\n'
+                    b'@@ -182,4 +182,6 @@\n'
+                    b' }\n'
+                    b' \n'
+                    b'+.foo {\n'
+                    b'+}\n'
+                    b' \n'
+                    b' table {\n'
+                    b'diff --git a/reviewboard/static/rb/css/reviews.less'
+                    b' b/reviewboard/static/rb/css/reviews.less\n'
+                    b'index 535cd2c..8e31292 100644\n'
+                    b'--- a/reviewboard/static/rb/css/reviews.less\n'
+                    b'+++ b/reviewboard/static/rb/css/reviews.less\n'
+                    b'@@ -1311,6 +1311,4 @@\n'
+                    b' }\n'
+                    b' \n'
+                    b'-.bar {\n'
+                    b'-}\n'
+                    b' \n'
+                    b' h1 {\n'
+                    b'diff --git a/old_filename b/new_filename\n'
+                    b'similarity index 50%\n'
+                    b'rename from old_filename\n'
+                    b'rename to new_filename\n'
+                    b'index 356a192..17ba079\n'
+                    b'--- a/old_filename\n'
+                    b'+++ b/new_filename\n'
+                    b'@@ -1,1 +1,1 @@\n'
+                    b'- foo\n'
+                    b'+ bar\n'
+                    b'diff --git a/logo.png b/logo.png\n'
+                    b'index 86b520c..86b520d 100644\n'
+                    b'Binary files a/logo.png and b/logo.png differ\n'
+                ),
             },
-            f'/repos/myuser/myrepo/git/trees/{tree_sha}': {
+            f'/repos/myuser/myrepo/git/trees/{parent_sha}': {
                 'payload': self.dump_json({
                     'tree': [
                         {
@@ -1383,7 +1364,34 @@ class GitHubTests(GitHubTestCase):
                         {
                             'path': 'old_filename',
                             'sha': '356a192b7913b04c54574d18c28d46e6395428ab',
-                        }
+                        },
+                        {
+                            'path': 'logo.png',
+                            'sha': '86b520c1a2b3c4d5e6f708192a3b4c5d6e7f8091',
+                        },
+                    ],
+                    'truncated': False,
+                }),
+            },
+            f'/repos/myuser/myrepo/git/trees/{commit_sha}': {
+                'payload': self.dump_json({
+                    'tree': [
+                        {
+                            'path': 'reviewboard/static/rb/css/defs.less',
+                            'sha': '4344b3ad41b171ea606e88e9665c34cca602affb',
+                        },
+                        {
+                            'path': 'reviewboard/static/rb/css/reviews.less',
+                            'sha': '8e3129277b018b169cb8d13771433fbcd165a17c',
+                        },
+                        {
+                            'path': 'new_filename',
+                            'sha': '17ba0791499db908433b80f37c5fbc89b870084b',
+                        },
+                        {
+                            'path': 'logo.png',
+                            'sha': '86b520d2b3c4d5e6f708192a3b4c5d6e7f809123',
+                        },
                     ],
                     'truncated': False,
                 }),
@@ -1391,7 +1399,7 @@ class GitHubTests(GitHubTestCase):
         }
 
         with self.setup_http_test(self.make_handler_for_paths(paths),
-                                  expected_http_calls=3) as ctx:
+                                  expected_http_calls=4) as ctx:
             repository = ctx.create_repository()
             change = ctx.service.get_change(repository=repository,
                                             revision=commit_sha)
@@ -1408,13 +1416,23 @@ class GitHubTests(GitHubTestCase):
             url=('https://api.github.com/repos/myuser/myrepo/compare/'
                  '44568f7d33647d286691517e6325fea5c7a21d5e...'
                  '1c44b461cebe5874a857c51a4a13a849a4d1e52d'),
+            headers={
+                'Accept': 'application/vnd.github.diff',
+            },
             username='myuser',
             password='abc123')
 
         ctx.assertHTTPCall(
             2,
             url=('https://api.github.com/repos/myuser/myrepo/git/trees/'
-                 '56e25e58380daf9b4dfe35677ae6043fe1743922?recursive=1'),
+                 '44568f7d33647d286691517e6325fea5c7a21d5e?recursive=1'),
+            username='myuser',
+            password='abc123')
+
+        ctx.assertHTTPCall(
+            3,
+            url=('https://api.github.com/repos/myuser/myrepo/git/trees/'
+                 '1c44b461cebe5874a857c51a4a13a849a4d1e52d?recursive=1'),
             username='myuser',
             password='abc123')
 
@@ -1425,6 +1443,7 @@ class GitHubTests(GitHubTestCase):
                    id='1c44b461cebe5874a857c51a4a13a849a4d1e52d',
                    message='Move .clearfix to defs.less',
                    parent='44568f7d33647d286691517e6325fea5c7a21d5e'))
+
         self.assertEqual(
             change.diff,
             b'diff --git a/reviewboard/static/rb/css/defs.less'
@@ -1453,7 +1472,8 @@ class GitHubTests(GitHubTestCase):
             b'-}\n'
             b' \n'
             b' h1 {\n'
-            b'diff --git a/new_filename b/new_filename\n'
+            b'diff --git a/old_filename b/new_filename\n'
+            b'similarity index 50%\n'
             b'rename from old_filename\n'
             b'rename to new_filename\n'
             b'index 356a192b7913b04c54574d18c28d46e6395428ab'
@@ -1462,117 +1482,11 @@ class GitHubTests(GitHubTestCase):
             b'+++ b/new_filename\n'
             b'@@ -1,1 +1,1 @@\n'
             b'- foo\n'
-            b'+ bar\n')
-
-    def test_get_change_with_files_without_patch(self) -> None:
-        """Testing GitHub.get_change with file entries without a patch"""
-        commit_sha = '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
-        parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
-        tree_sha = '56e25e58380daf9b4dfe35677ae6043fe1743922'
-
-        # GitHub leaves out "patch" for binary files and for diffs that are
-        # too large.
-        binary_file_entry = {
-            'sha': '86b520d2b3c4d5e6f708192a3b4c5d6e7f809123',
-            'filename': 'logo.png',
-            'status': 'modified',
-        }
-
-        paths: dict[str | None, HttpTestPath] = {
-            f'/repos/myuser/myrepo/commits/{commit_sha}': {
-                'payload': self.dump_json({
-                    'commit': {
-                        'author': {
-                            'date': '2013-06-25T23:31:22Z',
-                            'name': 'David Trowbridge',
-                        },
-                        'committer': {
-                            'date': '2013-06-25T23:31:22Z',
-                            'name': 'David Trowbridge',
-                        },
-                        'message': 'Update the logo',
-                        'tree': {
-                            'sha': tree_sha,
-                        },
-                    },
-                    'files': [binary_file_entry],
-                    'sha': commit_sha,
-                    'parents': [{'sha': parent_sha}],
-                }),
-            },
-            f'/repos/myuser/myrepo/compare/{parent_sha}...{commit_sha}': {
-                'payload': self.dump_json({
-                    'base_commit': {
-                        'commit': {
-                            'author': {
-                                'date': '2013-06-25T23:31:22Z',
-                                'name': 'David Trowbridge',
-                            },
-                            'committer': {
-                                'date': '2013-06-25T23:31:22Z',
-                                'name': 'David Trowbridge',
-                            },
-                            'message': 'Base commit message',
-                            'tree': {'sha': tree_sha},
-                        },
-                    },
-                    'files': [
-                        {
-                            'sha': '4344b3ad41b171ea606e88e9665c34cca602affb',
-                            'filename': 'README',
-                            'status': 'modified',
-                            'patch': (
-                                '@@ -1 +1 @@\n'
-                                '-Hi\n'
-                                '+Hello'
-                            ),
-                        },
-                        binary_file_entry,
-                    ],
-                }),
-            },
-            f'/repos/myuser/myrepo/git/trees/{tree_sha}': {
-                'payload': self.dump_json({
-                    'tree': [
-                        {
-                            'path': 'README',
-                            'sha': '830a40c3197223c6a0abb3355ea48891a1857bfd',
-                        },
-                        {
-                            'path': 'logo.png',
-                            'sha': '86b520c1a2b3c4d5e6f708192a3b4c5d6e7f8091',
-                        },
-                    ],
-                    'truncated': False,
-                }),
-            },
-        }
-
-        with self.setup_http_test(self.make_handler_for_paths(paths),
-                                  expected_http_calls=3) as ctx:
-            repository = ctx.create_repository()
-            change = ctx.service.get_change(repository=repository,
-                                            revision=commit_sha)
-
-        self.assertEqual(
-            change,
-            Commit(author_name='David Trowbridge',
-                   date='2013-06-25T23:31:22Z',
-                   id='1c44b461cebe5874a857c51a4a13a849a4d1e52d',
-                   message='Update the logo',
-                   parent='44568f7d33647d286691517e6325fea5c7a21d5e'))
-
-        # Files without a patch aren't included in the diff.
-        self.assertEqual(
-            change.diff,
-            b'diff --git a/README b/README\n'
-            b'index 830a40c3197223c6a0abb3355ea48891a1857bfd'
-            b'..4344b3ad41b171ea606e88e9665c34cca602affb 100644\n'
-            b'--- a/README\n'
-            b'+++ b/README\n'
-            b'@@ -1 +1 @@\n'
-            b'-Hi\n'
-            b'+Hello\n')
+            b'+ bar\n'
+            b'diff --git a/logo.png b/logo.png\n'
+            b'index 86b520c1a2b3c4d5e6f708192a3b4c5d6e7f8091'
+            b'..86b520d2b3c4d5e6f708192a3b4c5d6e7f809123 100644\n'
+            b'Binary files a/logo.png and b/logo.png differ\n')
 
     def test_get_change_with_not_found(self) -> None:
         """Testing GitHub.get_change with commit not found"""
@@ -1973,3 +1887,536 @@ class GitHubTests(GitHubTestCase):
         assert isinstance(service, GitHub)
 
         return service._get_repo_api_url(repository)
+
+
+class GitHubClientGetDiffContentTests(GitHubTestCase):
+    """Unit tests for GitHubClient.get_diff_content.
+
+    Version Added:
+        9.0
+    """
+
+    repo_api_url = 'https://api.github.com/repos/myuser/myrepo'
+    commit_sha = '1c44b461cebe5874a857c51a4a13a849a4d1e52d'
+    parent_sha = '44568f7d33647d286691517e6325fea5c7a21d5e'
+
+    def test_with_root_commit(self) -> None:
+        """Testing GitHubClient.get_diff_content with a root commit"""
+        commit_sha = self.commit_sha
+
+        paths: dict[str | None, HttpTestPath] = {
+            f'/repos/myuser/myrepo/commits/{commit_sha}': {
+                'payload': (
+                    b'diff --git a/README b/README\n'
+                    b'new file mode 100644\n'
+                    b'index 0000000..980a0d5\n'
+                    b'--- /dev/null\n'
+                    b'+++ b/README\n'
+                    b'@@ -0,0 +1 @@\n'
+                    b'+Hello\n'
+                ),
+            },
+            f'/repos/myuser/myrepo/git/trees/{commit_sha}': {
+                'payload': self.dump_json({
+                    'tree': [
+                        {
+                            'path': 'README',
+                            'sha': '980a0d5f19a64b4b30a87d4206aade58726b60e3',
+                        },
+                    ],
+                    'truncated': False,
+                }),
+            },
+        }
+
+        # Only the commit's own tree should be fetched. There's no parent
+        # commit, so there's no source tree to look anything up in.
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=2) as ctx:
+            repository = ctx.create_repository()
+            diff = ctx.client.get_diff_content(
+                repo_api_url=self.repo_api_url,
+                parent_id='',
+                commit_id=commit_sha,
+                repository=repository)
+
+        ctx.assertHTTPCall(
+            0,
+            url=f'{self.repo_api_url}/commits/{commit_sha}',
+            headers={
+                'Accept': 'application/vnd.github.diff',
+            },
+            username='myuser',
+            password='abc123')
+
+        ctx.assertHTTPCall(
+            1,
+            url=f'{self.repo_api_url}/git/trees/{commit_sha}?recursive=1',
+            username='myuser',
+            password='abc123')
+
+        # The all-zero SHA for the added file should be expanded to a full
+        # 40 zeros, so that Review Board records it as PRE-CREATION.
+        self.assertEqual(
+            diff,
+            b'diff --git a/README b/README\n'
+            b'new file mode 100644\n'
+            b'index 0000000000000000000000000000000000000000'
+            b'..980a0d5f19a64b4b30a87d4206aade58726b60e3\n'
+            b'--- /dev/null\n'
+            b'+++ b/README\n'
+            b'@@ -0,0 +1 @@\n'
+            b'+Hello\n')
+
+    def test_with_deleted_file(self) -> None:
+        """Testing GitHubClient.get_diff_content with a deleted file"""
+        _repository, diff = self._run_diff_content(
+            raw_diff=(
+                b'diff --git a/README b/README\n'
+                b'deleted file mode 100644\n'
+                b'index 980a0d5..0000000\n'
+                b'--- a/README\n'
+                b'+++ /dev/null\n'
+                b'@@ -1 +0,0 @@\n'
+                b'-Hello\n'
+            ),
+            source_tree=[
+                {
+                    'path': 'README',
+                    'sha': '980a0d5f19a64b4b30a87d4206aade58726b60e3',
+                },
+            ],
+            dest_tree=[])
+
+        self.assertEqual(
+            diff,
+            b'diff --git a/README b/README\n'
+            b'deleted file mode 100644\n'
+            b'index 980a0d5f19a64b4b30a87d4206aade58726b60e3'
+            b'..0000000000000000000000000000000000000000\n'
+            b'--- a/README\n'
+            b'+++ /dev/null\n'
+            b'@@ -1 +0,0 @@\n'
+            b'-Hello\n')
+
+    def test_with_unresolvable_sha(self) -> None:
+        """Testing GitHubClient.get_diff_content with an unresolvable blob
+        SHA
+        """
+        # The source tree doesn't contain a blob starting with "830a40c", so
+        # that SHA can't be expanded.
+        with self.assertLogs('reviewboard.scmtools.git',
+                             level='WARNING') as logs:
+            repository, diff = self._run_diff_content(
+                raw_diff=(
+                    b'diff --git a/README b/README\n'
+                    b'index 830a40c..980a0d5 100644\n'
+                    b'--- a/README\n'
+                    b'+++ b/README\n'
+                    b'@@ -1 +1 @@\n'
+                    b'-Hi\n'
+                    b'+Hello\n'
+                ),
+                source_tree=[],
+                dest_tree=[
+                    {
+                        'path': 'README',
+                        'sha': '980a0d5f19a64b4b30a87d4206aade58726b60e3',
+                    },
+                ])
+
+        # The file stays in the diff with its abbreviated SHA, rather than
+        # being dropped. Only fetching its original content will fail.
+        self.assertEqual(
+            diff,
+            b'diff --git a/README b/README\n'
+            b'index 830a40c'
+            b'..980a0d5f19a64b4b30a87d4206aade58726b60e3 100644\n'
+            b'--- a/README\n'
+            b'+++ b/README\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hi\n'
+            b'+Hello\n')
+
+        self.assertEqual(len(logs.records), 1)
+        self.assertEqual(
+            logs.records[0].getMessage(),
+            f'Unable to find a full blob SHA for 830a40c (repository '
+            f'{repository}). The original content of this file may not be '
+            f'viewable.')
+
+    def test_with_truncated_tree(self) -> None:
+        """Testing GitHubClient.get_diff_content with a truncated tree"""
+        with self.assertLogs('reviewboard.hostingsvcs.github.client',
+                             level='WARNING') as logs:
+            repository, diff = self._run_diff_content(
+                raw_diff=(
+                    b'diff --git a/README b/README\n'
+                    b'index 830a40c..980a0d5 100644\n'
+                    b'--- a/README\n'
+                    b'+++ b/README\n'
+                    b'@@ -1 +1 @@\n'
+                    b'-Hi\n'
+                    b'+Hello\n'
+                ),
+                source_tree=[
+                    {
+                        'path': 'README',
+                        'sha': '830a40c3197223c6a0abb3355ea48891a1857bfd',
+                    },
+                ],
+                dest_tree=[
+                    {
+                        'path': 'README',
+                        'sha': '980a0d5f19a64b4b30a87d4206aade58726b60e3',
+                    },
+                ],
+                source_truncated=True)
+
+        # Whatever did come back in the tree is still usable.
+        self.assertEqual(
+            diff,
+            b'diff --git a/README b/README\n'
+            b'index 830a40c3197223c6a0abb3355ea48891a1857bfd'
+            b'..980a0d5f19a64b4b30a87d4206aade58726b60e3 100644\n'
+            b'--- a/README\n'
+            b'+++ b/README\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hi\n'
+            b'+Hello\n')
+
+        self.assertEqual(len(logs.records), 1)
+        self.assertEqual(
+            logs.records[0].getMessage(),
+            f'The Git tree for commit {self.parent_sha} (repository '
+            f'{repository}) was truncated by GitHub. Some file revisions '
+            f'in the diff may not be expanded to full SHAs.')
+
+    def test_uses_cached_trees(self) -> None:
+        """Testing GitHubClient.get_diff_content makes use of cached SHA trees
+        when it expands the SHAs of the diff
+        """
+        sha1 = '1111111111111111111111111111111111111111'
+        sha2 = '2222222222222222222222222222222222222222'
+        sha3 = '3333333333333333333333333333333333333333'
+
+        blob_sha1 = 'aaaa192b7913b04c54574d18c28d46e6395428ab'
+        blob_sha2 = 'bbbb0791499db908433b80f37c5fbc89b870084b'
+        blob_sha3 = 'cccc192b7913b04c54574d18c28d46e639542801'
+
+        paths: dict[str | None, HttpTestPath] = {
+            f'/repos/myuser/myrepo/compare/{sha1}...{sha2}': {
+                'payload': (
+                    b'diff --git a/file.txt b/file.txt\n'
+                    b'index aaaa192..bbbb079 100644\n'
+                    b'--- a/file.txt\n'
+                    b'+++ b/file.txt\n'
+                    b'@@ -1 +1 @@\n'
+                    b'-one\n'
+                    b'+two\n'
+                ),
+            },
+            f'/repos/myuser/myrepo/compare/{sha2}...{sha3}': {
+                'payload': (
+                    b'diff --git a/file.txt b/file.txt\n'
+                    b'index bbbb079..cccc192 100644\n'
+                    b'--- a/file.txt\n'
+                    b'+++ b/file.txt\n'
+                    b'@@ -1 +1 @@\n'
+                    b'-two\n'
+                    b'+three\n'
+                ),
+            },
+            f'/repos/myuser/myrepo/git/trees/{sha1}': {
+                'payload': self.dump_json({
+                    'tree': [
+                        {
+                            'path': 'file.txt',
+                            'sha': blob_sha1,
+                        },
+                    ],
+                    'truncated': False,
+                }),
+            },
+            f'/repos/myuser/myrepo/git/trees/{sha2}': {
+                'payload': self.dump_json({
+                    'tree': [
+                        {
+                            'path': 'file.txt',
+                            'sha': blob_sha2,
+                        },
+                    ],
+                    'truncated': False,
+                }),
+            },
+            f'/repos/myuser/myrepo/git/trees/{sha3}': {
+                'payload': self.dump_json({
+                    'tree': [
+                        {
+                            'path': 'file.txt',
+                            'sha': blob_sha3,
+                        },
+                    ],
+                    'truncated': False,
+                }),
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=5) as ctx:
+            repository = ctx.create_repository()
+            repo_api_url = ctx.service._get_repo_api_url(repository)
+
+            diff1 = ctx.client.get_diff_content(
+                repo_api_url=repo_api_url,
+                parent_id=sha1,
+                commit_id=sha2,
+                repository=repository)
+            diff2 = ctx.client.get_diff_content(
+                repo_api_url=repo_api_url,
+                parent_id=sha2,
+                commit_id=sha3,
+                repository=repository)
+
+        ctx.assertHTTPCall(
+            1,
+            url=(f'https://api.github.com/repos/myuser/myrepo/git/trees/'
+                 f'{sha1}?recursive=1'),
+            username='myuser',
+            password='abc123')
+
+        ctx.assertHTTPCall(
+            2,
+            url=(f'https://api.github.com/repos/myuser/myrepo/git/trees/'
+                 f'{sha2}?recursive=1'),
+            username='myuser',
+            password='abc123')
+
+        # Without caching this call would've been for sha2.
+        ctx.assertHTTPCall(
+            4,
+            url=(f'https://api.github.com/repos/myuser/myrepo/git/trees/'
+                 f'{sha3}?recursive=1'),
+            username='myuser',
+            password='abc123')
+
+        self.assertEqual(
+            diff1,
+            b'diff --git a/file.txt b/file.txt\n'
+            b'index %s..%s 100644\n'
+            b'--- a/file.txt\n'
+            b'+++ b/file.txt\n'
+            b'@@ -1 +1 @@\n'
+            b'-one\n'
+            b'+two\n'
+            % (blob_sha1.encode('utf-8'), blob_sha2.encode('utf-8')))
+
+        self.assertEqual(
+            diff2,
+            b'diff --git a/file.txt b/file.txt\n'
+            b'index %s..%s 100644\n'
+            b'--- a/file.txt\n'
+            b'+++ b/file.txt\n'
+            b'@@ -1 +1 @@\n'
+            b'-two\n'
+            b'+three\n'
+            % (blob_sha2.encode('utf-8'), blob_sha3.encode('utf-8')))
+
+    def _run_diff_content(
+        self,
+        *,
+        raw_diff: bytes,
+        source_tree: list[dict[str, str]],
+        dest_tree: list[dict[str, str]],
+        source_truncated: bool = False,
+    ) -> tuple[Repository, bytes]:
+        """Return the expanded diff for a commit against its parent.
+
+        Args:
+            raw_diff (bytes):
+                The raw diff for GitHub to return.
+
+            source_tree (list of dict):
+                The tree entries for the parent commit.
+
+            dest_tree (list of dict):
+                The tree entries for the commit.
+
+            source_truncated (bool, optional):
+                Whether the parent commit's tree should report as truncated.
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (reviewboard.scmtools.models.Repository):
+                    The repository used for the request.
+
+                1 (bytes):
+                    The diff returned by the client.
+        """
+        commit_sha = self.commit_sha
+        parent_sha = self.parent_sha
+
+        paths: dict[str | None, HttpTestPath] = {
+            f'/repos/myuser/myrepo/compare/{parent_sha}...{commit_sha}': {
+                'payload': raw_diff,
+            },
+            f'/repos/myuser/myrepo/git/trees/{parent_sha}': {
+                'payload': self.dump_json({
+                    'tree': source_tree,
+                    'truncated': source_truncated,
+                }),
+            },
+            f'/repos/myuser/myrepo/git/trees/{commit_sha}': {
+                'payload': self.dump_json({
+                    'tree': dest_tree,
+                    'truncated': False,
+                }),
+            },
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=3) as ctx:
+            repository = ctx.create_repository()
+
+            diff = ctx.client.get_diff_content(
+                repo_api_url=self.repo_api_url,
+                parent_id=parent_sha,
+                commit_id=commit_sha,
+                repository=repository)
+
+        return repository, diff
+
+
+class GitHubGetFileExistsTests(GitHubTestCase):
+    """Unit tests for GitHub.get_file_exists.
+
+    Version Added:
+        9.0
+    """
+
+    parent_sha = '1111111111111111111111111111111111111111'
+    commit_sha = '2222222222222222222222222222222222222222'
+    source_blob_sha = 'aaaa192b7913b04c54574d18c28d46e6395428ab'
+    dest_blob_sha = 'bbbb0791499db908433b80f37c5fbc89b870084b'
+
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
+
+        parent_sha = self.parent_sha
+        commit_sha = self.commit_sha
+
+        self.paths: dict[str | None, HttpTestPath] = {
+            f'/repos/myuser/myrepo/compare/{parent_sha}...{commit_sha}': {
+                'payload': (
+                    b'diff --git a/file.txt b/file.txt\n'
+                    b'index aaaa192..bbbb079 100644\n'
+                    b'--- a/file.txt\n'
+                    b'+++ b/file.txt\n'
+                    b'@@ -1 +1 @@\n'
+                    b'-one\n'
+                    b'+two\n'
+                ),
+            },
+            f'/repos/myuser/myrepo/git/trees/{parent_sha}': {
+                'payload': self.dump_json({
+                    'tree': [
+                        {
+                            'path': 'file.txt',
+                            'sha': self.source_blob_sha,
+                        },
+                    ],
+                    'truncated': False,
+                }),
+            },
+            f'/repos/myuser/myrepo/git/trees/{commit_sha}': {
+                'payload': self.dump_json({
+                    'tree': [
+                        {
+                            'path': 'file.txt',
+                            'sha': self.dest_blob_sha,
+                        },
+                    ],
+                    'truncated': False,
+                }),
+            },
+        }
+
+    def test_with_blob_cached(self) -> None:
+        """Testing GitHub.get_file_exists with a blob cached on the client"""
+        with self.setup_http_test(self.make_handler_for_paths(self.paths),
+                                  expected_http_calls=3) as ctx:
+            repository = ctx.create_repository()
+            repo_api_url = ctx.service._get_repo_api_url(repository)
+
+            # This caches Git trees for the commits.
+            ctx.client.get_diff_content(repo_api_url=repo_api_url,
+                                        parent_id=self.parent_sha,
+                                        commit_id=self.commit_sha,
+                                        repository=repository)
+
+            self.assertTrue(ctx.service.get_file_exists(
+                repository, 'file.txt', self.source_blob_sha))
+            self.assertTrue(ctx.service.get_file_exists(
+                repository, 'file.txt', self.dest_blob_sha))
+
+    def test_with_blob_not_cached(self) -> None:
+        """Testing GitHub.get_file_exists with a blob not cached on the
+        client
+        """
+        blob_sha = 'cccc192b7913b04c54574d18c28d46e639542801'
+
+        paths = dict(self.paths)
+        paths[f'/repos/myuser/myrepo/git/blobs/{blob_sha}'] = {
+            'payload': b'contents',
+        }
+
+        with self.setup_http_test(self.make_handler_for_paths(paths),
+                                  expected_http_calls=4) as ctx:
+            repository = ctx.create_repository()
+            repo_api_url = ctx.service._get_repo_api_url(repository)
+
+            ctx.client.get_diff_content(repo_api_url=repo_api_url,
+                                        parent_id=self.parent_sha,
+                                        commit_id=self.commit_sha,
+                                        repository=repository)
+
+            self.assertTrue(ctx.service.get_file_exists(
+                repository,
+                'other.txt',
+                blob_sha))
+
+        ctx.assertHTTPCall(
+            3,
+            url=(f'https://api.github.com/repos/myuser/myrepo/git/blobs/'
+                 f'{blob_sha}'),
+            headers={
+                'Accept': 'application/vnd.github.v3.raw',
+            },
+            username='myuser',
+            password='abc123')
+
+    def test_with_missing_file(self) -> None:
+        """Testing GitHub.get_file_exists with a file not in the repository"""
+        with self.setup_http_test(status_code=404,
+                                  payload=b'{"message": "Not Found"}',
+                                  expected_http_calls=1) as ctx:
+            repository = ctx.create_repository()
+
+            self.assertFalse(ctx.service.get_file_exists(
+                repository,
+                'file.txt',
+                self.source_blob_sha))
+
+        ctx.assertHTTPCall(
+            0,
+            url=(f'https://api.github.com/repos/myuser/myrepo/git/blobs/'
+                 f'{self.source_blob_sha}'),
+            headers={
+                'Accept': 'application/vnd.github.v3.raw',
+            },
+            username='myuser',
+            password='abc123')

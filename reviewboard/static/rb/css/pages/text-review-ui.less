@@ -1,4 +1,5 @@
 @import (reference) "rb/css/defs.less";
+@import (reference) "rb/css/mixins/markdown.less";
 
 
 /****************************************************************************
@@ -32,12 +33,13 @@
       font-weight: bold;
     }
 
-    tbody:last-child tr:last-child {
-      td:last-child {
+    /* Only this table's cells, not those of tables inside them. */
+    > tbody:last-child > tr:last-child {
+      > td:last-child {
         border-radius: 0 0 @box-inner-border-radius 0;
       }
 
-      th:first-child {
+      > th:first-child {
         border-radius: 0 0 0 @box-inner-border-radius;
       }
     }
@@ -83,12 +85,437 @@
       padding: 0;
     }
 
-    h1 {
-      font-size: 2em;
+    ul, ol {
+      /* Each list item is its own row, so nesting is set on each one. */
+      padding-left: calc(2em * (var(--md-list-depth, 0) + 1));
     }
 
-    ul, ol {
-      padding-left: 2em;
+    /* Content after a nested list continues its item without a bullet. */
+    li.md-list-continuation {
+      list-style: none;
+    }
+
+    /*
+     * Each table row is its own table, with column widths set in "ch"
+     * units. The widths include 2ch for this padding.
+     */
+    table {
+      border-collapse: collapse;
+
+      th, td {
+        /* Keep headers the same size, so the "ch" widths fit. */
+        font-size: inherit;
+        overflow-wrap: anywhere;
+        padding: 0 1ch;
+        text-align: left;
+        vertical-align: top;
+      }
     }
   }
+}
+
+/*
+ * Rendered rows.
+ *
+ * Each row is one block: a heading, paragraph, list item, table row, or line
+ * of code. Rows sit right against each other, so an owl-style rule can't space
+ * them. Instead, the server marks each block that follows another block in the
+ * same container with a ``data-md-gap`` attribute, and the gap is a margin on
+ * that element.
+ */
+.review-ui-box .markdown-review-ui .text-review-ui-rendered-table {
+  @md-block-gap: 0.8em;
+  @md-heading-gap: 1.2em;
+  @md-item-gap: 0.25em;
+  @md-code-padding: 0.3em;
+  @md-row-padding: 0.25em;
+  @md-alert-padding: 0.5em;
+
+  /*
+   * The last row of a block has some padding below it (see below), so it
+   * doesn't sit right against the edge of a changed chunk in a diff. That
+   * padding is part of the gap before the next block.
+   */
+  [data-md-gap="block"] {
+    margin-block-start: @md-block-gap - @md-row-padding;
+  }
+
+  [data-md-gap="item"] {
+    margin-block-start: @md-item-gap - @md-row-padding;
+  }
+
+  :is(h1, h2, h3, h4, h5, h6)[data-md-gap="block"] {
+    margin-block-start: @md-heading-gap - @md-row-padding;
+  }
+
+  /* Rows in a blockquote have no padding, to keep its border whole. */
+  blockquote {
+    [data-md-gap="block"] {
+      margin-block-start: @md-block-gap;
+    }
+
+    [data-md-gap="item"] {
+      margin-block-start: @md-item-gap;
+    }
+
+    :is(h1, h2, h3, h4, h5, h6)[data-md-gap="block"] {
+      margin-block-start: @md-heading-gap;
+    }
+  }
+
+  /*
+   * Pad the bottom of each row, unless the block in it goes on into the
+   * next row (code, tables, and blockquotes). That's checked across the
+   * whole row, so both sides of a diff stay the same height.
+   */
+  @md-next-table: ~"td table:not([data-md-gap], [data-md-gap] table)";
+  @md-next-quote: ~"td > blockquote:not([data-md-gap])";
+  @md-next-quote-pre: ~"td > pre > blockquote:not([data-md-gap])";
+
+  > tbody > tr:not(
+      :has(> td :is(.codehilite-multiline-start, .codehilite-multiline-middle)),
+      :has(+ tr > @{md-next-table}, + tr > @{md-next-quote}, + tr > @{md-next-quote-pre}),
+      tbody:has(
+        + tbody > tr:first-child > @{md-next-table},
+        + tbody > tr:first-child > @{md-next-quote},
+        + tbody > tr:first-child > @{md-next-quote-pre}
+      ) > tr:last-child
+  ) > td {
+    padding-bottom: @md-row-padding;
+  }
+
+  /*
+   * Line up line numbers with the first line of text in each block.
+   *
+   * Their vertical padding would make rows taller than their blocks, leaving
+   * breaks in blockquote borders and code boxes.
+   */
+  > tbody > tr > th {
+    padding-block: 0;
+    vertical-align: baseline;
+  }
+
+  /*
+   * Code rows are aligned to the top (see below), so line numbers for the
+   * first line of a code block need to match the space above it. Each side of
+   * a diff is handled separately.
+   */
+  @code-start: ~".codehilite:not(.codehilite-multiline-middle, .codehilite-multiline-end)";
+
+  > tbody > tr > th:has(+ td @{code-start}) {
+    padding-top: @md-code-padding;
+  }
+
+  > tbody > tr > th:has(+ td [data-md-gap="block"]):has(+ td @{code-start}) {
+    padding-top: @md-block-gap - @md-row-padding + @md-code-padding;
+  }
+
+  > tbody > tr > td {
+    font-size: var(--ink-u-font-sm);
+    line-height: 1.5;
+    padding: 0 0.5em;
+    vertical-align: baseline;
+
+    /*
+     * Empty lines of code have no baseline, so lining up on one would open
+     * gaps in the code box.
+     */
+    &:has(.codehilite) {
+      vertical-align: top;
+    }
+
+    /* In diffs, each row is wrapped in a <pre>. Show it as normal text. */
+    > pre {
+      font: inherit;
+      margin: 0;
+      overflow-wrap: anywhere;
+      padding: 0;
+      white-space: normal;
+      word-break: normal;
+    }
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    margin: 0;
+    padding: 0;
+  }
+
+  h1 {
+    font-size: var(--ink-u-font-l);
+  }
+
+  h2 {
+    font-size: var(--ink-u-font-ml);
+  }
+
+  h3 {
+    font-size: var(--ink-u-font-m);
+  }
+
+  h4 {
+    font-size: var(--ink-u-font-sm);
+  }
+
+  h5, h6 {
+    font-size: var(--ink-u-font-s);
+  }
+
+  p {
+    margin: 0;
+    padding: 0;
+  }
+
+  ul, ol {
+    margin: 0;
+    padding-block: 0;
+  }
+
+  /* Task checkboxes go where the bullet would be. */
+  .rb-markdown-task-lists();
+
+  /*
+   * Each block in a blockquote is its own row, wrapped in its own blockquote.
+   * Making each one a formatting root keeps the gaps of blocks inside it
+   * within its border, so the border stays continuous.
+   */
+  blockquote {
+    border-left: 3px solid var(--ink-p-fg-weak);
+    display: flow-root;
+    margin: 0;
+    padding: 0 0 0 1em;
+  }
+
+  .rb-markdown-alerts();
+
+  blockquote.admonition {
+    padding-inline-end: 1em;
+
+    /* An alert's first row is always its title. */
+    &:has(> .admonition-title) {
+      padding-top: @md-alert-padding;
+    }
+  }
+
+  /*
+   * A rule has no height of its own, so it would sit at the bottom of its
+   * row, under the gap. Add the same space below it (less the row's own
+   * padding) to keep it in the middle of the row.
+   */
+  hr {
+    border: 0;
+    border-top: 1px solid var(--ink-p-container-border-color);
+    margin: 0 0 (@md-block-gap - 2 * @md-row-padding);
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .emoji {
+    height: 1.25em;
+    vertical-align: -0.25em;
+    width: auto;
+  }
+
+  /* Inline code uses the same styles as in other parts of the UI. */
+  :not(pre) > code {
+    background: var(--ink-p-code-literal-bg);
+    border: var(--rb-u-inline-code-border-size)
+            var(--ink-p-code-literal-border-color)
+            solid;
+    border-radius: var(--rb-u-inline-code-border-radius);
+    color: var(--ink-p-code-literal-fg);
+    font-family: var(--ink-ff-monospace);
+    padding: 0 0.3em;
+  }
+
+  /*
+   * Each table row is its own table, so each one draws its part of the
+   * box. The header row has the top, body rows have a line above them,
+   * and the last row has the bottom.
+   *
+   * Cells keep their 1ch side padding, since the column widths include it.
+   */
+  table {
+    background: var(--ink-c-data-table-body-bg);
+    border: var(--ink-c-data-table-border);
+    border-block: 0;
+    color: var(--ink-c-data-table-body-fg);
+
+    thead {
+      background: var(--ink-c-data-table-header-bg);
+      color: var(--ink-c-data-table-header-fg);
+    }
+
+    th, td {
+      padding-block: var(--ink-c-data-table-cell-padding-vert);
+    }
+
+    th {
+      font-weight: bold;
+    }
+
+    &:has(> thead) {
+      border-top: var(--ink-c-data-table-border);
+    }
+
+    &:has(> tbody) {
+      border-top: var(--ink-c-data-table-row-border);
+    }
+  }
+
+  /*
+   * A table ends when the next row on the same side isn't a table row,
+   * or starts a new block. Diff chunks are separate <tbody>s, so the next
+   * row may be the first one in the next chunk.
+   *
+   * The bottom line is a shadow, not a border, so the last row is the
+   * same height as the rows next to it on the other side of a diff.
+   *
+   * The 2nd and 4th cells hold each side of a diff. :has() can't be
+   * nested, so the gap check uses :not().
+   */
+  .md-table-end(@cell) {
+    @cont: ~"td:nth-child(@{cell}) table:not([data-md-gap], [data-md-gap] table)";
+
+    /* I'M SO SORRY PLEASE FORGIVE ME */
+    > tbody > tr:not(:has(+ tr > @{cont})):not(tbody:has(+ tbody > tr:first-child > @{cont}) > tr:last-child) > td:nth-child(@{cell}) table :is(th, td) {
+      box-shadow: inset 0 -1px 0 var(--ink-c-data-table-border-color);
+    }
+
+    /*
+     * The first row of each diff chunk has a line above it. Cover it with
+     * the table's own line, so the table doesn't break between chunks.
+     */
+    > tbody > tr.first > @{cont} {
+      margin-top: -1px;
+    }
+  }
+
+  .md-table-end(2);
+  .md-table-end(4);
+
+  /*
+   * An alert ends when the next row on the same side doesn't continue it. This
+   * works like the table check above.
+   */
+  .md-alert-end(@cell) {
+    @cont: ~"td:nth-child(@{cell}) > blockquote.admonition:not([data-md-gap])";
+    @cont-pre: ~"td:nth-child(@{cell}) > pre > blockquote.admonition:not([data-md-gap])";
+
+    /*
+     * Perhaps you forgave me above? I don't think there's any forgiveness
+     * possible now.
+     */
+    > tbody > tr:not(:has(+ tr > @{cont}, + tr > @{cont-pre})):not(tbody:has(+ tbody > tr:first-child > @{cont}, + tbody > tr:first-child > @{cont-pre}) > tr:last-child) > td:nth-child(@{cell}) {
+      > blockquote.admonition,
+      > pre > blockquote.admonition {
+        padding-bottom: @md-alert-padding;
+      }
+    }
+  }
+
+  .md-alert-end(2);
+  .md-alert-end(4);
+
+  /*
+   * Code blocks are one row per line. Each line draws its part of the box: the
+   * first line has the top, the last line has the bottom.
+   *
+   * Code blocks in list items stay in the item's row, so they aren't split
+   * into lines. Give them the same box as other code blocks.
+   */
+  li pre {
+    background: var(--ink-p-code-literal-bg);
+    border: var(--rb-g-code-block-border);
+    border-radius: var(--rb-u-code-block-border-radius);
+    color: var(--rb-theme-rich-text-code-fg);
+    font-family: var(--ink-ff-monospace);
+    margin: 0;
+    padding: 0.3em 1ch;
+    white-space: pre-wrap;
+  }
+
+  .codehilite {
+    background: var(--ink-p-code-literal-bg);
+    border: var(--rb-g-code-block-border);
+    border-radius: var(--rb-u-code-block-border-radius);
+    color: var(--rb-theme-rich-text-code-fg);
+    padding: @md-code-padding 1ch;
+
+    pre {
+      font-family: var(--ink-ff-monospace);
+      margin: 0;
+      min-height: 1lh;
+      overflow-wrap: anywhere;
+      padding: 0;
+      white-space: pre-wrap;
+    }
+
+    &.codehilite-multiline-start {
+      border-bottom: 0;
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+      padding-bottom: 0;
+    }
+
+    &.codehilite-multiline-middle {
+      border-bottom: 0;
+      border-radius: 0;
+      border-top: 0;
+      padding-bottom: 0;
+      padding-top: 0;
+    }
+
+    &.codehilite-multiline-end {
+      border-top: 0;
+      border-top-left-radius: 0;
+      border-top-right-radius: 0;
+      padding-top: 0;
+    }
+  }
+
+  /* Let the color of changed lines show through code blocks. */
+  > tbody:is(.insert, .delete, .replace) .codehilite {
+    background: transparent;
+  }
+
+  /*
+   * The same goes for alerts. Their text goes back to normal colors, since
+   * it may no longer be on a light background.
+   */
+  > tbody:is(.insert, .delete, .replace) blockquote.admonition {
+    --ink-p-fg-weak: inherit;
+    --ink-p-link-fg: inherit;
+    --ink-p-link-hover-fg: inherit;
+
+    background: transparent;
+    color: var(--ink-p-fg);
+  }
+
+  /*
+   * When lines are only added to one side, the other side has empty cells. If
+   * that side's code block is still open, draw its sides across those cells
+   * so the box doesn't break.
+   *
+   * The 2nd and 4th cells hold each side of a diff.
+   */
+  .md-code-gap(@cell) {
+    @open: ~"td:nth-child(@{cell}) :is(.codehilite-multiline-start, .codehilite-multiline-middle)";
+
+    > tbody:has(> tr:last-child > @{open}) + tbody:is(.insert, .delete) > tr > td:nth-child(@{cell}):has(> pre:empty) {
+      position: relative;
+
+      &::before {
+        border-inline: var(--rb-g-code-block-border);
+        content: '';
+        inset: 0 0.5em;
+        position: absolute;
+      }
+    }
+  }
+
+  .md-code-gap(2);
+  .md-code-gap(4);
 }

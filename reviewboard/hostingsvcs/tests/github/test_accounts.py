@@ -6,14 +6,20 @@ Version Added:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from reviewboard.hostingsvcs.github.accounts import (
     GitHubAppInstallationData,
+    find_repository_for_installation,
     get_app_settings_url,
     get_github_app_data,
     set_github_app_data,
 )
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.hostingsvcs.tests.github.base import GitHubTestCase
+
+if TYPE_CHECKING:
+    from reviewboard.scmtools.models import Repository
 
 
 class GetGitHubAppDataTests(GitHubTestCase):
@@ -178,4 +184,181 @@ class GetAppSettingsURLTests(GitHubTestCase):
                     'webhook_secret': 'webhook-secret',
                     **app_data,
                 },
+            })
+
+
+class FindRepositoryForInstallationTests(GitHubTestCase):
+    """Unit tests for find_repository_for_installation.
+
+    Version Added:
+        9.0
+    """
+
+    def test_with_org_plan(self) -> None:
+        """Testing find_repository_for_installation with an organization
+        repository
+        """
+        installation = self._create_app_installation_account()
+        repository = self.create_repository(
+            hosting_account=installation,
+            extra_data={
+                'repository_plan': 'public-org',
+                'github_public_org_name': 'myorg',
+                'github_public_org_repo_name': 'myrepo',
+            })
+
+        self.assertEqual(
+            find_repository_for_installation(account=installation,
+                                             owner='myorg',
+                                             name='myrepo'),
+            repository)
+
+    def test_with_user_plan(self) -> None:
+        """Testing find_repository_for_installation with a user repository"""
+        installation = self._create_app_installation_account(
+            owner_login='myuser',
+            owner_type='user')
+        repository = self.create_repository(
+            hosting_account=installation,
+            extra_data={
+                'repository_plan': 'public',
+                'github_public_repo_name': 'myrepo',
+            })
+
+        self.assertEqual(
+            find_repository_for_installation(account=installation,
+                                             owner='myuser',
+                                             name='myrepo'),
+            repository)
+
+    def test_with_other_installation(self) -> None:
+        """Testing find_repository_for_installation ignores repositories on
+        other installations
+        """
+        app_account = self._create_app_record_account()
+        installation1 = self._create_app_installation_account(app_account)
+        installation2 = self._create_app_installation_account(
+            app_account,
+            owner_id=556)
+        self._create_org_repository(installation2)
+
+        self.assertIsNone(find_repository_for_installation(
+            account=installation1,
+            owner='myorg',
+            name='myrepo'))
+
+    def test_with_archived_repository(self) -> None:
+        """Testing find_repository_for_installation ignores archived
+        repositories
+        """
+        installation = self._create_app_installation_account()
+        self._create_org_repository(installation).archive()
+
+        self.assertIsNone(find_repository_for_installation(
+            account=installation,
+            owner='myorg',
+            name='myrepo'))
+
+    def test_with_no_match(self) -> None:
+        """Testing find_repository_for_installation with no matching
+        repository
+        """
+        installation = self._create_app_installation_account()
+        self._create_org_repository(installation)
+
+        self.assertIsNone(find_repository_for_installation(
+            account=installation,
+            owner='myorg',
+            name='otherrepo'))
+
+    def test_with_cached_match(self) -> None:
+        """Testing find_repository_for_installation with a cached match"""
+        installation = self._create_app_installation_account()
+        repository = self._create_org_repository(installation)
+
+        find_repository_for_installation(account=installation,
+                                         owner='myorg',
+                                         name='myrepo')
+
+        with self.assertNumQueries(1):
+            self.assertEqual(
+                find_repository_for_installation(account=installation,
+                                                 owner='myorg',
+                                                 name='myrepo'),
+                repository)
+
+    def test_with_cached_no_match(self) -> None:
+        """Testing find_repository_for_installation with a cached map and no
+        matching repository
+        """
+        installation = self._create_app_installation_account()
+        self._create_org_repository(installation)
+
+        find_repository_for_installation(account=installation,
+                                         owner='myorg',
+                                         name='myrepo')
+
+        with self.assertNumQueries(0):
+            self.assertIsNone(find_repository_for_installation(
+                account=installation,
+                owner='myorg',
+                name='otherrepo'))
+
+    def test_with_cached_empty_map(self) -> None:
+        """Testing find_repository_for_installation caches the map for an
+        installation without repositories
+        """
+        installation = self._create_app_installation_account()
+
+        self.assertIsNone(find_repository_for_installation(
+            account=installation,
+            owner='myorg',
+            name='myrepo'))
+
+        with self.assertNumQueries(0):
+            self.assertIsNone(find_repository_for_installation(
+                account=installation,
+                owner='myorg',
+                name='myrepo'))
+
+    def test_with_repository_added_after_caching(self) -> None:
+        """Testing find_repository_for_installation finds a repository added
+        after the map was cached
+        """
+        installation = self._create_app_installation_account()
+
+        self.assertIsNone(find_repository_for_installation(
+            account=installation,
+            owner='myorg',
+            name='myrepo'))
+
+        repository = self._create_org_repository(installation)
+
+        self.assertEqual(
+            find_repository_for_installation(account=installation,
+                                             owner='myorg',
+                                             name='myrepo'),
+            repository)
+
+    def _create_org_repository(
+        self,
+        installation: HostingServiceAccount,
+    ) -> Repository:
+        """Return a new organization repository on an installation.
+
+        Args:
+            installation (reviewboard.hostingsvcs.models.
+                          HostingServiceAccount):
+                The installation account.
+
+        Returns:
+            reviewboard.scmtools.models.Repository:
+            The new repository.
+        """
+        return self.create_repository(
+            hosting_account=installation,
+            extra_data={
+                'repository_plan': 'public-org',
+                'github_public_org_name': 'MyOrg',
+                'github_public_org_repo_name': 'MyRepo',
             })

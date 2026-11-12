@@ -43,6 +43,14 @@ export interface TextCommentBlockAttrs
      *     The rendered contents of the file, such as for Markdown, etc.
      */
     viewMode: string;
+
+    /**
+     * The version of the row layout used for the rendered view.
+     *
+     * Version Added:
+     *     9.0
+     */
+    renderVersion?: number;
 }
 
 
@@ -55,6 +63,7 @@ export interface TextCommentBlockAttrs
 interface SerializedTextCommentFields {
     beginLineNum: string;
     endLineNum: string;
+    renderVersion?: number;
     viewMode: string;
 }
 
@@ -84,7 +93,12 @@ export class TextCommentBlock<
         viewMode: null,
     };
 
-    static serializedFields = ['beginLineNum', 'endLineNum', 'viewMode'];
+    static serializedFields = [
+        'beginLineNum',
+        'endLineNum',
+        'renderVersion',
+        'viewMode',
+    ];
 
     /**
      * Parse the incoming attributes for the comment block.
@@ -103,10 +117,16 @@ export class TextCommentBlock<
     parse(
         fields: SerializedTextCommentFields,
     ): Partial<TextCommentBlockAttrs> {
-        return {
+        const attrs: Partial<TextCommentBlockAttrs> = {
             beginLineNum: parseInt(fields.beginLineNum, 10),
             endLineNum: parseInt(fields.endLineNum, 10),
             viewMode: fields.viewMode,
         };
+
+        if (fields.renderVersion !== undefined) {
+            attrs.renderVersion = fields.renderVersion;
+        }
+
+        return attrs;
     }
 }

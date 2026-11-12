@@ -13,7 +13,12 @@ from reviewboard.diffviewer.parser import DiffParserError
 from reviewboard.diffviewer.testing.mixins import DiffParserTestingMixin
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.scmtools.errors import SCMError, FileNotFoundError
-from reviewboard.scmtools.git import ShortSHA1Error, GitClient, GitTool
+from reviewboard.scmtools.git import (
+    GitClient,
+    GitTool,
+    ShortSHA1Error,
+    expand_diff_blob_shas,
+)
 from reviewboard.scmtools.tests.testcases import SCMTestCase
 from reviewboard.testing.testcase import TestCase
 
@@ -1544,3 +1549,140 @@ class GitRepositoryFormTests(TestCase):
             'details.'
             % manual_url,
         ])
+
+
+class ExpandDiffBlobSHAsTests(TestCase):
+    """Unit tests for reviewboard.scmtools.git.expand_diff_blob_shas.
+
+    Version Added:
+        9.0
+    """
+
+    def test_expands_shas(self) -> None:
+        """Testing expand_diff_blob_shas expands abbreviated SHAs"""
+        sha1 = b'830a40c3197223c6a0abb3355ea48891a1857bfd'
+        sha2 = b'980a0d5f19a64b4b30a87d4206aade58726b60e3'
+
+        diff = expand_diff_blob_shas(
+            diff=(
+                b'diff --git a/README b/README\n'
+                b'index 830a40c..980a0d5 100644\n'
+                b'--- a/README\n'
+                b'+++ b/README\n'
+                b'@@ -1 +1 @@\n'
+                b'-Hi\n'
+                b'+Hello\n'
+            ),
+            blob_shas={
+                b'1111111111111111111111111111111111111111',
+                sha1,
+                sha2,
+                b'ffffffffffffffffffffffffffffffffffffffff',
+            })
+
+        self.assertEqual(
+            diff,
+            b'diff --git a/README b/README\n'
+            b'index %s..%s 100644\n'
+            b'--- a/README\n'
+            b'+++ b/README\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hi\n'
+            b'+Hello\n'
+            % (sha1, sha2))
+
+    def test_with_added_file(self) -> None:
+        """Testing expand_diff_blob_shas with an added file"""
+        sha = b'980a0d5f19a64b4b30a87d4206aade58726b60e3'
+
+        diff = expand_diff_blob_shas(
+            diff=(
+                b'diff --git a/README b/README\n'
+                b'new file mode 100644\n'
+                b'index 0000000..980a0d5\n'
+                b'--- /dev/null\n'
+                b'+++ b/README\n'
+            ),
+            blob_shas={sha})
+
+        self.assertEqual(
+            diff,
+            b'diff --git a/README b/README\n'
+            b'new file mode 100644\n'
+            b'index 0000000000000000000000000000000000000000..%s\n'
+            b'--- /dev/null\n'
+            b'+++ b/README\n'
+            % sha)
+
+    def test_with_full_shas(self) -> None:
+        """Testing expand_diff_blob_shas with SHAs that are already full"""
+        sha1 = b'830a40c3197223c6a0abb3355ea48891a1857bfd'
+        sha2 = b'980a0d5f19a64b4b30a87d4206aade58726b60e3'
+        orig_diff = (
+            b'diff --git a/README b/README\n'
+            b'index %s..%s 100644\n'
+            % (sha1, sha2))
+
+        self.assertEqual(
+            expand_diff_blob_shas(diff=orig_diff,
+                                  blob_shas=set()),
+            orig_diff)
+
+    def test_with_unknown_sha(self) -> None:
+        """Testing expand_diff_blob_shas with an SHA not in blob_shas"""
+        sha = b'980a0d5f19a64b4b30a87d4206aade58726b60e3'
+
+        with self.assertLogs('reviewboard.scmtools.git',
+                             level='WARNING') as logs:
+            diff = expand_diff_blob_shas(
+                diff=b'index 830a40c..980a0d5 100644\n',
+                blob_shas={
+                    b'830a40d000000000000000000000000000000000',
+                    sha,
+                },
+                repository=None)
+
+        self.assertEqual(diff, b'index 830a40c..%s 100644\n' % sha)
+        self.assertEqual(len(logs.records), 1)
+        self.assertEqual(
+            logs.records[0].getMessage(),
+            'Unable to find a full blob SHA for 830a40c (repository '
+            'None). The original content of this file may not be '
+            'viewable.')
+
+    def test_with_ambiguous_sha(self) -> None:
+        """Testing expand_diff_blob_shas with an SHA matching more than one
+        blob SHA
+        """
+        sha = b'980a0d5f19a64b4b30a87d4206aade58726b60e3'
+
+        with self.assertLogs('reviewboard.scmtools.git',
+                             level='WARNING') as logs:
+            diff = expand_diff_blob_shas(
+                diff=b'index 830a40c..980a0d5 100644\n',
+                blob_shas={
+                    b'830a40c111111111111111111111111111111111',
+                    b'830a40c222222222222222222222222222222222',
+                    sha,
+                })
+
+        self.assertEqual(diff, b'index 830a40c..%s 100644\n' % sha)
+        self.assertEqual(len(logs.records), 1)
+        self.assertEqual(
+            logs.records[0].getMessage(),
+            'Abbreviated blob SHA 830a40c is ambiguous (repository '
+            'None). The original content of this file may not be '
+            'viewable.')
+
+    def test_preserves_trailing_newline(self) -> None:
+        """Testing expand_diff_blob_shas preserves the diff's trailing
+        newline state
+        """
+        self.assertEqual(
+            expand_diff_blob_shas(diff=b'-Hi\n+Hello',
+                                  blob_shas=set()),
+            b'-Hi\n+Hello')
+        self.assertEqual(
+            expand_diff_blob_shas(diff=b'-Hi\n+Hello\n',
+                                  blob_shas=set()),
+            b'-Hi\n+Hello\n')

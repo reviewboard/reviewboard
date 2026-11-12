@@ -1,0 +1,155 @@
+/**
+ * Styles for rendered Markdown, shared by Markdown file attachments and
+ * rich text in fields, reviews and comments.
+ *
+ * Version Added:
+ *     9.0
+ */
+
+
+/**
+ * Task list items, drawn with a checkbox in place of the bullet.
+ *
+ * The checkbox is drawn like a checkbox in a form. It holds a character for
+ * its state, which is still read by screen readers. The character is moved
+ * out of the box and clipped, so it stays hidden even when a diff highlights
+ * it as a change.
+ *
+ * Version Added:
+ *     9.0
+ */
+.rb-markdown-task-lists() {
+  .task-list-item {
+    list-style: none;
+  }
+
+  .task-list-checkbox {
+    border: 1px solid var(--ink-p-fg-weak);
+    border-radius: var(--ink-u-border-radius-xs);
+    box-sizing: border-box;
+    display: inline-block;
+    height: 1.1em;
+    line-height: 1.1em;
+    margin-inline: -1.5em 0.4em;
+    overflow: hidden;
+    position: relative;
+    text-indent: 200%;
+    vertical-align: -0.2em;
+    white-space: nowrap;
+    width: 1.1em;
+
+    &.-is-checked {
+      background: var(--ink-p-accent-primary-bg);
+      border-color: var(--ink-p-accent-primary-bg);
+
+      &::after {
+        inset: 0;
+        position: absolute;
+        #ink-ns-ui.icons.svg-icon(@icon: var(--ink-i-check);
+                                  @color: var(--ink-p-accent-primary-fg);
+                                  @size: 100%);
+      }
+    }
+  }
+}
+
+
+/**
+ * Alerts ("> [!NOTE]"), styled like ink alerts.
+ *
+ * These are blockquotes with an ``admonition`` class. ink has no type for
+ * "important", so it and any other types use the standard look.
+ *
+ * This sets colors, the title and code. Padding is left to the caller.
+ *
+ * Version Added:
+ *     9.0
+ */
+.rb-markdown-alerts() {
+  blockquote.admonition {
+    --_md-alert-bg: var(--ink-c-alert-standard-bg);
+    --_md-alert-border-color: var(--ink-c-alert-standard-border-color);
+    --_md-alert-fg: var(--ink-c-alert-standard-fg);
+    --_md-alert-icon: var(--ink-c-alert-standard-icon);
+
+    background: var(--_md-alert-bg);
+    border-left-color: var(--_md-alert-border-color);
+    color: var(--_md-alert-fg);
+
+    /*
+     * Typed alerts have light backgrounds, even in dark mode. Text that
+     * normally follows the mode needs its colors for light backgrounds.
+     */
+    .md-alert-type(@type) {
+      --_md-alert-bg: ~"var(--ink-c-alert-@{type}-bg)";
+      --_md-alert-border-color: ~"var(--ink-c-alert-@{type}-border-color)";
+      --_md-alert-fg: ~"var(--ink-c-alert-@{type}-fg)";
+      --_md-alert-icon: ~"var(--ink-c-alert-@{type}-icon)";
+      --ink-p-fg-weak: var(--ink-p-fg-weak-on-light);
+      --ink-p-link-fg: var(--ink-p-link-fg-on-light);
+      --ink-p-link-hover-fg: var(--ink-p-link-hover-fg-on-light);
+    }
+
+    &.note {
+      .md-alert-type(info);
+    }
+
+    &.tip {
+      .md-alert-type(success);
+    }
+
+    &.warning {
+      .md-alert-type(warning);
+    }
+
+    &.caution {
+      .md-alert-type(error);
+    }
+
+    .admonition-title {
+      font-weight: bold;
+
+      &::before {
+        margin-right: 0.35em;
+        vertical-align: text-bottom;
+        #ink-ns-ui.icons.svg-icon(@icon: var(--_md-alert-icon);
+                                  @size: 1.2em);
+      }
+    }
+
+    /*
+     * Code has no background of its own in dark mode, which doesn't work
+     * on a light alert. Put it over the normal page color instead. In dark
+     * mode the code background is "inherit", which drops the image layer
+     * and leaves just that color.
+     */
+    :is(.codehilite, code) {
+      background-color: var(--ink-p-container-bg);
+      background-image: linear-gradient(var(--ink-p-code-literal-bg) 0 0);
+    }
+  }
+}
+
+
+/**
+ * A code block inside a list item or blockquote.
+ *
+ * Top-level code blocks in rich text are drawn flush with the field, and
+ * pull into the space around them to line up with the source. Nested ones
+ * have no space around them, so they're drawn as their own box instead.
+ * The box keeps the code block's own background.
+ *
+ * Version Added:
+ *     9.0
+ */
+.rb-markdown-nested-code-block() {
+  border: var(--rb-g-code-block-border);
+  border-radius: var(--rb-u-code-block-border-radius);
+  margin: 0;
+  padding: 0.3em 1ch;
+
+  /* Rich text draws its code box with this. */
+  &::before {
+    display: none;
+  }
+}

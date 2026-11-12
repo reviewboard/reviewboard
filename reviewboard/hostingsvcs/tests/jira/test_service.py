@@ -1,519 +1,29 @@
 """Unit tests for the JIRA hosting service.
 
 Version Added:
-    9.0
+    9.0:
+    Split up ``reviewboard.hostingsvcs.test_jira``.
 """
 
 from __future__ import annotations
 
-from types import SimpleNamespace
-from typing import TYPE_CHECKING
-
 import kgb
-from djblets.conditions import ConditionSet
 
-import reviewboard.hostingsvcs.jira as jira_module
-from reviewboard.hostingsvcs.bug_tracker_forms import BugTrackerForm
+import reviewboard.hostingsvcs.jira.service as jira_module
 from reviewboard.hostingsvcs.errors import AuthorizationError
-from reviewboard.hostingsvcs.models import ConfiguredBugTracker
-from reviewboard.hostingsvcs.testing import HostingServiceTestCase
+from reviewboard.hostingsvcs.tests.jira.base import (
+    FakeJIRAClient,
+    FakeJIRAError,
+    FakeJIRAIssue,
+    FakePickerResponse,
+    FakeRequestError,
+    FakeSession,
+    JIRATestCase,
+)
 from reviewboard.scmtools.crypto_utils import (
     decrypt_password,
     encrypt_password,
 )
-
-if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
-    from typing import Any
-
-
-class _FakeJIRAError(Exception):
-    """A stand-in for jira.exceptions.JIRAError."""
-
-    def __init__(
-        self,
-        text: str = '',
-        status_code: (int | None) = None,
-    ) -> None:
-        """Initialize the error."""
-        super().__init__(text)
-
-        self.text = text
-        self.status_code = status_code
-
-
-class _FakeRequestError(Exception):
-    """A stand-in for requests.RequestException."""
-
-
-class _FakeJIRAIssue:
-    """A stand-in for a JIRA issue."""
-
-    def __init__(
-        self,
-        key: str,
-        summary: str,
-        status: str,
-    ) -> None:
-        """Initialize the issue."""
-        self.key = key
-        self.fields = SimpleNamespace(
-            description='',
-            summary=summary,
-            status=status,
-        )
-
-
-class FakePickerResponse:
-    """A stand-in for a response from JIRA's issue picker."""
-
-    def __init__(
-        self,
-        keys: Sequence[str] = (),
-    ) -> None:
-        """Initialize the response.
-
-        Args:
-            keys (list of str, optional):
-                The issue keys the picker matched.
-        """
-        self.keys = keys
-
-    def raise_for_status(self) -> None:
-        """Do nothing, since the request succeeded."""
-
-    def json(self) -> dict[str, Any]:
-        """Return the response payload."""
-        return {
-            'sections': [
-                {
-                    'id': 'cs',
-                    'issues': [
-                        {
-                            'key': key,
-                        }
-                        for key in self.keys
-                    ],
-                },
-            ],
-        }
-
-
-class _FakeSession:
-    """A stand-in for the HTTP session used by the JIRA client."""
-
-    def get(
-        self,
-        url: str,
-        params: Mapping[str, str],
-    ) -> FakePickerResponse:
-        """Return a response with no matches."""
-        return FakePickerResponse()
-
-
-class _FakeJIRAClient:
-    """A stand-in for jira.client.JIRA.
-
-    The methods return empty results. Tests spy on them to provide
-    results or errors.
-    """
-
-    def __init__(
-        self,
-        options: Mapping[str, Any],
-        max_retries: int,
-        timeout: float,
-        basic_auth: (tuple[str, str] | None) = None,
-    ) -> None:
-        """Initialize the client."""
-        self.options = options
-        self.basic_auth = basic_auth
-        self.timeout = timeout
-        self._session = _FakeSession()
-
-    def myself(self) -> dict[str, Any]:
-        """Return the authenticated user."""
-        return {}
-
-    def issue(
-        self,
-        id: str,
-        fields: (str | None) = None,
-    ) -> _FakeJIRAIssue:
-        """Return a single issue, or raise if it does not exist."""
-        raise _FakeJIRAError(
-            text=f'Issue {id} does not exist',
-            status_code=404,
-        )
-
-    def search_issues(
-        self,
-        jql: str,
-        maxResults: int,  # noqa: N803
-        validate_query: bool = True,
-        fields: (str | None) = None,
-    ) -> list[_FakeJIRAIssue]:
-        """Return search results."""
-        return []
-
-
-_UNSET = object()
-
-
-def _restore_module_attr(
-    attr: str,
-    value: object,
-) -> None:
-    """Restore an attribute on the JIRA hosting service module.
-
-    Args:
-        attr (str):
-            The name of the attribute.
-
-        value (object):
-            The original value, or ``_UNSET`` if the attribute did not exist.
-    """
-    if value is _UNSET:
-        delattr(jira_module, attr)
-    else:
-        setattr(jira_module, attr, value)
-
-
-class JIRATestCase(HostingServiceTestCase[jira_module.JIRA]):
-    """Base class for JIRA unit tests.
-
-    This handles mocking for the ``jira`` package.
-
-    Version Added:
-        9.0
-    """
-
-    service_name = 'jira'
-    default_hosting_url = 'https://jira.example.com'
-
-    def setUp(self) -> None:
-        """Set up the test case."""
-        super().setUp()
-
-        # The jira package is optional, so these may not exist on the
-        # module. They're put back the way they were after each test.
-        fakes = {
-            'has_jira': True,
-            'JIRAClient': _FakeJIRAClient,
-            'JIRAError': _FakeJIRAError,
-            'RequestException': _FakeRequestError,
-        }
-
-        for attr, value in fakes.items():
-            self.addCleanup(
-                _restore_module_attr,
-                attr,
-                getattr(jira_module, attr, _UNSET),
-            )
-            setattr(jira_module, attr, value)
-
-    def get_jira_service(
-        self,
-        config: ConfiguredBugTracker,
-    ) -> jira_module.JIRA:
-        """Return the JIRA service for a bug tracker configuration.
-
-        Args:
-            config (reviewboard.hostingsvcs.models.ConfiguredBugTracker):
-                The bug tracker configuration.
-
-        Returns:
-            reviewboard.hostingsvcs.jira.JIRA:
-            The JIRA service.
-        """
-        service = config.service
-        assert isinstance(service, jira_module.JIRA)
-
-        return service
-
-
-class JIRAAuthFormTests(JIRATestCase):
-    """Unit tests for JIRAAuthForm.
-
-    Version Added:
-        9.0
-    """
-
-    def test_get_hosting_url(self) -> None:
-        """Testing JIRAAuthForm.get_hosting_url returns the server URL"""
-        form = jira_module.JIRAAuthForm(
-            data={
-                'hosting_account_username': 'myuser',
-                'hosting_account_password': 'mytoken',
-                'jira_server_url': 'https://jira.example.com/',
-            },
-            hosting_service_cls=jira_module.JIRA)
-
-        self.assertTrue(form.is_valid(), form.errors)
-
-        # Trailing slashes are stripped.
-        self.assertEqual(form.get_hosting_url(), 'https://jira.example.com')
-
-    def test_save_with_same_username_on_two_servers(self) -> None:
-        """Testing JIRAAuthForm.save with the same username on two servers
-        creates two accounts
-        """
-        accounts = []
-
-        for server_url in ('https://one.example.com',
-                           'https://two.example.com'):
-            form = jira_module.JIRAAuthForm(
-                data={
-                    'hosting_account_username': 'myuser',
-                    'hosting_account_password': 'mytoken',
-                    'jira_server_url': server_url,
-                },
-                hosting_service_cls=jira_module.JIRA)
-
-            self.assertTrue(form.is_valid(), form.errors)
-            accounts.append(form.save())
-
-        self.assertNotEqual(accounts[0].pk, accounts[1].pk)
-
-        for account in accounts:
-            account.refresh_from_db()
-
-        self.assertEqual(accounts[0].hosting_url, 'https://one.example.com')
-        self.assertEqual(accounts[1].hosting_url, 'https://two.example.com')
-
-
-class JIRAAuthFormDeploymentTests(JIRATestCase):
-    """Unit tests for JIRAAuthForm deployment handling.
-
-    Version Added:
-        9.0
-    """
-
-    def test_cloud_composes_server_url(self) -> None:
-        """Testing JIRAAuthForm with JIRA Cloud composes the server URL
-        from the site name
-        """
-        form = jira_module.JIRAAuthForm(
-            data={
-                'jira_deployment': 'cloud',
-                'jira_cloud_site': 'myteam',
-                'hosting_account_username': 'me@example.com',
-                'hosting_account_password': 'mytoken',
-            },
-            hosting_service_cls=jira_module.JIRA)
-
-        self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.get_hosting_url(),
-                         'https://myteam.atlassian.net')
-
-    def test_cloud_normalizes_pasted_urls(self) -> None:
-        """Testing JIRAAuthForm with JIRA Cloud normalizes pasted URLs
-        down to the site name
-        """
-        form = jira_module.JIRAAuthForm(
-            data={
-                'jira_deployment': 'cloud',
-                'jira_cloud_site': 'https://MyTeam.atlassian.net/jira',
-                'hosting_account_username': 'me@example.com',
-                'hosting_account_password': 'mytoken',
-            },
-            hosting_service_cls=jira_module.JIRA)
-
-        self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.cleaned_data['jira_server_url'],
-                         'https://myteam.atlassian.net')
-
-    def test_cloud_requires_site(self) -> None:
-        """Testing JIRAAuthForm with JIRA Cloud requires the site name"""
-        form = jira_module.JIRAAuthForm(
-            data={
-                'jira_deployment': 'cloud',
-                'hosting_account_username': 'me@example.com',
-                'hosting_account_password': 'mytoken',
-            },
-            hosting_service_cls=jira_module.JIRA)
-
-        self.assertFalse(form.is_valid())
-        self.assertIn('jira_cloud_site', form.errors)
-
-    def test_data_center_requires_server_url(self) -> None:
-        """Testing JIRAAuthForm defaults to Data Center and requires the
-        server URL
-        """
-        form = jira_module.JIRAAuthForm(
-            data={
-                'hosting_account_username': 'myuser',
-                'hosting_account_password': 'mypass',
-            },
-            hosting_service_cls=jira_module.JIRA)
-
-        self.assertFalse(form.is_valid())
-        self.assertIn('jira_server_url', form.errors)
-
-    def test_data_center_with_invalid_server_url(self) -> None:
-        """Testing JIRAAuthForm with Data Center rejects server URLs that
-        are not full HTTP or HTTPS URLs
-        """
-        for server_url in ('jira.example.com',
-                           'ftp://jira.example.com',
-                           'https://'):
-            with self.subTest(server_url=server_url):
-                form = jira_module.JIRAAuthForm(
-                    data={
-                        'jira_deployment': 'dc',
-                        'jira_server_url': server_url,
-                        'hosting_account_username': 'myuser',
-                        'hosting_account_password': 'mypass',
-                    },
-                    hosting_service_cls=jira_module.JIRA)
-
-                self.assertFalse(form.is_valid())
-                self.assertIn('jira_server_url', form.errors)
-
-    def test_data_center_with_intranet_server_url(self) -> None:
-        """Testing JIRAAuthForm with Data Center accepts single-label
-        intranet hostnames with ports
-        """
-        form = jira_module.JIRAAuthForm(
-            data={
-                'jira_deployment': 'dc',
-                'jira_server_url': 'http://jira:8080/',
-                'hosting_account_username': 'myuser',
-                'hosting_account_password': 'mypass',
-            },
-            hosting_service_cls=jira_module.JIRA)
-
-        self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.get_hosting_url(), 'http://jira:8080')
-
-    def test_required_flags_per_deployment(self) -> None:
-        """Testing JIRAAuthForm marks the chosen deployment's URL field
-        required
-        """
-        form = jira_module.JIRAAuthForm(
-            data={
-                'jira_deployment': 'cloud',
-            },
-            hosting_service_cls=jira_module.JIRA)
-        self.assertTrue(form.fields['jira_cloud_site'].required)
-        self.assertFalse(form.fields['jira_server_url'].required)
-
-        form = jira_module.JIRAAuthForm(
-            data={
-                'jira_deployment': 'dc',
-            },
-            hosting_service_cls=jira_module.JIRA)
-        self.assertTrue(form.fields['jira_server_url'].required)
-        self.assertFalse(form.fields['jira_cloud_site'].required)
-
-
-class JIRARequiresAccountTests(JIRATestCase):
-    """Unit tests for JIRA's account requirement on configurations.
-
-    Version Added:
-        9.0
-    """
-
-    def test_config_requires_account(self) -> None:
-        """Testing JIRA bug tracker configurations require an account"""
-        form = BugTrackerForm(
-            data={
-                'apply_to': ConfiguredBugTracker.APPLY_TO_ALL,
-                'enabled': True,
-                'name': 'My Tracker',
-                'service_name': 'jira',
-                'user_conditions_last_id': '0',
-                'user_conditions_mode': ConditionSet.MODE_ALL,
-            })
-
-        self.assertFalse(form.is_valid())
-        self.assertIn('hosting_account', form.errors)
-
-    def test_legacy_config_grandfathered(self) -> None:
-        """Testing migrated legacy JIRA configurations stay editable
-        without an account
-        """
-        bug_tracker = self.create_bug_tracker(
-            name='Legacy JIRA',
-            service_name='jira',
-            settings={
-                'jira_url': 'https://jira.example.com',
-            })
-
-        form = BugTrackerForm(
-            data={
-                'apply_to': ConfiguredBugTracker.APPLY_TO_ALL,
-                'enabled': True,
-                'name': 'Legacy JIRA',
-                'service_name': 'jira',
-                'user_conditions_last_id': '0',
-                'user_conditions_mode': ConditionSet.MODE_ALL,
-            },
-            instance=bug_tracker)
-
-        self.assertTrue(form.is_valid(), form.errors)
-
-        bug_tracker = form.save()
-        self.assertIsNone(bug_tracker.hosting_account)
-
-        # The legacy server URL is preserved.
-        self.assertEqual(bug_tracker.settings['jira_url'],
-                         'https://jira.example.com')
-
-    def test_config_with_account(self) -> None:
-        """Testing JIRA bug tracker configurations save with an account"""
-        account = self.create_hosting_account(use_url=True)
-
-        form = BugTrackerForm(
-            data={
-                'apply_to': ConfiguredBugTracker.APPLY_TO_ALL,
-                'enabled': True,
-                'hosting_account': account.pk,
-                'name': 'My Tracker',
-                'service_name': 'jira',
-                'user_conditions_last_id': '0',
-                'user_conditions_mode': ConditionSet.MODE_ALL,
-            })
-
-        self.assertTrue(form.is_valid(), form.errors)
-
-        bug_tracker = form.save()
-        self.assertEqual(bug_tracker.hosting_account, account)
-
-
-class JIRABugTrackerConfigFormTests(JIRATestCase):
-    """Unit tests for JIRABugTrackerConfigForm.
-
-    Version Added:
-        9.0
-    """
-
-    def test_project_normalized(self) -> None:
-        """Testing JIRABugTrackerConfigForm normalizes the project key"""
-        form = jira_module.JIRABugTrackerConfigForm(
-            data={
-                'jira_project': ' eng ',
-            },
-            hosting_service_cls=jira_module.JIRA)
-
-        self.assertTrue(form.is_valid(), form.errors)
-        self.assertEqual(form.cleaned_data['jira_project'], 'ENG')
-
-    def test_invalid_project(self) -> None:
-        """Testing JIRABugTrackerConfigForm with an invalid project key"""
-        form = jira_module.JIRABugTrackerConfigForm(
-            data={
-                'jira_project': 'not a key',
-            },
-            hosting_service_cls=jira_module.JIRA)
-
-        self.assertFalse(form.is_valid())
-        self.assertIn('jira_project', form.errors)
-
-    def test_is_bug_tracker_config_form(self) -> None:
-        """Testing JIRA uses JIRABugTrackerConfigForm for configs"""
-        self.assertIs(jira_module.JIRA.bug_tracker_config_form,
-                      jira_module.JIRABugTrackerConfigForm)
 
 
 class JIRASortKeyTests(JIRATestCase):
@@ -647,8 +157,8 @@ class JIRAAuthorizeTests(JIRATestCase):
         account = self.create_hosting_account()
         service = account.service
 
-        self.spy_on(_FakeJIRAClient.__init__, owner=_FakeJIRAClient)
-        self.spy_on(_FakeJIRAClient.myself, owner=_FakeJIRAClient)
+        self.spy_on(FakeJIRAClient.__init__, owner=FakeJIRAClient)
+        self.spy_on(FakeJIRAClient.myself, owner=FakeJIRAClient)
 
         service.authorize(
             username='myuser',
@@ -656,12 +166,12 @@ class JIRAAuthorizeTests(JIRATestCase):
             hosting_url='https://jira.example.com')
 
         self.assertSpyCalledWith(
-            _FakeJIRAClient.__init__,
+            FakeJIRAClient.__init__,
             options={
                 'server': 'https://jira.example.com',
             },
             basic_auth=('myuser', 'mytoken'))
-        self.assertSpyCalled(_FakeJIRAClient.myself)
+        self.assertSpyCalled(FakeJIRAClient.myself)
 
         account.refresh_from_db()
         self.assertTrue(service.is_authorized())
@@ -674,9 +184,9 @@ class JIRAAuthorizeTests(JIRATestCase):
         service = account.service
 
         self.spy_on(
-            _FakeJIRAClient.myself,
-            owner=_FakeJIRAClient,
-            op=kgb.SpyOpRaise(_FakeJIRAError(
+            FakeJIRAClient.myself,
+            owner=FakeJIRAClient,
+            op=kgb.SpyOpRaise(FakeJIRAError(
                 text='Client must be authenticated',
                 status_code=401,
             )),
@@ -700,9 +210,9 @@ class JIRAAuthorizeTests(JIRATestCase):
         service = account.service
 
         self.spy_on(
-            _FakeJIRAClient.myself,
-            owner=_FakeJIRAClient,
-            op=kgb.SpyOpRaise(_FakeJIRAError(
+            FakeJIRAClient.myself,
+            owner=FakeJIRAClient,
+            op=kgb.SpyOpRaise(FakeJIRAError(
                 text='Client must be authenticated',
                 status_code=401,
             )),
@@ -726,9 +236,9 @@ class JIRAAuthorizeTests(JIRATestCase):
         service = account.service
 
         self.spy_on(
-            _FakeJIRAClient.myself,
-            owner=_FakeJIRAClient,
-            op=kgb.SpyOpRaise(_FakeJIRAError(
+            FakeJIRAClient.myself,
+            owner=FakeJIRAClient,
+            op=kgb.SpyOpRaise(FakeJIRAError(
                 text='CAPTCHA required',
                 status_code=403,
             )),
@@ -761,7 +271,7 @@ class JIRAAuthorizeTests(JIRATestCase):
         account = self.create_hosting_account()
         service = account.service
 
-        self.spy_on(_FakeJIRAClient.__init__, owner=_FakeJIRAClient)
+        self.spy_on(FakeJIRAClient.__init__, owner=FakeJIRAClient)
 
         with self.assertRaisesMessage(AuthorizationError, 'are required'):
             service.authorize(
@@ -769,7 +279,7 @@ class JIRAAuthorizeTests(JIRATestCase):
                 password='',
                 hosting_url='https://jira.example.com')
 
-        self.assertSpyNotCalled(_FakeJIRAClient.__init__)
+        self.assertSpyNotCalled(FakeJIRAClient.__init__)
 
 
 class JIRAClientCredentialsTests(JIRATestCase):
@@ -803,7 +313,7 @@ class JIRAClientCredentialsTests(JIRATestCase):
         service.search_bugs(config=config, query='crash')
 
         client = service.jira_client
-        assert isinstance(client, _FakeJIRAClient)
+        assert isinstance(client, FakeJIRAClient)
 
         self.assertEqual(client.basic_auth, ('myuser', 'mytoken'))
         self.assertEqual(client.options, {
@@ -823,7 +333,7 @@ class JIRAClientCredentialsTests(JIRATestCase):
         service.search_bugs(config=config, query='crash')
 
         client = service.jira_client
-        assert isinstance(client, _FakeJIRAClient)
+        assert isinstance(client, FakeJIRAClient)
 
         self.assertIsNone(client.basic_auth)
 
@@ -848,7 +358,7 @@ class JIRAClientCredentialsTests(JIRATestCase):
                                       bug_id='ENG-1')
 
         client = service.jira_client
-        assert isinstance(client, _FakeJIRAClient)
+        assert isinstance(client, FakeJIRAClient)
 
         self.assertIsNone(client.basic_auth)
         self.assertEqual(client.options, {
@@ -859,7 +369,7 @@ class JIRAClientCredentialsTests(JIRATestCase):
         service.search_bugs(config=config, query='crash')
 
         client = service.jira_client
-        assert isinstance(client, _FakeJIRAClient)
+        assert isinstance(client, FakeJIRAClient)
 
         self.assertEqual(client.basic_auth, ('myuser', 'mytoken'))
         self.assertEqual(client.options, {
@@ -878,7 +388,7 @@ class JIRAClientCredentialsTests(JIRATestCase):
         service.search_bugs(config=config, query='crash')
 
         client = service.jira_client
-        assert isinstance(client, _FakeJIRAClient)
+        assert isinstance(client, FakeJIRAClient)
 
         self.assertEqual(client.timeout, 10)
 
@@ -894,9 +404,9 @@ class JIRAClientCredentialsTests(JIRATestCase):
         service = self.get_jira_service(config)
 
         self.spy_on(
-            _FakeJIRAClient.__init__,
-            owner=_FakeJIRAClient,
-            op=kgb.SpyOpRaise(_FakeRequestError('Connection refused')),
+            FakeJIRAClient.__init__,
+            owner=FakeJIRAClient,
+            op=kgb.SpyOpRaise(FakeRequestError('Connection refused')),
         )
 
         self.assertEqual(
@@ -920,9 +430,9 @@ class JIRAClientCredentialsTests(JIRATestCase):
         service = self.get_jira_service(config)
 
         self.spy_on(
-            _FakeJIRAClient.issue,
-            owner=_FakeJIRAClient,
-            op=kgb.SpyOpRaise(_FakeRequestError('Read timed out')),
+            FakeJIRAClient.issue,
+            owner=FakeJIRAClient,
+            op=kgb.SpyOpRaise(FakeRequestError('Read timed out')),
         )
 
         self.assertEqual(
@@ -950,17 +460,17 @@ class JIRABugInfoTests(JIRATestCase):
             })
 
         self.spy_on(
-            _FakeJIRAClient.issue,
-            owner=_FakeJIRAClient,
+            FakeJIRAClient.issue,
+            owner=FakeJIRAClient,
             op=kgb.SpyOpReturn(
-                _FakeJIRAIssue('ENG-1', 'A crash', 'Open')),
+                FakeJIRAIssue('ENG-1', 'A crash', 'Open')),
         )
 
         bug_info = self.get_jira_service(config).get_bug_info_uncached(
             config=config,
             bug_id='ENG-1')
 
-        self.assertSpyCalledWith(_FakeJIRAClient.issue,
+        self.assertSpyCalledWith(FakeJIRAClient.issue,
                                  'ENG-1',
                                  fields='summary,status,description')
         self.assertEqual(bug_info, {
@@ -1012,10 +522,10 @@ class JIRASearchTests(JIRATestCase):
         config = self.config
 
         self.spy_on(
-            _FakeJIRAClient.search_issues,
-            owner=_FakeJIRAClient,
+            FakeJIRAClient.search_issues,
+            owner=FakeJIRAClient,
             op=kgb.SpyOpReturn([
-                _FakeJIRAIssue('PROJ-42', 'Crash on startup', 'Open'),
+                FakeJIRAIssue('PROJ-42', 'Crash on startup', 'Open'),
             ]),
         )
 
@@ -1032,9 +542,9 @@ class JIRASearchTests(JIRATestCase):
 
         # Quotes in the query are escaped in the JQL, and only the
         # summary is searched.
-        self.assertSpyCallCount(_FakeJIRAClient.search_issues, 1)
+        self.assertSpyCallCount(FakeJIRAClient.search_issues, 1)
         self.assertSpyCalledWith(
-            _FakeJIRAClient.search_issues,
+            FakeJIRAClient.search_issues,
             'summary ~ "crash \\"quoted\\"*"',
             maxResults=25,
             validate_query=False,
@@ -1047,8 +557,8 @@ class JIRASearchTests(JIRATestCase):
         config = self.config
 
         self.spy_on(
-            _FakeSession.get,
-            owner=_FakeSession,
+            FakeSession.get,
+            owner=FakeSession,
             op=kgb.SpyOpReturn(FakePickerResponse([
                 'ENG-10',
                 'ENG-1',
@@ -1059,18 +569,18 @@ class JIRASearchTests(JIRATestCase):
         # ENG-100 is left out, simulating an issue that could not be
         # loaded.
         self.spy_on(
-            _FakeJIRAClient.search_issues,
-            owner=_FakeJIRAClient,
+            FakeJIRAClient.search_issues,
+            owner=FakeJIRAClient,
             op=kgb.SpyOpReturn([
-                _FakeJIRAIssue('ENG-10', 'Crash on startup', 'Open'),
-                _FakeJIRAIssue('ENG-1', 'First bug', 'Open'),
+                FakeJIRAIssue('ENG-10', 'Crash on startup', 'Open'),
+                FakeJIRAIssue('ENG-1', 'First bug', 'Open'),
             ]),
         )
 
         results = config.service.search_bugs(config=config, query='eng-1')
 
         self.assertSpyCalledWith(
-            _FakeSession.get,
+            FakeSession.get,
             'https://jira.example.com/rest/api/2/issue/picker',
             params={
                 'query': 'eng-1',
@@ -1079,9 +589,9 @@ class JIRASearchTests(JIRATestCase):
 
         # Details are loaded for the picker's keys, with the exact
         # match promoted to the front.
-        self.assertSpyCallCount(_FakeJIRAClient.search_issues, 1)
+        self.assertSpyCallCount(FakeJIRAClient.search_issues, 1)
         self.assertSpyCalledWith(
-            _FakeJIRAClient.search_issues,
+            FakeJIRAClient.search_issues,
             'key in ("ENG-1", "ENG-10", "ENG-100")',
             maxResults=3,
             validate_query=False)
@@ -1111,8 +621,8 @@ class JIRASearchTests(JIRATestCase):
             })
 
         self.spy_on(
-            _FakeSession.get,
-            owner=_FakeSession,
+            FakeSession.get,
+            owner=FakeSession,
             op=kgb.SpyOpReturn(FakePickerResponse([
                 'OTHER-5',
                 'ENG-10',
@@ -1120,11 +630,11 @@ class JIRASearchTests(JIRATestCase):
             ])),
         )
         self.spy_on(
-            _FakeJIRAClient.search_issues,
-            owner=_FakeJIRAClient,
+            FakeJIRAClient.search_issues,
+            owner=FakeJIRAClient,
             op=kgb.SpyOpReturn([
-                _FakeJIRAIssue('ENG-10', 'Crash on startup', 'Open'),
-                _FakeJIRAIssue('ENG-1', 'First bug', 'Open'),
+                FakeJIRAIssue('ENG-10', 'Crash on startup', 'Open'),
+                FakeJIRAIssue('ENG-1', 'First bug', 'Open'),
             ]),
         )
 
@@ -1132,7 +642,7 @@ class JIRASearchTests(JIRATestCase):
 
         # The picker's current search is limited to the project.
         self.assertSpyCalledWith(
-            _FakeSession.get,
+            FakeSession.get,
             'https://jira.example.com/rest/api/2/issue/picker',
             params={
                 'query': 'eng-1',
@@ -1141,9 +651,9 @@ class JIRASearchTests(JIRATestCase):
 
         # The other project's issue (as from the picker's history section)
         # never reaches the details query.
-        self.assertSpyCallCount(_FakeJIRAClient.search_issues, 1)
+        self.assertSpyCallCount(FakeJIRAClient.search_issues, 1)
         self.assertSpyCalledWith(
-            _FakeJIRAClient.search_issues,
+            FakeJIRAClient.search_issues,
             'key in ("ENG-1", "ENG-10")',
             maxResults=2,
             validate_query=False)
@@ -1159,15 +669,15 @@ class JIRASearchTests(JIRATestCase):
         config = self.config
 
         self.spy_on(
-            _FakeSession.get,
-            owner=_FakeSession,
+            FakeSession.get,
+            owner=FakeSession,
             op=kgb.SpyOpRaise(Exception('404 from server')),
         )
         self.spy_on(
-            _FakeJIRAClient.search_issues,
-            owner=_FakeJIRAClient,
+            FakeJIRAClient.search_issues,
+            owner=FakeJIRAClient,
             op=kgb.SpyOpReturn([
-                _FakeJIRAIssue('ENG-102', 'Crash on startup', 'Open'),
+                FakeJIRAIssue('ENG-102', 'Crash on startup', 'Open'),
             ]),
         )
 
@@ -1175,7 +685,7 @@ class JIRASearchTests(JIRATestCase):
 
         # The exact key is tried first, then summaries. The duplicate
         # result is dropped.
-        search_issues = _FakeJIRAClient.search_issues
+        search_issues = FakeJIRAClient.search_issues
         self.assertSpyCallCount(search_issues, 2)
         self.assertSpyCalledWith(
             search_issues.calls[0],
@@ -1219,11 +729,11 @@ class JIRABulkBugInfoTests(JIRATestCase):
         config = self.config
 
         self.spy_on(
-            _FakeJIRAClient.search_issues,
-            owner=_FakeJIRAClient,
+            FakeJIRAClient.search_issues,
+            owner=FakeJIRAClient,
             op=kgb.SpyOpReturn([
-                _FakeJIRAIssue('ENG-1', 'A crash', 'Open'),
-                _FakeJIRAIssue('ENG-2', 'A typo', 'Fixed'),
+                FakeJIRAIssue('ENG-1', 'A crash', 'Open'),
+                FakeJIRAIssue('ENG-2', 'A typo', 'Fixed'),
             ]),
         )
 
@@ -1231,9 +741,9 @@ class JIRABulkBugInfoTests(JIRATestCase):
             config=config,
             bug_ids=['ENG-1', 'ENG-2'])
 
-        self.assertSpyCallCount(_FakeJIRAClient.search_issues, 1)
+        self.assertSpyCallCount(FakeJIRAClient.search_issues, 1)
         self.assertSpyCalledWith(
-            _FakeJIRAClient.search_issues,
+            FakeJIRAClient.search_issues,
             'key in ("ENG-1", "ENG-2")',
             fields='summary,status')
         self.assertEqual(bugs_info, {
@@ -1266,10 +776,10 @@ class JIRABulkBugInfoTests(JIRATestCase):
         config = self.config
 
         self.spy_on(
-            _FakeJIRAClient.search_issues,
-            owner=_FakeJIRAClient,
+            FakeJIRAClient.search_issues,
+            owner=FakeJIRAClient,
             op=kgb.SpyOpReturn([
-                _FakeJIRAIssue('ENG-1', 'A crash', 'Open'),
+                FakeJIRAIssue('ENG-1', 'A crash', 'Open'),
             ]),
         )
 
@@ -1281,8 +791,8 @@ class JIRABulkBugInfoTests(JIRATestCase):
                 '#123',
             ])
 
-        self.assertSpyCallCount(_FakeJIRAClient.search_issues, 1)
-        self.assertSpyCalledWith(_FakeJIRAClient.search_issues,
+        self.assertSpyCallCount(FakeJIRAClient.search_issues, 1)
+        self.assertSpyCalledWith(FakeJIRAClient.search_issues,
                                  'key in ("ENG-1")')
         self.assertEqual(list(bugs_info), ['ENG-1'])
 
@@ -1306,21 +816,21 @@ class JIRABulkBugInfoTests(JIRATestCase):
         config = self.config
 
         self.spy_on(
-            _FakeJIRAClient.search_issues,
-            owner=_FakeJIRAClient,
-            op=kgb.SpyOpRaise(_FakeJIRAError(
+            FakeJIRAClient.search_issues,
+            owner=FakeJIRAClient,
+            op=kgb.SpyOpRaise(FakeJIRAError(
                 text="An issue with key 'ENG-404' does not exist.",
                 status_code=400,
             )),
         )
         self.spy_on(
-            _FakeJIRAClient.issue,
-            owner=_FakeJIRAClient,
+            FakeJIRAClient.issue,
+            owner=FakeJIRAClient,
             op=kgb.SpyOpMatchInOrder([
                 {
                     'args': ('ENG-1',),
                     'op': kgb.SpyOpReturn(
-                        _FakeJIRAIssue('ENG-1', 'A crash', 'Open')),
+                        FakeJIRAIssue('ENG-1', 'A crash', 'Open')),
                 },
                 {
                     'args': ('ENG-404',),
@@ -1349,19 +859,19 @@ class JIRABulkBugInfoTests(JIRATestCase):
         config = self.config
 
         self.spy_on(
-            _FakeJIRAClient.search_issues,
-            owner=_FakeJIRAClient,
-            op=kgb.SpyOpRaise(_FakeJIRAError(
+            FakeJIRAClient.search_issues,
+            owner=FakeJIRAClient,
+            op=kgb.SpyOpRaise(FakeJIRAError(
                 text='Unauthorized',
                 status_code=401,
             )),
         )
-        self.spy_on(_FakeJIRAClient.issue,
-                    owner=_FakeJIRAClient)
+        self.spy_on(FakeJIRAClient.issue,
+                    owner=FakeJIRAClient)
 
         bugs_info = config.service.get_bugs_info(
             config=config,
             bug_ids=['ENG-1', 'ENG-2'])
 
         self.assertEqual(bugs_info, {})
-        self.assertSpyNotCalled(_FakeJIRAClient.issue)
+        self.assertSpyNotCalled(FakeJIRAClient.issue)

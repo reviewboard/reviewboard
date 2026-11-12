@@ -10,6 +10,7 @@ from __future__ import annotations
 import datetime
 import logging
 import re
+from collections import OrderedDict
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, TypeVar
 from urllib.error import HTTPError
@@ -45,6 +46,7 @@ from reviewboard.hostingsvcs.github.app_auth import build_app_jwt_from_data
 from reviewboard.hostingsvcs.models import HostingServiceAccount
 from reviewboard.scmtools.crypto_utils import decrypt_password
 from reviewboard.scmtools.errors import FileNotFoundError
+from reviewboard.scmtools.git import expand_diff_blob_shas
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
@@ -164,6 +166,26 @@ class GitHubClient(HostingServiceClient['GitHub']):
 
     RAW_MIMETYPE = 'application/vnd.github.v3.raw'
 
+    ######################
+    # Instance variables #
+    ######################
+
+    #: Cached sets of blob SHAs in a tree.
+    #:
+    #: This maps a repository API URL to a dictionary of cached trees for
+    #: that repository, keyed by the revision of the commit to fetch the
+    #: tree for and ordered from least to most recently used.
+    #:
+    #: Only one repository's trees are kept at a time, and at most two
+    #: trees are kept for that repository.
+    #:
+    #: While this is used for blob lookups, the cache contains the SHAs of
+    #: all tree entries, not just blobs.
+    #:
+    #: Version Added:
+    #:     9.0
+    _blob_shas_tree_cache: dict[str, OrderedDict[str, set[bytes]]]
+
     def __init__(
         self,
         hosting_service: GitHub,
@@ -176,6 +198,7 @@ class GitHubClient(HostingServiceClient['GitHub']):
         """
         super().__init__(hosting_service)
         self.account = hosting_service.account
+        self._blob_shas_tree_cache = {}
 
     def get_http_credentials(
         self,
@@ -644,6 +667,68 @@ class GitHubClient(HostingServiceClient['GitHub']):
             per_page=100,
             repository=None)
 
+    def get_diff_content(
+        self,
+        *,
+        repo_api_url: str,
+        parent_id: str,
+        commit_id: str,
+        repository: Repository | None,
+    ) -> bytes:
+        """Return the diff between a commit and a parent commit.
+
+        This expands the blob SHAs in the ``index`` lines of the
+        diff.
+
+        Version Added:
+            9.0
+
+        Args:
+            repo_api_url (str):
+                The absolute URL for the base repository API.
+
+            parent_id (str):
+                The revision of the base commit for the diff.
+
+                This will be empty for a root commit.
+
+            commit_id (str):
+                The revision of the tip commit for the diff.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+        Returns:
+            bytes:
+            The raw diff, with full blob SHAs in the ``index`` lines.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching the diff.
+        """
+        if parent_id:
+            url = f'{repo_api_url}/compare/{parent_id}...{commit_id}'
+        else:
+            # This is a root commit.
+            url = f'{repo_api_url}/commits/{commit_id}'
+
+        diff = (
+            self.http_get(
+                url=url,
+                headers={
+                    'Accept': 'application/vnd.github.diff',
+                },
+            )
+            .data
+        )
+
+        return self._expand_diff_blob_shas(
+            repo_api_url=repo_api_url,
+            diff=diff,
+            parent_id=parent_id,
+            commit_id=commit_id,
+            repository=repository)
+
     def get_issue(
         self,
         *,
@@ -853,6 +938,232 @@ class GitHubClient(HostingServiceClient['GitHub']):
 
         return search_rsp.items
 
+    def has_cached_blob_sha(
+        self,
+        *,
+        repo_api_url: str,
+        blob_sha: str,
+    ) -> bool:
+        """Return whether a blob SHA is in the cached Git trees.
+
+        This checks if the SHA is in any of the currently cached Git trees
+        on the client. If it's not, then we don't know whether the blob
+        exists in the repository without making an API request to check, so
+        this returns ``False``.
+
+        Version Added:
+            9.0
+
+        Args:
+            repo_api_url (str):
+                The absolute URL for the base repository API.
+
+            blob_sha (str):
+                The full blob SHA to look for.
+
+        Returns:
+            bool:
+            ``True`` if the blob SHA is in a cached tree for the repository.
+            ``False`` if it isn't.
+        """
+        encoded_sha = blob_sha.encode('utf-8')
+
+        repo_trees = self._blob_shas_tree_cache.get(repo_api_url)
+
+        if repo_trees:
+            for blob_shas in repo_trees.values():
+                if encoded_sha in blob_shas:
+                    return True
+
+        return False
+
+    def _expand_diff_blob_shas(
+        self,
+        *,
+        repo_api_url: str,
+        diff: bytes,
+        parent_id: str,
+        commit_id: str,
+        repository: Repository | None,
+    ) -> bytes:
+        """Return a diff with full blob SHAs in its ``index`` lines.
+
+        GitHub's API returns diffs that have abbreviated blob SHAs in
+        ``index`` lines. We need the full SHAs in order to look up the
+        original content of files, so this expands the SHAs in the diff.
+
+        Version Added:
+            9.0
+
+        Args:
+            repo_api_url (str):
+                The absolute URL for the base repository API.
+
+            diff (bytes):
+                The raw diff to expand.
+
+            parent_id (str):
+                The revision of the base commit for the diff.
+
+                This will be an empty string for a root commit.
+
+            commit_id (str):
+                The revision of the tip commit for the diff.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+        Returns:
+            bytes:
+            The diff, with full blob SHAs in the ``index`` lines.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching a tree.
+        """
+        if parent_id:
+            source_shas = self._get_blob_shas_in_tree(
+                repo_api_url=repo_api_url,
+                commit_id=parent_id,
+                repository=repository)
+        else:
+            # This is a root commit. Every file is newly added, so there are
+            # no source blobs to look up.
+            source_shas = set()
+
+        dest_shas = self._get_blob_shas_in_tree(
+            repo_api_url=repo_api_url,
+            commit_id=commit_id,
+            repository=repository)
+
+        return expand_diff_blob_shas(
+            diff=diff,
+            blob_shas=source_shas | dest_shas,
+            repository=repository)
+
+    def _get_blob_shas_in_tree(
+        self,
+        *,
+        repo_api_url: str,
+        commit_id: str,
+        repository: Repository | None,
+    ) -> set[bytes]:
+        """Return all the blob SHAs in the tree for a commit.
+
+        The two most recently used trees are cached on the client. This
+        avoids refetching trees when processing a series of commits
+        (since a commit's parent is always the previous commit whose
+        tree we just fetched).
+
+        Version Added:
+            9.0
+
+        Args:
+            repo_api_url (str):
+                The absolute URL for the base repository API.
+
+            commit_id (str):
+                The revision of the commit to fetch the tree for.
+
+                GitHub's tree API resolves a commit SHA to that commit's tree,
+                so this does not need to be a tree SHA.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+        Returns:
+            set of bytes:
+            The full blob SHAs in the tree.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching the tree.
+        """
+        tree_cache = self._blob_shas_tree_cache
+        repo_trees = tree_cache.get(repo_api_url)
+        blob_shas = None
+
+        if repo_trees:
+            blob_shas = repo_trees.get(commit_id)
+
+        if blob_shas is None:
+            blob_shas = self._get_blob_shas_in_tree_uncached(
+                repo_api_url=repo_api_url,
+                commit_id=commit_id,
+                repository=repository)
+
+            if repo_trees is None:
+                # We'll only cache one repository's trees at a time, so
+                # discard any trees from other repos.
+                tree_cache.clear()
+                repo_trees = OrderedDict()
+                tree_cache[repo_api_url] = repo_trees
+
+            repo_trees[commit_id] = blob_shas
+
+            if len(repo_trees) > 2:
+                # Evict the least recently used tree.
+                repo_trees.popitem(last=False)
+        else:
+            # Cache hit, so make this the most recently used tree.
+            assert repo_trees is not None
+            repo_trees.move_to_end(commit_id)
+
+        return blob_shas
+
+    def _get_blob_shas_in_tree_uncached(
+        self,
+        *,
+        repo_api_url: str,
+        commit_id: str,
+        repository: Repository | None,
+    ) -> set[bytes]:
+        """Return all the blob SHAs in the tree for a commit, uncached.
+
+        This is called internally by :py:meth:`_get_blob_shas_in_tree`.
+
+        Version Added:
+            9.0
+
+        Args:
+            repo_api_url (str):
+                The absolute URL for the base repository API.
+
+            commit_id (str):
+                The revision of the commit to fetch the tree for.
+
+            repository (reviewboard.scmtools.models.Repository):
+                The repository object, if available.
+
+        Returns:
+            set of bytes:
+            The full blob SHAs in the tree.
+
+        Raises:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
+                There was an error fetching the tree.
+        """
+        tree_rsp = self.get_tree(
+            repo_api_url=repo_api_url,
+            tree_sha=commit_id,
+            recursive=True,
+            repository=repository)
+
+        if tree_rsp.truncated:
+            # GitHub truncates recursive trees that are too large, and offers
+            # no way to page through the rest. Any blob SHAs missing from the
+            # result will be left abbreviated in the diff.
+            logger.warning(
+                'The Git tree for commit %s (repository %s) was truncated '
+                'by GitHub. Some file revisions in the diff may not be '
+                'expanded to full SHAs.',
+                commit_id, repository)
+
+        return {
+            entry.sha.encode('utf-8')
+            for entry in tree_rsp.tree
+        }
+
     def _api_get(
         self,
         *,
@@ -1003,14 +1314,13 @@ class GitHubClient(HostingServiceClient['GitHub']):
         manifest in :py:mod:`reviewboard.hostingsvcs.github.views`), which
         map to the current repository operations:
 
+        * ``checks:write`` - Reserved for future build/review features.
         * ``contents:read`` - File reads
           (:py:meth:`api_get_blob`, :py:meth:`api_get_tree`).
         * ``metadata:read`` - Always required by GitHub.
         * ``pull_requests:read`` - Reserved for future pull request features.
 
-        Future features may need additional scopes: commit statuses and checks
-        for build/review integration, and ``pull_requests:write`` for posting
-        to pull requests.
+        Future features may need additional scopes.
 
         Version Added:
             9.0
