@@ -45,9 +45,9 @@
  <tbody>
 {% for line in chunk.lines %}
   <tr>
-   <th bgcolor="{{thcolor}}" style="border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.1}}</font></th>
+   <th bgcolor="{{thcolor}}" style="border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.1|default_if_none:''}}</font></th>
    <td bgcolor="{{bgcolor}}" width="50%"><pre style="{{difflinecss}}">{{line.2|highlightregion:line.3|showextrawhitespace}}</pre></td>
-    <th bgcolor="{{thcolor}}" style="border-left: 1px solid #C0C0C0; border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.4}}</font></th>
+    <th bgcolor="{{thcolor}}" style="border-left: 1px solid #C0C0C0; border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.4|default_if_none:''}}</font></th>
    <td bgcolor="{{bgcolor}}" width="50%"><pre style="{{difflinecss}}">{{line.5|highlightregion:line.6|showextrawhitespace}}</pre></td>
   </tr>
 {% endfor %}

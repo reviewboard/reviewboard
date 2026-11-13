@@ -4,13 +4,18 @@
 from __future__ import annotations
 
 import struct
+from typing import TYPE_CHECKING
 
 from django.contrib.auth.models import User
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.reviews.views import build_diff_comment_fragments
 from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import BaseFileDiffAncestorTests
+
+if TYPE_CHECKING:
+    from reviewboard.reviews.models import Comment, ReviewRequest
 
 
 class CommentDiffFragmentsViewTests(BaseFileDiffAncestorTests):
@@ -371,6 +376,36 @@ class CommentDiffFragmentsViewTests(BaseFileDiffAncestorTests):
                             [comment.pk],
                             expect_cacheable=False)
 
+    def test_get_with_inserted_line(self) -> None:
+        """Testing CommentDiffFragmentsView with a comment on an inserted line
+        leaves the missing original line number blank
+        """
+        review_request, comment = self._create_inserted_line_comment()
+
+        fragments = self._get_fragments(review_request, [comment.pk])
+        html = fragments[0][1]
+
+        self.assertIn('<th></th>', html)
+        self.assertNotIn('None', html)
+
+    def test_email_fragment_with_inserted_line(self) -> None:
+        """Testing build_diff_comment_fragments with the e-mail template and
+        a comment on an inserted line leaves the missing original line number
+        blank
+        """
+        review_request, comment = self._create_inserted_line_comment()
+
+        had_error, entries = build_diff_comment_fragments(
+            comments=[comment],
+            context={
+                'user': review_request.submitter,
+            },
+            comment_template_name=(
+                'notifications/email_diff_comment_fragment.html'))
+
+        self.assertFalse(had_error)
+        self.assertNotIn('None', entries[0]['html'])
+
     def test_get_with_new_file(self) -> None:
         """Testing CommentDiffFragmentsView with a comment on a newly-added
         file renders only the modified side
@@ -429,6 +464,48 @@ class CommentDiffFragmentsViewTests(BaseFileDiffAncestorTests):
         # newly-added file.
         self.assertNotIn('newfile', html)
         self.assertIn('<col class="left" />', html)
+
+    def _create_inserted_line_comment(
+        self,
+    ) -> tuple[ReviewRequest, Comment]:
+        """Create a comment on a line inserted into an existing file.
+
+        The Test SCM returns "Hello, world!" for the original file.
+
+        Version Added:
+            9.0
+
+        Returns:
+            tuple:
+            A 2-tuple of:
+
+            Tuple:
+                0 (reviewboard.reviews.models.ReviewRequest):
+                    The review request.
+
+                1 (reviewboard.reviews.models.Comment):
+                    The comment on the inserted line.
+        """
+        review_request = self.create_review_request(
+            repository=self.repository,
+            publish=True)
+        diffset = self.create_diffset(review_request, revision=1)
+        filediff = self.create_filediff(
+            diffset,
+            diff=(
+                b'--- /test-file\trevision 123\n'
+                b'+++ /test-file\trevision 124\n'
+                b'@@ -1 +1,2 @@\n'
+                b' Hello, world!\n'
+                b'+How are you?\n'
+            ))
+
+        review = self.create_review(review_request, publish=True)
+        comment = self.create_diff_comment(review, filediff,
+                                           first_line=2,
+                                           num_lines=1)
+
+        return review_request, comment
 
     def _get_fragments(self, review_request, comment_ids,
                        local_site_name=None, expected_status=200,
