@@ -132,7 +132,8 @@ export function parseViewModeData(
  * Version Added:
  *     7.0
  */
-export interface SerializedDiffComment extends SerializedComment {
+export interface SerializedDiffComment
+    extends SerializedComment, SerializedViewModeData {
     /** The line that the comment starts on. */
     line: number;
 

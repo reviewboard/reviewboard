@@ -10,9 +10,12 @@ from typing import TYPE_CHECKING
 
 from reviewboard.diffviewer.models import FileDiff
 from reviewboard.reviews.models import Comment
-from reviewboard.reviews.ui.base import (ReviewUI,
-                                         SerializedComment,
-                                         SerializedCommentBlocks)
+from reviewboard.reviews.ui.base import (
+    ReviewUI,
+    SerializedComment,
+    SerializedCommentBlocks,
+    SerializedViewModeData,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -22,11 +25,16 @@ if TYPE_CHECKING:
     from reviewboard.reviews.models import ReviewRequest
 
 
-class SerializedDiffComment(SerializedComment):
+class SerializedDiffComment(SerializedComment, SerializedViewModeData):
     """Serialized comment data for diffs.
 
     This must be kept in sync with the definitions in
     :file:`reviewboard/static/rb/js/reviews/models/commentData.ts`.
+
+    Version Changed:
+        9.0:
+        Added the ``viewMode`` and ``renderVersion`` keys from
+        :py:class:`~reviewboard.reviews.ui.base.SerializedViewModeData`.
 
     Version Added:
         7.0
@@ -116,7 +124,12 @@ class DiffReviewUI(ReviewUI[FileDiff, Comment, SerializedDiffComment]):
         result: dict[str, list[SerializedDiffComment]] = {}
 
         for comment in self.flat_serialized_comments(comments):
-            key = f'{comment["line"]}-{comment["num_lines"]}'
+            # Comments on the source and rendered views of a file may have
+            # the same line numbers, but are on different rows.
+            key = (
+                f'{comment["viewMode"]}-{comment["line"]}-'
+                f'{comment["num_lines"]}'
+            )
 
             result.setdefault(key, []).append(comment)
 
@@ -136,8 +149,16 @@ class DiffReviewUI(ReviewUI[FileDiff, Comment, SerializedDiffComment]):
             SerializedDiffComment:
             The serialized comment.
         """
-        return {
+        data: SerializedDiffComment = {
             **super().serialize_comment(comment),
             'line': comment.first_line,
             'num_lines': comment.num_lines,
+            'viewMode': comment.view_mode,
         }
+
+        render_version = (comment.extra_data or {}).get('renderVersion')
+
+        if render_version is not None:
+            data['renderVersion'] = render_version
+
+        return data

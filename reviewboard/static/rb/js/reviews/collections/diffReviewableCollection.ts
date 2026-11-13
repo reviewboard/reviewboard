@@ -124,6 +124,7 @@ export class DiffReviewableCollection extends BaseCollection<
                 interFileDiffID: interfilediff ? interfilediff.id : null,
                 interdiffRevision: interdiffRevision,
                 public: file.get('public'),
+                renderVersion: file.get('renderVersion'),
                 reviewRequest: reviewRequest,
                 revision: filediff.revision,
                 serializedCommentBlocks: file.get('serializedCommentBlocks'),

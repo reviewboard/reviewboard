@@ -45,6 +45,25 @@ class Comment(BaseComment):
     last_line = property(lambda self: self.first_line + self.num_lines - 1)
 
     @property
+    def view_mode(self) -> str:
+        """The view of the file that the comment was made on.
+
+        This is ``'rendered'`` for comments on rendered Markdown, where the
+        line numbers are rows in the rendered diff. Otherwise, it's
+        ``'source'``.
+
+        Version Added:
+            9.0
+
+        Type:
+            str
+        """
+        if self.extra_data:
+            return self.extra_data.get('viewMode', 'source')
+
+        return 'source'
+
+    @property
     def base_filediff_id(self) -> int | None:
         """The base FileDiff ID for the cumulative diff this comment is on.
 

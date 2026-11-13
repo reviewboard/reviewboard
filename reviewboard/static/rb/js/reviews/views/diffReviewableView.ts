@@ -267,6 +267,14 @@ export class DiffReviewableView extends AbstractReviewableView<
     ): number {
         const commentBlock = commentBlockView.model;
 
+        if (commentBlock.get('viewMode') !== this.model.get('viewMode')) {
+            /*
+             * This comment is on the other view of the file. Its line
+             * numbers are rows in that view, so it can't be shown here.
+             */
+            return prevBeginRowIndex;
+        }
+
         const rowEls = this._selector.getRowsForRange(
             commentBlock.get('beginLineNum'),
             commentBlock.get('endLineNum'),

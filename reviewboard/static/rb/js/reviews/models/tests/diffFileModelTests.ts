@@ -83,6 +83,24 @@ suite('rb/diffviewer/models/DiffFile', function() {
             expect(data.newfile).toBe(true);
             expect(data.origFilename).toBe('foo');
             expect(data.origRevision).toBe('3');
+            expect(data.renderVersion).toBe(null);
+        });
+
+        it('API payloads with render_version', () => {
+            const diffFile = new DiffFile({
+                filediff: {
+                    id: 38,
+                    revision: 2,
+                },
+                id: 28,
+                modified_filename: 'README.md',
+                orig_filename: 'README.md',
+                render_version: 2,
+            }, {
+                parse: true,
+            });
+
+            expect(diffFile.get('renderVersion')).toBe(2);
         });
 
         it('API payloads with css_media and js_media', () => {

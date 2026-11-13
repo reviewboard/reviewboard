@@ -1125,6 +1125,75 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
         });
     });
 
+    describe('Comment flags with view modes', function() {
+        function makeComment(
+            line: number,
+            viewMode: string,
+        ) {
+            return {
+                comment_id: line,
+                html: `Comment on ${viewMode}`,
+                issue_opened: false,
+                issue_status: '',
+                line: line,
+                localdraft: false,
+                num_lines: 1,
+                review_id: 1,
+                review_request_id: 1,
+                rich_text: false,
+                text: `Comment on ${viewMode}`,
+                url: '',
+                user: {
+                    name: 'testuser',
+                    username: 'testuser',
+                },
+                viewMode: viewMode,
+            };
+        }
+
+        function renderView(
+            viewMode: 'rendered' | 'source',
+        ) {
+            view = new DiffReviewableView({
+                el: $(diffTableTemplate({
+                    chunks: [
+                        {
+                            numRows: 10,
+                            startRow: 1,
+                            type: 'insert',
+                        },
+                    ],
+                })),
+                model: new DiffReviewable({
+                    renderVersion: 2,
+                    reviewRequest: reviewRequest,
+                    serializedCommentBlocks: {
+                        'rendered-4-1': [makeComment(4, 'rendered')],
+                        'source-2-1': [makeComment(2, 'source')],
+                    },
+                    viewMode: viewMode,
+                }),
+            });
+            view.render().$el.appendTo($container);
+        }
+
+        it('Showing source', function() {
+            renderView('source');
+
+            const $commentFlags = view.$('.commentflag');
+            expect($commentFlags.length).toBe(1);
+            expect($commentFlags.parents('tr').attr('line')).toBe('2');
+        });
+
+        it('Showing rendered', function() {
+            renderView('rendered');
+
+            const $commentFlags = view.$('.commentflag');
+            expect($commentFlags.length).toBe(1);
+            expect($commentFlags.parents('tr').attr('line')).toBe('4');
+        });
+    });
+
     describe('Events', function() {
         describe('Toggle Displayed Unicode Characters', function() {
             let $toggleButton;
