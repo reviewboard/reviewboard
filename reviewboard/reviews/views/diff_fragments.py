@@ -49,6 +49,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
+    from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
     from reviewboard.diffviewer.diffutils import SerializedDiffFile
     from reviewboard.diffviewer.models import DiffCommit
     from reviewboard.diffviewer.renderers import DiffRenderer
@@ -153,6 +154,20 @@ def build_diff_comment_fragments(
             if comment.filediff.commit_id:
                 tip_commit = comment.filediff.commit
 
+            # Comments on a rendered view are on rows of the rendered diff.
+            chunk_generator_cls: (type[DiffChunkGenerator] | None) = None
+            rendered_table_css_class = ''
+
+            if comment.view_mode == 'rendered':
+                review_ui_cls = get_rendered_text_review_ui(
+                    comment.filediff.dest_file)
+
+                if review_ui_cls is not None:
+                    chunk_generator_cls = \
+                        review_ui_cls.get_rendered_diff_chunk_generator_cls()
+                    rendered_table_css_class = \
+                        review_ui_cls.rendered_table_css_class
+
             max_line = get_last_line_number_in_diff(
                 context=context,
                 filediff=comment.filediff,
@@ -160,7 +175,8 @@ def build_diff_comment_fragments(
                 diff_settings=diff_settings,
                 base_filediff=base_filediff,
                 base_commit=base_commit,
-                tip_commit=tip_commit)
+                tip_commit=tip_commit,
+                chunk_generator_cls=chunk_generator_cls)
 
             first_line = max(1, comment.first_line - lines_of_context[0])
             last_line = min(comment.last_line + lines_of_context[1], max_line)
@@ -175,7 +191,8 @@ def build_diff_comment_fragments(
                 diff_settings=diff_settings,
                 base_filediff=base_filediff,
                 base_commit=base_commit,
-                tip_commit=tip_commit
+                tip_commit=tip_commit,
+                chunk_generator_cls=chunk_generator_cls,
             ))
 
             comment_context = {
@@ -188,7 +205,8 @@ def build_diff_comment_fragments(
                     diff_settings=diff_settings,
                     base_filediff=base_filediff,
                     base_commit=base_commit,
-                    tip_commit=tip_commit),
+                    tip_commit=tip_commit,
+                    chunk_generator_cls=chunk_generator_cls),
                 'chunks': chunks,
                 'domain': Site.objects.get_current().domain,
                 'domain_method': siteconfig.get('site_domain_method'),
@@ -203,6 +221,7 @@ def build_diff_comment_fragments(
                 'lines_above': first_line - 1,
                 'lines_below': max_line - last_line,
                 'first_line': first_line,
+                'rendered_table_css_class': rendered_table_css_class,
             }
             comment_context.update(context)
             content = render_to_string(template_name=comment_template_name,

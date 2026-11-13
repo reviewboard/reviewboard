@@ -1,6 +1,10 @@
 {% load difftags djblets_utils reviewtags %}
 
-{% definevar "difflinecss" %}font-size: 8pt; line-height: 140%; margin: 0; {{precss}}{% enddefinevar %}
+{% if comment.view_mode == "rendered" %}
+{%  definevar "difflinecss" %}font-family: sans-serif; font-size: 9pt; line-height: 140%; margin: 0; white-space: normal;{% enddefinevar %}
+{% else %}
+{%  definevar "difflinecss" %}font-size: 8pt; line-height: 140%; margin: 0; {{precss}}{% enddefinevar %}
+{% endif %}
 <table width="100%" border="0" bgcolor="white" style="border: 1px solid #C0C0C0; border-collapse: collapse; margin: 2px; padding: 2px;">
  <thead>
   <tr>

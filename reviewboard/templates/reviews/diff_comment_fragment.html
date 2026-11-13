@@ -5,6 +5,7 @@
 {%  if is_new_file %}newfile{% endif %}
 {%  if expandable_above or header.left or header.right %}has-diff-header-above{% endif %}
 {%  if expandable_below %}has-diff-header-below{% endif %}
+{{rendered_table_css_class}}
 {% endattr %}>
  <colgroup>
 {% if not is_new_file %}

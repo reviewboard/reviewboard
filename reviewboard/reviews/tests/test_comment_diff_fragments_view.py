@@ -645,6 +645,103 @@ class CommentDiffFragmentsViewTests(BaseFileDiffAncestorTests):
             self.commit_comment2.get_absolute_url(),
             '/r/1/diff/1/?base-commit-id=2&tip-commit-id=3#file7line1')
 
+    def test_get_with_rendered_markdown(self) -> None:
+        """Testing CommentDiffFragmentsView with comments on the source and
+        rendered views of a Markdown file
+        """
+        review_request, source_comment, rendered_comment = \
+            self._create_markdown_comments()
+
+        fragments = dict(self._get_fragments(
+            review_request,
+            [source_comment.pk, rendered_comment.pk]))
+
+        source_html = fragments[source_comment.pk]
+        self.assertIn('# Hello', source_html)
+        self.assertNotIn('<h1>Hello</h1>', source_html)
+        self.assertNotIn('rb-c-rendered-markdown-table', source_html)
+
+        rendered_html = fragments[rendered_comment.pk]
+        self.assertIn('<h1>Hello</h1>', rendered_html)
+        self.assertIn('rb-c-rendered-markdown-table', rendered_html)
+
+    def test_rendered_markdown_email_fragment(self) -> None:
+        """Testing build_diff_comment_fragments with the e-mail template and
+        a comment on rendered Markdown
+        """
+        review_request, source_comment, rendered_comment = \
+            self._create_markdown_comments()
+
+        had_error, entries = build_diff_comment_fragments(
+            comments=[rendered_comment],
+            context={
+                'user': review_request.submitter,
+            },
+            comment_template_name=(
+                'notifications/email_diff_comment_fragment.html'))
+
+        self.assertFalse(had_error)
+
+        html = entries[0]['html']
+        self.assertIn('<h1>Hello</h1>', html)
+        self.assertIn('white-space: normal', html)
+
+    def _create_markdown_comments(
+        self,
+    ) -> tuple[ReviewRequest, Comment, Comment]:
+        """Create comments on both views of a new Markdown file.
+
+        Version Added:
+            9.0
+
+        Returns:
+            tuple:
+            A 3-tuple of:
+
+            Tuple:
+                0 (reviewboard.reviews.models.ReviewRequest):
+                    The review request.
+
+                1 (reviewboard.reviews.models.Comment):
+                    The comment on the source view.
+
+                2 (reviewboard.reviews.models.Comment):
+                    The comment on the rendered view.
+        """
+        review_request = self.create_review_request(
+            repository=self.repository,
+            publish=True)
+        diffset = self.create_diffset(review_request, revision=1)
+        filediff = self.create_filediff(
+            diffset,
+            source_file='README.md',
+            source_revision=PRE_CREATION,
+            dest_file='README.md',
+            diff=(
+                b'--- README.md\trevision 0\n'
+                b'+++ README.md\trevision 123\n'
+                b'@@ -0,0 +1,3 @@\n'
+                b'+# Hello\n'
+                b'+\n'
+                b'+World\n'
+            ))
+
+        review = self.create_review(review_request, publish=True)
+        source_comment = self.create_diff_comment(review, filediff,
+                                                  first_line=1,
+                                                  num_lines=1)
+        rendered_comment = self.create_diff_comment(
+            review,
+            filediff,
+            first_line=1,
+            num_lines=1,
+            extra_fields={
+                'renderVersion': 2,
+                'viewMode': 'rendered',
+            })
+
+        return review_request, source_comment, rendered_comment
+
     def _create_commit_comment_data(self) -> None:
         """Create the test data for commit comments."""
         self.set_up_filediffs()
