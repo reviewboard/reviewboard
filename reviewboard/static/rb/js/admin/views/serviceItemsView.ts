@@ -457,12 +457,15 @@ export class ServiceItemsView extends BaseView<
             'click', () => this.#fetchPage(this.#currentPage));
 
         resultsEl.replaceChildren(
-            paint<HTMLParagraphElement>`
-                <p class="rb-c-admin-cs-service-items__results__error">
-                 ${this.#strings.loadError}
-                </p>
-            `,
-            retryEl);
+            paint<HTMLDivElement>`
+                <div class="rb-c-admin-cs-service-items__results__error">
+                 <p>${this.#strings.loadError}</p>
+                 ${retryEl}
+                </div>
+            `);
+
+        // The paginator is hidden, so don't pin the list to its full height.
+        resultsEl.classList.remove('-is-paginated');
 
         if (this.#paginatorEl) {
             this.#paginatorEl.hidden = true;
