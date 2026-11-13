@@ -8,6 +8,11 @@ import {
 } from '@beanbag/spina';
 
 import {
+    type SerializedViewModeData,
+    VIEW_MODE_COMMENT_FIELDS,
+    parseViewModeData,
+} from './commentData';
+import {
     type FileAttachmentCommentBlockAttrs,
     FileAttachmentCommentBlock,
 } from './fileAttachmentCommentBlockModel';
@@ -20,7 +25,7 @@ import {
  *     6.0
  */
 export interface TextCommentBlockAttrs
-    extends FileAttachmentCommentBlockAttrs {
+    extends FileAttachmentCommentBlockAttrs, SerializedViewModeData {
     /** The first row in the diffviewer that this comment is on. */
     $beginRow: JQuery;
 
@@ -32,25 +37,6 @@ export interface TextCommentBlockAttrs
 
     /** The last line number in the file that this comment is on. */
     endLineNum: number;
-
-    /**
-     * The mode of text that the comment is made upon. This is one of:
-     *
-     * ``'source'``:
-     *     The raw contents of the file.
-     *
-     * ``'rendered'``:
-     *     The rendered contents of the file, such as for Markdown, etc.
-     */
-    viewMode: string;
-
-    /**
-     * The version of the row layout used for the rendered view.
-     *
-     * Version Added:
-     *     9.0
-     */
-    renderVersion?: number;
 }
 
 
@@ -60,11 +46,9 @@ export interface TextCommentBlockAttrs
  * Version Added:
  *     7.0
  */
-interface SerializedTextCommentFields {
+interface SerializedTextCommentFields extends SerializedViewModeData {
     beginLineNum: string;
     endLineNum: string;
-    renderVersion?: number;
-    viewMode: string;
 }
 
 
@@ -96,8 +80,7 @@ export class TextCommentBlock<
     static serializedFields = [
         'beginLineNum',
         'endLineNum',
-        'renderVersion',
-        'viewMode',
+        ...VIEW_MODE_COMMENT_FIELDS,
     ];
 
     /**
@@ -117,16 +100,10 @@ export class TextCommentBlock<
     parse(
         fields: SerializedTextCommentFields,
     ): Partial<TextCommentBlockAttrs> {
-        const attrs: Partial<TextCommentBlockAttrs> = {
+        return {
             beginLineNum: parseInt(fields.beginLineNum, 10),
             endLineNum: parseInt(fields.endLineNum, 10),
-            viewMode: fields.viewMode,
+            ...parseViewModeData(fields),
         };
-
-        if (fields.renderVersion !== undefined) {
-            attrs.renderVersion = fields.renderVersion;
-        }
-
-        return attrs;
     }
 }

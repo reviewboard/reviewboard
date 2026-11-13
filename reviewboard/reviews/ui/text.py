@@ -17,7 +17,6 @@ from djblets.cache.backend import cache_memoize
 from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
-from typing_extensions import NotRequired
 
 from reviewboard.attachments.mimetypes import (
     MIMETYPE_EXTENSIONS,
@@ -30,9 +29,12 @@ from reviewboard.diffviewer.diffutils import get_chunks_in_range
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.reviews.chunk_generators import RenderedDiffChunkGenerator
 from reviewboard.reviews.models import FileAttachmentComment
-from reviewboard.reviews.ui.base import (ReviewUI,
-                                         SerializedComment,
-                                         SerializedCommentBlocks)
+from reviewboard.reviews.ui.base import (
+    ReviewUI,
+    SerializedComment,
+    SerializedCommentBlocks,
+    SerializedViewModeData,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -56,11 +58,16 @@ _rendered_diff_chunk_generators: dict[
 ] = {}
 
 
-class SerializedTextComment(SerializedComment):
+class SerializedTextComment(SerializedComment, SerializedViewModeData):
     """Serialized comment data for text review UIs.
 
     This must be kept in sync with the definitions in
     :file:`reviewboard/static/rb/js/reviews/models/commentData.ts`.
+
+    Version Changed:
+        9.0:
+        The ``viewMode`` and ``renderVersion`` keys now come from
+        :py:class:`~reviewboard.reviews.ui.base.SerializedViewModeData`.
 
     Version Added:
         7.0
@@ -71,17 +78,6 @@ class SerializedTextComment(SerializedComment):
 
     #: The ending line number of the comment.
     endLineNum: int
-
-    #: The view mode of the document when the comment was made.
-    #:
-    #: This will be either "source" or "rendered".
-    viewMode: str
-
-    #: The version of the row layout used for the rendered view.
-    #:
-    #: Version Added:
-    #:     9.0
-    renderVersion: NotRequired[int]
 
 
 class TextBasedReviewUI(ReviewUI[

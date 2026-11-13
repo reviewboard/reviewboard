@@ -17,6 +17,7 @@ from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 from housekeeping import func_deprecated
+from typing_extensions import NotRequired
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import (FileAttachment,
@@ -116,6 +117,28 @@ class SerializedComment(TypedDict):
 
     #: Information about the author of the comment.
     user: SerializedCommentUser
+
+
+class SerializedViewModeData(TypedDict):
+    """Serialized data on which view of a file a comment was made on.
+
+    This is used for files that can be shown as source or rendered, such
+    as Markdown.
+
+    This must be kept in sync with the definitions in
+    :file:`reviewboard/static/rb/js/reviews/models/commentData.ts`.
+
+    Version Added:
+        9.0
+    """
+
+    #: The view of the file when the comment was made.
+    #:
+    #: This will be either "source" or "rendered".
+    viewMode: str
+
+    #: The version of the row layout used for the rendered view.
+    renderVersion: NotRequired[int]
 
 
 #: A generic type for the reviewable object for a Review UI.
