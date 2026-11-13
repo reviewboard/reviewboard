@@ -2,7 +2,7 @@
 
 {% load i18n %}
 
-{% block table_class %}text-review-ui-rendered-table{% endblock %}
+{% block table_class %}text-review-ui-rendered-table {{review_ui.rendered_table_css_class}}{% endblock %}
 
 {% block table_content %}
 {%  if diff_type_mismatch %}

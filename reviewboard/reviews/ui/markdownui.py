@@ -947,6 +947,7 @@ class MarkdownReviewUI(TextBasedReviewUI):
     rendered_lines_version = 2
 
     extra_css_classes = ['markdown-review-ui']
+    rendered_table_css_class = 'rb-c-rendered-markdown-table'
 
     js_view_class = 'RB.MarkdownReviewableView'
 

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Sequence
-from typing import Any, Iterator, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
@@ -29,6 +29,9 @@ from reviewboard.reviews.ui.base import (ReviewUI,
                                          SerializedCommentBlocks)
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from typing import Any, ClassVar
+
     from django.http import HttpRequest
     from pygments.lexers import Lexer
     from typelets.json import JSONDict
@@ -98,8 +101,17 @@ class TextBasedReviewUI(ReviewUI[
     source_chunk_generator_cls = RawDiffChunkGenerator
     rendered_chunk_generator_cls = RawDiffChunkGenerator
 
+    js_model_class: str = 'RB.TextBasedReviewable'
+    js_view_class: str = 'RB.TextBasedReviewableView'
+
     #: Extra classes to apply to the Review UI element.
-    extra_css_classes: list[str] = []
+    extra_css_classes: ClassVar[list[str]] = []
+
+    #: A class to apply to tables showing the rendered view.
+    #:
+    #: Version Added:
+    #:     9.0
+    rendered_table_css_class: ClassVar[str] = ''
 
     #: The largest file size, in bytes, that will be displayed.
     #:
@@ -108,7 +120,7 @@ class TextBasedReviewUI(ReviewUI[
     #:
     #: Version Added:
     #:     8.1
-    max_display_file_size: int = 1024 * 1024
+    max_display_file_size: ClassVar[int] = 1024 * 1024
 
     #: The version of the row layout used for the rendered view.
     #:
@@ -118,10 +130,7 @@ class TextBasedReviewUI(ReviewUI[
     #:
     #: Version Added:
     #:     9.0
-    rendered_lines_version: int = 1
-
-    js_model_class: str = 'RB.TextBasedReviewable'
-    js_view_class: str = 'RB.TextBasedReviewableView'
+    rendered_lines_version: ClassVar[int] = 1
 
     @classmethod
     def render_text_rows(
@@ -580,6 +589,7 @@ class TextBasedReviewUI(ReviewUI[
             'is_diff': self.diff_against_obj is not None,
             'review_ui': self,
             'revision': self.obj.attachment_revision,
+            'view_mode': view_mode,
         }
 
         if self.diff_against_obj:
