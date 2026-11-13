@@ -327,7 +327,7 @@ class ReviewUI(Generic[
         self,
         user: (User | None) = None,
         review_request: (ReviewRequest | None) = None,
-        obj: (object | None) = None,
+        obj: (ReviewableType | None) = None,
         **kwargs,
     ) -> bool:
         """Return whether the Review UI is enabled under the given criteria.
@@ -1138,7 +1138,11 @@ class ReviewUI(Generic[
         return best_fit
 
 
-class FileAttachmentReviewUI(ReviewUI):
+class FileAttachmentReviewUI(ReviewUI[
+    FileAttachment,
+    FileAttachmentComment,
+    SerializedCommentType,
+]):
     """Base class for Review UIs for file attachments.
 
     Review UIs that deal with
@@ -1150,6 +1154,10 @@ class FileAttachmentReviewUI(ReviewUI):
     :js:class:`RB.AbstractReviewable` model.
 
     This also handles much of the work for diffing file attachments.
+
+    Version Changed:
+        9.0:
+        This is now generic over the serialized comment type.
     """
 
     supports_file_attachments = True

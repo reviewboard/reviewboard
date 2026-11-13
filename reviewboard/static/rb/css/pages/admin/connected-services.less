@@ -647,7 +647,7 @@
    *      <ul class="rb-c-admin-cs-service-items__results">...</ul>
    *      | <p class="rb-c-admin-cs-service-items__results__loading">...</p>
    *      | <p class="rb-c-admin-cs-service-items__results__empty">...</p>
-   *      | <p class="rb-c-admin-cs-service-items__results__error">...</p>
+   *      | <div class="rb-c-admin-cs-service-items__results__error">...</div>
    *     </div>
    *
    * Modifiers:
@@ -708,6 +708,26 @@
       color: var(--ink-p-fg-weak);
       margin: 0;
       padding: var(--ink-u-spacing-s) 0;
+    }
+
+    /**
+     * An error shown if the load fails.
+     *
+     * Structure:
+     *     <div class="rb-c-admin-cs-service-items__results__error">
+     *      <p>...</p>
+     *      <button>...</button>
+     *     </div>
+     */
+    &__error {
+      align-items: center;
+      display: flex;
+      gap: var(--ink-u-spacing-std);
+      padding: var(--ink-u-spacing-std) 0;
+
+      p {
+        margin: 0;
+      }
     }
   }
 

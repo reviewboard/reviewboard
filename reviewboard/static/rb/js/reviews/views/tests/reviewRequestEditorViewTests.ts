@@ -4,12 +4,15 @@ import {
     beforeEach,
     describe,
     expect,
+    expectAsync,
     it,
     pending,
     spyOn,
 } from 'jasmine-core';
 
 import {
+    API,
+    ClientCommChannel,
     EnabledFeatures,
     ReviewRequest,
 } from 'reviewboard/common';
@@ -29,6 +32,7 @@ suite('rb/views/ReviewRequestEditorView', function() {
         <div>
          <div class="rb-c-unified-banner" id="unified-banner">
           <div class="rb-c-unified-banner__mode-selector"></div>
+          <div class="rb-c-unified-banner__draft-actions"></div>
           <pre id="field_change_description" class="field field-text-area"
                data-field-id="field_change_description"></pre>
          </div>
@@ -336,6 +340,71 @@ suite('rb/views/ReviewRequestEditorView', function() {
 
             $action.click();
             expect(extension.actionClicked).toBe(true);
+        });
+    });
+
+    describe('Unified banner publish', () => {
+        let banner: UnifiedBannerView;
+        let discardButtonEl: HTMLButtonElement;
+        let publishButtonEl: HTMLElement;
+
+        beforeEach(() => {
+            if (!EnabledFeatures.unifiedBanner) {
+                pending();
+
+                return;
+            }
+
+            spyOn(ClientCommChannel, 'getInstance').and.returnValue(
+                jasmine.createSpyObj('ClientCommChannel', ['reload']));
+
+            banner = UnifiedBannerView.getInstance(true);
+            banner.model.set('draftModes', [{
+                hasReview: false,
+                hasReviewReplies: false,
+                hasReviewRequest: true,
+                multiple: false,
+                text: 'Review request',
+            }]);
+
+            publishButtonEl = banner.el.querySelector(
+                '.rb-c-unified-banner__draft-actions > :first-child');
+            expect(publishButtonEl).not.toBeNull();
+
+            discardButtonEl = banner.el.querySelector(
+                '#btn-review-request-discard');
+            expect(discardButtonEl).not.toBeNull();
+        });
+
+        it('Shows busy state while publishing', async () => {
+            spyOn(API, 'request').and.callFake(options => {
+                expect(publishButtonEl.getAttribute('aria-busy'))
+                    .toBe('true');
+                expect(discardButtonEl.disabled).toBeTrue();
+                options.success();
+            });
+
+            await banner.publish({
+                archive: false,
+                trivial: false,
+            });
+
+            expect(API.request).toHaveBeenCalled();
+            expect(RB.navigateTo).toHaveBeenCalled();
+        });
+
+        it('Clears busy state when saving editors fails', async ()  => {
+            spyOn(view, 'saveOpenEditors').and.rejectWith(new Error('oops'));
+            spyOn(API, 'request');
+
+            await expectAsync(banner.publish({
+                archive: false,
+                trivial: false,
+            })).toBeRejected();
+
+            expect(publishButtonEl.hasAttribute('aria-busy')).toBeFalse();
+            expect(discardButtonEl.disabled).toBeFalse();
+            expect(API.request).not.toHaveBeenCalled();
         });
     });
 
