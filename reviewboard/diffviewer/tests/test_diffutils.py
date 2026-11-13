@@ -17,6 +17,7 @@ from reviewboard.diffviewer.diffutils import (
     get_diff_files,
     get_displayed_diff_line_ranges,
     get_file_chunks_in_range,
+    get_file_from_filediff,
     get_filediffs_match,
     get_filediff_encodings,
     get_last_header_before_line,
@@ -3480,6 +3481,52 @@ class DiffExpansionHeaderTests(TestCase):
         # The line numbers start at 1 and not 0.
         self.assertEqual(header['left']['text'],
                          lines[header['left']['line'] - 1][2])
+
+
+class GetLastLineNumberInDiffTests(kgb.SpyAgency, TestCase):
+    """Unit tests for get_last_line_number_in_diff.
+
+    Version Added:
+        9.0
+    """
+
+    fixtures = ['test_scmtools']
+
+    def test_with_base_filediff(self) -> None:
+        """Testing get_last_line_number_in_diff with base_filediff"""
+        self.spy_on(get_file_from_filediff, op=kgb.SpyOpReturn({
+            'chunks': [
+                {
+                    'lines': [
+                        (7, 7, '', [], 7, '', [], False, None),
+                    ],
+                },
+            ],
+        }))
+
+        repository = self.create_repository(tool_name='Test')
+        diffset = self.create_diffset(repository=repository)
+        base_filediff = self.create_filediff(diffset=diffset)
+        filediff = self.create_filediff(diffset=diffset)
+        context = {}
+        diff_settings = DiffSettings.create()
+
+        self.assertEqual(
+            get_last_line_number_in_diff(
+                context=context,
+                filediff=filediff,
+                interfilediff=None,
+                diff_settings=diff_settings,
+                base_filediff=base_filediff),
+            7)
+
+        self.assertSpyCalledWith(
+            get_file_from_filediff,
+            context=context,
+            filediff=filediff,
+            interfilediff=None,
+            diff_settings=diff_settings,
+            base_filediff=base_filediff)
 
 
 class PatchTests(kgb.SpyAgency, TestCase):

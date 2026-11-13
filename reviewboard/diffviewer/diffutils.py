@@ -1891,6 +1891,7 @@ def get_last_line_number_in_diff(
                                        filediff=filediff,
                                        interfilediff=interfilediff,
                                        diff_settings=diff_settings,
+                                       base_filediff=base_filediff,
                                        base_commit=base_commit,
                                        tip_commit=tip_commit)
     assert diff_file is not None
