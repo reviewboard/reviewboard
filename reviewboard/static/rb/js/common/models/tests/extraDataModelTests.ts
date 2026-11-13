@@ -127,5 +127,27 @@ suite('rb/models/ExtraData', function() {
             expect(model.extraData.attributes)
                 .toBe(model.attributes.extraData);
         });
+
+        it('extraData not shared between instances', function() {
+            /*
+             * Object defaults in a subclass are merged with the parent's
+             * defaults once, so every instance gets the same objects.
+             */
+            @spina
+            class SubResource extends model.constructor {
+                static defaults = {
+                    other: null,
+                };
+            }
+
+            const model1 = new SubResource();
+            const model2 = new SubResource();
+
+            model1.get('extraData').foo = 1;
+
+            expect(model1.get('extraData')).toEqual({foo: 1});
+            expect(model2.get('extraData')).toEqual({});
+            expect(model2.extraData.attributes).toEqual({});
+        });
     });
 });
