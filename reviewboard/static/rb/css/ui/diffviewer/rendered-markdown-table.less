@@ -106,11 +106,18 @@
   }
 
   /*
-   * Code rows are aligned to the top (see below), so line numbers for the
-   * first line of a code block need to match the space above it. Each side of
-   * a diff is handled separately.
+   * Code rows are aligned to the top (see below), and so are their line
+   * numbers. The other side of a diff may start lower in the same row, such
+   * as a paragraph after a gap.
+   *
+   * Line numbers for the first line of a code block need to match the space
+   * above it. Each side of a diff is handled separately.
    */
   @code-start: ~".codehilite:not(.codehilite-multiline-middle, .codehilite-multiline-end)";
+
+  > tbody > tr > th:has(+ td .codehilite) {
+    vertical-align: top;
+  }
 
   > tbody > tr > th:has(+ td @{code-start}) {
     padding-top: @md-code-padding;
@@ -128,10 +135,43 @@
 
     /*
      * Empty lines of code have no baseline, so lining up on one would open
-     * gaps in the code box.
+     * gaps in the code box. Code and table rows line up with the top of the
+     * cell, and are drawn down to the bottom when the row is taller (see
+     * below).
      */
-    &:has(.codehilite) {
+    &:has(.codehilite, table) {
       vertical-align: top;
+    }
+
+    /*
+     * The other side of a diff can make a row taller than its line of code.
+     * For code that goes on into the next row, the sides of its box are drawn
+     * down to the bottom of the cell, so they don't break. On the first line,
+     * they start below the box's rounded corners.
+     */
+    @code-open: ~":is(.codehilite-multiline-start, .codehilite-multiline-middle)";
+    @code-first: ~".codehilite-multiline-start";
+
+    &:has(> pre > @{code-open}, > .collapse-floater > pre > @{code-open}) {
+      position: relative;
+
+      &::before {
+        border-inline: var(--rb-g-code-block-border);
+        content: '';
+        inset: 0 0.5em;
+        pointer-events: none;
+        position: absolute;
+      }
+    }
+
+    &:has(> pre > @{code-first}, > .collapse-floater > pre > @{code-first})::before {
+      top: var(--rb-u-code-block-border-radius);
+    }
+
+    &:has(> pre > @{code-first}[data-md-gap="block"],
+          > .collapse-floater > pre > @{code-first}[data-md-gap="block"])::before {
+      top: calc(@md-block-gap - @md-row-padding +
+                var(--rb-u-code-block-border-radius));
     }
 
     /*
@@ -326,6 +366,41 @@
 
   .md-table-end(2);
   .md-table-end(4);
+
+  /*
+   * The other side of a diff can make a row taller than its table row. A
+   * table that goes on into the next row is drawn down to the bottom of the
+   * cell, so it doesn't break. The cell cuts it off there.
+   */
+  .md-table-fill(@cell) {
+    @cont: ~"td:nth-child(@{cell}) table:not([data-md-gap], [data-md-gap] table)";
+
+    > tbody > tr:has(+ tr > @{cont}) > td:nth-child(@{cell}),
+    > tbody:has(+ tbody > tr:first-child > @{cont}) > tr:last-child > td:nth-child(@{cell}) {
+      &:has(> pre > table, > table) {
+        overflow: hidden;
+      }
+
+      > pre > table,
+      > table {
+        position: relative;
+
+        &::after {
+          background: inherit;
+          border-inline: var(--ink-c-data-table-border);
+          content: '';
+          height: 100vh;
+          left: 0;
+          position: absolute;
+          right: 0;
+          top: 100%;
+        }
+      }
+    }
+  }
+
+  .md-table-fill(2);
+  .md-table-fill(4);
 
   /*
    * An alert ends when the next row on the same side doesn't continue it. This
