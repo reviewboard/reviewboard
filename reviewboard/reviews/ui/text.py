@@ -22,6 +22,7 @@ from reviewboard.diffviewer.chunk_generator import (NoWrapperHtmlFormatter,
                                                     RawDiffChunkGenerator)
 from reviewboard.diffviewer.diffutils import get_chunks_in_range
 from reviewboard.diffviewer.settings import DiffSettings
+from reviewboard.reviews.chunk_generators import RenderedDiffChunkGenerator
 from reviewboard.reviews.models import FileAttachmentComment
 from reviewboard.reviews.ui.base import (ReviewUI,
                                          SerializedComment,
@@ -34,6 +35,16 @@ if TYPE_CHECKING:
 
 
 logger = logging.getLogger(__name__)
+
+
+#: Chunk generators for the rendered view of diffs, for each review UI.
+#:
+#: Version Added:
+#:     9.0
+_rendered_diff_chunk_generators: dict[
+    type[TextBasedReviewUI],
+    type[RenderedDiffChunkGenerator],
+] = {}
 
 
 class SerializedTextComment(SerializedComment):
@@ -111,6 +122,61 @@ class TextBasedReviewUI(ReviewUI[
 
     js_model_class: str = 'RB.TextBasedReviewable'
     js_view_class: str = 'RB.TextBasedReviewableView'
+
+    @classmethod
+    def render_text_rows(
+        cls,
+        text: str,
+    ) -> Sequence[str]:
+        """Render text into rows for the rendered view.
+
+        Subclasses that set ``can_render_text = True`` should implement this.
+        It's used to render file attachments, and to show changes to files of
+        this type in the diff viewer.
+
+        Version Added:
+            9.0
+
+        Args:
+            text (str):
+                The text to render.
+
+        Returns:
+            list of str:
+            The HTML for each row.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def get_rendered_diff_chunk_generator_cls(
+        cls,
+    ) -> type[RenderedDiffChunkGenerator]:
+        """Return a chunk generator for the rendered view of diffs.
+
+        The chunk generator renders each side of a FileDiff with
+        :py:meth:`render_text_rows`, and compares rows the same way as
+        :py:attr:`rendered_chunk_generator_cls`.
+
+        Version Added:
+            9.0
+
+        Returns:
+            type:
+            The chunk generator class.
+        """
+        generator_cls = _rendered_diff_chunk_generators.get(cls)
+
+        if generator_cls is None:
+            generator_cls = type(
+                f'{cls.__name__}RenderedDiffChunkGenerator',
+                (RenderedDiffChunkGenerator, cls.rendered_chunk_generator_cls),
+                {
+                    '__module__': cls.__module__,
+                    'review_ui_cls': cls,
+                })
+            _rendered_diff_chunk_generators[cls] = generator_cls
+
+        return generator_cls
 
     def get_js_model_data(self) -> JSONDict:
         """Return data to pass to the JavaScript Model during instantiation.
@@ -354,15 +420,19 @@ class TextBasedReviewUI(ReviewUI[
     def generate_render(self) -> Iterator[str]:
         """Generate a render of the text.
 
-        By default, this won't do anything. Subclasses should override it
-        to turn the raw text into some form of rendered content. For
-        example, rendering Markdown.
+        By default, this renders the text with :py:meth:`render_text_rows`.
+        Subclasses that set ``can_render_text = True`` should implement that,
+        or override this.
+
+        Version Changed:
+            9.0:
+            This now uses :py:meth:`render_text_rows`.
 
         Yields:
             str:
             The rendered lines of content.
         """
-        raise NotImplementedError
+        yield from self.render_text_rows(self.get_text())
 
     def serialize_comments(
         self,

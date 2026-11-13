@@ -956,6 +956,26 @@ class MarkdownReviewUI(TextBasedReviewUI):
     #:     9.0
     _legacy_row_map: (list[tuple[int, int]] | None) = None
 
+    @classmethod
+    def render_text_rows(
+        cls,
+        text: str,
+    ) -> Sequence[str]:
+        """Render Markdown into rows for the rendered view.
+
+        Version Added:
+            9.0
+
+        Args:
+            text (str):
+                The Markdown to render.
+
+        Returns:
+            list of str:
+            The HTML for each row.
+        """
+        return render_markdown_blocks(text)
+
     def generate_render(self) -> Iterator[str]:
         """Generate a render of the text.
 
@@ -964,7 +984,7 @@ class MarkdownReviewUI(TextBasedReviewUI):
             The rendered lines of content.
         """
         try:
-            rows = render_markdown_blocks(self.get_text())
+            rows = self.render_text_rows(self.get_text())
         except Exception as e:
             logger.exception(
                 'Failed to parse resulting Markdown XHTML for file attachment '
