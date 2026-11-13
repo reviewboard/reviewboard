@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import math
 import re
 from bisect import bisect_right
 from html import unescape
@@ -115,6 +116,52 @@ _MAX_COLUMN_WIDTH = 40
 #: Version Added:
 #:     9.0
 _COLUMN_PADDING = 2
+
+#: The widest a table column can be and still keep its width, in characters.
+#:
+#: When a table is too wide for its view, columns up to this width keep
+#: their width, and wider columns share the space that's left.
+#:
+#: Version Added:
+#:     9.0
+_FIXED_COLUMN_WIDTH = 16
+
+#: Characters narrower than a "0", for estimating text widths.
+#:
+#: Version Added:
+#:     9.0
+_NARROW_CHARS = frozenset(" !'(),./:;[]`fijlrtI|")
+
+#: Characters much wider than a "0", for estimating text widths.
+#:
+#: Version Added:
+#:     9.0
+_WIDE_CHARS = frozenset('%@MWmw')
+
+#: How much wider bold text is than normal text.
+#:
+#: Header cells are bold. This applies to their padding, too, since it's
+#: set in "ch" units of the bold font.
+#:
+#: Version Added:
+#:     9.0
+_BOLD_WIDTH_SCALE = 1.12
+
+#: The width of a character of inline code, in "ch" units.
+#:
+#: Inline code uses a monospace font, so every character is the same width.
+#: This covers both Chrome and Firefox, which size the fonts a bit
+#: differently.
+#:
+#: Version Added:
+#:     9.0
+_CODE_CHAR_WIDTH = 1.1
+
+#: Extra width for the padding and border around inline code, in "ch" units.
+#:
+#: Version Added:
+#:     9.0
+_CODE_PADDING = 1.4
 
 #: Type for where a gap goes before a row.
 #:
@@ -534,7 +581,7 @@ def _split_table(
     """Split a table into one row per table row.
 
     Each row is its own table. They all get the same column widths, based
-    on the longest text in each column, so the columns line up.
+    on the widest text in each column, so the columns line up.
 
     Args:
         element (xml.dom.minidom.Element):
@@ -545,7 +592,7 @@ def _split_table(
         The HTML for each row.
     """
     table_rows: list[tuple[str, list[Element]]] = []
-    col_widths: list[int] = []
+    col_widths: list[float] = []
 
     for tr in element.getElementsByTagName('tr'):
         parent = tr.parentNode
@@ -563,8 +610,21 @@ def _split_table(
         table_rows.append((section, cells))
 
         for i, cell in enumerate(cells):
-            text_len = len(unescape(strip_tags(cell.toxml())).strip())
-            width = min(max(text_len, _MIN_COLUMN_WIDTH), _MAX_COLUMN_WIDTH)
+            text = unescape(strip_tags(cell.toxml())).strip()
+            width = _estimate_text_width(text)
+
+            # Inline code is monospace, and has padding around it.
+            for code in cell.getElementsByTagName('code'):
+                code_text = _get_element_text(code)
+                width += (len(code_text) * _CODE_CHAR_WIDTH +
+                          _CODE_PADDING -
+                          _estimate_text_width(code_text))
+
+            width = min(max(width, _MIN_COLUMN_WIDTH), _MAX_COLUMN_WIDTH)
+            width += _COLUMN_PADDING
+
+            if cell.tagName == 'th':
+                width *= _BOLD_WIDTH_SCALE
 
             if i < len(col_widths):
                 col_widths[i] = max(col_widths[i], width)
@@ -573,15 +633,40 @@ def _split_table(
 
     # Widths are in "ch" units, with room for cell padding.
     widths = [
-        width + _COLUMN_PADDING
+        math.ceil(width)
         for width in col_widths
     ]
-    cols = ''.join(
-        f'<col style="width: {width}ch"/>'
+    total_width = sum(widths)
+    fixed_width = sum(
+        width
         for width in widths
+        if width <= _FIXED_COLUMN_WIDTH
+    )
+    flexible_width = total_width - fixed_width
+
+    # The table can shrink to fit a narrow view, such as one side of a diff.
+    # Narrow columns keep their width, and wider columns share what's left.
+    # Every row gets the same widths, so the rows still line up.
+    col_styles: list[str] = []
+
+    for width in widths:
+        if flexible_width == 0:
+            # Every column is narrow, so they all shrink together.
+            col_styles.append(f'width: {100 * width / total_width:.2f}%')
+        elif width <= _FIXED_COLUMN_WIDTH:
+            col_styles.append(f'width: {width}ch')
+        else:
+            col_styles.append(
+                f'width: calc((100% - {fixed_width}ch) * '
+                f'{width / flexible_width:.4f})')
+
+    cols = ''.join(
+        f'<col style="{col_style}"/>'
+        for col_style in col_styles
     )
     table_start = (
-        f'<table style="table-layout: fixed; width: {sum(widths)}ch">'
+        f'<table style="table-layout: fixed; width: 100%; '
+        f'max-width: {total_width}ch">'
         f'<colgroup>{cols}</colgroup>'
     )
 
@@ -597,6 +682,41 @@ def _split_table(
         )
         for section, cells in table_rows
     ]
+
+
+def _estimate_text_width(
+    text: str,
+) -> float:
+    """Return an estimate of how wide text will be, in "ch" units.
+
+    Rendered Markdown uses a proportional font, where characters have
+    different widths. One "ch" is the width of a "0". Narrow characters are
+    counted as less than that, and capitals and wide letters as more.
+
+    Version Added:
+        9.0
+
+    Args:
+        text (str):
+            The text to measure.
+
+    Returns:
+        float:
+        The estimated width.
+    """
+    width = 0.0
+
+    for c in text:
+        if c in _NARROW_CHARS:
+            width += 0.6
+        elif c in _WIDE_CHARS:
+            width += 1.6
+        elif c.isupper():
+            width += 1.2
+        else:
+            width += 1.0
+
+    return width
 
 
 def _get_element_text(
