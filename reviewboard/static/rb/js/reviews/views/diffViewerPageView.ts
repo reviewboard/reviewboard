@@ -865,8 +865,12 @@ export class DiffViewerPageView extends ReviewablePageView<
         }
 
         if (scroll !== false) {
+            const revisionModel = this.model.revision;
+
             this._navigate({
                 anchor: $anchor.attr('name'),
+                baseCommitID: revisionModel.get('baseCommitID'),
+                tipCommitID: revisionModel.get('tipCommitID'),
                 updateURLOnly: true,
             });
 
