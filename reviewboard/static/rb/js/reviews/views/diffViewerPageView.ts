@@ -1361,6 +1361,17 @@ export class DiffViewerPageView extends ReviewablePageView<
             newFile: file.get('isnew'),
         }));
 
+        /*
+         * Links to comments on the rendered view of a file need that file
+         * loaded in the rendered view.
+         */
+        const renderedAnchorPrefix =
+            `file${diffReviewable.get('fileDiffID')}rendered-line`;
+
+        if (this.#startAtAnchorName?.startsWith(renderedAnchorPrefix)) {
+            diffReviewable.set('viewMode', 'rendered');
+        }
+
         this.queueLoadDiff(diffReviewable);
     }
 

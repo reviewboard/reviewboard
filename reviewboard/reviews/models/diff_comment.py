@@ -102,6 +102,10 @@ class Comment(BaseComment):
     def get_absolute_url(self) -> str:
         """Return the URL for the given comment.
 
+        Version Changed:
+            9.0:
+            Comments on rendered Markdown link to the rendered view.
+
         Returns:
             str:
             The URL to view the part of the file where the comment was added.
@@ -137,9 +141,13 @@ class Comment(BaseComment):
                     'revision': self.filediff.diffset.revision,
                 })
 
-        anchor = '#file%sline%s' % (self.filediff.id, self.first_line)
+        if self.view_mode == 'rendered':
+            # The diff viewer loads the file's rendered view for this anchor.
+            anchor = f'#file{self.filediff.id}rendered-line{self.first_line}'
+        else:
+            anchor = f'#file{self.filediff.id}line{self.first_line}'
 
-        return '%s?%s%s' % (url, urlencode(query), anchor)
+        return f'{url}?{urlencode(query)}{anchor}'
 
     def diff_is_public(self) -> bool:
         """Return whether the diff(s) being commented on are public.

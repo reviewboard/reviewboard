@@ -686,6 +686,19 @@ class CommentDiffFragmentsViewTests(BaseFileDiffAncestorTests):
         self.assertIn('<h1>Hello</h1>', html)
         self.assertIn('white-space: normal', html)
 
+    def test_rendered_markdown_comment_link(self) -> None:
+        """Testing Comment.get_absolute_url with a comment on rendered
+        Markdown
+        """
+        review_request, source_comment, rendered_comment = \
+            self._create_markdown_comments()
+        filediff_id = rendered_comment.filediff_id
+
+        self.assertEqual(source_comment.get_absolute_url(),
+                         f'/r/1/diff/1/?#file{filediff_id}line1')
+        self.assertEqual(rendered_comment.get_absolute_url(),
+                         f'/r/1/diff/1/?#file{filediff_id}rendered-line1')
+
     def _create_markdown_comments(
         self,
     ) -> tuple[ReviewRequest, Comment, Comment]:

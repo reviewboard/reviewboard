@@ -1165,6 +1165,7 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                     ],
                 })),
                 model: new DiffReviewable({
+                    fileDiffID: 3,
                     renderVersion: 2,
                     reviewRequest: reviewRequest,
                     serializedCommentBlocks: {
@@ -1183,6 +1184,8 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
             const $commentFlags = view.$('.commentflag');
             expect($commentFlags.length).toBe(1);
             expect($commentFlags.parents('tr').attr('line')).toBe('2');
+            expect($commentFlags.find('.commentflag-anchor').attr('name'))
+                .toBe('file3line2');
         });
 
         it('Showing rendered', function() {
@@ -1191,6 +1194,8 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
             const $commentFlags = view.$('.commentflag');
             expect($commentFlags.length).toBe(1);
             expect($commentFlags.parents('tr').attr('line')).toBe('4');
+            expect($commentFlags.find('.commentflag-anchor').attr('name'))
+                .toBe('file3rendered-line4');
         });
     });
 
