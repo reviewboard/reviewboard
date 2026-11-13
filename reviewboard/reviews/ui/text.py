@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
+import os
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, cast
 
+import mimeparse
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.safestring import mark_safe
@@ -16,7 +19,10 @@ from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
 from typing_extensions import NotRequired
 
-from reviewboard.attachments.mimetypes import TextMimetype
+from reviewboard.attachments.mimetypes import (
+    MIMETYPE_EXTENSIONS,
+    TextMimetype,
+)
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.chunk_generator import (NoWrapperHtmlFormatter,
                                                     RawDiffChunkGenerator)
@@ -781,3 +787,43 @@ class TextBasedReviewUI(ReviewUI[
                 for line in self.get_rendered_lines()
             ]
         )
+
+
+def get_rendered_text_review_ui(
+    filename: str,
+) -> type[TextBasedReviewUI] | None:
+    """Return the text review UI that can render a file, if any.
+
+    This picks a review UI for the filename the same way as for file
+    attachments, by its mimetype. The review UI is only returned if it can
+    render text.
+
+    Version Added:
+        9.0
+
+    Args:
+        filename (str):
+            The name of the file.
+
+    Returns:
+        type:
+        The review UI class, or ``None`` if no review UI can render the file.
+    """
+    mimetype = MIMETYPE_EXTENSIONS.get(os.path.splitext(filename)[1])
+
+    if mimetype is None:
+        mime_str = mimetypes.guess_type(filename)[0]
+
+        if mime_str is None:
+            return None
+
+        mimetype = mimeparse.parse_mime_type(mime_str)
+
+    review_ui_cls = ReviewUI.for_mimetype(mimetype)
+
+    if (review_ui_cls is not None and
+        issubclass(review_ui_cls, TextBasedReviewUI) and
+        review_ui_cls.can_render_text):
+        return review_ui_cls
+
+    return None

@@ -50,6 +50,7 @@
   {% if file.is_new_file %}newfile{% endif %}
   {% if file.binary %}diff-binary{% endif %}
   {% if file.deleted %}diff-deleted{% endif %}
+  {% if view_mode == "rendered" %}{{rendered_table_css_class}}{% endif %}
   {% endspaceless %}"
        data-lines-equal="{{equal_lines}}">
  <colgroup>

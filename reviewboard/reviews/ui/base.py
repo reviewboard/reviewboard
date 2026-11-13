@@ -7,18 +7,16 @@ import logging
 import os
 from collections.abc import Mapping
 from inspect import signature
-from typing import Any, ClassVar, Generic, Iterator, TYPE_CHECKING, TypeVar
+from typing import Generic, TYPE_CHECKING, TypeVar, TypedDict
 from urllib.parse import urlencode
 from uuid import uuid4
 
 import mimeparse
-from django.contrib.auth.models import User
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponse
 from django.template.loader import render_to_string
 from django.utils.translation import gettext as _
 from housekeeping import func_deprecated
-from typing_extensions import TypeAlias, TypedDict
 
 from reviewboard.attachments.mimetypes import MIMETYPE_EXTENSIONS, score_match
 from reviewboard.attachments.models import (FileAttachment,
@@ -37,8 +35,10 @@ from reviewboard.site.urlresolvers import local_site_reverse
 
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Iterator, Sequence
+    from typing import Any, ClassVar, TypeAlias
 
+    from django.contrib.auth.models import User
     from django.http import HttpRequest
     from django.utils.safestring import SafeString
     from typelets.json import JSONDict
@@ -1114,14 +1114,35 @@ class ReviewUI(Generic[
                              mime_str, obj, e)
                 return None
 
+        return cls.for_mimetype(mimetype)
+
+    @classmethod
+    def for_mimetype(
+        cls,
+        mimetype: tuple[str, str, Mapping[str, str]],
+    ) -> type[ReviewUI[Any, Any, Any]] | None:
+        """Return the file attachment Review UI that best fits a mimetype.
+
+        Version Added:
+            9.0
+
+        Args:
+            mimetype (tuple):
+                A parsed mimetype, as returned by
+                :py:func:`mimeparse.parse_mime_type`.
+
+        Returns:
+            class:
+            The Review UI class for the mimetype, or ``None`` if a suitable
+            one could not be found.
+        """
         best_score = 0
-        best_fit: (type[ReviewUI] | None) = None
+        best_fit: (type[ReviewUI[Any, Any, Any]] | None) = None
 
         from reviewboard.reviews.ui import review_ui_registry
 
         for review_ui in review_ui_registry:
-            if not (is_file_attachment and
-                    review_ui.supports_file_attachments):
+            if not review_ui.supports_file_attachments:
                 continue
 
             for mt in review_ui.supported_mimetypes:

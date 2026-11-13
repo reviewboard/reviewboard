@@ -134,8 +134,14 @@
       vertical-align: top;
     }
 
-    /* In diffs, each row is wrapped in a <pre>. Show it as normal text. */
-    > pre {
+    /*
+     * In diffs, each row is wrapped in a <pre>. Show it as normal text.
+     *
+     * The first row of an expanded part of a diff puts the <pre> inside the
+     * floater for its collapse button.
+     */
+    > pre,
+    > .collapse-floater > pre {
       font: inherit;
       margin: 0;
       overflow-wrap: anywhere;

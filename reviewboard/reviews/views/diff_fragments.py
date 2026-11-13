@@ -41,6 +41,7 @@ from reviewboard.diffviewer.views import (DiffFragmentView,
                                           exception_traceback_string)
 from reviewboard.reviews.models import Comment, FileAttachmentComment
 from reviewboard.reviews.ui.base import ReviewUI
+from reviewboard.reviews.ui.text import get_rendered_text_review_ui
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -607,6 +608,14 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         This will augment the renderer for binary files by looking up
         file attachments, if review UIs are involved, disabling caching.
 
+        For files that a text review UI can render, such as Markdown, a
+        ``view-mode=rendered`` query argument shows the rendered view instead
+        of the source.
+
+        Version Changed:
+            9.0:
+            * Added support for ``view-mode=rendered``.
+
         Version Changed:
             8.0:
             * Deprecated non-keyword arguments.
@@ -705,6 +714,23 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
                 'modified_attachment_review_ui_html': modified_review_ui_html,
                 'diff_attachment_review_ui_html': diff_review_ui_html,
             })
+        else:
+            review_ui_cls = get_rendered_text_review_ui(
+                diff_file['modified_filename'])
+
+            if review_ui_cls is not None:
+                view_mode = 'source'
+
+                if request.GET.get('view-mode') == 'rendered':
+                    view_mode = 'rendered'
+                    renderer.chunk_generator_cls = \
+                        review_ui_cls.get_rendered_diff_chunk_generator_cls()
+
+                renderer.extra_context.update({
+                    'rendered_table_css_class':
+                        review_ui_cls.rendered_table_css_class,
+                    'view_mode': view_mode,
+                })
 
         renderer.extra_context.update(
             self._get_download_links(renderer, diff_file))

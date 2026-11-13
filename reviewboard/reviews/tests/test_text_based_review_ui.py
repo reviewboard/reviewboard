@@ -13,7 +13,12 @@ from djblets.cache.backend import make_cache_key
 from reviewboard.diffviewer.chunk_generator import RawDiffChunkGenerator
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.reviews.chunk_generators import RenderedDiffChunkGenerator
-from reviewboard.reviews.ui.text import TextBasedReviewUI
+from reviewboard.reviews.ui import review_ui_registry
+from reviewboard.reviews.ui.markdownui import MarkdownReviewUI
+from reviewboard.reviews.ui.text import (
+    TextBasedReviewUI,
+    get_rendered_text_review_ui,
+)
 from reviewboard.testing import TestCase
 
 if TYPE_CHECKING:
@@ -321,3 +326,43 @@ class RenderedDiffChunkGeneratorTests(TestCase):
             [
                 ('<p>HELLO, WORLD!</p>', '<p>GOODBYE, WORLD!</p>'),
             ])
+
+
+class GetRenderedTextReviewUITests(TestCase):
+    """Unit tests for get_rendered_text_review_ui.
+
+    Version Added:
+        9.0
+    """
+
+    def test_with_markdown(self) -> None:
+        """Testing get_rendered_text_review_ui with Markdown files"""
+        self.assertIs(get_rendered_text_review_ui('README.md'),
+                      MarkdownReviewUI)
+        self.assertIs(get_rendered_text_review_ui('docs/guide.md'),
+                      MarkdownReviewUI)
+
+    def test_without_rendered_view(self) -> None:
+        """Testing get_rendered_text_review_ui with files that can't be
+        rendered
+        """
+        self.assertIsNone(get_rendered_text_review_ui('README.rst'))
+        self.assertIsNone(get_rendered_text_review_ui('README.txt'))
+        self.assertIsNone(get_rendered_text_review_ui('image.png'))
+        self.assertIsNone(get_rendered_text_review_ui('README'))
+
+    def test_with_registered_review_ui(self) -> None:
+        """Testing get_rendered_text_review_ui with a registered review UI
+        that renders text
+        """
+        class CSVReviewUI(TextBasedReviewUI):
+            supported_mimetypes = ['text/csv']
+            can_render_text = True
+
+        review_ui_registry.register(CSVReviewUI)
+
+        try:
+            self.assertIs(get_rendered_text_review_ui('data.csv'),
+                          CSVReviewUI)
+        finally:
+            review_ui_registry.unregister(CSVReviewUI)
