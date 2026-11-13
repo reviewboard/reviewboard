@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 from django.http import HttpResponse
 from django.template.loader import render_to_string
@@ -14,7 +16,10 @@ from reviewboard.diffviewer.diffutils import (
     populate_diff_chunks,
 )
 from reviewboard.diffviewer.errors import UserVisibleError
-from reviewboard.diffviewer.settings import DiffSettings
+
+if TYPE_CHECKING:
+    from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
+    from reviewboard.diffviewer.settings import DiffSettings
 
 
 class DiffRenderer(object):
@@ -62,8 +67,15 @@ class DiffRenderer(object):
                  allow_caching=True,
                  template_name=default_template_name,
                  show_deleted=False,
-                 diff_settings):
+                 diff_settings,
+                 chunk_generator_cls: (
+                     type[DiffChunkGenerator] | None
+                 ) = None):
         """Initialize the renderer.
+
+        Version Changed:
+            9.0:
+            * Added the ``chunk_generator_cls`` argument.
 
         Version Changed:
             6.0:
@@ -118,8 +130,16 @@ class DiffRenderer(object):
 
                 Version Added:
                     5.0.2
+
+            chunk_generator_cls (type, optional):
+                The chunk generator class to use. If not provided, the default
+                class is used.
+
+                Version Added:
+                    9.0
         """
         self.diff_file = diff_file
+        self.chunk_generator_cls = chunk_generator_cls
         self.diff_settings = diff_settings
         self.chunk_index = chunk_index
         self.highlighting = diff_settings.syntax_highlighting
@@ -170,7 +190,8 @@ class DiffRenderer(object):
         if not self.diff_file.get('chunks_loaded', False):
             populate_diff_chunks(files=[self.diff_file],
                                  request=request,
-                                 diff_settings=self.diff_settings)
+                                 diff_settings=self.diff_settings,
+                                 chunk_generator_cls=self.chunk_generator_cls)
 
         if self.chunk_index is not None:
             assert not self.lines_of_context or self.collapse_all
@@ -223,6 +244,12 @@ class DiffRenderer(object):
 
         if self.show_deleted:
             key += '-show_deleted'
+
+        chunk_generator_cls = self.chunk_generator_cls
+
+        if chunk_generator_cls is not None:
+            key += '-%s.%s' % (chunk_generator_cls.__module__,
+                               chunk_generator_cls.__qualname__)
 
         key += '-%s-%s-%s' % (self.diff_settings.state_hash,
                               get_language(),

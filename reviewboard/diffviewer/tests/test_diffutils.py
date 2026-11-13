@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.test.client import RequestFactory
 from djblets.testing.decorators import add_fixtures
 
+from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 from reviewboard.diffviewer.diffutils import (
     convert_line_endings,
     convert_to_unicode,
@@ -40,7 +41,7 @@ from reviewboard.scmtools.core import PRE_CREATION
 from reviewboard.testing.testcase import BaseFileDiffAncestorTests, TestCase
 
 if TYPE_CHECKING:
-    from collections.abc import Mapping, Sequence
+    from collections.abc import Iterator, Mapping, Sequence
     from typing import Any
 
     from django.http import HttpRequest
@@ -3527,6 +3528,110 @@ class GetLastLineNumberInDiffTests(kgb.SpyAgency, TestCase):
             interfilediff=None,
             diff_settings=diff_settings,
             base_filediff=base_filediff)
+
+
+class GetFileChunksInRangeTests(kgb.SpyAgency, TestCase):
+    """Unit tests for get_file_chunks_in_range.
+
+    Version Added:
+        9.0
+    """
+
+    fixtures = ['test_users', 'test_scmtools']
+
+    def test_with_chunk_generator_cls(self) -> None:
+        """Testing get_file_chunks_in_range with chunk_generator_cls"""
+        class UpperCaseChunkGenerator(DiffChunkGenerator):
+            def make_cache_key(self) -> str:
+                return f'{super().make_cache_key()}-upper'
+
+            def generate_chunks(
+                self,
+                old: bytes,
+                new: bytes,
+                *args,
+                **kwargs,
+            ) -> Iterator[DiffChunk]:
+                yield from super().generate_chunks(old.upper(), new.upper(),
+                                                   *args, **kwargs)
+
+        review_request = self.create_review_request(
+            repository=self.create_repository(tool_name='Test'))
+        diffset = self.create_diffset(review_request=review_request)
+        filediff = self.create_filediff(
+            diffset=diffset,
+            source_revision=PRE_CREATION,
+            diff=(
+                b'--- README\n'
+                b'+++ README\n'
+                b'@@ -0,0 +1,1 @@\n'
+                b'+line\n'
+            ))
+
+        context = {'user': review_request.submitter}
+        diff_settings = DiffSettings.create(syntax_highlighting=False)
+
+        chunks = list(get_file_chunks_in_range(
+            context=context,
+            filediff=filediff,
+            interfilediff=None,
+            first_line=1,
+            num_lines=1,
+            diff_settings=diff_settings))
+        self.assertEqual(chunks[0]['lines'][0][5], 'line')
+
+        # The same context must not return the chunks cached above.
+        chunks = list(get_file_chunks_in_range(
+            context=context,
+            filediff=filediff,
+            interfilediff=None,
+            first_line=1,
+            num_lines=1,
+            diff_settings=diff_settings,
+            chunk_generator_cls=UpperCaseChunkGenerator))
+        self.assertEqual(chunks[0]['lines'][0][5], 'LINE')
+
+    def test_last_line_and_header_with_chunk_generator_cls(self) -> None:
+        """Testing get_last_line_number_in_diff and
+        get_last_header_before_line with chunk_generator_cls
+        """
+        self.spy_on(get_file_from_filediff)
+
+        review_request = self.create_review_request(
+            repository=self.create_repository(tool_name='Test'))
+        diffset = self.create_diffset(review_request=review_request)
+        filediff = self.create_filediff(
+            diffset=diffset,
+            source_revision=PRE_CREATION,
+            diff=(
+                b'--- README\n'
+                b'+++ README\n'
+                b'@@ -0,0 +1,1 @@\n'
+                b'+line\n'
+            ))
+
+        context = {'user': review_request.submitter}
+        diff_settings = DiffSettings.create(syntax_highlighting=False)
+
+        get_last_line_number_in_diff(
+            context=context,
+            filediff=filediff,
+            interfilediff=None,
+            diff_settings=diff_settings,
+            chunk_generator_cls=DiffChunkGenerator)
+        get_last_header_before_line(
+            context=context,
+            filediff=filediff,
+            interfilediff=None,
+            target_line=1,
+            diff_settings=diff_settings,
+            chunk_generator_cls=DiffChunkGenerator)
+
+        self.assertSpyCallCount(get_file_from_filediff, 2)
+        self.assertSpyCalledWith(get_file_from_filediff.calls[0],
+                                 chunk_generator_cls=DiffChunkGenerator)
+        self.assertSpyCalledWith(get_file_from_filediff.calls[1],
+                                 chunk_generator_cls=DiffChunkGenerator)
 
 
 class PatchTests(kgb.SpyAgency, TestCase):

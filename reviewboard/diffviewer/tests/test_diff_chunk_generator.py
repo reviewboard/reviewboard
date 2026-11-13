@@ -402,6 +402,44 @@ class DiffChunkGeneratorTests(SpyAgency, TestCase):
 
         self.assertEqual(line_counts, self.filediff.get_line_counts())
 
+    def test_get_chunks_stores_line_counts(self) -> None:
+        """Testing DiffChunkGenerator.get_chunks stores line counts"""
+        self.filediff.source_revision = PRE_CREATION
+        self.filediff.diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+line\n'
+        )
+        self.spy_on(self.filediff.set_line_counts)
+
+        self.assertEqual(len(list(self.generator.get_chunks())), 1)
+
+        self.assertSpyCalled(self.filediff.set_line_counts)
+
+    def test_get_chunks_with_stores_line_counts_false(self) -> None:
+        """Testing DiffChunkGenerator.get_chunks with
+        stores_line_counts=False
+        """
+        class MyChunkGenerator(DiffChunkGenerator):
+            stores_line_counts = False
+
+        self.filediff.source_revision = PRE_CREATION
+        self.filediff.diff = (
+            b'--- README\n'
+            b'+++ README\n'
+            b'@@ -0,0 +1,1 @@\n'
+            b'+line\n'
+        )
+        self.spy_on(self.filediff.set_line_counts)
+
+        generator = MyChunkGenerator(request=None,
+                                     filediff=self.filediff,
+                                     diff_settings=DiffSettings.create())
+        self.assertEqual(len(list(generator.get_chunks())), 1)
+
+        self.assertSpyNotCalled(self.filediff.set_line_counts)
+
     def _make_delete_recreate_commits(self) -> Sequence[DiffCommit]:
         """Finalize and return commits for a delete/re-create test.
 
