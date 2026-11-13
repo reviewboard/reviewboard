@@ -1185,6 +1185,70 @@ suite('rb/diffviewer/views/DiffReviewableView', function() {
                 expect($toggleButton.text()).toBe('Hide chars');
             });
         });
+
+        describe('View mode tabs', function() {
+            let model: DiffReviewable;
+            let $sourceTab: JQuery;
+            let $renderedTab: JQuery;
+
+            beforeEach(function() {
+                model = new DiffReviewable({
+                    reviewRequest: reviewRequest,
+                });
+
+                view = new DiffReviewableView({
+                    el: $(diffTableTemplate({
+                        chunks: [
+                            {
+                                numRows: 5,
+                                startRow: 1,
+                                type: 'equal',
+                            },
+                        ],
+                    })),
+                    model: model,
+                });
+
+                const $el = view.render().$el;
+
+                $(dedent`
+                    <ul class="rb-c-tabs diff-view-mode-tabs">
+                     <li class="rb-c-tabs__tab -is-active"
+                         data-view-mode="source">
+                      <a class="rb-c-tabs__tab-label" href="#">Source</a>
+                     </li>
+                     <li class="rb-c-tabs__tab" data-view-mode="rendered">
+                      <a class="rb-c-tabs__tab-label" href="#">Rendered</a>
+                     </li>
+                    </ul>
+                `).prependTo($el.find('thead tr:first-child th'));
+                $el.appendTo($container);
+
+                $sourceTab = view.$('[data-view-mode="source"]');
+                $renderedTab = view.$('[data-view-mode="rendered"]');
+
+                spyOn(view, 'trigger').and.callThrough();
+            });
+
+            it('Selecting another view', function() {
+                $renderedTab.find('a').click();
+
+                expect(model.get('viewMode')).toBe('rendered');
+                expect($renderedTab[0]).toHaveClass('-is-active');
+                expect($sourceTab[0]).not.toHaveClass('-is-active');
+                expect(view.trigger).toHaveBeenCalledWith('viewModeChanged');
+                expect(view.trigger).not.toHaveBeenCalledWith('fileClicked');
+            });
+
+            it('Selecting the current view', function() {
+                $sourceTab.find('a').click();
+
+                expect(model.get('viewMode')).toBe('source');
+                expect(view.trigger).not.toHaveBeenCalledWith(
+                    'viewModeChanged');
+                expect(view.trigger).not.toHaveBeenCalledWith('fileClicked');
+            });
+        });
     });
 
     describe('Methods', function() {

@@ -44,6 +44,19 @@
 <span class="fa fa-warning" title="{% blocktrans %}Suspicious content was found on this line: %(warning_labels)s{% endblocktrans %}"></span>
 {% enddefinevar %}
 
+{% definevar 'view_mode_tabs' %}
+{%  if has_rendered_view %}
+    <ul class="rb-c-tabs diff-view-mode-tabs">
+     <li class="rb-c-tabs__tab{% if view_mode == 'source' %} -is-active{% endif %}" data-view-mode="source">
+      <a class="rb-c-tabs__tab-label" href="#">{% trans "Source" %}</a>
+     </li>
+     <li class="rb-c-tabs__tab{% if view_mode == 'rendered' %} -is-active{% endif %}" data-view-mode="rendered">
+      <a class="rb-c-tabs__tab-label" href="#">{% trans "Rendered" %}</a>
+     </li>
+    </ul>
+{%  endif %}
+{% enddefinevar %}
+
 {% if not standalone %}
 <table id="file{{file.filediff.id}}" class="{% spaceless %}
   sidebyside
@@ -65,6 +78,7 @@
   <tr class="filename-row">
 {%  if file.modified_filename == file.orig_filename %}
    <th colspan="4">
+    {{view_mode_tabs}}
     <a name="{{file.index}}" class="file-anchor"></a>
 {%   if file.binary %}
 {%    if modified_diff_file_attachment %}
@@ -81,6 +95,7 @@
    <th colspan="2"><a name="{{file.index}}" class="file-anchor"></a>{{ file.orig_filename }}</th>
 {%   endif %}
    <th colspan="2">
+    {{view_mode_tabs}}
 {%   if file.is_new_file %}
     <a name="{{file.index}}" class="file-anchor"></a>
 {%   endif %}

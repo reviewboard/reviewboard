@@ -727,6 +727,7 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
                         review_ui_cls.get_rendered_diff_chunk_generator_cls()
 
                 renderer.extra_context.update({
+                    'has_rendered_view': True,
                     'rendered_table_css_class':
                         review_ui_cls.rendered_table_css_class,
                     'view_mode': view_mode,

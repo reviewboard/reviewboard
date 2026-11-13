@@ -94,9 +94,60 @@ suite('rb/diffviewer/models/DiffReviewable', function() {
             const html = await diffReviewable.getRenderedDiff();
             expect(html).toEqual('abc');
         });
+
+        it('With viewMode=rendered', async function() {
+            const diffReviewable = new DiffReviewable({
+                file: new DiffFile({
+                    index: 4,
+                }),
+                fileDiffID: 3,
+                reviewRequest: reviewRequest,
+                revision: 2,
+                viewMode: 'rendered',
+            });
+
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('GET');
+                expect(request.url).toBe(
+                    '/r/1/diff/2/fragment/3/?index=4&view-mode=rendered&_=' +
+                    TEMPLATE_SERIAL);
+
+                request.complete({ responseText: 'abc' });
+            });
+
+            const html = await diffReviewable.getRenderedDiff();
+            expect(html).toEqual('abc');
+        });
     });
 
     describe('getRenderedDiffFragment', function() {
+        it('With viewMode=rendered', async function() {
+            const diffReviewable = new DiffReviewable({
+                file: new DiffFile({
+                    index: 5,
+                }),
+                fileDiffID: 3,
+                reviewRequest: reviewRequest,
+                revision: 2,
+                viewMode: 'rendered',
+            });
+
+            spyOn($, 'ajax').and.callFake(request => {
+                expect(request.type).toBe('GET');
+                expect(request.url).toBe(
+                    '/r/1/diff/2/fragment/3/chunk/4/?index=5&' +
+                    'view-mode=rendered&_=' + TEMPLATE_SERIAL);
+
+                request.complete({ responseText: 'abc' });
+            });
+
+            const html = await diffReviewable.getRenderedDiffFragment({
+                chunkIndex: 4,
+            });
+
+            expect(html).toEqual('abc');
+        });
+
         it('Without interdiffs', async function() {
             const diffReviewable = new DiffReviewable({
                 file: new DiffFile({

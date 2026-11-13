@@ -46,6 +46,17 @@ export interface DiffReviewableAttrs extends AbstractReviewableAttrs {
 
     /** The revision of the FileDiff. */
     revision: number;
+
+    /**
+     * The view of the file to show.
+     *
+     * Some files (such as Markdown) can be represented in source or rendered
+     * views.
+     *
+     * Version Added:
+     *     9.0
+     */
+    viewMode: 'rendered' | 'source';
 }
 
 
@@ -67,6 +78,7 @@ export class DiffReviewable
         interdiffRevision: null,
         public: false,
         revision: null,
+        viewMode: 'source',
     };
 
     static commentBlockModel = DiffCommentBlock;
@@ -314,6 +326,10 @@ export class DiffReviewable
 
         if (options.showDeleted) {
             queryParts.push('show-deleted=1');
+        }
+
+        if (this.get('viewMode') === 'rendered') {
+            queryParts.push('view-mode=rendered');
         }
 
         queryParts.push(`_=${TEMPLATE_SERIAL}`);

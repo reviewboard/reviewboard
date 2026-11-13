@@ -834,6 +834,15 @@ export class DiffViewerPageView extends ReviewablePageView<
             this.queueLoadDiff(diffReviewable, {showDeleted: true});
             this.#loadQueue.start(this.#loadQueueAbort.signal);
         });
+
+        this.listenTo(diffReviewableView, 'viewModeChanged', () => {
+            /*
+             * This reloads the file in place. Showing deleted content only
+             * affects deleted files, where picking a view should show it.
+             */
+            this.queueLoadDiff(diffReviewable, {showDeleted: true});
+            this.#loadQueue.start(this.#loadQueueAbort.signal);
+        });
     }
 
     /**
