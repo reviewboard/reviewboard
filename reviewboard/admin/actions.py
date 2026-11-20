@@ -25,6 +25,7 @@ from reviewboard.actions import (ActionPlacement,
 from reviewboard.actions.base import ActionAttachmentPoint
 from reviewboard.actions.renderers import (SidebarActionGroupRenderer,
                                            SidebarItemActionRenderer)
+from reviewboard.hostingsvcs.models import ConfiguredBugTracker
 from reviewboard.notifications.models import WebHookTarget
 from reviewboard.oauth.models import Application
 from reviewboard.reviews.models import DefaultReviewer, Group
@@ -82,7 +83,7 @@ class BaseAdminSidebarManageItemAction(BaseAction):
     #: Queryset used to count items in the database.
     #:
     #: If not set, a default queryset based on :py:attr:`model` will be used.
-    item_queryset: ClassVar[QuerySet | None] = None
+    item_queryset: ClassVar[QuerySet[Any] | None] = None
 
     #: The model represented by this sidebar item.
     model: ClassVar[type[Model] | None] = None
@@ -149,7 +150,7 @@ class BaseAdminSidebarManageItemAction(BaseAction):
 
         return None
 
-    def get_item_queryset(self) -> QuerySet | None:
+    def get_item_queryset(self) -> QuerySet[Any] | None:
         """Return the queryset for the items.
 
         This will default to returning a copy of :py:attr:`item_queryset`,
@@ -843,6 +844,24 @@ class AdminManageRepositoriesNavAction(BaseAdminSidebarManageItemAction):
     ]
 
 
+class AdminManageBugTrackersNavAction(BaseAdminSidebarManageItemAction):
+    """Manage -> Bug Trackers navigation action.
+
+    Version Added:
+        9.0
+    """
+
+    action_id = 'admin-manage-bug-trackers-nav'
+    label = _('Bug Trackers')
+    model = ConfiguredBugTracker
+    item_queryset = ConfiguredBugTracker.objects.accessible()
+
+    placements = [
+        ActionPlacement(attachment=AttachmentPoint.ADMIN_NAV,
+                        parent_id=AdminManageNavGroupAction.action_id),
+    ]
+
+
 class AdminManageWebHooksNavAction(BaseAdminSidebarManageItemAction):
     """Manage -> WebHooks navigation action.
 
@@ -922,6 +941,7 @@ def get_default_admin_actions() -> Iterator[BaseAction]:
         AdminManageReviewGroupsNavAction(),
         AdminManageDefaultReviewersNavAction(),
         AdminManageRepositoriesNavAction(),
+        AdminManageBugTrackersNavAction(),
         AdminManageWebHooksNavAction(),
         AdminManageOAuth2AppsNavAction(),
     )
