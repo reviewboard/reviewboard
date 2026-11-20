@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import logging
+import mimetypes
+import os
 from collections.abc import Sequence
-from typing import Any, Iterator, TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, cast
 
+import mimeparse
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.safestring import mark_safe
@@ -14,20 +17,29 @@ from djblets.cache.backend import cache_memoize
 from pygments import highlight
 from pygments.lexers import (ClassNotFound, guess_lexer_for_filename,
                              TextLexer)
-from typing_extensions import NotRequired
 
-from reviewboard.attachments.mimetypes import TextMimetype
+from reviewboard.attachments.mimetypes import (
+    MIMETYPE_EXTENSIONS,
+    TextMimetype,
+)
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.diffviewer.chunk_generator import (NoWrapperHtmlFormatter,
                                                     RawDiffChunkGenerator)
 from reviewboard.diffviewer.diffutils import get_chunks_in_range
 from reviewboard.diffviewer.settings import DiffSettings
+from reviewboard.reviews.chunk_generators import RenderedDiffChunkGenerator
 from reviewboard.reviews.models import FileAttachmentComment
-from reviewboard.reviews.ui.base import (ReviewUI,
-                                         SerializedComment,
-                                         SerializedCommentBlocks)
+from reviewboard.reviews.ui.base import (
+    ReviewUI,
+    SerializedComment,
+    SerializedCommentBlocks,
+    SerializedViewModeData,
+)
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+    from typing import Any, ClassVar
+
     from django.http import HttpRequest
     from pygments.lexers import Lexer
     from typelets.json import JSONDict
@@ -36,11 +48,26 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SerializedTextComment(SerializedComment):
+#: Chunk generators for the rendered view of diffs, for each review UI.
+#:
+#: Version Added:
+#:     9.0
+_rendered_diff_chunk_generators: dict[
+    type[TextBasedReviewUI],
+    type[RenderedDiffChunkGenerator],
+] = {}
+
+
+class SerializedTextComment(SerializedComment, SerializedViewModeData):
     """Serialized comment data for text review UIs.
 
     This must be kept in sync with the definitions in
     :file:`reviewboard/static/rb/js/reviews/models/commentData.ts`.
+
+    Version Changed:
+        9.0:
+        The ``viewMode`` and ``renderVersion`` keys now come from
+        :py:class:`~reviewboard.reviews.ui.base.SerializedViewModeData`.
 
     Version Added:
         7.0
@@ -51,17 +78,6 @@ class SerializedTextComment(SerializedComment):
 
     #: The ending line number of the comment.
     endLineNum: int
-
-    #: The view mode of the document when the comment was made.
-    #:
-    #: This will be either "source" or "rendered".
-    viewMode: str
-
-    #: The version of the row layout used for the rendered view.
-    #:
-    #: Version Added:
-    #:     9.0
-    renderVersion: NotRequired[int]
 
 
 class TextBasedReviewUI(ReviewUI[
@@ -87,8 +103,17 @@ class TextBasedReviewUI(ReviewUI[
     source_chunk_generator_cls = RawDiffChunkGenerator
     rendered_chunk_generator_cls = RawDiffChunkGenerator
 
+    js_model_class: str = 'RB.TextBasedReviewable'
+    js_view_class: str = 'RB.TextBasedReviewableView'
+
     #: Extra classes to apply to the Review UI element.
-    extra_css_classes: list[str] = []
+    extra_css_classes: ClassVar[list[str]] = []
+
+    #: A class to apply to tables showing the rendered view.
+    #:
+    #: Version Added:
+    #:     9.0
+    rendered_table_css_class: ClassVar[str] = ''
 
     #: The largest file size, in bytes, that will be displayed.
     #:
@@ -97,7 +122,7 @@ class TextBasedReviewUI(ReviewUI[
     #:
     #: Version Added:
     #:     8.1
-    max_display_file_size: int = 1024 * 1024
+    max_display_file_size: ClassVar[int] = 1024 * 1024
 
     #: The version of the row layout used for the rendered view.
     #:
@@ -107,10 +132,62 @@ class TextBasedReviewUI(ReviewUI[
     #:
     #: Version Added:
     #:     9.0
-    rendered_lines_version: int = 1
+    rendered_lines_version: ClassVar[int] = 1
 
-    js_model_class: str = 'RB.TextBasedReviewable'
-    js_view_class: str = 'RB.TextBasedReviewableView'
+    @classmethod
+    def render_text_rows(
+        cls,
+        text: str,
+    ) -> Sequence[str]:
+        """Render text into rows for the rendered view.
+
+        Subclasses that set ``can_render_text = True`` should implement this.
+        It's used to render file attachments, and to show changes to files of
+        this type in the diff viewer.
+
+        Version Added:
+            9.0
+
+        Args:
+            text (str):
+                The text to render.
+
+        Returns:
+            list of str:
+            The HTML for each row.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def get_rendered_diff_chunk_generator_cls(
+        cls,
+    ) -> type[RenderedDiffChunkGenerator]:
+        """Return a chunk generator for the rendered view of diffs.
+
+        The chunk generator renders each side of a FileDiff with
+        :py:meth:`render_text_rows`, and compares rows the same way as
+        :py:attr:`rendered_chunk_generator_cls`.
+
+        Version Added:
+            9.0
+
+        Returns:
+            type:
+            The chunk generator class.
+        """
+        generator_cls = _rendered_diff_chunk_generators.get(cls)
+
+        if generator_cls is None:
+            generator_cls = type(
+                f'{cls.__name__}RenderedDiffChunkGenerator',
+                (RenderedDiffChunkGenerator, cls.rendered_chunk_generator_cls),
+                {
+                    '__module__': cls.__module__,
+                    'review_ui_cls': cls,
+                })
+            _rendered_diff_chunk_generators[cls] = generator_cls
+
+        return generator_cls
 
     def get_js_model_data(self) -> JSONDict:
         """Return data to pass to the JavaScript Model during instantiation.
@@ -354,15 +431,19 @@ class TextBasedReviewUI(ReviewUI[
     def generate_render(self) -> Iterator[str]:
         """Generate a render of the text.
 
-        By default, this won't do anything. Subclasses should override it
-        to turn the raw text into some form of rendered content. For
-        example, rendering Markdown.
+        By default, this renders the text with :py:meth:`render_text_rows`.
+        Subclasses that set ``can_render_text = True`` should implement that,
+        or override this.
+
+        Version Changed:
+            9.0:
+            This now uses :py:meth:`render_text_rows`.
 
         Yields:
             str:
             The rendered lines of content.
         """
-        raise NotImplementedError
+        yield from self.render_text_rows(self.get_text())
 
     def serialize_comments(
         self,
@@ -510,6 +591,7 @@ class TextBasedReviewUI(ReviewUI[
             'is_diff': self.diff_against_obj is not None,
             'review_ui': self,
             'revision': self.obj.attachment_revision,
+            'view_mode': view_mode,
         }
 
         if self.diff_against_obj:
@@ -701,3 +783,43 @@ class TextBasedReviewUI(ReviewUI[
                 for line in self.get_rendered_lines()
             ]
         )
+
+
+def get_rendered_text_review_ui(
+    filename: str,
+) -> type[TextBasedReviewUI] | None:
+    """Return the text review UI that can render a file, if any.
+
+    This picks a review UI for the filename the same way as for file
+    attachments, by its mimetype. The review UI is only returned if it can
+    render text.
+
+    Version Added:
+        9.0
+
+    Args:
+        filename (str):
+            The name of the file.
+
+    Returns:
+        type:
+        The review UI class, or ``None`` if no review UI can render the file.
+    """
+    mimetype = MIMETYPE_EXTENSIONS.get(os.path.splitext(filename)[1])
+
+    if mimetype is None:
+        mime_str = mimetypes.guess_type(filename)[0]
+
+        if mime_str is None:
+            return None
+
+        mimetype = mimeparse.parse_mime_type(mime_str)
+
+    review_ui_cls = ReviewUI.for_mimetype(mimetype)
+
+    if (review_ui_cls is not None and
+        issubclass(review_ui_cls, TextBasedReviewUI) and
+        review_ui_cls.can_render_text):
+        return review_ui_cls
+
+    return None

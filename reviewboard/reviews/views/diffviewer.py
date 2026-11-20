@@ -23,6 +23,7 @@ from reviewboard.reviews.context import (ReviewRequestContext,
                                          make_review_request_context,
                                          should_view_draft)
 from reviewboard.reviews.ui.diff import DiffReviewUI
+from reviewboard.reviews.ui.text import get_rendered_text_review_ui
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.reviews.models import (Review,
                                         ReviewRequestDraft)
@@ -268,6 +269,14 @@ class SerializedReviewsDiffFile(TypedDict):
 
     #: Whether the file is part of a published diff.
     public: bool
+
+    #: The version of the row layout used for the rendered view.
+    #:
+    #: This is only set for files that have a rendered view.
+    #:
+    #: Version Added:
+    #:     9.0
+    render_version: NotRequired[int]
 
     #: The serialized comments already attached to the file's diff.
     serialized_comment_blocks: SerializedCommentBlocks[SerializedDiffComment]
@@ -641,6 +650,14 @@ class ReviewsDiffViewerView(ReviewRequestViewMixin,
                     'id': interfilediff.pk,
                     'revision': interfilediff.diffset.revision,
                 }
+
+            if not binary:
+                review_ui_cls = get_rendered_text_review_ui(
+                    f['modified_filename'])
+
+                if review_ui_cls is not None:
+                    data['render_version'] = \
+                        review_ui_cls.rendered_lines_version
 
             if f['force_interdiff']:
                 data['force_interdiff'] = True

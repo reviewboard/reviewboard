@@ -20,6 +20,10 @@ from reviewboard.hostingsvcs.base.forms import (
     BaseHostingServiceAuthForm,
     BaseHostingServiceRepositoryForm,
 )
+from reviewboard.hostingsvcs.jira.client import (
+    ATLASSIAN_CLOUD_DOMAIN,
+    get_jira_cloud_site,
+)
 
 if TYPE_CHECKING:
     from typing import Any
@@ -50,38 +54,6 @@ class JIRAForm(BaseHostingServiceRepositoryForm):
             The cleaned field data.
         """
         return self.cleaned_data['jira_url'].rstrip('/ ')
-
-
-#: The Atlassian Cloud domain suffix for JIRA Cloud sites.
-#:
-#: Version Added:
-#:     9.0
-_ATLASSIAN_CLOUD_DOMAIN = '.atlassian.net'
-
-
-def get_jira_cloud_site(
-    url: str | None,
-) -> str | None:
-    """Return the Atlassian site name for a JIRA Cloud URL.
-
-    Version Added:
-        9.0
-
-    Args:
-        url (str):
-            The JIRA server URL.
-
-    Returns:
-        str:
-        The site name (the "yourteam" in yourteam.atlassian.net), or
-        ``None`` if the URL is not for a JIRA Cloud site.
-    """
-    hostname = urlparse(url or '').hostname or ''
-
-    if hostname.endswith(_ATLASSIAN_CLOUD_DOMAIN):
-        return hostname.removesuffix(_ATLASSIAN_CLOUD_DOMAIN)
-
-    return None
 
 
 class JIRAAuthForm(BaseHostingServiceAuthForm):
@@ -196,7 +168,7 @@ class JIRAAuthForm(BaseHostingServiceAuthForm):
         site = re.sub(r'^https?://', '', site)
         site = site.split('/')[0]
 
-        site = site.removesuffix(_ATLASSIAN_CLOUD_DOMAIN)
+        site = site.removesuffix(ATLASSIAN_CLOUD_DOMAIN)
 
         if site and not re.match(r'^[a-z0-9][a-z0-9-]*$', site):
             raise forms.ValidationError(
@@ -253,7 +225,7 @@ class JIRAAuthForm(BaseHostingServiceAuthForm):
 
             if site:
                 cleaned_data['jira_server_url'] = \
-                    f'https://{site}{_ATLASSIAN_CLOUD_DOMAIN}'
+                    f'https://{site}{ATLASSIAN_CLOUD_DOMAIN}'
 
         return cleaned_data
 

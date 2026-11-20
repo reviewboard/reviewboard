@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from django.http import HttpResponse
+from django.template.loader import render_to_string
 from django.test import RequestFactory
 from djblets.cache.backend import cache_memoize
-from kgb import SpyAgency
+from kgb import SpyAgency, SpyOpReturn
 
+from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
+from reviewboard.diffviewer.diffutils import populate_diff_chunks
 from reviewboard.diffviewer.errors import UserVisibleError
-from reviewboard.diffviewer.models import FileDiff
+from reviewboard.diffviewer.models import DiffSet, FileDiff
 from reviewboard.diffviewer.renderers import DiffRenderer
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.testing import TestCase
@@ -148,6 +151,61 @@ class DiffRendererTests(SpyAgency, TestCase):
         self.assertTrue(renderer.render_to_string_uncached.called)
         self.assertFalse(renderer.make_cache_key.called)
         self.assertFalse(cache_memoize.spy.called)
+
+    def test_render_to_string_uncached_with_chunk_generator_cls(
+        self,
+    ) -> None:
+        """Testing DiffRenderer.render_to_string_uncached with
+        chunk_generator_cls
+        """
+        class MyChunkGenerator(DiffChunkGenerator):
+            pass
+
+        diff_file = {
+            'chunks': [{}],
+        }
+
+        diff_settings = DiffSettings.create()
+        renderer = DiffRenderer(diff_file,
+                                diff_settings=diff_settings,
+                                chunk_generator_cls=MyChunkGenerator)
+        self.spy_on(populate_diff_chunks, call_original=False)
+        self.spy_on(renderer.make_context, call_original=False)
+        self.spy_on(render_to_string, op=SpyOpReturn(''))
+
+        renderer.render_to_string_uncached(None)
+
+        self.assertSpyCalledWith(populate_diff_chunks,
+                                 files=[diff_file],
+                                 request=None,
+                                 diff_settings=diff_settings,
+                                 chunk_generator_cls=MyChunkGenerator)
+
+    def test_make_cache_key_with_chunk_generator_cls(self) -> None:
+        """Testing DiffRenderer.make_cache_key with chunk_generator_cls"""
+        class MyChunkGenerator(DiffChunkGenerator):
+            pass
+
+        diff_file = {
+            'base_filediff': None,
+            'filediff': FileDiff(pk=1, diffset=DiffSet(revision=1)),
+            'force_interdiff': False,
+            'index': 0,
+        }
+
+        diff_settings = DiffSettings.create()
+        key = DiffRenderer(diff_file,
+                           diff_settings=diff_settings).make_cache_key()
+        key_with_cls = DiffRenderer(
+            diff_file,
+            diff_settings=diff_settings,
+            chunk_generator_cls=MyChunkGenerator,
+        ).make_cache_key()
+
+        self.assertNotEqual(key, key_with_cls)
+        self.assertIn(
+            f'-{__name__}.{MyChunkGenerator.__qualname__}-',
+            key_with_cls)
 
     def test_make_context_with_chunk_index(self):
         """Testing DiffRenderer.make_context with chunk_index"""

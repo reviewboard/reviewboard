@@ -45,6 +45,25 @@ class Comment(BaseComment):
     last_line = property(lambda self: self.first_line + self.num_lines - 1)
 
     @property
+    def view_mode(self) -> str:
+        """The view of the file that the comment was made on.
+
+        This is ``'rendered'`` for comments on rendered Markdown, where the
+        line numbers are rows in the rendered diff. Otherwise, it's
+        ``'source'``.
+
+        Version Added:
+            9.0
+
+        Type:
+            str
+        """
+        if self.extra_data:
+            return self.extra_data.get('viewMode', 'source')
+
+        return 'source'
+
+    @property
     def base_filediff_id(self) -> int | None:
         """The base FileDiff ID for the cumulative diff this comment is on.
 
@@ -83,6 +102,10 @@ class Comment(BaseComment):
     def get_absolute_url(self) -> str:
         """Return the URL for the given comment.
 
+        Version Changed:
+            9.0:
+            Comments on rendered Markdown link to the rendered view.
+
         Returns:
             str:
             The URL to view the part of the file where the comment was added.
@@ -118,9 +141,13 @@ class Comment(BaseComment):
                     'revision': self.filediff.diffset.revision,
                 })
 
-        anchor = '#file%sline%s' % (self.filediff.id, self.first_line)
+        if self.view_mode == 'rendered':
+            # The diff viewer loads the file's rendered view for this anchor.
+            anchor = f'#file{self.filediff.id}rendered-line{self.first_line}'
+        else:
+            anchor = f'#file{self.filediff.id}line{self.first_line}'
 
-        return '%s?%s%s' % (url, urlencode(query), anchor)
+        return f'{url}?{urlencode(query)}{anchor}'
 
     def diff_is_public(self) -> bool:
         """Return whether the diff(s) being commented on are public.

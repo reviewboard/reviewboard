@@ -12,6 +12,7 @@ Version Added:
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from xml.dom.minidom import Element, Text
 
 import pymdownx.emoji
 from django.utils.encoding import force_str
@@ -98,6 +99,10 @@ def iter_legacy_markdown_lines(
     attachments before render version 2 store row numbers from this layout,
     so it must not change, even if Djblets changes.
 
+    The one difference is for an ordered list right after an unordered list.
+    Djblets used to join these into one list, and now renders two. No row is
+    added between them, so the rows stay the same.
+
     Version Added:
         9.0
 
@@ -181,7 +186,48 @@ def iter_legacy_markdown_lines(
                 # Whatever this is, treat it as one block.
                 yield node.toxml()
         elif node.nodeType == node.TEXT_NODE:
+            if _is_split_list_gap(node):
+                # This wasn't a row when this layout was used.
+                continue
+
             # This may be several blank extraneous blank lines, due to
             # Markdown's generation from invisible markup like fences.
             # We want to condense this down to one blank line.
             yield '\n'
+
+
+def _is_split_list_gap(
+    node: Text,
+) -> bool:
+    """Return whether a text node is the gap between a split-up list.
+
+    Djblets 6.x and earlier added an ordered list right after an unordered
+    list (with one blank line between them) to the unordered list. Now they're
+    two lists, with a text node between them that would become a blank row.
+    Comments made with this layout expect no row there.
+
+    An ordered list directly after an unordered list could only come from
+    this, since it would have been joined before.
+
+    Version Added:
+        9.0
+
+    Args:
+        node (xml.dom.minidom.Text):
+            The text node.
+
+    Returns:
+        bool:
+        Whether the text node is between an unordered list and the ordered
+        list that used to be part of it.
+    """
+    prev_node = node.previousSibling
+    next_node = node.nextSibling
+
+    return (prev_node is not None and
+            next_node is not None and
+            isinstance(prev_node, Element) and
+            prev_node.tagName == 'ul' and
+            isinstance(next_node, Element) and
+            next_node.tagName == 'ol' and
+            not node.data.strip())

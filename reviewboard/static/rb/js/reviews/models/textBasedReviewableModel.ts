@@ -7,6 +7,7 @@ import {
     spina,
 } from '@beanbag/spina';
 
+import { VIEW_MODE_COMMENT_FIELDS } from './commentData';
 import {
     type FileAttachmentReviewableAttrs,
     FileAttachmentReviewable,
@@ -63,8 +64,6 @@ export class TextBasedReviewable<
 
     static commentBlockModel = TextCommentBlock;
 
-    static defaultCommentBlockFields = [
-        'renderVersion',
-        'viewMode',
-    ].concat(super.defaultCommentBlockFields);
+    static defaultCommentBlockFields = VIEW_MODE_COMMENT_FIELDS.concat(
+        super.defaultCommentBlockFields);
 }

@@ -1,6 +1,10 @@
 {% load difftags djblets_utils reviewtags %}
 
-{% definevar "difflinecss" %}font-size: 8pt; line-height: 140%; margin: 0; {{precss}}{% enddefinevar %}
+{% if comment.view_mode == "rendered" %}
+{%  definevar "difflinecss" %}font-family: sans-serif; font-size: 9pt; line-height: 140%; margin: 0; white-space: normal;{% enddefinevar %}
+{% else %}
+{%  definevar "difflinecss" %}font-size: 8pt; line-height: 140%; margin: 0; {{precss}}{% enddefinevar %}
+{% endif %}
 <table width="100%" border="0" bgcolor="white" style="border: 1px solid #C0C0C0; border-collapse: collapse; margin: 2px; padding: 2px;">
  <thead>
   <tr>
@@ -45,9 +49,9 @@
  <tbody>
 {% for line in chunk.lines %}
   <tr>
-   <th bgcolor="{{thcolor}}" style="border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.1}}</font></th>
+   <th bgcolor="{{thcolor}}" style="border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.1|default_if_none:''}}</font></th>
    <td bgcolor="{{bgcolor}}" width="50%"><pre style="{{difflinecss}}">{{line.2|highlightregion:line.3|showextrawhitespace}}</pre></td>
-    <th bgcolor="{{thcolor}}" style="border-left: 1px solid #C0C0C0; border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.4}}</font></th>
+    <th bgcolor="{{thcolor}}" style="border-left: 1px solid #C0C0C0; border-right: 1px solid #C0C0C0;" align="right"><font size="2">{{line.4|default_if_none:''}}</font></th>
    <td bgcolor="{{bgcolor}}" width="50%"><pre style="{{difflinecss}}">{{line.5|highlightregion:line.6|showextrawhitespace}}</pre></td>
   </tr>
 {% endfor %}

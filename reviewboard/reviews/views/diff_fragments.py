@@ -41,6 +41,7 @@ from reviewboard.diffviewer.views import (DiffFragmentView,
                                           exception_traceback_string)
 from reviewboard.reviews.models import Comment, FileAttachmentComment
 from reviewboard.reviews.ui.base import ReviewUI
+from reviewboard.reviews.ui.text import get_rendered_text_review_ui
 from reviewboard.reviews.views.mixins import ReviewRequestViewMixin
 from reviewboard.scmtools.core import FileLookupContext
 from reviewboard.site.urlresolvers import local_site_reverse
@@ -48,6 +49,7 @@ from reviewboard.site.urlresolvers import local_site_reverse
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
 
+    from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
     from reviewboard.diffviewer.diffutils import SerializedDiffFile
     from reviewboard.diffviewer.models import DiffCommit
     from reviewboard.diffviewer.renderers import DiffRenderer
@@ -152,6 +154,20 @@ def build_diff_comment_fragments(
             if comment.filediff.commit_id:
                 tip_commit = comment.filediff.commit
 
+            # Comments on a rendered view are on rows of the rendered diff.
+            chunk_generator_cls: (type[DiffChunkGenerator] | None) = None
+            rendered_table_css_class = ''
+
+            if comment.view_mode == 'rendered':
+                review_ui_cls = get_rendered_text_review_ui(
+                    comment.filediff.dest_file)
+
+                if review_ui_cls is not None:
+                    chunk_generator_cls = \
+                        review_ui_cls.get_rendered_diff_chunk_generator_cls()
+                    rendered_table_css_class = \
+                        review_ui_cls.rendered_table_css_class
+
             max_line = get_last_line_number_in_diff(
                 context=context,
                 filediff=comment.filediff,
@@ -159,7 +175,8 @@ def build_diff_comment_fragments(
                 diff_settings=diff_settings,
                 base_filediff=base_filediff,
                 base_commit=base_commit,
-                tip_commit=tip_commit)
+                tip_commit=tip_commit,
+                chunk_generator_cls=chunk_generator_cls)
 
             first_line = max(1, comment.first_line - lines_of_context[0])
             last_line = min(comment.last_line + lines_of_context[1], max_line)
@@ -174,7 +191,8 @@ def build_diff_comment_fragments(
                 diff_settings=diff_settings,
                 base_filediff=base_filediff,
                 base_commit=base_commit,
-                tip_commit=tip_commit
+                tip_commit=tip_commit,
+                chunk_generator_cls=chunk_generator_cls,
             ))
 
             comment_context = {
@@ -187,7 +205,8 @@ def build_diff_comment_fragments(
                     diff_settings=diff_settings,
                     base_filediff=base_filediff,
                     base_commit=base_commit,
-                    tip_commit=tip_commit),
+                    tip_commit=tip_commit,
+                    chunk_generator_cls=chunk_generator_cls),
                 'chunks': chunks,
                 'domain': Site.objects.get_current().domain,
                 'domain_method': siteconfig.get('site_domain_method'),
@@ -202,6 +221,7 @@ def build_diff_comment_fragments(
                 'lines_above': first_line - 1,
                 'lines_below': max_line - last_line,
                 'first_line': first_line,
+                'rendered_table_css_class': rendered_table_css_class,
             }
             comment_context.update(context)
             content = render_to_string(template_name=comment_template_name,
@@ -607,6 +627,14 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
         This will augment the renderer for binary files by looking up
         file attachments, if review UIs are involved, disabling caching.
 
+        For files that a text review UI can render, such as Markdown, a
+        ``view-mode=rendered`` query argument shows the rendered view instead
+        of the source.
+
+        Version Changed:
+            9.0:
+            * Added support for ``view-mode=rendered``.
+
         Version Changed:
             8.0:
             * Deprecated non-keyword arguments.
@@ -705,6 +733,24 @@ class ReviewsDiffFragmentView(ReviewRequestViewMixin, DiffFragmentView):
                 'modified_attachment_review_ui_html': modified_review_ui_html,
                 'diff_attachment_review_ui_html': diff_review_ui_html,
             })
+        else:
+            review_ui_cls = get_rendered_text_review_ui(
+                diff_file['modified_filename'])
+
+            if review_ui_cls is not None:
+                view_mode = 'source'
+
+                if request.GET.get('view-mode') == 'rendered':
+                    view_mode = 'rendered'
+                    renderer.chunk_generator_cls = \
+                        review_ui_cls.get_rendered_diff_chunk_generator_cls()
+
+                renderer.extra_context.update({
+                    'has_rendered_view': True,
+                    'rendered_table_css_class':
+                        review_ui_cls.rendered_table_css_class,
+                    'view_mode': view_mode,
+                })
 
         renderer.extra_context.update(
             self._get_download_links(renderer, diff_file))

@@ -5,6 +5,7 @@
 {%  if is_new_file %}newfile{% endif %}
 {%  if expandable_above or header.left or header.right %}has-diff-header-above{% endif %}
 {%  if expandable_below %}has-diff-header-below{% endif %}
+{{rendered_table_css_class}}
 {% endattr %}>
  <colgroup>
 {% if not is_new_file %}
@@ -81,7 +82,7 @@
 {%  endattr %}>
 
 {%  if not is_new_file %}
-    <th>{{line.1}}</th>
+    <th>{{line.1|default_if_none:''}}</th>
     <td>
 {%   if collapsible and forloop.parentloop.first and forloop.first %}
      <div class="collapse-floater">
@@ -93,7 +94,7 @@
 {%   endif %}
     </td>
 {%  endif %}
-    <th>{{line.4}}</td>
+    <th>{{line.4|default_if_none:''}}</th>
     <td>
 {%  if collapsible and is_new_file and forloop.parentloop.first and forloop.first %}
      <div class="collapse-floater">

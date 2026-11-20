@@ -58,6 +58,72 @@ export interface SerializedComment {
 
 
 /**
+ * Serialized data on which view of a file a comment was made on.
+ *
+ * This is used for files that can be shown as source or rendered, such as
+ * Markdown.
+ *
+ * This must be kept in sync with the definitions in
+ * :file:`reviewboard/reviews/ui/base.py`.
+ *
+ * Version Added:
+ *     9.0
+ */
+export interface SerializedViewModeData {
+    /**
+     * The view of the file when the comment was made.
+     *
+     * This will be either "source" or "rendered".
+     */
+    viewMode: string;
+
+    /** The version of the row layout used for the rendered view. */
+    renderVersion?: number;
+}
+
+
+/**
+ * The comment block fields holding view mode data.
+ *
+ * Version Added:
+ *     9.0
+ */
+export const VIEW_MODE_COMMENT_FIELDS = ['renderVersion', 'viewMode'];
+
+
+/**
+ * Return the view mode data from serialized comment fields.
+ *
+ * Version Added:
+ *     9.0
+ *
+ * Args:
+ *     fields (SerializedViewModeData):
+ *         The serialized comment fields.
+ *
+ * Returns:
+ *     SerializedViewModeData:
+ *     The view mode data. Missing fields are left out, so the comment
+ *     block's defaults apply.
+ */
+export function parseViewModeData(
+    fields: Partial<SerializedViewModeData>,
+): Partial<SerializedViewModeData> {
+    const data: Partial<SerializedViewModeData> = {};
+
+    if (fields.viewMode !== undefined) {
+        data.viewMode = fields.viewMode;
+    }
+
+    if (fields.renderVersion !== undefined) {
+        data.renderVersion = fields.renderVersion;
+    }
+
+    return data;
+}
+
+
+/**
  * Serialized data for a diff comment.
  *
  * This must be kept in sync with the definitions in
@@ -66,7 +132,8 @@ export interface SerializedComment {
  * Version Added:
  *     7.0
  */
-export interface SerializedDiffComment extends SerializedComment {
+export interface SerializedDiffComment
+    extends SerializedComment, SerializedViewModeData {
     /** The line that the comment starts on. */
     line: number;
 
@@ -108,17 +175,11 @@ export interface SerializedRegionComment extends SerializedComment {
  * Version Added:
  *     7.0
  */
-export interface SerializedTextComment extends SerializedComment {
+export interface SerializedTextComment
+    extends SerializedComment, SerializedViewModeData {
     /** The starting line number of the comment. */
     beginLineNum: number;
 
     /** The ending line number of the comment. */
     endLineNum: number;
-
-    /**
-     * The view mode of the document when the comment was made.
-     *
-     * This will be either "source" or "rendered".
-     */
-    viewMode: string;
 }

@@ -17,28 +17,28 @@ from django.utils.safestring import mark_safe
 from django.utils.translation import gettext, gettext_lazy as _
 from housekeeping import deprecate_non_keyword_only_args
 
+from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.deprecation import RemovedInReviewBoard11_0Warning
-try:
-    from jira.client import JIRA as JIRAClient
-    from jira.exceptions import JIRAError
-    from requests import RequestException
-    has_jira = True
-except ImportError:
-    has_jira = False
-
 from reviewboard.hostingsvcs.base.bug_tracker import BaseBugTracker
 from reviewboard.hostingsvcs.base.connect_ui import BaseHostingServiceConnectUI
 from reviewboard.hostingsvcs.base.hosting_service import BaseHostingService
-from reviewboard.hostingsvcs.errors import AuthorizationError
+from reviewboard.hostingsvcs.errors import (
+    AuthorizationError,
+    HostingServiceAPIError,
+    HostingServiceError,
+)
+from reviewboard.hostingsvcs.jira.client import (
+    JIRAClient,
+    get_jira_cloud_site,
+)
 from reviewboard.hostingsvcs.jira.forms import (
     JIRAAuthForm,
     JIRABugTrackerConfigForm,
     JIRAForm,
-    get_jira_cloud_site,
 )
-from reviewboard.scmtools.crypto_utils import (
-    decrypt_password,
-    encrypt_password,
+from reviewboard.scmtools.crypto_utils import encrypt_password
+from reviewboard.scmtools.errors import (
+    UnverifiedCertificateError as LegacyUnverifiedCertificateError,
 )
 
 if TYPE_CHECKING:
@@ -53,6 +53,7 @@ if TYPE_CHECKING:
         BugSearchResult,
     )
     from reviewboard.hostingsvcs.base.forms import BaseHostingServiceAuthForm
+    from reviewboard.hostingsvcs.jira import api
     from reviewboard.hostingsvcs.models import (
         ConfiguredBugTracker,
         HostingServiceAccount,
@@ -76,21 +77,22 @@ _ISSUE_KEY_RE = re.compile(r'^([A-Za-z][A-Za-z0-9_]*)-(\d+)$')
 #:
 #: Loading only these avoids fetching every field of every issue.
 #:
-#: This is a string rather than a list, because the jira library edits
-#: lists of fields in place.
-#:
 #: Version Added:
 #:     9.0
 _ISSUE_FIELDS = 'summary,status'
 
 
-#: The timeout for requests to the JIRA server, in seconds.
+#: The errors that can happen while looking up issues.
 #:
-#: This keeps a slow or unresponsive server from tying up a web worker.
+#: These are logged, and the lookup returns no results.
 #:
 #: Version Added:
 #:     9.0
-_REQUEST_TIMEOUT_SECS = 10
+_LOOKUP_ERRORS = (
+    CertificateVerificationError,
+    HostingServiceError,
+    LegacyUnverifiedCertificateError,
+)
 
 
 class JIRAConnectUI(BaseHostingServiceConnectUI):
@@ -329,13 +331,14 @@ class JIRAConnectUI(BaseHostingServiceConnectUI):
             password_field.help_text = ''
 
 
-class JIRA(BaseHostingService, BaseBugTracker):
+class JIRA(BaseHostingService[JIRAClient], BaseBugTracker):
     """Hosting service for JIRA."""
 
     hosting_service_id = 'jira'
     name = 'JIRA'
 
     auth_form = JIRAAuthForm
+    client_class = JIRAClient
     bug_tracker_config_form = JIRABugTrackerConfigForm
     bug_tracker_label = _('JIRA Issues')
     bug_tracker_requires_account = True
@@ -348,31 +351,6 @@ class JIRA(BaseHostingService, BaseBugTracker):
     _logo_image = 'rb/images/services/jira.svg'
 
     bug_tracker_field = '%(jira_url)s/browse/%%s'
-
-    ######################
-    # Instance variables #
-    ######################
-
-    #: The JIRA client, once one has been built.
-    jira_client: JIRAClient | None
-
-    #: The server URL that :py:attr:`jira_client` was built for.
-    _jira_client_url: str | None
-
-    def __init__(
-        self,
-        account: HostingServiceAccount,
-    ) -> None:
-        """Initialize the hosting service.
-
-        Args:
-            account (reviewboard.hostingsvcs.models.HostingServiceAccount):
-                The hosting service account.
-        """
-        super().__init__(account)
-
-        self.jira_client = None
-        self._jira_client_url = None
 
     def authorize(
         self,
@@ -406,15 +384,12 @@ class JIRA(BaseHostingService, BaseBugTracker):
                 Additional keyword arguments.
 
         Raises:
+            reviewboard.certs.errors.CertificateVerificationError:
+                The server's SSL certificate could not be verified.
+
             reviewboard.hostingsvcs.errors.AuthorizationError:
                 The credentials could not be verified.
         """
-        if not has_jira:
-            raise AuthorizationError(gettext(
-                'JIRA support requires the "jira" Python package to be '
-                'installed.'
-            ))
-
         server_url = hosting_url
 
         if not username or not password or not server_url:
@@ -424,40 +399,30 @@ class JIRA(BaseHostingService, BaseBugTracker):
             ))
 
         try:
-            client = JIRAClient(
-                options={
-                    'server': server_url,
-                },
-                basic_auth=(username, password),
-                max_retries=0,
-                timeout=_REQUEST_TIMEOUT_SECS)
-
-            # This performs an authenticated request, verifying the
-            # credentials.
-            client.myself()
-        except JIRAError as e:
-            if getattr(e, 'status_code', None) == 401:
-                if get_jira_cloud_site(server_url) is not None:
-                    # The most common cause on JIRA Cloud is using an
-                    # account password, which Atlassian no longer
-                    # accepts for the API.
-                    raise AuthorizationError(gettext(
-                        'JIRA rejected the credentials. JIRA Cloud requires '
-                        'an API token instead of a password. Create one '
-                        '(choose "without scopes") at '
-                        'https://id.atlassian.com/manage-profile/security/'
-                        'api-tokens, and use it together with the e-mail '
-                        'address of your Atlassian account.'
-                    ))
-
+            self.client.check_credentials(server_url=server_url,
+                                          username=username,
+                                          password=password)
+        except AuthorizationError:
+            if get_jira_cloud_site(server_url) is not None:
+                # The most common cause on JIRA Cloud is using an account
+                # password, which Atlassian no longer accepts for the API.
                 raise AuthorizationError(gettext(
-                    'JIRA rejected the username and API token or password.'
+                    'JIRA rejected the credentials. JIRA Cloud requires '
+                    'an API token instead of a password. Create one '
+                    '(choose "without scopes") at '
+                    'https://id.atlassian.com/manage-profile/security/'
+                    'api-tokens, and use it together with the e-mail '
+                    'address of your Atlassian account.'
                 ))
 
+            raise AuthorizationError(gettext(
+                'JIRA rejected the username and API token or password.'
+            ))
+        except HostingServiceAPIError as e:
             raise AuthorizationError(
                 gettext('Unable to authenticate with JIRA: {error}')
-                .format(error=getattr(e, 'text', None) or e))
-        except (RequestException, ValueError) as e:
+                .format(error=e))
+        except HostingServiceError as e:
             raise AuthorizationError(
                 gettext('Unable to communicate with JIRA: {error}')
                 .format(error=e))
@@ -590,69 +555,6 @@ class JIRA(BaseHostingService, BaseBugTracker):
 
         return None
 
-    def _get_jira_client(
-        self,
-        jira_url: str,
-    ) -> JIRAClient | None:
-        """Return a JIRA client for a server URL.
-
-        The client is built on first use and reused for the same server after
-        that.
-
-        The account's stored credentials are only used when the server is the
-        account's own server. Any other server (such as a legacy URL stored on
-        a repository) is connected to anonymously, so the credentials are
-        never sent anywhere else.
-
-        Version Added:
-            9.0
-
-        Args:
-            jira_url (str):
-                The root URL of the JIRA server.
-
-        Returns:
-            jira.client.JIRA:
-            The client, or ``None`` if one could not be built.
-        """
-        if (self.jira_client is not None and
-            self._jira_client_url == jira_url):
-            return self.jira_client
-
-        account = self.account
-
-        try:
-            if (account is not None and
-                'password' in account.data and
-                account.hosting_url == jira_url):
-                jira_client = JIRAClient(
-                    options={
-                        'server': jira_url,
-                    },
-                    basic_auth=(account.username,
-                                decrypt_password(account.data['password'])),
-                    max_retries=0,
-                    timeout=_REQUEST_TIMEOUT_SECS)
-            else:
-                jira_client = JIRAClient(
-                    options={
-                        'server': jira_url,
-                    },
-                    max_retries=0,
-                    timeout=_REQUEST_TIMEOUT_SECS)
-        except (JIRAError, RequestException, ValueError) as e:
-            # Building the client contacts the server, so this fails if the
-            # server is unreachable or rejects the credentials.
-            logger.warning(
-                'Unable to initialize JIRAClient for server %s: %s',
-                jira_url, e)
-            return None
-
-        self.jira_client = jira_client
-        self._jira_client_url = jira_url
-
-        return jira_client
-
     @deprecate_non_keyword_only_args(RemovedInReviewBoard11_0Warning)
     def get_bug_info_uncached(
         self,
@@ -701,26 +603,24 @@ class JIRA(BaseHostingService, BaseBugTracker):
         if not jira_url:
             return result
 
-        if has_jira:
-            jira_client = self._get_jira_client(jira_url)
+        try:
+            issue = self.client.get_issue(
+                server_url=jira_url,
+                key=bug_id,
+                fields=f'{_ISSUE_FIELDS},description')
+        except _LOOKUP_ERRORS as e:
+            logger.warning('Unable to fetch JIRA data for issue %s: %s',
+                           bug_id, e, exc_info=True)
 
-            if jira_client is None:
-                return result
+            return result
 
-            try:
-                jira_issue = jira_client.issue(
-                    bug_id,
-                    fields=f'{_ISSUE_FIELDS},description')
-                result = {
-                    'description': jira_issue.fields.description or '',
-                    'summary': jira_issue.fields.summary or '',
-                    'status': str(jira_issue.fields.status),
-                }
-            except (JIRAError, RequestException) as e:
-                logger.warning('Unable to fetch JIRA data for issue %s: %s',
-                               bug_id, e, exc_info=True)
+        fields = issue.fields
 
-        return result
+        return {
+            'description': fields.description or '',
+            'summary': fields.summary or '',
+            'status': _get_status_name(issue),
+        }
 
     def get_bugs_info(
         self,
@@ -754,9 +654,6 @@ class JIRA(BaseHostingService, BaseBugTracker):
             A mapping of issue key to
             :py:class:`~reviewboard.hostingsvcs.base.bug_tracker.BugInfo`.
         """
-        if not has_jira:
-            return {}
-
         # Bug IDs are typed in by users. Only well-formed issue keys are put
         # into the JQL query. Anything else could change the query, or make it
         # invalid and fail the whole batch.
@@ -774,15 +671,10 @@ class JIRA(BaseHostingService, BaseBugTracker):
         if not jira_url:
             return {}
 
-        jira_client = self._get_jira_client(jira_url)
-
-        if jira_client is None:
-            return {}
-
         try:
-            results = self._load_bugs_by_key(jira_client, keys)
-        except JIRAError as e:
-            if e.status_code != 400:
+            results = self._load_bugs_by_key(jira_url, keys)
+        except _LOOKUP_ERRORS as e:
+            if getattr(e, 'http_code', None) != 400:
                 # Fetching each issue would fail the same way (bad
                 # credentials, rate limits, server errors).
                 logger.warning('Unable to load JIRA issues %s: %s',
@@ -792,8 +684,8 @@ class JIRA(BaseHostingService, BaseBugTracker):
 
             # JIRA Cloud rejects the whole query with an HTTP 400 if any key
             # does not exist or is not visible (for example, a deleted
-            # issue). validate_query is ignored on Cloud. Fetch each issue on
-            # its own instead, so the others still load.
+            # issue). Fetch each issue on its own instead, so the others
+            # still load.
             logger.warning(
                 'Unable to load JIRA issues %s in one query. Fetching them '
                 'separately: %s',
@@ -846,7 +738,7 @@ class JIRA(BaseHostingService, BaseBugTracker):
         """
         query = query.strip()
 
-        if not has_jira or not query:
+        if not query:
             return []
 
         jira_url = self._get_jira_url(config)
@@ -854,15 +746,9 @@ class JIRA(BaseHostingService, BaseBugTracker):
         if not jira_url:
             return []
 
-        jira_client = self._get_jira_client(jira_url)
-
-        if jira_client is None:
-            return []
-
         project = (config.settings.get('jira_project') or '').upper()
 
         picker_keys = self._search_bug_keys(
-            jira_client,
             jira_url=jira_url,
             query=query,
             project=project)
@@ -888,8 +774,8 @@ class JIRA(BaseHostingService, BaseBugTracker):
             picker_keys = picker_keys[:limit]
 
             try:
-                return self._load_bugs_by_key(jira_client, picker_keys)
-            except JIRAError as e:
+                return self._load_bugs_by_key(jira_url, picker_keys)
+            except _LOOKUP_ERRORS as e:
                 logger.warning(
                     'Unable to load JIRA issues %s: %s',
                     picker_keys, e, exc_info=True)
@@ -928,16 +814,14 @@ class JIRA(BaseHostingService, BaseBugTracker):
                 break
 
             try:
-                # validate_query is off so that a key that doesn't exist
-                # returns no results instead of erroring. This only works
-                # on Server/Data Center. Cloud ignores it and returns an
-                # HTTP 400, which is logged below.
-                issues = jira_client.search_issues(
-                    jql,
-                    maxResults=remaining,
-                    validate_query=False,
+                # On JIRA Cloud, a key that doesn't exist fails the query
+                # with an HTTP 400, which is logged below.
+                issues = self.client.search_issues(
+                    server_url=jira_url,
+                    jql=jql,
+                    max_results=remaining,
                     fields=_ISSUE_FIELDS)
-            except JIRAError as e:
+            except _LOOKUP_ERRORS as e:
                 logger.warning(
                     'Unable to search JIRA issues with "%s": %s',
                     jql, e, exc_info=True)
@@ -946,17 +830,12 @@ class JIRA(BaseHostingService, BaseBugTracker):
             for issue in issues:
                 if issue.key not in seen_keys:
                     seen_keys.add(issue.key)
-                    results.append({
-                        'bug_id': issue.key,
-                        'status': str(issue.fields.status),
-                        'summary': issue.fields.summary,
-                    })
+                    results.append(_make_search_result(issue))
 
         return results
 
     def _search_bug_keys(
         self,
-        jira_client: JIRAClient,
         *,
         jira_url: str,
         query: str,
@@ -973,9 +852,6 @@ class JIRA(BaseHostingService, BaseBugTracker):
             9.0
 
         Args:
-            jira_client (jira.client.JIRA):
-                The JIRA client.
-
             jira_url (str):
                 The root URL of the JIRA server.
 
@@ -992,54 +868,32 @@ class JIRA(BaseHostingService, BaseBugTracker):
             The matching issue keys, in the picker's order, or ``None`` if the
             picker could not be queried.
         """
-        session = jira_client._session
-        assert session is not None
-
         if project:
             current_jql = f'project = "{project}"'
         else:
             current_jql = ''
 
         try:
-            rsp = session.get(
-                f'{jira_url}/rest/api/2/issue/picker',
-                params={
-                    'query': query,
-
-                    # Without this, the "current search" section (the
-                    # actual matches) is omitted from the response.
-                    'currentJQL': current_jql,
-                })
-            rsp.raise_for_status()
-            data = rsp.json()
-        except Exception as e:
+            return self.client.get_issue_picker_keys(server_url=jira_url,
+                                                     query=query,
+                                                     current_jql=current_jql)
+        except _LOOKUP_ERRORS as e:
             logger.warning(
                 'Unable to query the JIRA issue picker for "%s": %s',
                 query, e)
 
             return None
 
-        keys: list[str] = []
-
-        for section in data.get('sections', []):
-            for issue in section.get('issues', []):
-                key = issue.get('key')
-
-                if key and key not in keys:
-                    keys.append(key)
-
-        return keys
-
     def _load_bugs_by_key(
         self,
-        jira_client: JIRAClient,
+        jira_url: str,
         keys: list[str],
     ) -> Sequence[BugSearchResult]:
         """Return search results for a list of issue keys.
 
         Args:
-            jira_client (jira.client.JIRA):
-                The JIRA client.
+            jira_url (str):
+                The root URL of the JIRA server.
 
             keys (list of str):
                 The issue keys, in the order results should appear. These
@@ -1053,14 +907,14 @@ class JIRA(BaseHostingService, BaseBugTracker):
             are omitted.
 
         Raises:
-            jira.exceptions.JIRAError:
+            reviewboard.hostingsvcs.errors.HostingServiceError:
                 The issues could not be loaded.
         """
         jql_keys = ', '.join(f'"{key}"' for key in keys)
-        issues = jira_client.search_issues(
-            f'key in ({jql_keys})',
-            maxResults=len(keys),
-            validate_query=False,
+        issues = self.client.search_issues(
+            server_url=jira_url,
+            jql=f'key in ({jql_keys})',
+            max_results=len(keys),
             fields=_ISSUE_FIELDS)
 
         issues_by_key = {
@@ -1069,11 +923,54 @@ class JIRA(BaseHostingService, BaseBugTracker):
         }
 
         return [
-            {
-                'bug_id': issue.key,
-                'status': str(issue.fields.status),
-                'summary': issue.fields.summary,
-            }
+            _make_search_result(issue)
             for issue in (issues_by_key.get(key) for key in keys)
             if issue is not None
         ]
+
+
+def _get_status_name(
+    issue: api.Issue,
+) -> str:
+    """Return the name of an issue's status.
+
+    Version Added:
+        9.0
+
+    Args:
+        issue (reviewboard.hostingsvcs.jira.api.Issue):
+            The issue.
+
+    Returns:
+        str:
+        The status name, or an empty string if it was not loaded.
+    """
+    status = issue.fields.status
+
+    if status is None:
+        return ''
+
+    return status.name
+
+
+def _make_search_result(
+    issue: api.Issue,
+) -> BugSearchResult:
+    """Return a search result for an issue.
+
+    Version Added:
+        9.0
+
+    Args:
+        issue (reviewboard.hostingsvcs.jira.api.Issue):
+            The issue.
+
+    Returns:
+        reviewboard.hostingsvcs.base.bug_tracker.BugSearchResult:
+        The search result.
+    """
+    return {
+        'bug_id': issue.key,
+        'status': _get_status_name(issue),
+        'summary': issue.fields.summary or '',
+    }

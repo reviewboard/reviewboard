@@ -51,10 +51,10 @@ from reviewboard.treesitter.language import get_language_name_for_file
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator, Sequence
+    from typing import ClassVar, TypeAlias
 
     import tree_sitter
     from django.http import HttpRequest
-    from typing_extensions import TypeAlias
 
     from reviewboard.diffviewer.differ import Differ, DiffOpcodeTag
     from reviewboard.diffviewer.models.filediff import FileDiff
@@ -1798,7 +1798,16 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
     #:
     #: Version Added:
     #:     9.0
-    CACHE_FORMAT_VERSION = 1
+    CACHE_FORMAT_VERSION: ClassVar[int] = 1
+
+    #: Whether to store line counts on the FileDiff after generating chunks.
+    #:
+    #: Subclasses that diff something other than the file's source lines
+    #: should set this to ``False``, so the stored counts stay correct.
+    #:
+    #: Version Added:
+    #:     9.0
+    stores_line_counts: ClassVar[bool] = True
 
     ######################
     # Instance variables #
@@ -1889,6 +1898,9 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
 
     def make_cache_key(self) -> str:
         """Return a new cache key for any generated chunks.
+
+        Any subclass that changes the content of generated chunks should
+        override this.
 
         Returns:
             str:
@@ -2130,7 +2142,8 @@ class DiffChunkGenerator(RawDiffChunkGenerator):
                 old_encoding_list=old_encoding_list,
                 new_encoding_list=new_encoding_list)
 
-        if (not interfilediff and
+        if (self.stores_line_counts and
+            not interfilediff and
             not self.base_filediff and
             not self.force_interdiff):
             insert_count = self.counts['insert']

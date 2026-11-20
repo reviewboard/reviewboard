@@ -37,6 +37,7 @@ export class DiffReviewableView extends AbstractReviewableView<
         'click .rb-c-diff-collapse-button': '_onCollapseChunkClicked',
         'click .rb-o-toggle-ducs': '_onToggleUnicodeCharsClicked',
         'click .show-deleted-content-action': '_onShowDeletedClicked',
+        'click .diff-view-mode-tabs .rb-c-tabs__tab': '_onViewModeTabClicked',
         'click thead tr': '_onFileHeaderClicked',
         'mouseup': '_onMouseUp',
     };
@@ -265,6 +266,14 @@ export class DiffReviewableView extends AbstractReviewableView<
         prevBeginRowIndex: number,
     ): number {
         const commentBlock = commentBlockView.model;
+
+        if (commentBlock.get('viewMode') !== this.model.get('viewMode')) {
+            /*
+             * This comment is on the other view of the file. Its line
+             * numbers are rows in that view, so it can't be shown here.
+             */
+            return prevBeginRowIndex;
+        }
 
         const rowEls = this._selector.getRowsForRange(
             commentBlock.get('beginLineNum'),
@@ -734,6 +743,39 @@ export class DiffReviewableView extends AbstractReviewableView<
             .html('<span class="djblets-o-spinner"></span>');
 
         this.trigger('showDeletedClicked');
+    }
+
+    /**
+     * Handle a Source or Rendered tab being clicked.
+     *
+     * This sets the new view mode on the model and asks for the file to be
+     * loaded again.
+     *
+     * Version Added:
+     *     9.0
+     *
+     * Args:
+     *     e (jQuery.Event):
+     *         The ``click`` event that triggered this handler.
+     */
+    _onViewModeTabClicked(e: JQuery.TriggeredEvent) {
+        e.preventDefault();
+
+        /* Don't let the file header handler see this click. */
+        e.stopPropagation();
+
+        const $tab = $(e.currentTarget);
+        const viewMode = $tab.data('view-mode');
+
+        if (viewMode === this.model.get('viewMode')) {
+            return;
+        }
+
+        $tab.addClass('-is-active')
+            .siblings().removeClass('-is-active');
+
+        this.model.set('viewMode', viewMode);
+        this.trigger('viewModeChanged');
     }
 
     /**

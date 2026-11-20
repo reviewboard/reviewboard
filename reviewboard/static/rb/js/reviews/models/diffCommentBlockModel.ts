@@ -13,15 +13,25 @@ import {
     type AbstractCommentBlockAttrs,
     AbstractCommentBlock,
 } from './abstractCommentBlockModel';
+import {
+    type SerializedViewModeData,
+    VIEW_MODE_COMMENT_FIELDS,
+} from './commentData';
 
 
 /**
  * Attributes for the DiffCommentBlock model.
  *
+ * Version Changed:
+ *     9.0:
+ *     Added ``viewMode`` and ``renderVersion`` from
+ *     :js:class:`SerializedViewModeData`.
+ *
  * Version Added:
  *     7.0
  */
-export interface DiffCommentBlockAttrs extends AbstractCommentBlockAttrs {
+export interface DiffCommentBlockAttrs
+    extends AbstractCommentBlockAttrs, SerializedViewModeData {
     /** The first row in the diffviewer that this comment is on. */
     $beginRow: JQuery;
 
@@ -79,9 +89,14 @@ export class DiffCommentBlock
         fileDiffID: null,
         interFileDiffID: null,
         public: false,
+        viewMode: 'source',
     };
 
-    static serializedFields = ['line', 'num_lines'];
+    static serializedFields = [
+        'line',
+        'num_lines',
+        ...VIEW_MODE_COMMENT_FIELDS,
+    ];
 
     /**
      * Return the number of lines this comment block spans.
@@ -108,7 +123,7 @@ export class DiffCommentBlock
     createComment(
         id: number,
     ): DiffComment {
-        return this.get('review').createDiffComment({
+        const comment = this.get('review').createDiffComment({
             baseFileDiffID: this.get('baseFileDiffID'),
             beginLineNum: this.get('beginLineNum'),
             endLineNum: this.get('endLineNum'),
@@ -116,6 +131,14 @@ export class DiffCommentBlock
             id: id,
             interFileDiffID: this.get('interFileDiffID'),
         });
+
+        /* Only files with a rendered view need to store the view mode. */
+        if (this.get('renderVersion')) {
+            _.extend(comment.get('extraData'),
+                     _.pick(this.attributes, VIEW_MODE_COMMENT_FIELDS));
+        }
+
+        return comment;
     }
 
     /**

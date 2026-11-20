@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import kgb
 
 from reviewboard.attachments.models import FileAttachment
 from reviewboard.reviews.ui.base import ReviewUI
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing.testcase import BaseFileDiffAncestorTests, TestCase
+
+if TYPE_CHECKING:
+    from reviewboard.reviews.models import ReviewRequest
+    from reviewboard.reviews.views.diffviewer import SerializedReviewsDiffFile
 
 
 class ReviewsDiffViewerViewTests(kgb.SpyAgency, TestCase):
@@ -352,6 +358,111 @@ class ReviewsDiffViewerViewTests(kgb.SpyAgency, TestCase):
         })
         self.assertNotIn('js_media', file2)
         self.assertNotIn('cs_media', file2)
+
+
+class MarkdownTests(TestCase):
+    """Tests for ReviewsDiffViewerView with Markdown files.
+
+    Version Added:
+        9.0
+    """
+
+    fixtures = ['test_users', 'test_scmtools']
+
+    def test_file_data(self) -> None:
+        """Testing ReviewsDiffViewerView file data for Markdown files"""
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        markdown_filediff = self.create_filediff(diffset=diffset,
+                                                 source_file='README.md',
+                                                 dest_file='README.md')
+        text_filediff = self.create_filediff(diffset=diffset,
+                                             source_file='README.txt',
+                                             dest_file='README.txt')
+
+        files = self._get_files(review_request, diffset.revision)
+
+        self.assertEqual(files[markdown_filediff.pk]['render_version'], 2)
+        self.assertNotIn('render_version', files[text_filediff.pk])
+
+    def test_comment_data_with_view_modes(self) -> None:
+        """Testing ReviewsDiffViewerView comment data with comments on the
+        source and rendered views of the same lines
+        """
+        review_request = self.create_review_request(create_repository=True,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(diffset=diffset,
+                                        source_file='README.md',
+                                        dest_file='README.md')
+
+        review = self.create_review(review_request=review_request,
+                                    publish=True)
+        source_comment = self.create_diff_comment(review=review,
+                                                  filediff=filediff,
+                                                  first_line=2,
+                                                  num_lines=3)
+        rendered_comment = self.create_diff_comment(
+            review=review,
+            filediff=filediff,
+            first_line=2,
+            num_lines=3,
+            extra_fields={
+                'renderVersion': 2,
+                'viewMode': 'rendered',
+            })
+
+        comment_blocks = self._get_files(
+            review_request,
+            diffset.revision)[filediff.pk]['serialized_comment_blocks']
+
+        self.assertEqual(set(comment_blocks), {'source-2-3', 'rendered-2-3'})
+
+        source_data = comment_blocks['source-2-3'][0]
+        self.assertEqual(source_data['comment_id'], source_comment.pk)
+        self.assertEqual(source_data['viewMode'], 'source')
+        self.assertNotIn('renderVersion', source_data)
+
+        rendered_data = comment_blocks['rendered-2-3'][0]
+        self.assertEqual(rendered_data['comment_id'], rendered_comment.pk)
+        self.assertEqual(rendered_data['viewMode'], 'rendered')
+        self.assertEqual(rendered_data['renderVersion'], 2)
+
+    def _get_files(
+        self,
+        review_request: ReviewRequest,
+        revision: int,
+    ) -> dict[int, SerializedReviewsDiffFile]:
+        """Return the diff viewer's file data, keyed by FileDiff ID.
+
+        Version Added:
+            9.0
+
+        Args:
+            review_request (reviewboard.reviews.models.ReviewRequest):
+                The review request.
+
+            revision (int):
+                The diff revision to view.
+
+        Returns:
+            dict:
+            The file data for each FileDiff.
+        """
+        response = self.client.get(
+            local_site_reverse(
+                'view-diff-revision',
+                kwargs={
+                    'review_request_id': review_request.display_id,
+                    'revision': revision,
+                }))
+        self.assertEqual(response.status_code, 200)
+
+        return {
+            f['id']: f
+            for f in response.context['diff_context']['files']
+        }
 
 
 class CommitsTests(BaseFileDiffAncestorTests):

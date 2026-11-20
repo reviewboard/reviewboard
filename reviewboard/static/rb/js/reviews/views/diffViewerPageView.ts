@@ -834,6 +834,15 @@ export class DiffViewerPageView extends ReviewablePageView<
             this.queueLoadDiff(diffReviewable, {showDeleted: true});
             this.#loadQueue.start(this.#loadQueueAbort.signal);
         });
+
+        this.listenTo(diffReviewableView, 'viewModeChanged', () => {
+            /*
+             * This reloads the file in place. Showing deleted content only
+             * affects deleted files, where picking a view should show it.
+             */
+            this.queueLoadDiff(diffReviewable, {showDeleted: true});
+            this.#loadQueue.start(this.#loadQueueAbort.signal);
+        });
     }
 
     /**
@@ -865,8 +874,12 @@ export class DiffViewerPageView extends ReviewablePageView<
         }
 
         if (scroll !== false) {
+            const revisionModel = this.model.revision;
+
             this._navigate({
                 anchor: $anchor.attr('name'),
+                baseCommitID: revisionModel.get('baseCommitID'),
+                tipCommitID: revisionModel.get('tipCommitID'),
                 updateURLOnly: true,
             });
 
@@ -1347,6 +1360,17 @@ export class DiffViewerPageView extends ReviewablePageView<
             id: file.id,
             newFile: file.get('isnew'),
         }));
+
+        /*
+         * Links to comments on the rendered view of a file need that file
+         * loaded in the rendered view.
+         */
+        const renderedAnchorPrefix =
+            `file${diffReviewable.get('fileDiffID')}rendered-line`;
+
+        if (this.#startAtAnchorName?.startsWith(renderedAnchorPrefix)) {
+            diffReviewable.set('viewMode', 'rendered');
+        }
 
         this.queueLoadDiff(diffReviewable);
     }

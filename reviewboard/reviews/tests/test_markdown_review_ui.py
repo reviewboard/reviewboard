@@ -8,8 +8,10 @@ from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.test.client import RequestFactory
 from django.utils.html import strip_tags
+from kgb import SpyAgency
 
 from reviewboard.attachments.models import FileAttachment
+from reviewboard.diffviewer.chunk_generator import DiffChunkGenerator
 from reviewboard.diffviewer.settings import DiffSettings
 from reviewboard.reviews.chunk_generators import MarkdownDiffChunkGenerator
 from reviewboard.reviews.ui.markdownui import (
@@ -24,6 +26,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from reviewboard.attachments.models import FileAttachment
+    from reviewboard.diffviewer.models import FileDiff
 
 
 class RenderMarkdownBlocksTests(TestCase):
@@ -65,6 +68,19 @@ class RenderMarkdownBlocksTests(TestCase):
                 '<li>x</li></ol>',
                 '<ol start="2" style="--md-list-depth: 0" data-md-gap="item">'
                 '<li>y</li></ol>',
+            ])
+
+    def test_lists_with_start(self) -> None:
+        """Testing render_markdown_blocks with an ordered list that doesn't
+        start at 1
+        """
+        self.assertEqual(
+            render_markdown_blocks('3. a\n'
+                                   '4. b\n'),
+            [
+                '<ol start="3" style="--md-list-depth: 0"><li>a</li></ol>',
+                '<ol start="4" style="--md-list-depth: 0" data-md-gap="item">'
+                '<li>b</li></ol>',
             ])
 
     def test_lists_with_content_after_nested_list(self) -> None:
@@ -162,23 +178,26 @@ class RenderMarkdownBlocksTests(TestCase):
                                    '| 1 | 2 |\n'
                                    '| 3 | 4 |\n'),
             [
-                '<table style="table-layout: fixed; width: 10ch">'
-                '<colgroup><col style="width: 5ch"/><col style="width: 5ch"/>'
-                '</colgroup>'
+                '<table style="table-layout: fixed; width: 100%; '
+                'max-width: 12ch">'
+                '<colgroup><col style="width: 50.00%"/>'
+                '<col style="width: 50.00%"/></colgroup>'
                 '<thead><tr><th>A</th><th>B</th></tr></thead></table>',
-                '<table style="table-layout: fixed; width: 10ch">'
-                '<colgroup><col style="width: 5ch"/><col style="width: 5ch"/>'
-                '</colgroup>'
+                '<table style="table-layout: fixed; width: 100%; '
+                'max-width: 12ch">'
+                '<colgroup><col style="width: 50.00%"/>'
+                '<col style="width: 50.00%"/></colgroup>'
                 '<tbody><tr><td>1</td><td>2</td></tr></tbody></table>',
-                '<table style="table-layout: fixed; width: 10ch">'
-                '<colgroup><col style="width: 5ch"/><col style="width: 5ch"/>'
-                '</colgroup>'
+                '<table style="table-layout: fixed; width: 100%; '
+                'max-width: 12ch">'
+                '<colgroup><col style="width: 50.00%"/>'
+                '<col style="width: 50.00%"/></colgroup>'
                 '<tbody><tr><td>3</td><td>4</td></tr></tbody></table>',
             ])
 
     def test_table_column_widths(self) -> None:
         """Testing render_markdown_blocks sizes table columns by their
-        longest text
+        widest text
         """
         long_text = 'x' * 50
         rows = render_markdown_blocks(
@@ -186,12 +205,65 @@ class RenderMarkdownBlocksTests(TestCase):
             f'|---|---|\n'
             f'| 1 | {long_text} |\n')
 
-        # Column 1 is the minimum width. Column 2 is capped.
+        # Column 1 is the minimum width, plus bold padding for the header.
+        # It keeps that width. Column 2 is capped, and takes the rest.
         for row in rows:
             self.assertTrue(row.startswith(
-                '<table style="table-layout: fixed; width: 47ch">'
-                '<colgroup><col style="width: 5ch"/>'
-                '<col style="width: 42ch"/></colgroup>'))
+                '<table style="table-layout: fixed; width: 100%; '
+                'max-width: 48ch">'
+                '<colgroup><col style="width: 6ch"/>'
+                '<col style="width: calc((100% - 6ch) * 1.0000)"/>'
+                '</colgroup>'))
+
+    def test_table_column_widths_shrinking(self) -> None:
+        """Testing render_markdown_blocks shares the space left by narrow
+        table columns between wide ones
+        """
+        rows = render_markdown_blocks(
+            f'| A | B | C |\n'
+            f'|---|---|---|\n'
+            f'| 1 | {"x" * 30} | {"x" * 20} |\n')
+
+        for row in rows:
+            self.assertTrue(row.startswith(
+                '<table style="table-layout: fixed; width: 100%; '
+                'max-width: 60ch">'
+                '<colgroup><col style="width: 6ch"/>'
+                '<col style="width: calc((100% - 6ch) * 0.5926)"/>'
+                '<col style="width: calc((100% - 6ch) * 0.4074)"/>'
+                '</colgroup>'))
+
+    def test_table_column_widths_proportional(self) -> None:
+        """Testing render_markdown_blocks sizes table columns for a
+        proportional font
+        """
+        rows = render_markdown_blocks('| Name | Value |\n'
+                                      '|---|---|\n'
+                                      '| iiii | MMMM |\n')
+
+        # "Name" is bold, with a wide "m", so it needs more than one "ch"
+        # per character. "iiii" is narrow, and "MMMM" is wide.
+        for row in rows:
+            self.assertTrue(row.startswith(
+                '<table style="table-layout: fixed; width: 100%; '
+                'max-width: 17ch">'
+                '<colgroup><col style="width: 47.06%"/>'
+                '<col style="width: 52.94%"/></colgroup>'))
+
+    def test_table_column_widths_with_code(self) -> None:
+        """Testing render_markdown_blocks sizes table columns for inline
+        code
+        """
+        rows = render_markdown_blocks('| Name |\n'
+                                      '|---|\n'
+                                      '| `reviewboard` |\n')
+
+        # Code is monospace, with padding around it.
+        for row in rows:
+            self.assertTrue(row.startswith(
+                '<table style="table-layout: fixed; width: 100%; '
+                'max-width: 16ch">'
+                '<colgroup><col style="width: 100.00%"/></colgroup>'))
 
     def test_code(self) -> None:
         """Testing render_markdown_blocks with code blocks"""
@@ -403,6 +475,187 @@ class MarkdownDiffChunkGeneratorTests(TestCase):
         line = chunks[1]['lines'][0]
         self.assertEqual(line[2], '<p data-md-gap="block">Text</p>')
         self.assertEqual(line[5], '<p>Text</p>')
+
+
+class RenderedMarkdownDiffTests(SpyAgency, TestCase):
+    """Unit tests for diffs of rendered Markdown.
+
+    Version Added:
+        9.0
+    """
+
+    fixtures = ['test_users', 'test_scmtools']
+
+    def setUp(self) -> None:
+        """Set up the test."""
+        super().setUp()
+
+        self.repository = self.create_repository(tool_name='Test')
+
+    def test_get_chunks(self) -> None:
+        """Testing MarkdownReviewUI rendered diffs"""
+        # The Test SCM returns "Hello, world!" for the original file.
+        filediff = self._create_filediff(
+            b'--- README.md\n'
+            b'+++ README.md\n'
+            b'@@ -1 +1,3 @@\n'
+            b'-Hello, world!\n'
+            b'+# Hello\n'
+            b'+\n'
+            b'+World\n')
+
+        generator_cls = \
+            MarkdownReviewUI.get_rendered_diff_chunk_generator_cls()
+        generator = generator_cls(
+            request=None,
+            filediff=filediff,
+            diff_settings=DiffSettings.create())
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(
+            [
+                (line[2], line[5])
+                for chunk in chunks
+                for line in chunk['lines']
+            ],
+            [
+                ('<p>Hello, world!</p>', '<h1>Hello</h1>'),
+                ('', '<p data-md-gap="block">World</p>'),
+            ])
+
+    def test_get_chunks_with_interdiff(self) -> None:
+        """Testing MarkdownReviewUI rendered diffs with an interdiff"""
+        filediff = self._create_filediff(
+            b'--- README.md\n'
+            b'+++ README.md\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+# Hello\n')
+        interfilediff = self._create_filediff(
+            b'--- README.md\n'
+            b'+++ README.md\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+## Hello\n')
+
+        generator_cls = \
+            MarkdownReviewUI.get_rendered_diff_chunk_generator_cls()
+        generator = generator_cls(
+            request=None,
+            filediff=filediff,
+            interfilediff=interfilediff,
+            diff_settings=DiffSettings.create())
+        chunks = list(generator.get_chunks())
+
+        # Both sides are the patched files, not the original.
+        self.assertEqual(
+            [
+                (line[2], line[5])
+                for chunk in chunks
+                for line in chunk['lines']
+            ],
+            [
+                ('<h1>Hello</h1>', '<h2>Hello</h2>'),
+            ])
+
+    def test_get_chunks_with_render_error(self) -> None:
+        """Testing MarkdownReviewUI rendered diffs with an error rendering
+        one side
+        """
+        filediff = self._create_filediff(
+            b'--- README.md\n'
+            b'+++ README.md\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+# Hello\n')
+
+        def _render_text_rows(
+            cls: type[MarkdownReviewUI],
+            text: str,
+        ) -> Sequence[str]:
+            if text.startswith('#'):
+                raise ValueError('<bad>')
+
+            return render_markdown_blocks(text)
+
+        self.spy_on(MarkdownReviewUI.render_text_rows,
+                    call_fake=_render_text_rows)
+
+        generator_cls = \
+            MarkdownReviewUI.get_rendered_diff_chunk_generator_cls()
+        generator = generator_cls(
+            request=None,
+            filediff=filediff,
+            diff_settings=DiffSettings.create())
+        chunks = list(generator.get_chunks())
+
+        self.assertEqual(
+            [
+                (line[2], line[5])
+                for chunk in chunks
+                for line in chunk['lines']
+            ],
+            [
+                ('<p>Hello, world!</p>',
+                 'Error while rendering content: &lt;bad&gt;'),
+            ])
+
+    def test_get_chunks_does_not_store_line_counts(self) -> None:
+        """Testing MarkdownReviewUI rendered diffs do not store line counts"""
+        filediff = self._create_filediff(
+            b'--- README.md\n'
+            b'+++ README.md\n'
+            b'@@ -1 +1 @@\n'
+            b'-Hello, world!\n'
+            b'+# Hello\n')
+        self.spy_on(filediff.set_line_counts)
+
+        generator_cls = \
+            MarkdownReviewUI.get_rendered_diff_chunk_generator_cls()
+        generator = generator_cls(
+            request=None,
+            filediff=filediff,
+            diff_settings=DiffSettings.create())
+        list(generator.get_chunks())
+
+        self.assertSpyNotCalled(filediff.set_line_counts)
+
+    def test_make_cache_key(self) -> None:
+        """Testing MarkdownReviewUI rendered diff cache keys differ from
+        DiffChunkGenerator
+        """
+        filediff = self._create_filediff(b'')
+        diff_settings = DiffSettings.create()
+
+        self.assertNotEqual(
+            MarkdownReviewUI.get_rendered_diff_chunk_generator_cls()(
+                request=None,
+                filediff=filediff,
+                diff_settings=diff_settings).make_cache_key(),
+            DiffChunkGenerator(
+                request=None,
+                filediff=filediff,
+                diff_settings=diff_settings).make_cache_key())
+
+    def _create_filediff(
+        self,
+        diff: bytes,
+    ) -> FileDiff:
+        """Create a FileDiff for README.md in a new DiffSet.
+
+        Args:
+            diff (bytes):
+                The diff content.
+
+        Returns:
+            reviewboard.diffviewer.models.filediff.FileDiff:
+            The new FileDiff.
+        """
+        return self.create_filediff(
+            diffset=self.create_diffset(repository=self.repository),
+            source_file='README.md',
+            dest_file='README.md',
+            diff=diff)
 
 
 class GetRowTextRangesTests(TestCase):

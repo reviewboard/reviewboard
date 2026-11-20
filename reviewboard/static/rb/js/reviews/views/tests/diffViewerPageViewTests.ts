@@ -1281,6 +1281,22 @@ suite('rb/pages/views/DiffViewerPageView', function() {
                     });
                 expect(page.loadDiffRevision).not.toHaveBeenCalled();
             });
+
+            it('Anchor selection with commit range', function() {
+                const $anchor = $('<a name="test">');
+
+                page.revision.set('baseCommitID', 1);
+                page.revision.set('tipCommitID', 3);
+                pageView.selectAnchor($anchor);
+
+                expect(router.navigate).toHaveBeenCalledWith(
+                    '1/?base-commit-id=1&tip-commit-id=3#test',
+                    {
+                        replace: true,
+                        trigger: false,
+                    });
+                expect(page.loadDiffRevision).not.toHaveBeenCalled();
+            });
         });
     });
 
