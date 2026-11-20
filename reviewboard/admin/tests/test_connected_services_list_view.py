@@ -60,6 +60,57 @@ class ConnectedServicesListViewTests(TestCase):
         self.assertIn(f'repositoriesPerPage: {per_page},'.encode('utf-8'),
                       response.content)
 
+    def test_get_with_empty_state(self) -> None:
+        """Testing ConnectedServicesListView GET with empty state shows popular
+        services
+        """
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['service_entries'], [])
+
+        featured_services = response.context['featured_services']
+        names = [
+            service['name']
+            for service in featured_services
+        ]
+        self.assertIn('GitHub', names)
+        self.assertEqual(names, ['GitHub', 'GitLab', 'JIRA', 'Forgejo'])
+
+        github = featured_services[names.index('GitHub')]
+        self.assertEqual(github['type'], 'Source hosting')
+        self.assertEqual(github['description'],
+                         'Review code from your GitHub repositories.')
+        self.assertEqual(
+            github['connect_url'],
+            reverse('connected-services-connect',
+                    kwargs={'service_id': 'github'}))
+
+        content = response.content
+        self.assertIn(b'No services connected yet', content)
+        self.assertIn(b'id="rb-connect-service-button"', content)
+        self.assertNotIn(b'rb-c-admin-cs-list__header', content)
+
+    def test_get_with_accounts_hides_featured_services(self) -> None:
+        """Testing ConnectedServicesListView GET with hosting accounts hides
+        popular services
+        """
+        HostingServiceAccount.objects.create(
+            service_name='github',
+            username='user1',
+            visible=True)
+
+        self.client.login(username='admin', password='admin')
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['featured_services'], [])
+
+        content = response.content
+        self.assertNotIn(b'No services connected yet', content)
+        self.assertIn(b'rb-c-admin-cs-list__header', content)
+
     def test_get_with_accounts(self) -> None:
         """Testing ConnectedServicesListView GET with hosting accounts"""
         HostingServiceAccount.objects.create(

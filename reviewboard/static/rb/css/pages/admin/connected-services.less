@@ -191,6 +191,128 @@
 
 
 /**
+ * The page shown when no services are connected yet.
+ *
+ * This shows a short introduction with a button for connecting a service,
+ * followed by a grid of popular services that can be connected directly.
+ *
+ * Version Added:
+ *     9.0
+ *
+ * Structure:
+ *     <div class="rb-c-admin-cs-empty">
+ *      <div class="rb-c-admin-cs-empty__intro">
+ *       <h2 class="rb-c-admin-cs-empty__title">...</h2>
+ *       <p class="rb-c-admin-cs-empty__text">...</p>
+ *       <button class="ink-c-button -is-primary">...</button>
+ *      </div>
+ *      [<ul class="rb-c-admin-cs-empty__services">
+ *        <li class="rb-c-admin-cs-empty__service">...</li> ...
+ *       </ul>]
+ *     </div>
+ */
+.rb-c-admin-cs-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ink-u-spacing-l);
+  padding-top: var(--ink-u-spacing-l);
+
+  /**
+   * The introduction at the top of the page.
+   *
+   * This is a centered card explaining that nothing is connected yet.
+   */
+  &__intro {
+    background: var(--ink-p-surface-bright-bg);
+    border: var(--ink-u-border-thin) solid var(--ink-p-container-border-color);
+    border-radius: var(--ink-u-border-radius-m);
+    padding: var(--ink-u-spacing-xl) var(--ink-u-spacing-l);
+    text-align: center;
+  }
+
+  /**
+   * The title of the introduction.
+   */
+  &__title {
+    font-size: var(--ink-u-font-l);
+    font-weight: 700;
+    margin: 0 0 var(--ink-u-spacing-s);
+  }
+
+  /**
+   * The text of the introduction.
+   */
+  &__text {
+    color: var(--ink-p-fg-weak);
+    line-height: 1.5;
+    margin: 0 auto var(--ink-u-spacing-std);
+    max-width: 40em;
+  }
+
+  /**
+   * The grid of popular services.
+   *
+   * Each row holds as many services as fit, down to one on narrow screens.
+   * The services stretch to fill the row, matching the introduction's width.
+   */
+  &__services {
+    display: grid;
+    gap: var(--ink-u-spacing-std);
+    grid-template-columns: repeat(auto-fit, minmax(15em, 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /**
+   * A popular service in the grid.
+   *
+   * This stacks the service's name and type, a short description, and a
+   * button for connecting it.
+   *
+   * Structure:
+   *     <li class="rb-c-admin-cs-empty__service">
+   *      <div class="rb-c-admin-cs-service">...</div>
+   *      <p class="rb-c-admin-cs-empty__service-text">...</p>
+   *      <div><a class="ink-c-button -is-primary">...</a></div>
+   *     </li>
+   */
+  &__service {
+    background: var(--ink-p-surface-bright-bg);
+    border: var(--ink-u-border-thin) solid var(--ink-p-container-border-color);
+    border-radius: var(--ink-u-border-radius-s);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ink-u-spacing-sm);
+    padding: var(--ink-u-spacing-std);
+
+    /* Keep the service's grid from stretching, which spaces out its logo. */
+    .rb-c-admin-cs-service {
+      align-self: flex-start;
+    }
+
+    .ink-c-button {
+      --ink-c-button-font-size: var(--ink-u-font-s);
+      --ink-c-button-padding-horiz: var(--ink-u-spacing-s);
+      --ink-c-button-padding-vert: var(--ink-u-spacing-xs);
+    }
+  }
+
+  /**
+   * The description of a popular service.
+   *
+   * This grows to fill the card, so the buttons line up across a row.
+   */
+  &__service-text {
+    color: var(--ink-p-fg-weak);
+    flex: 1;
+    line-height: 1.45;
+    margin: 0;
+  }
+}
+
+
+/**
  * A card for a connected service.
  *
  * This is used for entries in the connected services list as well as steps in

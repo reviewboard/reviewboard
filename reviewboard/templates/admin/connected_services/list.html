@@ -42,6 +42,37 @@
   </div>
  </div>
 {%  endif %}
+{%  if not service_entries %}
+ <div class="rb-c-admin-cs-empty">
+  <div class="rb-c-admin-cs-empty__intro">
+   <h2 class="rb-c-admin-cs-empty__title">{% trans "No services connected yet" %}</h2>
+   <p class="rb-c-admin-cs-empty__text">
+    {% trans "Connect your first service to start adding repositories and tracking issues. You can always add more services and connections later." %}
+   </p>
+   <button class="ink-c-button -is-primary" id="rb-connect-service-button">
+    <span class="ink-c-button__icon ink-i-add" aria-hidden="true"></span>
+    <span class="ink-c-button__label">{% trans "Connect a service" %}</span>
+   </button>
+  </div>
+{%   if featured_services %}
+  <ul class="rb-c-admin-cs-empty__services">
+{%    for service in featured_services %}
+   <li class="rb-c-admin-cs-empty__service">
+{%     include "admin/connected_services/_parts/service.html" with service_logo=service.logo service_name=service.name service_type=service.type %}
+    <p class="rb-c-admin-cs-empty__service-text">{{service.description}}</p>
+    <div>
+     <a class="ink-c-button -is-primary" role="button" draggable="false"
+        href="{{service.connect_url}}"
+        data-wizard-connect-url="{{service.connect_url}}">
+      <span class="ink-c-button__label">{% trans "Connect" %}</span>
+     </a>
+    </div>
+   </li>
+{%    endfor %}
+  </ul>
+{%   endif %}
+ </div>
+{%  else %}
  <div class="rb-c-admin-cs-list__header">
   <div class="ink-c-button-group" role="group" aria-orientation="horizontal">
 {%  comment %}
@@ -61,6 +92,7 @@
   {{entry}}
 {%  endfor %}
  </ul>
+{%  endif %}
 </div>
 {% endblock content %}
 

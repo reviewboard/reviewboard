@@ -174,6 +174,32 @@ class ConnectAddObjectAction(TypedDict):
     url: str
 
 
+def get_service_type_string(
+    service_cls: type[BaseHostingService],
+) -> str | None:
+    """Return a user-visible string for the service type.
+
+    Version Added:
+        9.0
+
+    Args:
+        service_cls (class):
+            The hosting service class.
+
+    Returns:
+        str:
+        A user-visible description of the service type.
+    """
+    # TODO: create a central enum for these and let each hosting service
+    # mark what they are?
+    if service_cls.supports_repositories:
+        return _('Source hosting')
+    elif service_cls.supports_bug_trackers:
+        return _('Issue tracking')
+    else:
+        return None
+
+
 class BaseHostingServiceConnectUI:
     """Base class for the UI implementation of connecting to hosting services.
 
@@ -311,15 +337,7 @@ class BaseHostingServiceConnectUI:
             Template context to use when rendering the entry.
         """
         service = self._hosting_service_cls
-
-        # TODO: create a central enum for these and let each hosting service
-        # mark what they are?
-        if service.supports_repositories:
-            service_type = _('Source hosting')
-        elif service.supports_bug_trackers:
-            service_type = _('Issue tracking')
-        else:
-            service_type = None
+        service_type = get_service_type_string(service)
 
         accounts_data = [
             {

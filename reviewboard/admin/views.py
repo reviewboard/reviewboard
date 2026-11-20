@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import OrderedDict
 from itertools import groupby
 from operator import attrgetter
 from typing import TYPE_CHECKING, cast
@@ -23,7 +24,7 @@ from django.templatetags.static import static
 from django.urls import reverse
 from django.utils.decorators import method_decorator
 from django.utils.html import format_html_join
-from django.utils.translation import gettext as _
+from django.utils.translation import gettext as _, gettext_lazy
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic.base import View
 from djblets.cache.forwarding_backend import DEFAULT_FORWARD_CACHE_ALIAS
@@ -38,6 +39,7 @@ from reviewboard.admin.widgets import (admin_widgets_registry,
                                        dynamic_activity_data)
 from reviewboard.certs.errors import CertificateVerificationError
 from reviewboard.hostingsvcs.base import hosting_service_registry
+from reviewboard.hostingsvcs.base.connect_ui import get_service_type_string
 from reviewboard.hostingsvcs.bug_tracker_forms import (
     is_bug_tracker_configurable,
 )
@@ -55,11 +57,13 @@ from reviewboard.ssh.client import SSHClient
 from reviewboard.ssh.utils import humanize_key
 
 if TYPE_CHECKING:
-    from typing import ClassVar
+    from collections.abc import Mapping
+    from typing import ClassVar, Final
 
     from django.core.paginator import Page
     from django.http import HttpRequest
     from django.utils.safestring import SafeString
+    from typelets.django.strings import StrOrPromise
 
     from reviewboard.hostingsvcs.base.connect_ui import (
         AdminServicesListAttentionItem,
@@ -73,15 +77,31 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-#: Hosting service IDs to highlight in the "Popular" section of the connect UI.
+#: Hosting services to highlight in the "Popular" section of the connect UI.
+#:
+#: This maps each service ID to a short description. The description is shown
+#: when suggesting the service on an empty Connected Services page.
 #:
 #: Version Added:
 #:     9.0
-_POPULAR_SERVICE_IDS = {
-    'forgejo',
-    'github',
-    'gitlab',
-}
+_POPULAR_SERVICES: Final[Mapping[str, StrOrPromise]] = OrderedDict([
+    (
+        'github',
+        gettext_lazy('Review code from your GitHub repositories.'),
+    ),
+    (
+        'gitlab',
+        gettext_lazy('Review code from GitLab.com or your own GitLab server.'),
+    ),
+    (
+        'jira',
+        gettext_lazy('Link review requests to JIRA issues.'),
+    ),
+    (
+        'forgejo',
+        gettext_lazy('Review code from your own Forgejo server.'),
+    ),
+])
 
 
 @staff_member_required
@@ -376,6 +396,13 @@ class ConnectedServicesListView(View):
             self._build_hosting_service_entries(request)
         entries.sort(key=lambda entry: entry[0])
 
+        # With nothing connected yet, the page suggests popular services to
+        # start with.
+        if entries:
+            featured_services = []
+        else:
+            featured_services = self._get_featured_services()
+
         # A connect flow that needs to finish in the wizard (such as returning
         # from a GitHub App installation) stashes the step URL in the session.
         # Pop it so the wizard opens on that step once, without reopening on a
@@ -392,6 +419,7 @@ class ConnectedServicesListView(View):
                 'available_services': available_services,
                 'bug_trackers_per_page':
                     ConnectedServiceBugTrackersView.bug_trackers_per_page,
+                'featured_services': featured_services,
                 'repositories_per_page':
                     ConnectedServiceRepositoriesView.repositories_per_page,
                 'service_entries': [entry[1] for entry in entries],
@@ -546,6 +574,38 @@ class ConnectedServicesListView(View):
 
         return entries, attention_items
 
+    def _get_featured_services(self) -> list[dict[str, str | None]]:
+        """Return the popular services to suggest on an empty page.
+
+        Returns:
+            list of dict:
+            The featured services, sorted by name. Each has the service's
+            name, logo, type, description, and connect URL.
+        """
+        featured_services: list[dict[str, str | None]] = []
+
+        for service_id, description in _POPULAR_SERVICES.items():
+            service = hosting_service_registry.get_hosting_service(service_id)
+            assert service is not None
+
+            # This matches the service type shown for connected accounts.
+            service_type = get_service_type_string(service)
+            assert service_type is not None
+
+            featured_services.append({
+                'connect_url': reverse(
+                    'connected-services-connect',
+                    kwargs={
+                        'service_id': service_id,
+                    }),
+                'description': str(description),
+                'logo': service.logo_image,
+                'name': str(service.name),
+                'type': service_type,
+            })
+
+        return featured_services
+
     def _get_service_sections(
         self,
         service: type[BaseHostingService],
@@ -564,7 +624,7 @@ class ConnectedServicesListView(View):
         """
         sections: list[str] = []
 
-        if service.hosting_service_id in _POPULAR_SERVICE_IDS:
+        if service.hosting_service_id in _POPULAR_SERVICES:
             sections.append('popular')
 
         # A service that supports repositories is listed under "Source
