@@ -85,7 +85,10 @@ class ConnectedServiceBugTrackersViewTests(kgb.SpyAgency, TestCase):
         # Each configuration links to its database administration page.
         change_url = reverse('admin:hostingsvcs_configuredbugtracker_change',
                              args=(bug_tracker.pk,))
-        self.assertIn(change_url.encode('utf-8'), content)
+        self.assertIn(
+            f'{change_url}?next=/admin/connected-services/'
+            .encode('utf-8'),
+            content)
 
         self.assertEqual(response.headers['X-Total-Count'], '2')
         self.assertEqual(response.headers['X-Page-Number'], '1')

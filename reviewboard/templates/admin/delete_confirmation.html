@@ -35,7 +35,7 @@ Delete {{object_name}}
 {%   endfor %}
   </ul>
   <a class="ink-c-button" role="button" draggable="false"
-     href="{{back_url}}">{% trans "Go back" %}</a>
+     href="{{back_url}}{% if request.GET.next %}?next={{request.GET.next|urlencode}}{% endif %}">{% trans "Go back" %}</a>
  </div>
 </div>
 {%  elif protected %}
@@ -58,7 +58,7 @@ Delete {{object_name}}
 {%   endfor %}
   </ul>
   <a class="ink-c-button" role="button" draggable="false"
-     href="{{back_url}}">{% trans "Go back" %}</a>
+     href="{{back_url}}{% if request.GET.next %}?next={{request.GET.next|urlencode}}{% endif %}">{% trans "Go back" %}</a>
  </div>
 </div>
 {%  else %}
@@ -68,6 +68,10 @@ Delete {{object_name}}
 
 {%   if is_popup %}
  <input type="hidden" name="{{is_popup_var}}" value="1">
+{%   endif %}
+
+{%   if request.GET.next %}
+ <input type="hidden" name="next" value="{{request.GET.next}}">
 {%   endif %}
 
 {%   if to_field %}
@@ -96,7 +100,7 @@ Delete {{object_name}}
     </span>
     <span class="rb-c-form__action">
      <a class="ink-c-button" role="button" draggable="false"
-        href="{{back_url}}">{% trans "No, don't delete" %}</a>
+        href="{{back_url}}{% if request.GET.next %}?next={{request.GET.next|urlencode}}{% endif %}">{% trans "No, don't delete" %}</a>
     </span>
    </div>
   </div>

@@ -1,10 +1,11 @@
 {% load i18n %}
+{% url "connected-services-list" as connected_services_url %}
 {% if bug_trackers %}
 <ul class="rb-c-admin-cs-service-items__results">
 {%  for bug_tracker in bug_trackers %}
  <li class="rb-c-admin-cs-service-items__item">
   <a class="rb-c-admin-cs-service-items__item__name"
-     href="{% url "admin:hostingsvcs_configuredbugtracker_change" bug_tracker.id %}">
+     href="{% url "admin:hostingsvcs_configuredbugtracker_change" bug_tracker.id %}?next={{connected_services_url|urlencode}}">
    {{bug_tracker.name}}
   </a>
   <span class="rb-c-admin-cs-service-items__item__path">

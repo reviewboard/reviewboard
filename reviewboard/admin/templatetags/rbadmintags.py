@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from urllib.parse import urlencode
 
 from django import template
 from django.contrib import messages
@@ -208,10 +209,14 @@ def change_form_submit_buttons(context):
                     opts.app_label,
                     opts.model_name)
 
-                delete_url = add_preserved_filters(
-                    context,
-                    reverse(delete_urlname,
-                            args=[admin_urlquote(original.pk)]))
+                delete_url = reverse(delete_urlname,
+                                     args=[admin_urlquote(original.pk)])
+
+                # Carry the return URL through to the delete confirmation.
+                if next_url := request.GET.get('next'):
+                    delete_url += '?' + urlencode({'next': next_url})
+
+                delete_url = add_preserved_filters(context, delete_url)
     else:
         delete_url = context.get('delete_url', '#')
         show_delete = context.get('show_delete', False)

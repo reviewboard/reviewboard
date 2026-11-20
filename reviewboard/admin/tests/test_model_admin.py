@@ -101,6 +101,179 @@ class ModelAdminTests(TestCase):
             reverse('admin:hostingsvcs_configuredbugtracker_add'),
             fetch_redirect_response=False)
 
+    def test_change_page_with_next(self) -> None:
+        """Testing ModelAdmin change page with ?next= renders a hidden next
+        field
+        """
+        bug_tracker = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat')
+
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get(
+            reverse('admin:hostingsvcs_configuredbugtracker_change',
+                    args=(bug_tracker.pk,)),
+            {'next': '/admin/connected-services/'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b'<input type="hidden" name="next" '
+            b'value="/admin/connected-services/">',
+            response.content)
+
+    def test_response_change_with_next(self) -> None:
+        """Testing ModelAdmin.response_change with a safe next URL redirects
+        there
+        """
+        bug_tracker = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat')
+
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.post(
+            reverse('admin:hostingsvcs_configuredbugtracker_change',
+                    args=(bug_tracker.pk,)),
+            self._make_post_data(name='New Name',
+                                 next='/admin/connected-services/'))
+
+        self.assertRedirects(response, '/admin/connected-services/',
+                             fetch_redirect_response=False)
+
+        bug_tracker.refresh_from_db()
+        self.assertEqual(bug_tracker.name, 'New Name')
+
+    def test_response_change_with_unsafe_next(self) -> None:
+        """Testing ModelAdmin.response_change with an external next URL
+        ignores it
+        """
+        bug_tracker = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat')
+
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.post(
+            reverse('admin:hostingsvcs_configuredbugtracker_change',
+                    args=(bug_tracker.pk,)),
+            self._make_post_data(next='https://evil.example/'))
+
+        self.assertRedirects(
+            response,
+            reverse('admin:hostingsvcs_configuredbugtracker_changelist'),
+            fetch_redirect_response=False)
+
+    def test_response_change_with_next_and_continue(self) -> None:
+        """Testing ModelAdmin.response_change with next and "Save and
+        continue editing" keeps the default behavior
+        """
+        bug_tracker = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat')
+        change_url = reverse('admin:hostingsvcs_configuredbugtracker_change',
+                             args=(bug_tracker.pk,))
+
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.post(
+            change_url,
+            self._make_post_data(next='/admin/connected-services/',
+                                 _continue='1'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(response['Location'].startswith(change_url))
+
+    def test_change_page_with_next_delete_link(self) -> None:
+        """Testing ModelAdmin change page with ?next= passes next to the
+        Delete link
+        """
+        bug_tracker = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat')
+
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get(
+            reverse('admin:hostingsvcs_configuredbugtracker_change',
+                    args=(bug_tracker.pk,)),
+            {'next': '/admin/connected-services/'})
+
+        delete_url = reverse('admin:hostingsvcs_configuredbugtracker_delete',
+                             args=(bug_tracker.pk,))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            f'href="{delete_url}?next=%2Fadmin%2Fconnected-services%2F"'
+            .encode('utf-8'),
+            response.content)
+
+    def test_delete_page_with_next(self) -> None:
+        """Testing ModelAdmin delete page with ?next= renders a hidden next
+        field
+        """
+        bug_tracker = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat')
+
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.get(
+            reverse('admin:hostingsvcs_configuredbugtracker_delete',
+                    args=(bug_tracker.pk,)),
+            {'next': '/admin/connected-services/'})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(
+            b'<input type="hidden" name="next" '
+            b'value="/admin/connected-services/">',
+            response.content)
+
+    def test_response_delete_with_next(self) -> None:
+        """Testing ModelAdmin.response_delete with a safe next URL redirects
+        there
+        """
+        bug_tracker = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat')
+
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.post(
+            reverse('admin:hostingsvcs_configuredbugtracker_delete',
+                    args=(bug_tracker.pk,)),
+            {
+                'next': '/admin/connected-services/',
+                'post': 'yes',
+            })
+
+        self.assertRedirects(response, '/admin/connected-services/',
+                             fetch_redirect_response=False)
+        self.assertFalse(ConfiguredBugTracker.objects.exists())
+
+    def test_response_delete_with_unsafe_next(self) -> None:
+        """Testing ModelAdmin.response_delete with an external next URL
+        ignores it
+        """
+        bug_tracker = ConfiguredBugTracker.objects.create(
+            name='My Tracker',
+            service_name='splat')
+
+        self.client.login(username='admin', password='admin')
+
+        response = self.client.post(
+            reverse('admin:hostingsvcs_configuredbugtracker_delete',
+                    args=(bug_tracker.pk,)),
+            {
+                'next': 'https://evil.example/',
+                'post': 'yes',
+            })
+
+        self.assertRedirects(
+            response,
+            reverse('admin:hostingsvcs_configuredbugtracker_changelist'),
+            fetch_redirect_response=False)
+
     def _make_post_data(
         self,
         **kwargs,

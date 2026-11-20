@@ -54,7 +54,10 @@ class ConnectedServiceRepositoriesViewTests(TestCase):
         # Each repository links to its admin change page.
         change_url = reverse('admin:scmtools_repository_change',
                              args=(repository.pk,))
-        self.assertIn(change_url.encode('utf-8'), content)
+        self.assertIn(
+            f'{change_url}?next=/admin/connected-services/'
+            .encode('utf-8'),
+            content)
 
     def test_get_uses_hosting_service_display_path(self) -> None:
         """Testing ConnectedServiceRepositoriesView GET uses the hosting

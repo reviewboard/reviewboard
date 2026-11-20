@@ -1,10 +1,11 @@
 {% load i18n %}
+{% url "connected-services-list" as connected_services_url %}
 {% if repositories %}
 <ul class="rb-c-admin-cs-service-items__results">
 {%  for repository in repositories %}
  <li class="rb-c-admin-cs-service-items__item">
   <a class="rb-c-admin-cs-service-items__item__name"
-     href="{% url "admin:scmtools_repository_change" repository.id %}">
+     href="{% url "admin:scmtools_repository_change" repository.id %}?next={{connected_services_url|urlencode}}">
    {{repository.name}}
   </a>
   <span class="rb-c-admin-cs-service-items__item__path">{{repository.display_path}}</span>
