@@ -27,13 +27,13 @@ class IterLegacyMarkdownLinesTests(TestCase):
             '<p></p>\n'
             '<p>Some <em>text</em><br />\n'
             'wrapped.</p>\n'
+            '<ol start="3">\n'
+            '<li>three</li>\n'
+            '</ol>\n'
             '<ul>\n'
             '<li>one</li>\n'
             '<li>two</li>\n'
             '</ul>\n'
-            '<ol start="3">\n'
-            '<li>three</li>\n'
-            '</ol>\n'
             '<div class="codehilite"><pre><span></span><code>a\n'
             '\n'
             'b\n'
@@ -53,10 +53,10 @@ class IterLegacyMarkdownLinesTests(TestCase):
                 '<p>Some <em>text</em><br/>',
                 'wrapped.</p>',
                 '\n',
+                '<ol start="3"><li>three</li></ol>',
+                '\n',
                 '<ul start="1"><li>one</li></ul>',
                 '<ul start="2"><li>two</li></ul>',
-                '\n',
-                '<ol start="3"><li>three</li></ol>',
                 '\n',
                 '<div class="codehilite codehilite-multiline-start">'
                 '<pre><span/><code>a</pre></div>',
@@ -68,6 +68,74 @@ class IterLegacyMarkdownLinesTests(TestCase):
                 '<pre></code></pre></div>',
                 '\n',
                 '<blockquote>\n<p>Quote</p>\n</blockquote>',
+            ])
+
+    def test_ordered_list_after_unordered_list(self) -> None:
+        """Testing iter_legacy_markdown_lines with an ordered list after an
+        unordered list keeps the same rows as when they were joined
+        """
+        joined_html = (
+            '<ul>\n'
+            '<li>a</li>\n'
+            '<li>\n'
+            '<p>b</p>\n'
+            '</li>\n'
+            '<li>\n'
+            '<p>c</p>\n'
+            '</li>\n'
+            '</ul>\n'
+            '<p>after</p>'
+        )
+        split_html = (
+            '<ul>\n'
+            '<li>a</li>\n'
+            '<li>b</li>\n'
+            '</ul>\n'
+            '<ol>\n'
+            '<li>c</li>\n'
+            '</ol>\n'
+            '<p>after</p>'
+        )
+
+        self.assertEqual(
+            list(iter_legacy_markdown_lines(joined_html)),
+            [
+                '<ul start="1"><li>a</li></ul>',
+                '<ul start="2"><li>\n<p>b</p>\n</li></ul>',
+                '<ul start="3"><li>\n<p>c</p>\n</li></ul>',
+                '\n',
+                '<p>after</p>',
+            ])
+        self.assertEqual(
+            list(iter_legacy_markdown_lines(split_html)),
+            [
+                '<ul start="1"><li>a</li></ul>',
+                '<ul start="2"><li>b</li></ul>',
+                '<ol start="1"><li>c</li></ol>',
+                '\n',
+                '<p>after</p>',
+            ])
+
+    def test_ordered_list_after_paragraph(self) -> None:
+        """Testing iter_legacy_markdown_lines keeps the blank row between
+        an unordered list and other blocks
+        """
+        self.assertEqual(
+            list(iter_legacy_markdown_lines(
+                '<ul>\n'
+                '<li>a</li>\n'
+                '</ul>\n'
+                '<p></p>\n'
+                '<ol>\n'
+                '<li>b</li>\n'
+                '</ol>'
+            )),
+            [
+                '<ul start="1"><li>a</li></ul>',
+                '\n',
+                '<p/>',
+                '\n',
+                '<ol start="1"><li>b</li></ol>',
             ])
 
 

@@ -14,7 +14,11 @@ import {
     type AbstractReviewableAttrs,
     AbstractReviewable,
 } from './abstractReviewableModel';
-import { type SerializedComment } from './commentData';
+import {
+    type SerializedComment,
+    VIEW_MODE_COMMENT_FIELDS,
+    parseViewModeData,
+} from './commentData';
 import { DiffCommentBlock } from './diffCommentBlockModel';
 import { type DiffFile } from './diffFileModel';
 
@@ -44,8 +48,29 @@ export interface DiffReviewableAttrs extends AbstractReviewableAttrs {
     /** Whether the diff has been published. */
     public: boolean;
 
+    /**
+     * The version of the row layout used for the rendered view.
+     *
+     * This is only set for files that have a rendered view.
+     *
+     * Version Added:
+     *     9.0
+     */
+    renderVersion: number | null;
+
     /** The revision of the FileDiff. */
     revision: number;
+
+    /**
+     * The view of the file to show.
+     *
+     * Some files (such as Markdown) can be represented in source or rendered
+     * views.
+     *
+     * Version Added:
+     *     9.0
+     */
+    viewMode: 'rendered' | 'source';
 }
 
 
@@ -66,7 +91,9 @@ export class DiffReviewable
         interFileDiffID: null,
         interdiffRevision: null,
         public: false,
+        renderVersion: null,
         revision: null,
+        viewMode: 'source',
     };
 
     static commentBlockModel = DiffCommentBlock;
@@ -76,6 +103,7 @@ export class DiffReviewable
         'fileDiffID',
         'interFileDiffID',
         'public',
+        ...VIEW_MODE_COMMENT_FIELDS,
     ];
 
     /**
@@ -104,6 +132,7 @@ export class DiffReviewable
             review: this.get('review'),
             reviewRequest: this.get('reviewRequest'),
             serializedComments: serializedComments,
+            ...parseViewModeData(parsedData),
         });
     }
 
@@ -314,6 +343,10 @@ export class DiffReviewable
 
         if (options.showDeleted) {
             queryParts.push('show-deleted=1');
+        }
+
+        if (this.get('viewMode') === 'rendered') {
+            queryParts.push('view-mode=rendered');
         }
 
         queryParts.push(`_=${TEMPLATE_SERIAL}`);

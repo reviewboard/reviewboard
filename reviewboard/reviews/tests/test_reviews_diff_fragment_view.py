@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from django.contrib.auth.models import User
 from django.core.cache import cache
 
@@ -9,6 +11,9 @@ from reviewboard.attachments.models import FileAttachment
 from reviewboard.attachments.tests.base import BaseFileAttachmentTestCase
 from reviewboard.site.urlresolvers import local_site_reverse
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from django.http import HttpResponse
 
 
 class ReviewsDiffFragmentViewTests(TestCase):
@@ -151,6 +156,88 @@ class ReviewsDiffFragmentViewTests(TestCase):
             b'for FileDiff %d.'
             % (base_filediff.pk, filediff.pk),
             rsp.content)
+
+    def test_markdown_source(self) -> None:
+        """Testing ReviewsDiffFragmentView.get with a Markdown file"""
+        rsp = self._get_markdown_fragment('README.md')
+
+        self.assertEqual(rsp.status_code, 200)
+        self.assertContains(rsp, '# Hello')
+        self.assertNotContains(rsp, '<h1>Hello</h1>')
+        self.assertNotContains(rsp, 'rb-c-rendered-markdown-table')
+
+    def test_markdown_rendered(self) -> None:
+        """Testing ReviewsDiffFragmentView.get with a Markdown file and
+        ?view-mode=rendered
+        """
+        rsp = self._get_markdown_fragment('README.md',
+                                          data={'view-mode': 'rendered'})
+
+        self.assertEqual(rsp.status_code, 200)
+        self.assertContains(rsp, '<h1>Hello</h1>')
+        self.assertContains(rsp, 'rb-c-rendered-markdown-table')
+
+    def test_non_markdown_view_mode_rendered(self) -> None:
+        """Testing ReviewsDiffFragmentView.get with a non-Markdown file and
+        ?view-mode=rendered
+        """
+        rsp = self._get_markdown_fragment('README.txt',
+                                          data={'view-mode': 'rendered'})
+
+        self.assertEqual(rsp.status_code, 200)
+        self.assertContains(rsp, '# Hello')
+        self.assertNotContains(rsp, '<h1>Hello</h1>')
+        self.assertNotContains(rsp, 'rb-c-rendered-markdown-table')
+
+    def _get_markdown_fragment(
+        self,
+        filename: str,
+        data: (dict[str, str] | None) = None,
+    ) -> HttpResponse:
+        """Return the diff fragment for a file changed to contain Markdown.
+
+        The original file content comes from the Test SCM.
+
+        Version Added:
+            9.0
+
+        Args:
+            filename (str):
+                The name of the file.
+
+            data (dict, optional):
+                Query arguments for the request.
+
+        Returns:
+            django.http.HttpResponse:
+            The response.
+        """
+        repository = self.create_repository(tool_name='Test')
+        review_request = self.create_review_request(repository=repository,
+                                                    publish=True)
+        diffset = self.create_diffset(review_request)
+        filediff = self.create_filediff(
+            diffset=diffset,
+            source_file=filename,
+            dest_file=filename,
+            diff=(
+                b'--- %(filename)s\n'
+                b'+++ %(filename)s\n'
+                b'@@ -1 +1 @@\n'
+                b'-Hello, world!\n'
+                b'+# Hello\n'
+                % {b'filename': filename.encode()}
+            ))
+
+        return self.client.get(
+            local_site_reverse(
+                'view-diff-fragment',
+                kwargs={
+                    'review_request_id': review_request.display_id,
+                    'revision': diffset.revision,
+                    'filediff_id': filediff.pk,
+                }),
+            data=data)
 
 
 class ReviewsFileAttachmentDiffFragmentViewTests(BaseFileAttachmentTestCase):

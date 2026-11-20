@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import kgb
 from django.core.cache import cache
 from django.test.client import RequestFactory
@@ -10,8 +12,17 @@ from djblets.cache.backend import make_cache_key
 
 from reviewboard.diffviewer.chunk_generator import RawDiffChunkGenerator
 from reviewboard.diffviewer.settings import DiffSettings
-from reviewboard.reviews.ui.text import TextBasedReviewUI
+from reviewboard.reviews.chunk_generators import RenderedDiffChunkGenerator
+from reviewboard.reviews.ui import review_ui_registry
+from reviewboard.reviews.ui.markdownui import MarkdownReviewUI
+from reviewboard.reviews.ui.text import (
+    TextBasedReviewUI,
+    get_rendered_text_review_ui,
+)
 from reviewboard.testing import TestCase
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class TextBasedReviewUITests(kgb.SpyAgency, TestCase):
@@ -255,3 +266,103 @@ class TextBasedReviewUITests(kgb.SpyAgency, TestCase):
 
         self.assertIn('This file is too large to display.', html)
         self.assertNotIn('This is revision 1.', html)
+
+
+class RenderedDiffChunkGeneratorTests(TestCase):
+    """Unit tests for TextBasedReviewUI.get_rendered_diff_chunk_generator_cls.
+
+    Version Added:
+        9.0
+    """
+
+    fixtures = ['test_scmtools']
+
+    def test_get_chunks(self) -> None:
+        """Testing TextBasedReviewUI.get_rendered_diff_chunk_generator_cls
+        with a review UI that renders text
+        """
+        class UpperCaseReviewUI(TextBasedReviewUI):
+            can_render_text = True
+
+            @classmethod
+            def render_text_rows(
+                cls,
+                text: str,
+            ) -> Sequence[str]:
+                return [
+                    f'<p>{line.upper()}</p>'
+                    for line in text.splitlines()
+                ]
+
+        generator_cls = \
+            UpperCaseReviewUI.get_rendered_diff_chunk_generator_cls()
+        self.assertIs(
+            generator_cls,
+            UpperCaseReviewUI.get_rendered_diff_chunk_generator_cls())
+        self.assertTrue(issubclass(generator_cls, RenderedDiffChunkGenerator))
+
+        # The Test SCM returns "Hello, world!" for the original file.
+        repository = self.create_repository(tool_name='Test')
+        filediff = self.create_filediff(
+            diffset=self.create_diffset(repository=repository),
+            diff=(
+                b'--- README\n'
+                b'+++ README\n'
+                b'@@ -1 +1 @@\n'
+                b'-Hello, world!\n'
+                b'+Goodbye, world!\n'
+            ))
+
+        generator = generator_cls(request=None,
+                                  filediff=filediff,
+                                  diff_settings=DiffSettings.create())
+
+        self.assertEqual(
+            [
+                (line[2], line[5])
+                for chunk in generator.get_chunks()
+                for line in chunk['lines']
+            ],
+            [
+                ('<p>HELLO, WORLD!</p>', '<p>GOODBYE, WORLD!</p>'),
+            ])
+
+
+class GetRenderedTextReviewUITests(TestCase):
+    """Unit tests for get_rendered_text_review_ui.
+
+    Version Added:
+        9.0
+    """
+
+    def test_with_markdown(self) -> None:
+        """Testing get_rendered_text_review_ui with Markdown files"""
+        self.assertIs(get_rendered_text_review_ui('README.md'),
+                      MarkdownReviewUI)
+        self.assertIs(get_rendered_text_review_ui('docs/guide.md'),
+                      MarkdownReviewUI)
+
+    def test_without_rendered_view(self) -> None:
+        """Testing get_rendered_text_review_ui with files that can't be
+        rendered
+        """
+        self.assertIsNone(get_rendered_text_review_ui('README.rst'))
+        self.assertIsNone(get_rendered_text_review_ui('README.txt'))
+        self.assertIsNone(get_rendered_text_review_ui('image.png'))
+        self.assertIsNone(get_rendered_text_review_ui('README'))
+
+    def test_with_registered_review_ui(self) -> None:
+        """Testing get_rendered_text_review_ui with a registered review UI
+        that renders text
+        """
+        class CSVReviewUI(TextBasedReviewUI):
+            supported_mimetypes = ['text/csv']
+            can_render_text = True
+
+        review_ui_registry.register(CSVReviewUI)
+
+        try:
+            self.assertIs(get_rendered_text_review_ui('data.csv'),
+                          CSVReviewUI)
+        finally:
+            review_ui_registry.unregister(CSVReviewUI)

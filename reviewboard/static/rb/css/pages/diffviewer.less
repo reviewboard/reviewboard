@@ -616,6 +616,16 @@
     .filename-row th {
       overflow: hidden;
       padding: 8px;
+
+      /* Source and Rendered tabs, for files that have a rendered view. */
+      .diff-view-mode-tabs {
+        float: right;
+
+        /* Counteract the 120% font size used for the filenames. */
+        font-size: (100% / 1.2);
+        font-weight: normal;
+        margin: -4px 0 -8px 1em;
+      }
     }
 
     .revision-row th {

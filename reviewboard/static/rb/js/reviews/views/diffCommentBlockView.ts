@@ -29,6 +29,10 @@ export class DiffCommentBlockView extends TextBasedCommentBlockView<
         const fileDiffID = this.model.get('fileDiffID');
         const beginLineNum = this.model.get('beginLineNum');
 
-        return `file${fileDiffID}line${beginLineNum}`;
+        if (this.model.get('viewMode') === 'rendered') {
+            return `file${fileDiffID}rendered-line${beginLineNum}`;
+        } else {
+            return `file${fileDiffID}line${beginLineNum}`;
+        }
     }
 }

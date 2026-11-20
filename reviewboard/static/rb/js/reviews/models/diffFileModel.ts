@@ -150,6 +150,16 @@ export interface DiffFileAttrs extends ModelAttributes {
     /** Whether the diff has been published or not. */
     public: boolean;
 
+    /**
+     * The version of the row layout used for the rendered view.
+     *
+     * This is only set for files that have a rendered view.
+     *
+     * Version Added:
+     *     9.0
+     */
+    renderVersion: number | null;
+
     /** The set of serialized comment blocks in the diff. */
     serializedCommentBlocks: SerializedDiffCommentBlocks | null;
 }
@@ -180,6 +190,7 @@ export interface DiffFileResourceData {
     orig_filename: string;
     orig_revision: string;
     public: boolean;
+    render_version?: number;
     serialized_comment_blocks: SerializedDiffCommentBlocks | null;
 }
 
@@ -207,6 +218,7 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
         origFilename: null,
         origRevision: null,
         public: false,
+        renderVersion: null,
         serializedCommentBlocks: null,
     };
 
@@ -243,6 +255,7 @@ export class DiffFile extends BaseModel<DiffFileAttrs> {
             origFilename: rsp.orig_filename,
             origRevision: rsp.orig_revision,
             public: rsp.public,
+            renderVersion: rsp.render_version ?? null,
             serializedCommentBlocks: rsp.serialized_comment_blocks,
         };
     }

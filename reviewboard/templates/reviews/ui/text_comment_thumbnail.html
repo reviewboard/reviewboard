@@ -19,7 +19,7 @@
   </tr>
 {% enddefinevar %}
 
-<table class="sidebyside text-review-ui-table text-review-ui-comment-thumbnail {{review_ui.extra_css_classes|join:' '}}">
+<table class="sidebyside text-review-ui-table text-review-ui-comment-thumbnail {{review_ui.extra_css_classes|join:' '}}{% if view_mode == 'rendered' %} {{review_ui.rendered_table_css_class}}{% endif %}">
  <colgroup>
 {% if is_diff %}
   <col class="line" />

@@ -98,6 +98,142 @@ class _AlertBlockquoteExtension(Extension):
                                    'alert_blockquote', 0)
 
 
+class _QuoteSpacingTreeprocessor(Treeprocessor):
+    """Removes extra blank lines around and inside blockquotes.
+
+    Version Added:
+        9.0
+    """
+
+    def run(
+        self,
+        root: Element,
+    ) -> None:
+        """Remove the extra blank lines.
+
+        Args:
+            root (xml.etree.ElementTree.Element):
+                The root of the rendered tree.
+        """
+        for parent in list(root.iter()):
+            children = list(parent)
+            to_remove: list[Element] = []
+
+            for i, child in enumerate(children):
+                if (child.tag == 'blockquote' and
+                    i >= 2 and
+                    all(_is_empty_paragraph(sibling)
+                        for sibling in children[i - 2:i])):
+                    to_remove += children[i - 2:i]
+
+            for child in to_remove:
+                parent.remove(child)
+
+        for quote in list(root.iter('blockquote')):
+            _remove_leading_empty_paragraphs(quote, 0)
+
+            # An alert's first paragraph becomes its title. Blank lines
+            # after it are removed too.
+            if quote.get('data-alert'):
+                _remove_leading_empty_paragraphs(quote, 1)
+
+            # A blank ">" line at the end leaves a line break at the end of
+            # the last paragraph.
+            last = quote.find('p[last()]')
+
+            if (last is not None and
+                len(last) > 0 and
+                last[-1].tag == 'br' and
+                not (last[-1].tail or '').strip()):
+                last.remove(last[-1])
+
+
+def _remove_leading_empty_paragraphs(
+    element: Element,
+    start: int,
+) -> None:
+    """Remove empty paragraphs from the start of an element.
+
+    Version Added:
+        9.0
+
+    Args:
+        element (xml.etree.ElementTree.Element):
+            The element.
+
+        start (int):
+            The index of the first child to look at.
+    """
+    for child in list(element)[start:]:
+        if not _is_empty_paragraph(child):
+            break
+
+        element.remove(child)
+
+
+def _is_empty_paragraph(
+    element: Element,
+) -> bool:
+    """Return whether an element is an empty paragraph.
+
+    Version Added:
+        9.0
+
+    Args:
+        element (xml.etree.ElementTree.Element):
+            The element.
+
+    Returns:
+        bool:
+        Whether the element is an empty paragraph.
+    """
+    return element.tag == 'p' and not element.text and len(element) == 0
+
+
+class _QuoteSpacingExtension(Extension):
+    """Removes extra blank lines around and inside blockquotes.
+
+    The ``wysiwyg`` extension shows blank lines as empty paragraphs. The
+    way blockquotes are parsed adds a few that aren't in the source:
+
+    * When a blockquote starts a block, the blockquote processor parses the
+      (empty) text before it anyway. ``wysiwyg`` shows an empty block as
+      two blank lines. These two empty paragraphs always come right before
+      the blockquote. Any blank lines from the source come before them,
+      and text in the same block would come between them, so removing
+      exactly two is safe.
+
+    * When a blockquote follows text in the same block, its content starts
+      with a blank line. Blank ``>`` lines at the start of a blockquote, or
+      right after an alert's title, add more. GitHub ignores these, and so
+      does this. For alerts, an empty paragraph would also be taken as the
+      title.
+
+    * A blank ``>`` line at the end of a blockquote leaves a line break at
+      the end of its last paragraph.
+
+    Version Added:
+        9.0
+    """
+
+    def extendMarkdown(  # noqa: N802
+        self,
+        md: Markdown,
+    ) -> None:
+        """Add the treeprocessor to the Markdown instance.
+
+        This runs after inline content is processed, and before
+        ``pymdownx.quotes`` turns alerts into ``<div>`` elements and picks
+        their titles.
+
+        Args:
+            md (markdown.Markdown):
+                The Markdown instance.
+        """
+        md.treeprocessors.register(_QuoteSpacingTreeprocessor(md),
+                                   'quote_spacing', 19.995)
+
+
 class _FenceSpacingPreprocessor(Preprocessor):
     """Adds blank lines around fenced code blocks.
 
@@ -237,6 +373,7 @@ MARKDOWN_KWARGS = {
         ListIndentExtension(),
         _AlertBlockquoteExtension(),
         _FenceSpacingExtension(),
+        _QuoteSpacingExtension(),
     ],
     'extension_configs': {
         'pymdownx.emoji': {
@@ -311,12 +448,17 @@ SAFE_MARKDOWN_TAGS = [
 #: Anything not in this list will be removed when sanitizing the resulting
 #: HTML.
 #:
+#: Version Changed:
+#:     9.0:
+#:     Added ``start`` for ``ol``, so ordered lists keep their first number.
+#:
 #: Version Added:
 #:     3.0.22
 SAFE_MARKDOWN_ATTRS = {
     '*': ['class', 'id'],
     'a': ['href', 'alt', 'title'],
     'img': ['src', 'alt', 'title'],
+    'ol': ['start'],
 }
 
 

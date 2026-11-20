@@ -58,7 +58,10 @@ class JIRAAuthFormTests(JIRATestCase):
                 hosting_service_cls=JIRA)
 
             self.assertTrue(form.is_valid(), form.errors)
-            accounts.append(form.save())
+
+            with self.setup_http_test(payload=b'{}',
+                                      expected_http_calls=1):
+                accounts.append(form.save())
 
         self.assertNotEqual(accounts[0].pk, accounts[1].pk)
 

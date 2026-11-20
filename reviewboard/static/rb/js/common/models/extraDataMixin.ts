@@ -29,6 +29,12 @@ export const ExtraDataMixin = {
      * model itself
      */
     _setupExtraData() {
+        /*
+         * Default attributes can share one extraData object between
+         * instances, so each instance needs its own copy.
+         */
+        this.attributes.extraData = _.clone(this.attributes.extraData);
+
         this.extraData = new ExtraData();
         this.extraData.attributes = this.attributes.extraData;
 

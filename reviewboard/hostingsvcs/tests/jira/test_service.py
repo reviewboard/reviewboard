@@ -7,23 +7,23 @@ Version Added:
 
 from __future__ import annotations
 
-import kgb
+from typing import TYPE_CHECKING
+from urllib.error import URLError
 
-import reviewboard.hostingsvcs.jira.service as jira_module
 from reviewboard.hostingsvcs.errors import AuthorizationError
-from reviewboard.hostingsvcs.tests.jira.base import (
-    FakeJIRAClient,
-    FakeJIRAError,
-    FakeJIRAIssue,
-    FakePickerResponse,
-    FakeRequestError,
-    FakeSession,
-    JIRATestCase,
-)
+from reviewboard.hostingsvcs.jira.service import JIRA
+from reviewboard.hostingsvcs.tests.jira.base import JIRATestCase
 from reviewboard.scmtools.crypto_utils import (
     decrypt_password,
     encrypt_password,
 )
+
+if TYPE_CHECKING:
+    from reviewboard.hostingsvcs.base.client import HostingServiceClient
+    from reviewboard.hostingsvcs.base.http import (
+        HostingServiceHTTPRequest,
+        HostingServiceHTTPResponse,
+    )
 
 
 class JIRASortKeyTests(JIRATestCase):
@@ -111,7 +111,7 @@ class JIRAConfigURLTests(JIRATestCase):
             hosting_account=self.create_hosting_account(use_url=True))
 
         self.assertEqual(
-            jira_module.JIRA.connect_ui.get_bug_tracker_display_path(config),
+            JIRA.connect_ui.get_bug_tracker_display_path(config),
             'https://jira.example.com')
 
     def test_get_bug_tracker_display_path_with_jira_cloud(self) -> None:
@@ -127,7 +127,7 @@ class JIRAConfigURLTests(JIRATestCase):
             hosting_account=account)
 
         self.assertEqual(
-            jira_module.JIRA.connect_ui.get_bug_tracker_display_path(config),
+            JIRA.connect_ui.get_bug_tracker_display_path(config),
             '')
 
     def test_get_bug_tracker_display_path_with_settings_url(self) -> None:
@@ -141,7 +141,7 @@ class JIRAConfigURLTests(JIRATestCase):
             })
 
         self.assertEqual(
-            jira_module.JIRA.connect_ui.get_bug_tracker_display_path(config),
+            JIRA.connect_ui.get_bug_tracker_display_path(config),
             'https://jira.example.com')
 
 
@@ -157,21 +157,19 @@ class JIRAAuthorizeTests(JIRATestCase):
         account = self.create_hosting_account()
         service = account.service
 
-        self.spy_on(FakeJIRAClient.__init__, owner=FakeJIRAClient)
-        self.spy_on(FakeJIRAClient.myself, owner=FakeJIRAClient)
+        with self.setup_http_test(payload=b'{}',
+                                  hosting_account=account,
+                                  expected_http_calls=1) as ctx:
+            service.authorize(
+                username='myuser',
+                password='mytoken',
+                hosting_url='https://jira.example.com')
 
-        service.authorize(
+        ctx.assertHTTPCall(
+            0,
+            url=self.make_api_url('myself'),
             username='myuser',
-            password='mytoken',
-            hosting_url='https://jira.example.com')
-
-        self.assertSpyCalledWith(
-            FakeJIRAClient.__init__,
-            options={
-                'server': 'https://jira.example.com',
-            },
-            basic_auth=('myuser', 'mytoken'))
-        self.assertSpyCalled(FakeJIRAClient.myself)
+            password='mytoken')
 
         account.refresh_from_db()
         self.assertTrue(service.is_authorized())
@@ -183,22 +181,15 @@ class JIRAAuthorizeTests(JIRATestCase):
         account = self.create_hosting_account()
         service = account.service
 
-        self.spy_on(
-            FakeJIRAClient.myself,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpRaise(FakeJIRAError(
-                text='Client must be authenticated',
-                status_code=401,
-            )),
-        )
-
-        with self.assertRaisesMessage(
-                AuthorizationError,
-                'JIRA rejected the username and API token or password.'):
-            service.authorize(
-                username='myuser',
-                password='badtoken',
-                hosting_url='https://jira.example.com')
+        with self.setup_http_test(status_code=401,
+                                  hosting_account=account):
+            with self.assertRaisesMessage(
+                    AuthorizationError,
+                    'JIRA rejected the username and API token or password.'):
+                service.authorize(
+                    username='myuser',
+                    password='badtoken',
+                    hosting_url='https://jira.example.com')
 
         self.assertFalse(service.is_authorized())
 
@@ -209,22 +200,16 @@ class JIRAAuthorizeTests(JIRATestCase):
         account = self.create_hosting_account()
         service = account.service
 
-        self.spy_on(
-            FakeJIRAClient.myself,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpRaise(FakeJIRAError(
-                text='Client must be authenticated',
-                status_code=401,
-            )),
-        )
-
-        with self.assertRaisesMessage(
-                AuthorizationError,
-                'JIRA Cloud requires an API token instead of a password.'):
-            service.authorize(
-                username='myuser@example.com',
-                password='my-account-password',
-                hosting_url='https://myteam.atlassian.net')
+        with self.setup_http_test(status_code=401,
+                                  hosting_account=account):
+            with self.assertRaisesMessage(
+                    AuthorizationError,
+                    'JIRA Cloud requires an API token instead of a '
+                    'password.'):
+                service.authorize(
+                    username='myuser@example.com',
+                    password='my-account-password',
+                    hosting_url='https://myteam.atlassian.net')
 
         self.assertFalse(service.is_authorized())
 
@@ -235,55 +220,55 @@ class JIRAAuthorizeTests(JIRATestCase):
         account = self.create_hosting_account()
         service = account.service
 
-        self.spy_on(
-            FakeJIRAClient.myself,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpRaise(FakeJIRAError(
-                text='CAPTCHA required',
+        with self.setup_http_test(
                 status_code=403,
-            )),
-        )
+                payload=self.dump_json({
+                    'errorMessages': ['CAPTCHA required'],
+                }),
+                hosting_account=account):
+            with self.assertRaisesMessage(
+                    AuthorizationError,
+                    'Unable to authenticate with JIRA: CAPTCHA required'):
+                service.authorize(
+                    username='myuser',
+                    password='mytoken',
+                    hosting_url='https://jira.example.com')
 
-        with self.assertRaisesMessage(
-                AuthorizationError,
-                'Unable to authenticate with JIRA: CAPTCHA required'):
-            service.authorize(
-                username='myuser',
-                password='mytoken',
-                hosting_url='https://jira.example.com')
-
-    def test_authorize_without_jira_module(self) -> None:
-        """Testing JIRA.authorize without the jira module installed"""
+    def test_authorize_with_unreachable_server(self) -> None:
+        """Testing JIRA.authorize with an unreachable server"""
         account = self.create_hosting_account()
         service = account.service
 
-        jira_module.has_jira = False
+        with self.setup_http_test(
+                http_request_func=_raise_connection_refused,
+                hosting_account=account):
+            with self.assertRaisesMessage(
+                    AuthorizationError,
+                    'Unable to communicate with JIRA: Connection refused'):
+                service.authorize(
+                    username='myuser',
+                    password='mytoken',
+                    hosting_url='https://jira.example.com')
 
-        with self.assertRaisesMessage(AuthorizationError,
-                                      'requires the "jira" Python package'):
-            service.authorize(
-                username='myuser',
-                password='mytoken',
-                hosting_url='https://jira.example.com')
+        self.assertFalse(service.is_authorized())
 
     def test_authorize_without_credentials(self) -> None:
         """Testing JIRA.authorize without full credentials"""
         account = self.create_hosting_account()
         service = account.service
 
-        self.spy_on(FakeJIRAClient.__init__, owner=FakeJIRAClient)
+        with self.setup_http_test(hosting_account=account,
+                                  expected_http_calls=0):
+            with self.assertRaisesMessage(AuthorizationError,
+                                          'are required'):
+                service.authorize(
+                    username='myuser',
+                    password='',
+                    hosting_url='https://jira.example.com')
 
-        with self.assertRaisesMessage(AuthorizationError, 'are required'):
-            service.authorize(
-                username='myuser',
-                password='',
-                hosting_url='https://jira.example.com')
 
-        self.assertSpyNotCalled(FakeJIRAClient.__init__)
-
-
-class JIRAClientCredentialsTests(JIRATestCase):
-    """Unit tests for JIRA API credential usage.
+class JIRACredentialsTests(JIRATestCase):
+    """Unit tests for which credentials JIRA lookups send.
 
     Version Added:
         9.0
@@ -308,17 +293,19 @@ class JIRAClientCredentialsTests(JIRATestCase):
             settings={
                 'jira_url': 'http://legacy-jira.example.com',
             })
-        service = self.get_jira_service(config)
 
-        service.search_bugs(config=config, query='crash')
+        with self.setup_http_test(
+                payload=self.make_picker_payload([]),
+                hosting_account=account) as ctx:
+            config.service.search_bugs(config=config, query='crash')
 
-        client = service.jira_client
-        assert isinstance(client, FakeJIRAClient)
-
-        self.assertEqual(client.basic_auth, ('myuser', 'mytoken'))
-        self.assertEqual(client.options, {
-            'server': 'https://jira.example.com',
-        })
+        ctx.assertHTTPCall(
+            0,
+            url=self.make_api_url('issue/picker',
+                                  currentJQL='',
+                                  query='crash'),
+            username='myuser',
+            password='mytoken')
 
     def test_search_bugs_without_account_is_anonymous(self) -> None:
         """Testing JIRA bug lookups without an account, connecting anonymously
@@ -328,14 +315,17 @@ class JIRAClientCredentialsTests(JIRATestCase):
             settings={
                 'jira_url': 'https://jira.example.com',
             })
-        service = self.get_jira_service(config)
 
-        service.search_bugs(config=config, query='crash')
+        with self.setup_http_test(
+                payload=self.make_picker_payload([])) as ctx:
+            config.service.search_bugs(config=config, query='crash')
 
-        client = service.jira_client
-        assert isinstance(client, FakeJIRAClient)
-
-        self.assertIsNone(client.basic_auth)
+        ctx.assertHTTPCall(
+            0,
+            url=self.make_api_url('issue/picker',
+                                  currentJQL='',
+                                  query='crash'),
+            credentials={})
 
     def test_get_bug_info_with_repository_legacy_url(self) -> None:
         """Testing JIRA.get_bug_info_uncached with a repository's legacy URL
@@ -354,94 +344,32 @@ class JIRAClientCredentialsTests(JIRATestCase):
         })
         service = self.get_jira_service(config)
 
-        service.get_bug_info_uncached(repository=repository,
-                                      bug_id='ENG-1')
+        with self.setup_http_test(
+                payload=self.dump_json(
+                    self.make_issue('ENG-1', 'A crash', 'Open')),
+                hosting_account=account) as ctx:
+            service.get_bug_info_uncached(repository=repository,
+                                          bug_id='ENG-1')
 
-        client = service.jira_client
-        assert isinstance(client, FakeJIRAClient)
+            # The account's own server still gets the credentials.
+            service.get_bug_info_uncached(config=config,
+                                          bug_id='ENG-1')
 
-        self.assertIsNone(client.basic_auth)
-        self.assertEqual(client.options, {
-            'server': 'http://legacy-jira.example.com',
-        })
+        fields = 'summary,status,description'
 
-        # The anonymous client isn't reused for the account's own server.
-        service.search_bugs(config=config, query='crash')
-
-        client = service.jira_client
-        assert isinstance(client, FakeJIRAClient)
-
-        self.assertEqual(client.basic_auth, ('myuser', 'mytoken'))
-        self.assertEqual(client.options, {
-            'server': 'https://jira.example.com',
-        })
-
-    def test_client_timeout(self) -> None:
-        """Testing JIRA API clients are built with a request timeout"""
-        config = self.create_bug_tracker(
-            service_name='jira',
-            settings={
-                'jira_url': 'https://jira.example.com',
-            })
-        service = self.get_jira_service(config)
-
-        service.search_bugs(config=config, query='crash')
-
-        client = service.jira_client
-        assert isinstance(client, FakeJIRAClient)
-
-        self.assertEqual(client.timeout, 10)
-
-    def test_get_bug_info_with_unreachable_server(self) -> None:
-        """Testing JIRA.get_bug_info_uncached with an unreachable server
-        returns empty information
-        """
-        config = self.create_bug_tracker(
-            service_name='jira',
-            settings={
-                'jira_url': 'https://jira.example.com',
-            })
-        service = self.get_jira_service(config)
-
-        self.spy_on(
-            FakeJIRAClient.__init__,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpRaise(FakeRequestError('Connection refused')),
-        )
-
-        self.assertEqual(
-            service.get_bug_info_uncached(config=config, bug_id='ENG-1'),
-            {
-                'description': '',
-                'status': '',
-                'summary': '',
-            })
-        self.assertIsNone(service.jira_client)
-
-    def test_get_bug_info_with_request_error(self) -> None:
-        """Testing JIRA.get_bug_info_uncached with a request error while
-        fetching the issue returns empty information
-        """
-        config = self.create_bug_tracker(
-            service_name='jira',
-            settings={
-                'jira_url': 'https://jira.example.com',
-            })
-        service = self.get_jira_service(config)
-
-        self.spy_on(
-            FakeJIRAClient.issue,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpRaise(FakeRequestError('Read timed out')),
-        )
-
-        self.assertEqual(
-            service.get_bug_info_uncached(config=config, bug_id='ENG-1'),
-            {
-                'description': '',
-                'status': '',
-                'summary': '',
-            })
+        ctx.assertHTTPCall(
+            0,
+            url=self.make_api_url(
+                'issue/ENG-1',
+                server_url='http://legacy-jira.example.com',
+                fields=fields),
+            credentials={})
+        ctx.assertHTTPCall(
+            1,
+            url=self.make_api_url('issue/ENG-1',
+                                  fields=fields),
+            username='myuser',
+            password='mytoken')
 
 
 class JIRABugInfoTests(JIRATestCase):
@@ -451,32 +379,96 @@ class JIRABugInfoTests(JIRATestCase):
         9.0
     """
 
-    def test_get_bug_info(self) -> None:
-        """Testing JIRA.get_bug_info_uncached loads only the needed fields"""
-        config = self.create_bug_tracker(
+    def setUp(self) -> None:
+        """Set up the test case."""
+        super().setUp()
+
+        self.config = self.create_bug_tracker(
             service_name='jira',
             settings={
                 'jira_url': 'https://jira.example.com',
             })
 
-        self.spy_on(
-            FakeJIRAClient.issue,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpReturn(
-                FakeJIRAIssue('ENG-1', 'A crash', 'Open')),
-        )
+    def test_get_bug_info(self) -> None:
+        """Testing JIRA.get_bug_info_uncached loads only the needed fields"""
+        config = self.config
 
-        bug_info = self.get_jira_service(config).get_bug_info_uncached(
-            config=config,
-            bug_id='ENG-1')
+        with self.setup_http_test(
+                payload=self.dump_json(self.make_issue(
+                    'ENG-1',
+                    'A crash',
+                    'Open',
+                    description='It crashes.')),
+                expected_http_calls=1) as ctx:
+            bug_info = self.get_jira_service(config).get_bug_info_uncached(
+                config=config,
+                bug_id='ENG-1')
 
-        self.assertSpyCalledWith(FakeJIRAClient.issue,
-                                 'ENG-1',
-                                 fields='summary,status,description')
+        ctx.assertHTTPCall(
+            0,
+            url=self.make_api_url('issue/ENG-1',
+                                  fields='summary,status,description'),
+            credentials={})
         self.assertEqual(bug_info, {
-            'description': '',
+            'description': 'It crashes.',
             'status': 'Open',
             'summary': 'A crash',
+        })
+
+    def test_get_bug_info_escapes_bug_id(self) -> None:
+        """Testing JIRA.get_bug_info_uncached escapes the bug ID in the URL"""
+        config = self.config
+
+        with self.setup_http_test(
+                payload=self.dump_json(
+                    self.make_issue('ENG-1', 'A crash', 'Open'))) as ctx:
+            self.get_jira_service(config).get_bug_info_uncached(
+                config=config,
+                bug_id='../myself?x=')
+
+        ctx.assertHTTPCall(
+            0,
+            url=self.make_api_url('issue/..%2Fmyself%3Fx%3D',
+                                  fields='summary,status,description'),
+            credentials={})
+
+    def test_get_bug_info_with_unreachable_server(self) -> None:
+        """Testing JIRA.get_bug_info_uncached with an unreachable server
+        returns empty information
+        """
+        config = self.config
+
+        with self.setup_http_test(
+                http_request_func=_raise_connection_refused):
+            bug_info = self.get_jira_service(config).get_bug_info_uncached(
+                config=config,
+                bug_id='ENG-1')
+
+        self.assertEqual(bug_info, {
+            'description': '',
+            'status': '',
+            'summary': '',
+        })
+
+    def test_get_bug_info_with_missing_issue(self) -> None:
+        """Testing JIRA.get_bug_info_uncached with an issue that does not
+        exist returns empty information
+        """
+        config = self.config
+
+        with self.setup_http_test(
+                status_code=404,
+                payload=self.dump_json({
+                    'errorMessages': ['Issue does not exist'],
+                })):
+            bug_info = self.get_jira_service(config).get_bug_info_uncached(
+                config=config,
+                bug_id='ENG-1')
+
+        self.assertEqual(bug_info, {
+            'description': '',
+            'status': '',
+            'summary': '',
         })
 
 
@@ -497,40 +489,36 @@ class JIRASearchTests(JIRATestCase):
                 'jira_url': 'https://jira.example.com',
             })
 
-    def test_search_bugs_without_jira_module(self) -> None:
-        """Testing JIRA.search_bugs without the jira module installed"""
-        config = self.config
-
-        jira_module.has_jira = False
-
-        self.assertEqual(
-            config.service.search_bugs(config=config, query='crash'),
-            [])
-
     def test_search_bugs_with_empty_query(self) -> None:
         """Testing JIRA.search_bugs with an empty query does not contact
         the server
         """
         config = self.config
-        service = self.get_jira_service(config)
 
-        self.assertEqual(service.search_bugs(config=config, query='  '), [])
-        self.assertIsNone(service.jira_client)
+        with self.setup_http_test(expected_http_calls=0):
+            self.assertEqual(
+                config.service.search_bugs(config=config, query='  '),
+                [])
 
     def test_search_bugs(self) -> None:
         """Testing JIRA.search_bugs"""
         config = self.config
 
-        self.spy_on(
-            FakeJIRAClient.search_issues,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpReturn([
-                FakeJIRAIssue('PROJ-42', 'Crash on startup', 'Open'),
-            ]),
-        )
+        handler = self.make_handler_for_paths({
+            '/rest/api/2/issue/picker': {
+                'payload': self.make_picker_payload([]),
+            },
+            '/rest/api/2/search': {
+                'payload': self.make_search_payload([
+                    self.make_issue('PROJ-42', 'Crash on startup', 'Open'),
+                ]),
+            },
+        })
 
-        results = config.service.search_bugs(config=config,
-                                             query='crash "quoted"')
+        with self.setup_http_test(http_request_func=handler,
+                                  expected_http_calls=2) as ctx:
+            results = config.service.search_bugs(config=config,
+                                                 query='crash "quoted"')
 
         self.assertEqual(results, [
             {
@@ -540,15 +528,17 @@ class JIRASearchTests(JIRATestCase):
             },
         ])
 
-        # Quotes in the query are escaped in the JQL, and only the
-        # summary is searched.
-        self.assertSpyCallCount(FakeJIRAClient.search_issues, 1)
-        self.assertSpyCalledWith(
-            FakeJIRAClient.search_issues,
-            'summary ~ "crash \\"quoted\\"*"',
-            maxResults=25,
-            validate_query=False,
-            fields='summary,status')
+        # The picker found nothing, so this falls back to JQL. Quotes in the
+        # query are escaped in the JQL, and only the summary is searched.
+        ctx.assertHTTPCall(
+            1,
+            url=self.make_api_url(
+                'search',
+                fields='summary,status',
+                jql='summary ~ "crash \\"quoted\\"*"',
+                maxResults='25',
+                validateQuery='false'),
+            credentials={})
 
     def test_search_bugs_with_picker(self) -> None:
         """Testing JIRA.search_bugs uses the issue picker, promoting an
@@ -556,45 +546,47 @@ class JIRASearchTests(JIRATestCase):
         """
         config = self.config
 
-        self.spy_on(
-            FakeSession.get,
-            owner=FakeSession,
-            op=kgb.SpyOpReturn(FakePickerResponse([
-                'ENG-10',
-                'ENG-1',
-                'ENG-100',
-            ])),
-        )
+        # ENG-100 is left out of the search results, simulating an issue
+        # that could not be loaded.
+        handler = self.make_handler_for_paths({
+            '/rest/api/2/issue/picker': {
+                'payload': self.make_picker_payload([
+                    'ENG-10',
+                    'ENG-1',
+                    'ENG-100',
+                ]),
+            },
+            '/rest/api/2/search': {
+                'payload': self.make_search_payload([
+                    self.make_issue('ENG-10', 'Crash on startup', 'Open'),
+                    self.make_issue('ENG-1', 'First bug', 'Open'),
+                ]),
+            },
+        })
 
-        # ENG-100 is left out, simulating an issue that could not be
-        # loaded.
-        self.spy_on(
-            FakeJIRAClient.search_issues,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpReturn([
-                FakeJIRAIssue('ENG-10', 'Crash on startup', 'Open'),
-                FakeJIRAIssue('ENG-1', 'First bug', 'Open'),
-            ]),
-        )
+        with self.setup_http_test(http_request_func=handler,
+                                  expected_http_calls=2) as ctx:
+            results = config.service.search_bugs(config=config,
+                                                 query='eng-1')
 
-        results = config.service.search_bugs(config=config, query='eng-1')
+        ctx.assertHTTPCall(
+            0,
+            url=self.make_api_url('issue/picker',
+                                  currentJQL='',
+                                  query='eng-1'),
+            credentials={})
 
-        self.assertSpyCalledWith(
-            FakeSession.get,
-            'https://jira.example.com/rest/api/2/issue/picker',
-            params={
-                'query': 'eng-1',
-                'currentJQL': '',
-            })
-
-        # Details are loaded for the picker's keys, with the exact
-        # match promoted to the front.
-        self.assertSpyCallCount(FakeJIRAClient.search_issues, 1)
-        self.assertSpyCalledWith(
-            FakeJIRAClient.search_issues,
-            'key in ("ENG-1", "ENG-10", "ENG-100")',
-            maxResults=3,
-            validate_query=False)
+        # Details are loaded for the picker's keys, with the exact match
+        # promoted to the front.
+        ctx.assertHTTPCall(
+            1,
+            url=self.make_api_url(
+                'search',
+                fields='summary,status',
+                jql='key in ("ENG-1", "ENG-10", "ENG-100")',
+                maxResults='3',
+                validateQuery='false'),
+            credentials={})
 
         self.assertEqual(results, [
             {
@@ -620,43 +612,46 @@ class JIRASearchTests(JIRATestCase):
                 'jira_project': 'ENG',
             })
 
-        self.spy_on(
-            FakeSession.get,
-            owner=FakeSession,
-            op=kgb.SpyOpReturn(FakePickerResponse([
-                'OTHER-5',
-                'ENG-10',
-                'ENG-1',
-            ])),
-        )
-        self.spy_on(
-            FakeJIRAClient.search_issues,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpReturn([
-                FakeJIRAIssue('ENG-10', 'Crash on startup', 'Open'),
-                FakeJIRAIssue('ENG-1', 'First bug', 'Open'),
-            ]),
-        )
+        handler = self.make_handler_for_paths({
+            '/rest/api/2/issue/picker': {
+                'payload': self.make_picker_payload([
+                    'OTHER-5',
+                    'ENG-10',
+                    'ENG-1',
+                ]),
+            },
+            '/rest/api/2/search': {
+                'payload': self.make_search_payload([
+                    self.make_issue('ENG-10', 'Crash on startup', 'Open'),
+                    self.make_issue('ENG-1', 'First bug', 'Open'),
+                ]),
+            },
+        })
 
-        results = config.service.search_bugs(config=config, query='eng-1')
+        with self.setup_http_test(http_request_func=handler,
+                                  expected_http_calls=2) as ctx:
+            results = config.service.search_bugs(config=config,
+                                                 query='eng-1')
 
         # The picker's current search is limited to the project.
-        self.assertSpyCalledWith(
-            FakeSession.get,
-            'https://jira.example.com/rest/api/2/issue/picker',
-            params={
-                'query': 'eng-1',
-                'currentJQL': 'project = "ENG"',
-            })
+        ctx.assertHTTPCall(
+            0,
+            url=self.make_api_url('issue/picker',
+                                  currentJQL='project = "ENG"',
+                                  query='eng-1'),
+            credentials={})
 
         # The other project's issue (as from the picker's history section)
         # never reaches the details query.
-        self.assertSpyCallCount(FakeJIRAClient.search_issues, 1)
-        self.assertSpyCalledWith(
-            FakeJIRAClient.search_issues,
-            'key in ("ENG-1", "ENG-10")',
-            maxResults=2,
-            validate_query=False)
+        ctx.assertHTTPCall(
+            1,
+            url=self.make_api_url(
+                'search',
+                fields='summary,status',
+                jql='key in ("ENG-1", "ENG-10")',
+                maxResults='2',
+                validateQuery='false'),
+            credentials={})
 
         self.assertEqual(
             [result['bug_id'] for result in results],
@@ -668,35 +663,42 @@ class JIRASearchTests(JIRATestCase):
         """
         config = self.config
 
-        self.spy_on(
-            FakeSession.get,
-            owner=FakeSession,
-            op=kgb.SpyOpRaise(Exception('404 from server')),
-        )
-        self.spy_on(
-            FakeJIRAClient.search_issues,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpReturn([
-                FakeJIRAIssue('ENG-102', 'Crash on startup', 'Open'),
-            ]),
-        )
+        handler = self.make_handler_for_paths({
+            '/rest/api/2/issue/picker': {
+                'status_code': 404,
+            },
+            '/rest/api/2/search': {
+                'payload': self.make_search_payload([
+                    self.make_issue('ENG-102', 'Crash on startup', 'Open'),
+                ]),
+            },
+        })
 
-        results = config.service.search_bugs(config=config, query='eng-102')
+        with self.setup_http_test(http_request_func=handler,
+                                  expected_http_calls=3) as ctx:
+            results = config.service.search_bugs(config=config,
+                                                 query='eng-102')
 
         # The exact key is tried first, then summaries. The duplicate
         # result is dropped.
-        search_issues = FakeJIRAClient.search_issues
-        self.assertSpyCallCount(search_issues, 2)
-        self.assertSpyCalledWith(
-            search_issues.calls[0],
-            'key = "ENG-102"',
-            maxResults=25,
-            validate_query=False)
-        self.assertSpyCalledWith(
-            search_issues.calls[1],
-            'summary ~ "eng-102*"',
-            maxResults=24,
-            validate_query=False)
+        ctx.assertHTTPCall(
+            1,
+            url=self.make_api_url(
+                'search',
+                fields='summary,status',
+                jql='key = "ENG-102"',
+                maxResults='25',
+                validateQuery='false'),
+            credentials={})
+        ctx.assertHTTPCall(
+            2,
+            url=self.make_api_url(
+                'search',
+                fields='summary,status',
+                jql='summary ~ "eng-102*"',
+                maxResults='24',
+                validateQuery='false'),
+            credentials={})
 
         self.assertEqual(results, [
             {
@@ -728,24 +730,25 @@ class JIRABulkBugInfoTests(JIRATestCase):
         """Testing JIRA.get_bugs_info fetches every issue in one query"""
         config = self.config
 
-        self.spy_on(
-            FakeJIRAClient.search_issues,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpReturn([
-                FakeJIRAIssue('ENG-1', 'A crash', 'Open'),
-                FakeJIRAIssue('ENG-2', 'A typo', 'Fixed'),
-            ]),
-        )
+        with self.setup_http_test(
+                payload=self.make_search_payload([
+                    self.make_issue('ENG-1', 'A crash', 'Open'),
+                    self.make_issue('ENG-2', 'A typo', 'Fixed'),
+                ]),
+                expected_http_calls=1) as ctx:
+            bugs_info = config.service.get_bugs_info(
+                config=config,
+                bug_ids=['ENG-1', 'ENG-2'])
 
-        bugs_info = config.service.get_bugs_info(
-            config=config,
-            bug_ids=['ENG-1', 'ENG-2'])
-
-        self.assertSpyCallCount(FakeJIRAClient.search_issues, 1)
-        self.assertSpyCalledWith(
-            FakeJIRAClient.search_issues,
-            'key in ("ENG-1", "ENG-2")',
-            fields='summary,status')
+        ctx.assertHTTPCall(
+            0,
+            url=self.make_api_url(
+                'search',
+                fields='summary,status',
+                jql='key in ("ENG-1", "ENG-2")',
+                maxResults='2',
+                validateQuery='false'),
+            credentials={})
         self.assertEqual(bugs_info, {
             'ENG-1': {
                 'description': '',
@@ -762,12 +765,12 @@ class JIRABulkBugInfoTests(JIRATestCase):
     def test_get_bugs_info_without_jira_url(self) -> None:
         """Testing JIRA.get_bugs_info without a server URL"""
         config = self.create_bug_tracker(service_name='jira')
-        service = self.get_jira_service(config)
 
-        self.assertEqual(
-            service.get_bugs_info(config=config, bug_ids=['ENG-1']),
-            {})
-        self.assertIsNone(service.jira_client)
+        with self.setup_http_test(expected_http_calls=0):
+            self.assertEqual(
+                config.service.get_bugs_info(config=config,
+                                             bug_ids=['ENG-1']),
+                {})
 
     def test_get_bugs_info_skips_malformed_ids(self) -> None:
         """Testing JIRA.get_bugs_info leaves IDs that are not issue keys
@@ -775,25 +778,28 @@ class JIRABulkBugInfoTests(JIRATestCase):
         """
         config = self.config
 
-        self.spy_on(
-            FakeJIRAClient.search_issues,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpReturn([
-                FakeJIRAIssue('ENG-1', 'A crash', 'Open'),
-            ]),
-        )
+        with self.setup_http_test(
+                payload=self.make_search_payload([
+                    self.make_issue('ENG-1', 'A crash', 'Open'),
+                ]),
+                expected_http_calls=1) as ctx:
+            bugs_info = config.service.get_bugs_info(
+                config=config,
+                bug_ids=[
+                    'ENG-1',
+                    'X") OR project = "HR" OR key in ("Y',
+                    '#123',
+                ])
 
-        bugs_info = config.service.get_bugs_info(
-            config=config,
-            bug_ids=[
-                'ENG-1',
-                'X") OR project = "HR" OR key in ("Y',
-                '#123',
-            ])
-
-        self.assertSpyCallCount(FakeJIRAClient.search_issues, 1)
-        self.assertSpyCalledWith(FakeJIRAClient.search_issues,
-                                 'key in ("ENG-1")')
+        ctx.assertHTTPCall(
+            0,
+            url=self.make_api_url(
+                'search',
+                fields='summary,status',
+                jql='key in ("ENG-1")',
+                maxResults='1',
+                validateQuery='false'),
+            credentials={})
         self.assertEqual(list(bugs_info), ['ENG-1'])
 
     def test_get_bugs_info_with_only_malformed_ids(self) -> None:
@@ -801,13 +807,12 @@ class JIRABulkBugInfoTests(JIRATestCase):
         contact the server
         """
         config = self.config
-        service = self.get_jira_service(config)
 
-        self.assertEqual(
-            service.get_bugs_info(config=config,
-                                  bug_ids=['#123', 'not a key']),
-            {})
-        self.assertIsNone(service.jira_client)
+        with self.setup_http_test(expected_http_calls=0):
+            self.assertEqual(
+                config.service.get_bugs_info(config=config,
+                                             bug_ids=['#123', 'not a key']),
+                {})
 
     def test_get_bugs_info_with_query_error(self) -> None:
         """Testing JIRA.get_bugs_info falls back to fetching each issue when
@@ -815,33 +820,29 @@ class JIRABulkBugInfoTests(JIRATestCase):
         """
         config = self.config
 
-        self.spy_on(
-            FakeJIRAClient.search_issues,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpRaise(FakeJIRAError(
-                text="An issue with key 'ENG-404' does not exist.",
-                status_code=400,
-            )),
-        )
-        self.spy_on(
-            FakeJIRAClient.issue,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpMatchInOrder([
-                {
-                    'args': ('ENG-1',),
-                    'op': kgb.SpyOpReturn(
-                        FakeJIRAIssue('ENG-1', 'A crash', 'Open')),
-                },
-                {
-                    'args': ('ENG-404',),
-                    'call_original': True,
-                },
-            ]),
-        )
+        handler = self.make_handler_for_paths({
+            '/rest/api/2/search': {
+                'status_code': 400,
+                'payload': self.dump_json({
+                    'errorMessages': [
+                        "An issue with key 'ENG-404' does not exist.",
+                    ],
+                }),
+            },
+            '/rest/api/2/issue/ENG-1': {
+                'payload': self.dump_json(
+                    self.make_issue('ENG-1', 'A crash', 'Open')),
+            },
+            '/rest/api/2/issue/ENG-404': {
+                'status_code': 404,
+            },
+        })
 
-        bugs_info = config.service.get_bugs_info(
-            config=config,
-            bug_ids=['ENG-1', 'ENG-404'])
+        with self.setup_http_test(http_request_func=handler,
+                                  expected_http_calls=3):
+            bugs_info = config.service.get_bugs_info(
+                config=config,
+                bug_ids=['ENG-1', 'ENG-404'])
 
         # The missing issue is left out, but the other one still loads.
         self.assertEqual(bugs_info, {
@@ -858,20 +859,35 @@ class JIRABulkBugInfoTests(JIRATestCase):
         """
         config = self.config
 
-        self.spy_on(
-            FakeJIRAClient.search_issues,
-            owner=FakeJIRAClient,
-            op=kgb.SpyOpRaise(FakeJIRAError(
-                text='Unauthorized',
-                status_code=401,
-            )),
-        )
-        self.spy_on(FakeJIRAClient.issue,
-                    owner=FakeJIRAClient)
-
-        bugs_info = config.service.get_bugs_info(
-            config=config,
-            bug_ids=['ENG-1', 'ENG-2'])
+        with self.setup_http_test(status_code=401,
+                                  expected_http_calls=1):
+            bugs_info = config.service.get_bugs_info(
+                config=config,
+                bug_ids=['ENG-1', 'ENG-2'])
 
         self.assertEqual(bugs_info, {})
-        self.assertSpyNotCalled(FakeJIRAClient.issue)
+
+
+def _raise_connection_refused(
+    client: HostingServiceClient,
+    request: HostingServiceHTTPRequest,
+) -> HostingServiceHTTPResponse:
+    """Raise an error for a server that can't be reached.
+
+    This is used as the HTTP handler for tests.
+
+    Version Added:
+        9.0
+
+    Args:
+        client (reviewboard.hostingsvcs.base.client.HostingServiceClient):
+            The client performing the request.
+
+        request (reviewboard.hostingsvcs.base.http.HostingServiceHTTPRequest):
+            The request.
+
+    Raises:
+        urllib.error.URLError:
+            The error for the unreachable server.
+    """
+    raise URLError('Connection refused')
