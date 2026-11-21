@@ -48,6 +48,12 @@ export interface ConnectServiceInfo {
  *     9.0
  */
 export interface ConnectServiceWizardViewOptions extends DialogViewOptions {
+    /** The URL of the add form for a directly-connected bug tracker. */
+    addBugTrackerURL: string;
+
+    /** The URL of the add form for a directly-connected repository. */
+    addRepositoryURL: string;
+
     /**
      * A URL template for the per-service connect endpoint.
      *
@@ -416,6 +422,33 @@ export class ConnectServiceWizardView extends DialogView<
 
         const $sections = $('<div class="rb-c-connect-wizard__sections">');
 
+        /*
+         * Options shown at the end of a section, for setting up a repository
+         * or bug tracker without a hosting service account. These open the
+         * add form directly.
+         */
+        const directOptions: Record<string, {
+            description: string;
+            label: string;
+            url: string;
+        }> = {
+            issue_tracking: {
+                description: _`
+                    Configure a bug tracker by entering its URL directly.
+                `,
+                label: _`Add a bug tracker with a direct connection`,
+                url: this.#options.addBugTrackerURL,
+            },
+            source_hosting: {
+                description: _`
+                    Configure a repository by entering its path and
+                    credentials directly.
+                `,
+                label: _`Add a repository with a direct connection`,
+                url: this.#options.addRepositoryURL,
+            },
+        };
+
         for (const section of ConnectServiceWizardView.SECTIONS) {
             const sectionServices = services
                 .filter(service => service.sections.includes(section.id))
@@ -438,6 +471,19 @@ export class ConnectServiceWizardView extends DialogView<
 
             for (const service of sectionServices) {
                 $list.append(this.#buildServiceOption(service));
+            }
+
+            const directOption = directOptions[section.id];
+
+            if (directOption) {
+                $list.append(paint<HTMLElement>`
+                    <li class="rb-c-connect-wizard__direct-option">
+                     <a href="${directOption.url}">
+                      <h2>${directOption.label}</h2>
+                      <p>${directOption.description}</p>
+                     </a>
+                    </li>
+                `);
             }
 
             $sections.append($section);

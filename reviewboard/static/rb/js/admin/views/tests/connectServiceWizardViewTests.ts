@@ -34,6 +34,8 @@ suite('rb/admin/views/ConnectServiceWizardView', function() {
 
     function createWizard() {
         wizard = new ConnectServiceWizardView({
+            addBugTrackerURL: '/admin/bugtracker/add/',
+            addRepositoryURL: '/admin/repository/add/',
             connectURLTemplate:
                 '/admin/connected-services/__SERVICE_ID__/connect/',
             csrfToken: 'test-csrf',
@@ -60,11 +62,38 @@ suite('rb/admin/views/ConnectServiceWizardView', function() {
             /* "Popular", "Source Hosting", and "Issue Tracking". */
             expect($sections.length).toBe(3);
 
-            const $services = wizard.$('.rb-c-connect-wizard__options li');
+            const $services = wizard.$(
+                '.rb-c-connect-wizard__options li[data-service-name]');
 
             /* GitHub appears in Popular + Source Hosting; JIRA in Issue
              * Tracking. */
             expect($services.length).toBe(3);
+        });
+
+        it('Renders direct connection options', function() {
+            const $sections = wizard.$('.rb-c-connect-wizard__section');
+
+            /* "Popular" has no direct option. */
+            expect($sections.eq(0)
+                .find('.rb-c-connect-wizard__direct-option').length)
+                .toBe(0);
+
+            /* The direct option comes last in its section. */
+            const $repoOption = $sections.eq(1)
+                .find('.rb-c-connect-wizard__options li').last();
+            expect($repoOption.hasClass('rb-c-connect-wizard__direct-option'))
+                .toBeTrue();
+            expect($repoOption.find('a').attr('href'))
+                .toBe('/admin/repository/add/');
+            expect($repoOption.find('p').length).toBe(1);
+
+            const $bugTrackerOption = $sections.eq(2)
+                .find('.rb-c-connect-wizard__options li').last();
+            expect($bugTrackerOption.hasClass(
+                'rb-c-connect-wizard__direct-option'))
+                .toBeTrue();
+            expect($bugTrackerOption.find('a').attr('href'))
+                .toBe('/admin/bugtracker/add/');
         });
 
         it('Renders a logo when provided', function() {
@@ -143,6 +172,8 @@ suite('rb/admin/views/ConnectServiceWizardView', function() {
                 Promise.resolve(new Response(JSON.stringify(response))));
 
             wizard = new ConnectServiceWizardView({
+                addBugTrackerURL: '/admin/bugtracker/add/',
+                addRepositoryURL: '/admin/repository/add/',
                 connectURLTemplate:
                     '/admin/connected-services/__SERVICE_ID__/connect/',
                 csrfToken: 'test-csrf',

@@ -35,6 +35,12 @@ import {
  *     9.0
  */
 export interface ConnectedServicesViewOptions {
+    /** The URL of the add form for a directly-connected bug tracker. */
+    addBugTrackerURL: string;
+
+    /** The URL of the add form for a directly-connected repository. */
+    addRepositoryURL: string;
+
     /**
      * A connect page to open automatically when the page loads.
      *
@@ -168,6 +174,8 @@ export class ConnectedServicesView extends BaseView<
      */
     #openWizard(initialConnectURL?: string) {
         const wizard = new ConnectServiceWizardView({
+            addBugTrackerURL: this.#options.addBugTrackerURL,
+            addRepositoryURL: this.#options.addRepositoryURL,
             connectURLTemplate: this.#options.connectURLTemplate,
             csrfToken: this.#options.csrfToken,
             initialConnectURL: initialConnectURL ?? undefined,
