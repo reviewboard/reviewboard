@@ -756,7 +756,7 @@
     position: relative;
 
     &:hover {
-      background: var(--ink-p-grey-100);
+      background: var(--ink-p-container-hover-bg);
     }
 
     &:last-child {
@@ -1079,7 +1079,9 @@
       display: flex;
 
       &:hover {
-        background: var(--ink-p-accent-info-bg);
+        background:
+          var(--if-dark, var(--ink-p-blue-100))
+          var(--if-light, var(--ink-p-blue-200));
         border-color: var(--ink-p-accent-primary-bg);
       }
     }
@@ -1178,6 +1180,7 @@
 
   &.-no-github-app {
     background-color: var(--ink-p-accent-info-bg);
+    color: var(--ink-p-accent-info-fg);
     grid-template-areas:
       "header action"
       "detail action";
