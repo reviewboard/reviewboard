@@ -854,12 +854,23 @@ class AdminManageBugTrackersNavAction(BaseAdminSidebarManageItemAction):
     action_id = 'admin-manage-bug-trackers-nav'
     label = _('Bug Trackers')
     model = ConfiguredBugTracker
-    item_queryset = ConfiguredBugTracker.objects.accessible()
 
     placements = [
         ActionPlacement(attachment=AttachmentPoint.ADMIN_NAV,
                         parent_id=AdminManageNavGroupAction.action_id),
     ]
+
+    def get_item_queryset(self) -> QuerySet[Any] | None:
+        """Return the queryset for the items.
+
+        This is built on each call. Building it at import time would query
+        the database too early.
+
+        Returns:
+            django.db.models.query.QuerySet:
+            The queryset used to perform item lookups.
+        """
+        return ConfiguredBugTracker.objects.accessible()
 
 
 class AdminManageWebHooksNavAction(BaseAdminSidebarManageItemAction):
